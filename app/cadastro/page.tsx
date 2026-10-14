@@ -14,6 +14,8 @@ export default function CadastroPage() {
   const [username, setUsername] = useState("");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
+  const [whatsappPhone, setWhatsappPhone] = useState("");
+  const [whatsappConsent, setWhatsappConsent] = useState(false);
   const [busy, setBusy] = useState(false);
   const [message, setMessage] = useState("");
   const [error, setError] = useState(false);
@@ -24,6 +26,12 @@ export default function CadastroPage() {
       if (!inviteCode && !isArtist && !isProducer) throw new Error("Selecione pelo menos uma função para sua conta.");
       const supabase = createClient();
       const cleanUsername = username.trim().toLowerCase();
+      const needsMusicianPhone = Boolean(inviteCode) || isArtist;
+      const rawPhone = whatsappPhone.replace(/\D/g, "");
+      const internationalPhone = rawPhone.length === 10 || rawPhone.length === 11 ? "55" + rawPhone : rawPhone;
+      if (needsMusicianPhone && !/^55[1-9][0-9]{9,10}$/.test(internationalPhone)) {
+        throw new Error("Informe um WhatsApp brasileiro válido, com DDD. Exemplo: (11) 99999-9999.");
+      }
       const { data: signupData, error: signUpError } = await supabase.auth.signUp({
         email, password,
         options: {
@@ -33,6 +41,8 @@ export default function CadastroPage() {
             is_artist: inviteCode ? true : isArtist,
             is_producer: inviteCode ? false : isProducer,
             display_name: displayName.trim(),
+            whatsapp_phone: needsMusicianPhone ? internationalPhone : null,
+            whatsapp_opt_in: needsMusicianPhone && whatsappConsent,
             username: inviteCode ? null : isArtist ? cleanUsername : null
           }
         }
@@ -61,6 +71,17 @@ export default function CadastroPage() {
       <form onSubmit={handleSubmit}>
         <div className="field"><label htmlFor="name">Nome {inviteCode ? "completo" : isProducer && !isArtist ? "do produtor ou empresa" : "artístico / profissional"}</label><input id="name" autoComplete="name" value={displayName} onChange={e=>setDisplayName(e.target.value)} placeholder={isProducer && !isArtist ? "Nome da produtora" : "Ex.: Cantor Sousa"} required /></div>
         {isArtist&&!inviteCode&&<div className="field"><label htmlFor="slug">Nome de usuário do perfil artístico</label><input id="slug" value={username} onChange={e=>setUsername(e.target.value.toLowerCase().replace(/[^a-z0-9-]/g,""))} placeholder="cantorsousa" pattern="[a-z0-9-]{3,30}" minLength={3} maxLength={30} required /><span className="field-help">Esse nome identifica seu perfil artístico. Criar subdomínio próprio é um recurso separado e não será liberado automaticamente.</span></div>}
+        {(isArtist || Boolean(inviteCode)) && <>
+          <div className="field">
+            <label htmlFor="whatsapp">Seu WhatsApp com DDD *</label>
+            <input id="whatsapp" type="tel" autoComplete="tel" inputMode="tel" value={whatsappPhone} onChange={e=>setWhatsappPhone(e.target.value)} placeholder="(11) 99999-9999" required maxLength={24}/>
+            <span className="field-help">Número obrigatório para contas de músicos. Ele fica armazenado de forma privada e não aparece no seu perfil público.</span>
+          </div>
+          <label style={{ display: "flex", alignItems: "flex-start", gap: 10, fontSize: 12, lineHeight: 1.6, color: "var(--muted)", marginBottom: 20 }}>
+            <input type="checkbox" checked={whatsappConsent} onChange={e=>setWhatsappConsent(e.target.checked)} style={{ marginTop: 4, flexShrink: 0, accentColor: "var(--lime)" }}/>
+            <span>Autorizo que os organizadores dos shows para os quais fui convidado e ainda não recusei possam usar meu número para abrir conversas e enviar lembretes pelo WhatsApp. Posso desativar essa autorização em Meus convites.</span>
+          </label>
+        </>}
         <div className="field"><label htmlFor="email">E-mail</label><input id="email" type="email" autoComplete="email" value={email} onChange={e=>setEmail(e.target.value)} placeholder="voce@exemplo.com" required /></div>
         <div className="field"><label htmlFor="password">Criar senha</label><input id="password" type="password" autoComplete="new-password" value={password} onChange={e=>setPassword(e.target.value)} minLength={8} placeholder="Pelo menos 8 caracteres" required /></div>
         <button className="btn btn-primary full" type="submit" disabled={busy}>{busy ? "Criando conta..." : "Criar conta grátis"}</button>
