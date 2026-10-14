@@ -84,11 +84,11 @@ export default function ConvitesPage() {
     const name = invite.musician_name || "tudo bem";
     const date = new Date(invite.event_starts_at).toLocaleString("pt-BR", { dateStyle: "full", timeStyle: "short" });
     const venue = [invite.event_venue, invite.event_city].filter(Boolean).join(" - ");
-    const details = venue ? "\\nLocal: " + venue : "";
+    const details = venue ? "\nLocal: " + venue : "";
     if (invite.status === "accepted") {
-      return "Olá, " + name + "! Passando para lembrar do nosso show \"" + invite.event_title + "\". 🎶\\nData: " + date + details + "\\nSua participação já está confirmada no Stage Flow. Até lá!";
+      return "Olá, " + name + "! Passando para lembrar do nosso show \"" + invite.event_title + "\". 🎶\nData: " + date + details + "\nSua participação já está confirmada no Stage Flow. Até lá!";
     }
-    return "Olá, " + name + "! Tudo bem? 🎶 Passando para lembrar do convite para o show \"" + invite.event_title + "\".\\nData: " + date + details + "\\nConsegue confirmar ou recusar sua participação aqui? " + window.location.origin + "/meus-convites";
+    return "Olá, " + name + "! Tudo bem? 🎶 Passando para lembrar do convite para o show \"" + invite.event_title + "\".\nData: " + date + details + "\nConsegue confirmar ou recusar sua participação aqui? " + window.location.origin + "/meus-convites";
   }
 
   function openWhatsAppReminder(invite: SentInvite) {
@@ -300,7 +300,7 @@ export default function ConvitesPage() {
             ["accepted", "Aceitaram"],
             ["declined", "Recusaram"],
             ["pending", "Sem resposta"],
-            ["unclaimed", "Links abertos"],
+            ["unclaimed", "Links não utilizados"],
           ] as const).map(([value,label])=><button key={value} type="button" className={trackingFilter===value?"btn btn-primary":"btn btn-quiet"} onClick={()=>setTrackingFilter(value)} aria-pressed={trackingFilter===value} style={{ padding: "10px 12px" }}>{label}</button>)}
         </div>
         {filteredInvites.length===0 && <div className="feature"><p style={{ margin: 0 }}>Nenhum convite nesta categoria.</p></div>}
