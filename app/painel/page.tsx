@@ -123,6 +123,7 @@ export default function Dashboard() {
       </div>
       <div className="hero-actions" style={{ marginTop: 24 }}>
         <Link className="btn btn-primary" href="/eventos"><Plus size={16}/> Gerenciar agenda</Link>
+        {profile?.role === "producer" && <Link className="btn btn-quiet" href="/convites"><Users size={16}/> Convidar músicos</Link>}
         {profile?.role === "musician" && profile.username && <Link className="btn btn-quiet" href={`/artista/${profile.username}`}>Ver meu portfólio</Link>}
         {profile?.role === "musician" && !profile.username && <span className="fine">Seu perfil público será configurado em uma próxima etapa.</span>}
       </div>
