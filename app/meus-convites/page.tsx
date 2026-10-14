@@ -164,7 +164,7 @@ export default function MeusConvitesPage() {
             </button>
           </div>}
 
-          {invite.status === "accepted" && <p style={{ display: "flex", alignItems: "center", gap: 8, margin: "18px 0 0", fontSize: 13, color: "var(--lime)" }}><CheckCircle2 size={17}/> Sua participação está confirmada.</p>}
+          {invite.status === "accepted" && <div style={{ marginTop: 18, display: "grid", gap: 10 }}><p style={{ display: "flex", alignItems: "center", gap: 8, margin: 0, fontSize: 13, color: "var(--lime)" }}><CheckCircle2 size={17}/> Sua participação está confirmada.</p><Link className="btn btn-quiet" href="/eventos" style={{ justifyContent: "center" }}><CalendarDays size={16}/> Ver show na minha agenda</Link></div>}
           {invite.status === "declined" && <p style={{ display: "flex", alignItems: "center", gap: 8, margin: "18px 0 0", fontSize: 13, color: "var(--muted)" }}><Clock3 size={16}/> Você recusou este convite.</p>}
         </article>
       ))}
