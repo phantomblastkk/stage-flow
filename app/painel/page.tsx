@@ -3,7 +3,7 @@
 import { useEffect, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { ArrowLeft, CalendarDays, Users, Bell, Plus, Clock3, LogOut, Music2, UserRound, LoaderCircle } from "lucide-react";
+import { ArrowLeft, CalendarDays, Users, Bell, Plus, LogOut, Music2, UserRound, LoaderCircle } from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
 
 type Profile = {
@@ -97,14 +97,14 @@ export default function Dashboard() {
 
     {profile && <div className="stat-row">
       <div className="stat"><UserRound color="#c6f36b"/><strong>{roleLabel}</strong><span>Tipo da sua conta</span></div>
-      <div className="stat"><CalendarDays color="#c6f36b"/><strong>Agenda</strong><span>Próxima função a implementar</span></div>
+      <div className="stat"><CalendarDays color="#c6f36b"/><strong>Agenda</strong><span>Seus shows e compromissos</span></div>
       <div className="stat"><Music2 color="#c6f36b"/><strong>{profile.username ? "@" + profile.username : "Não definido"}</strong><span>Nome de usuário</span></div>
     </div>}
 
     <section className="section" style={{ paddingTop: 30 }}>
       <div className="section-heading">
         <h2>Seu espaço de trabalho</h2>
-        <p>Estamos montando as ferramentas reais. Nesta primeira etapa, o painel já identifica sua conta e carrega seu perfil salvo no Supabase.</p>
+        <p>Organize sua agenda, convide músicos e acompanhe as participações dos seus shows.</p>
       </div>
       <div className="cards">
         <div className="feature">
@@ -115,7 +115,7 @@ export default function Dashboard() {
         <div className="feature">
           <div className="feature-icon"><Users size={21}/></div>
           <h3>{profile?.is_producer ? "Eventos e convites" : "Convites para tocar"}</h3>
-          <p>{profile?.is_producer ? "Organize eventos e convide músicos para sua equipe." : "Aqui você acompanhará convites recebidos e organizará sua participação nos shows."}</p>
+          <p>{profile?.is_producer ? "Organize eventos e convide músicos para sua equipe." : "Consulte seus convites e confirme os shows dos quais vai participar."}</p>
         </div>
         <div className="feature">
           <div className="feature-icon"><Bell size={21}/></div>
@@ -125,11 +125,12 @@ export default function Dashboard() {
       </div>
       <div className="hero-actions" style={{ marginTop: 24 }}>
         <Link className="btn btn-primary" href="/eventos"><Plus size={16}/> Gerenciar agenda</Link>
+        {profile?.is_artist && <Link className="btn btn-quiet" href="/meus-convites"><Bell size={16}/> Meus convites</Link>}
         {profile?.is_artist && <Link className="btn btn-quiet" href="/convites"><Users size={16}/> Convidar músicos</Link>}{profile?.is_producer && !profile.is_artist && <Link className="btn btn-quiet" href="/convites"><Users size={16}/> Convidar músicos</Link>}
         {profile?.is_artist && profile.username && <Link className="btn btn-quiet" href={`/artista/${profile.username}`}>Ver meu portfólio</Link>}
         {profile?.is_artist && !profile.username && <span className="fine">Seu perfil público será configurado em uma próxima etapa.</span>}
       </div>
     </section>
-    <div className="coming">Esta versão já lê sua sessão e seu perfil real. A agenda, os convites e as notificações ainda serão implementados; os botões dessas funções não criam eventos neste momento.</div>
+    <div className="coming">Sua agenda e os convites já são conectados ao Supabase. Os recursos do marketplace e planos pagos continuam em desenvolvimento.</div>
   </div></main>;
 }
