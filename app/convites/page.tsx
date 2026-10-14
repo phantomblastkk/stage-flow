@@ -91,13 +91,12 @@ export default function ConvitesPage() {
     return "Olá, " + name + "! Tudo bem? 🎶 Passando para lembrar do convite para o show \"" + invite.event_title + "\".\nData: " + date + details + "\nConsegue confirmar ou recusar sua participação aqui? " + window.location.origin + "/meus-convites";
   }
 
-  function openWhatsAppReminder(invite: SentInvite) {
-    if (!invite.musician_name || (invite.status !== "pending" && invite.status !== "accepted")) return;
-    const base = invite.musician_phone && /^[1-9][0-9]{9,14}$/.test(invite.musician_phone)
-      ? "https://wa.me/" + invite.musician_phone
-      : "https://wa.me/";
-    const target = base + "?text=" + encodeURIComponent(reminderFor(invite));
-    window.open(target, "_blank", "noopener,noreferrer");
+  function reminderLink(invite: SentInvite) {
+    if (!invite.musician_name || !invite.musician_phone ||
+        !/^[1-9][0-9]{9,14}$/.test(invite.musician_phone) ||
+        (invite.status !== "pending" && invite.status !== "accepted")) return null;
+    return "https://wa.me/" + invite.musician_phone +
+      "?text=" + encodeURIComponent(reminderFor(invite));
   }
 
   async function shareExisting(invite: SentInvite) {
@@ -313,17 +312,22 @@ export default function ConvitesPage() {
                 const assigned=Boolean(invite.musician_name);
                 const statusLabel=invite.status==="accepted"?"Aceitou":invite.status==="declined"?"Recusou":invite.status==="cancelled"?"Cancelado":assigned?"Aguardando resposta":"Link não utilizado";
                 const canRemind=assigned && (invite.status==="pending"||invite.status==="accepted");
+                const directWhatsApp=reminderLink(invite);
                 return <article key={invite.id} style={{ border: "1px solid var(--line)", borderRadius: 14, background: "var(--panel2)", padding: 14 }}>
-                  <div style={{ display: "flex", gap: 8, alignItems: "flex-start", justifyContent: "space-between", flexWrap: "wrap" }}>
+                  <div style={{ display: "flex", gap: 10, alignItems: "center", justifyContent: "space-between", flexWrap: "wrap" }}>
                     <div style={{ flex: 1, minWidth: 140 }}>
                       <strong style={{ display: "block", fontSize: 15 }}>{invite.musician_name || "Convite por link"}</strong>
-                      <span style={{ color: "var(--muted)", fontSize: 12 }}>{assigned ? (invite.musician_phone ? "Contato autorizado para lembretes" : "Contato será escolhido no WhatsApp") : "Aguardando o músico abrir o link"}</span>
+                      <span style={{ color: "var(--muted)", fontSize: 12 }}>{assigned ? (invite.musician_phone ? "WhatsApp autorizado" : "WhatsApp não autorizado") : "Aguardando o músico abrir o link"}</span>
                     </div>
-                    <span style={{ fontSize: 12, fontWeight: 700, padding: "6px 10px", border: "1px solid var(--line)", borderRadius: 99, color: invite.status==="accepted"?"var(--lime)":invite.status==="declined"?"#ffb5b5":"var(--text)" }}>{statusLabel}</span>
+                    <div style={{ display: "flex", alignItems: "center", flexWrap: "wrap", gap: 8 }}>
+                      <span style={{ fontSize: 12, fontWeight: 700, padding: "6px 10px", border: "1px solid var(--line)", borderRadius: 99, color: invite.status==="accepted"?"var(--lime)":invite.status==="declined"?"#ffb5b5":"var(--text)" }}>{statusLabel}</span>
+                      {canRemind && (directWhatsApp
+                        ? <a className="btn btn-primary" href={directWhatsApp} target="_blank" rel="noopener noreferrer" style={{ padding: "10px 12px", whiteSpace: "nowrap" }}><MessageCircle size={16}/> Enviar lembrete</a>
+                        : <button className="btn btn-quiet" type="button" disabled title="O músico precisa autorizar lembretes pelo WhatsApp em Meus convites" style={{ padding: "10px 12px", opacity: 0.55, cursor: "not-allowed", whiteSpace: "nowrap" }}><MessageCircle size={16}/> Enviar lembrete</button>
+                      )}
+                    </div>
                   </div>
-                  {canRemind && <button type="button" className="btn btn-quiet" style={{ width: "100%", marginTop: 13 }} onClick={()=>openWhatsAppReminder(invite)}>
-                    <MessageCircle size={16}/>{invite.musician_phone ? "Lembrar no WhatsApp do músico" : "Compartilhar lembrete no WhatsApp"}
-                  </button>}
+                  {canRemind && !directWhatsApp && <p style={{ fontSize: 12, color: "var(--muted)", margin: "10px 0 0" }}>O músico ainda precisa autorizar lembretes pelo WhatsApp na área Meus convites.</p>}
                   {invite.invite_code && <button type="button" className="btn btn-quiet" style={{ width: "100%", marginTop: 13 }} onClick={()=>void shareExisting(invite)}><Share2 size={16}/> Reenviar link de convite</button>}
                 </article>;
               })}
