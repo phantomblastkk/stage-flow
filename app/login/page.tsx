@@ -1,11 +1,13 @@
 "use client";
 
 import Link from "next/link";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { Music2, ArrowLeft } from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
 
 export default function LoginPage() {
+  const [inviteCode, setInviteCode] = useState("");
+  useEffect(() => { setInviteCode(new URLSearchParams(window.location.search).get("convite") || ""); }, []);
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [busy, setBusy] = useState(false);
@@ -19,7 +21,7 @@ export default function LoginPage() {
       const supabase = createClient();
       const { error: signInError } = await supabase.auth.signInWithPassword({ email, password });
       if (signInError) throw signInError;
-      window.location.href = "/painel";
+      window.location.href = inviteCode ? "/convite?codigo=" + encodeURIComponent(inviteCode) : "/painel";
     } catch (err) {
       setError(true);
       setMessage(err instanceof Error ? err.message : "Não foi possível entrar. Confira os dados e tente novamente.");
@@ -35,7 +37,7 @@ export default function LoginPage() {
         <button className="btn btn-primary full" type="submit" disabled={busy}>{busy ? "Entrando..." : "Entrar"} <Music2 size={16}/></button>
       </form>
       {message && <div role="alert" className={error?"coming":"coming"} style={error?{borderColor:"#754343",background:"#281919",color:"#ffb5b5"}:{}}>{message}</div>}
-      <div className="auth-bottom">Ainda não tem conta? <Link href="/cadastro">Cadastre-se</Link></div>
+      <div className="auth-bottom">Ainda não tem conta? <Link href={inviteCode ? "/cadastro?convite=" + encodeURIComponent(inviteCode) : "/cadastro"}>Cadastre-se</Link></div>
     </div></section>
   </main>;
 }
