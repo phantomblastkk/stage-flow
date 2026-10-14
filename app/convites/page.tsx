@@ -16,6 +16,9 @@ export default function ConvitesPage() {
   const [eventId, setEventId] = useState("");
   const [username, setUsername] = useState("");
   const [message, setMessage] = useState("");
+  const [inviteMode, setInviteMode] = useState<"registered" | "email">("registered");
+  const [inviteEmail, setInviteEmail] = useState("");
+  const [inviteLink, setInviteLink] = useState("");
   const [statusMessage, setStatusMessage] = useState("");
   const [isError, setIsError] = useState(false);
   const [loading, setLoading] = useState(true);
@@ -54,21 +57,30 @@ export default function ConvitesPage() {
     setSaving(true); setStatusMessage(""); setIsError(false);
     const searchValue = username.trim().replace(/^@/, "").toLowerCase();
     const musician = musicians.find(m => m.id === username || (m.username ?? "").toLowerCase() === searchValue || m.display_name.toLowerCase() === username.trim().toLowerCase());
-    if (!eventId || !musician) {
+    if (!eventId || (inviteMode === "registered" && !musician) || (inviteMode === "email" && !inviteEmail.trim())) {
       setIsError(true); setStatusMessage("Selecione um músico cadastrado nas sugestões."); setSaving(false); return;
     }
     const supabase = createClient();
+    const code = inviteMode === "email" ? crypto.randomUUID() : null;
     const { error } = await supabase.from("invitations").insert({
       event_id: eventId,
-      musician_id: musician.id,
+      musician_id: inviteMode === "registered" ? musician!.id : null,
+      invited_email: inviteMode === "email" ? inviteEmail.trim().toLowerCase() : null,
+      invite_code: code,
       message: message.trim() || null,
     });
     if (error) {
       setIsError(true);
       setStatusMessage(error.code === "23505" ? "Esse músico já recebeu um convite para este evento." : error.message.includes("row-level security") ? "O banco ainda não liberou os convites. Execute invitations_migration.sql no Supabase." : "Não foi possível enviar o convite: " + error.message);
     } else {
-      setStatusMessage("Convite enviado para " + musician.display_name + "!");
-      setUsername(""); setMessage("");
+      if (code) {
+        setInviteLink(window.location.origin + "/cadastro?convite=" + encodeURIComponent(code));
+        setStatusMessage("Convite criado. Copie o link e envie ao músico. Ele deve usar o e-mail informado.");
+      } else {
+        setInviteLink("");
+        setStatusMessage("Convite registrado para " + musician!.display_name + "!");
+      }
+      setUsername(""); setInviteEmail(""); setMessage("");
     }
     setSaving(false);
   }
@@ -82,10 +94,12 @@ export default function ConvitesPage() {
       {events.length === 0 ? <><h2>Crie um evento primeiro</h2><p>Você precisa cadastrar um evento antes de convidar músicos para participar.</p><Link className="btn btn-primary" href="/eventos">Ir para a agenda</Link></> :
       <form onSubmit={sendInvite}>
         <div className="field"><label htmlFor="invite-event">Evento *</label><select id="invite-event" value={eventId} onChange={e => setEventId(e.target.value)} required style={{ width: "100%", padding: 13, border: "1px solid var(--line)", background: "var(--panel)", borderRadius: 11, color: "var(--text)" }}><option value="">Selecione um evento</option>{events.map(ev => <option key={ev.id} value={ev.id}>{ev.title} · {new Date(ev.starts_at).toLocaleDateString("pt-BR")}</option>)}</select></div>
-        <div className="field"><label htmlFor="invite-musician">Músico (nome ou @usuário) *</label><input id="invite-musician" value={username} onChange={e => setUsername(e.target.value)} placeholder="Pesquise o músico cadastrado" required autoComplete="off"/>{matches.length > 0 && <div style={{ border: "1px solid var(--line)", borderRadius: 10, marginTop: 6, overflow: "hidden" }}>{matches.map(m => <button type="button" key={m.id} onClick={() => setUsername(m.username ? "@" + m.username : m.display_name)} style={{ display: "block", width: "100%", textAlign: "left", padding: 12, background: "var(--panel)", color: "var(--text)", border: 0, borderBottom: "1px solid var(--line)", cursor: "pointer" }}><strong>{m.display_name}</strong><span style={{ display: "block", fontSize: 12, color: "var(--muted)", marginTop: 3 }}>{m.username ? "@" + m.username : "Sem nome de usuário"}{m.city ? " · " + m.city : ""}</span></button>)}</div>}<p style={{ fontSize: 12, color: "var(--muted)" }}>Por enquanto, esta primeira versão envia convites a músicos que já têm conta no Stage Flow.</p></div>
+        <div className="role-options"><button type="button" className="role-option" onClick={()=>setInviteMode("registered")} aria-pressed={inviteMode==="registered"}>Músico cadastrado</button><button type="button" className="role-option" onClick={()=>setInviteMode("email")} aria-pressed={inviteMode==="email"}>Convidar por link</button></div>
+        {inviteMode === "registered" ? <div className="field"><label htmlFor="invite-musician">Músico (nome ou @usuário) *</label><input id="invite-musician" value={username} onChange={e => setUsername(e.target.value)} placeholder="Pesquise o músico cadastrado" required autoComplete="off"/>{matches.length > 0 && <div style={{ border: "1px solid var(--line)", borderRadius: 10, marginTop: 6, overflow: "hidden" }}>{matches.map(m => <button type="button" key={m.id} onClick={() => setUsername(m.username ? "@" + m.username : m.display_name)} style={{ display: "block", width: "100%", textAlign: "left", padding: 12, background: "var(--panel)", color: "var(--text)", border: 0, borderBottom: "1px solid var(--line)", cursor: "pointer" }}><strong>{m.display_name}</strong><span style={{ display: "block", fontSize: 12, color: "var(--muted)", marginTop: 3 }}>{m.username ? "@" + m.username : "Sem nome de usuário"}{m.city ? " · " + m.city : ""}</span></button>)}</div>}<p style={{ fontSize: 12, color: "var(--muted)" }}>Selecione um músico cadastrado.</p></div> : <div className="field"><label htmlFor="invite-email">E-mail do músico *</label><input id="invite-email" type="email" value={inviteEmail} onChange={e=>setInviteEmail(e.target.value)} placeholder="musico@exemplo.com" required/><p style={{fontSize:12,color:"var(--muted)"}}>O convite será vinculado a este e-mail.</p></div>}
         <div className="field"><label htmlFor="invite-message">Mensagem (opcional)</label><textarea id="invite-message" value={message} onChange={e => setMessage(e.target.value)} rows={3} maxLength={500} placeholder="Ex.: preciso de você no tantã para esse show." style={{ width: "100%", padding: 13, border: "1px solid var(--line)", background: "var(--panel)", borderRadius: 11, color: "var(--text)", resize: "vertical" }}/></div>
         {statusMessage && <div className="coming" role="status" style={isError ? { borderColor: "#754343", background: "#281919", color: "#ffb5b5" } : {}}>{!isError && <CheckCircle2 size={15} style={{ display: "inline", verticalAlign: "middle", marginRight: 6 }}/>} {statusMessage}</div>}
-        <button className="btn btn-primary" type="submit" disabled={saving || !eventId || !username.trim()}><Send size={16}/>{saving ? "Enviando..." : "Enviar convite"}</button>
+        {inviteLink && <div className="field"><label>Link para enviar ao músico</label><input readOnly value={inviteLink} onFocus={e=>e.currentTarget.select()}/><button className="btn btn-quiet" type="button" onClick={()=>void navigator.clipboard.writeText(inviteLink)}>Copiar link</button></div>}
+        <button className="btn btn-primary" type="submit" disabled={saving || !eventId || (inviteMode === "registered" ? !username.trim() : !inviteEmail.trim())}><Send size={16}/>{saving ? "Enviando..." : "Enviar convite"}</button>
       </form>}
     </section>
     <div className="coming" style={{ maxWidth: 760, marginTop: 20 }}><Users size={16} style={{ display: "inline", verticalAlign: "middle", marginRight: 7 }}/> O músico convidado usa a conta dele para acompanhar e organizar a participação. Marketplace e subdomínio personalizado não fazem parte do acesso básico de convidado.</div>
