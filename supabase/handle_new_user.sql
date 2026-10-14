@@ -40,3 +40,28 @@ create trigger on_auth_user_created
 
 -- Note: this creates the profile row only. It does not activate a paid plan,
 -- publish the artist page, or replace the need for hardened production RLS.
+
+-- Prevent regular signed-in users from changing their own account role or
+-- subscription state through the profile update policy.
+create or replace function public.protect_profile_access_fields()
+returns trigger
+language plpgsql
+set search_path = ''
+as $$
+begin
+  if auth.uid() is not null and auth.uid() = old.id then
+    if new.role is distinct from old.role then
+      raise exception 'O tipo de conta não pode ser alterado por esta operação.';
+    end if;
+    if new.subscription_status is distinct from old.subscription_status then
+      raise exception 'O status da assinatura não pode ser alterado por esta operação.';
+    end if;
+  end if;
+  return new;
+end;
+$$;
+
+drop trigger if exists protect_profile_access_fields_trigger on public.profiles;
+create trigger protect_profile_access_fields_trigger
+  before update on public.profiles
+  for each row execute procedure public.protect_profile_access_fields();
