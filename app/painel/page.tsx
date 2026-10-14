@@ -108,7 +108,7 @@ export default function Dashboard() {
         <div className="feature">
           <div className="feature-icon"><CalendarDays size={21}/></div>
           <h3>Agenda de shows</h3>
-          <p>Em breve você poderá cadastrar apresentações, locais e horários e acompanhar seus próximos compromissos.</p>
+          <p>Cadastre apresentações, informe locais e horários e acompanhe seus próximos compromissos.</p>
         </div>
         <div className="feature">
           <div className="feature-icon"><Users size={21}/></div>
@@ -122,7 +122,7 @@ export default function Dashboard() {
         </div>
       </div>
       <div className="hero-actions" style={{ marginTop: 24 }}>
-        <button className="btn btn-primary" onClick={() => setMessage("A criação de eventos será a próxima funcionalidade que vamos implementar.")}><Plus size={16}/> Novo evento (em desenvolvimento)</button>
+        <Link className="btn btn-primary" href="/eventos"><Plus size={16}/> Gerenciar agenda</Link>
         {profile?.role === "musician" && profile.username && <Link className="btn btn-quiet" href={`/artista/${profile.username}`}>Ver meu portfólio</Link>}
         {profile?.role === "musician" && !profile.username && <span className="fine">Seu perfil público será configurado em uma próxima etapa.</span>}
       </div>
