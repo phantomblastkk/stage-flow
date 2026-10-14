@@ -17,7 +17,8 @@ as $$
   select jsonb_build_object(
     'title', e.title,
     'starts_at', e.starts_at,
-    'organizer', p.display_name
+    'organizer', p.display_name,
+    'message', i.message
   )
   from public.invitations i
   join public.events e on e.id = i.event_id
@@ -94,3 +95,8 @@ $$;
 
 revoke all on function public.claim_stage_invite(text) from public;
 grant execute on function public.claim_stage_invite(text) to authenticated;
+
+-- Os músicos podem responder aos convites, mas não modificar evento,
+-- destinatário, código ou conteúdo do convite pela API pública.
+revoke update on public.invitations from authenticated;
+grant update (status, responded_at) on public.invitations to authenticated;
