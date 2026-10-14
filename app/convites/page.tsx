@@ -52,7 +52,8 @@ export default function ConvitesPage() {
   async function sendInvite(e: FormEvent<HTMLFormElement>) {
     e.preventDefault();
     setSaving(true); setStatusMessage(""); setIsError(false);
-    const musician = musicians.find(m => m.id === username || (m.username ?? "").toLowerCase() === username.trim().replace(/^@/, "").toLowerCase());
+    const searchValue = username.trim().replace(/^@/, "").toLowerCase();
+    const musician = musicians.find(m => m.id === username || (m.username ?? "").toLowerCase() === searchValue || m.display_name.toLowerCase() === username.trim().toLowerCase());
     if (!eventId || !musician) {
       setIsError(true); setStatusMessage("Selecione um músico cadastrado nas sugestões."); setSaving(false); return;
     }
