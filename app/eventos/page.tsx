@@ -2,7 +2,7 @@
 import { FormEvent, useCallback, useEffect, useMemo, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { ArrowLeft, CalendarDays, Plus, MapPin, Clock3, LoaderCircle, Trash2, ChevronLeft, ChevronRight, Mic } from "lucide-react";
+import { ArrowLeft, CalendarDays, Plus, MapPin, Clock3, LoaderCircle, Trash2, ChevronLeft, ChevronRight, Mic, Search, Check } from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
 
 type EventRow = { id:string; title:string; description:string|null; venue:string|null; city:string|null; starts_at:string; ends_at:string|null; status:"draft"|"published"|"cancelled"|"completed"; show_publicly:boolean };
@@ -16,6 +16,10 @@ export default function EventosPage() {
  const [calendarMonth,setCalendarMonth]=useState(()=>new Date(new Date().getFullYear(),new Date().getMonth(),1));
  const [selectedDate,setSelectedDate]=useState<string|null>(null);
  const [title,setTitle]=useState(""),[description,setDescription]=useState(""),[venue,setVenue]=useState(""),[city,setCity]=useState(""),[startsAt,setStartsAt]=useState(""),[endsAt,setEndsAt]=useState(""),[publicly,setPublicly]=useState(true);
+ const [venueSuggestions,setVenueSuggestions]=useState<{id:string;name:string;address:string|null;city_name:string|null;state_code:string|null}[]>([]);
+ const [citySuggestions,setCitySuggestions]=useState<{id:number;name:string;state_code:string}[]>([]);
+ const [showVenueSuggestions,setShowVenueSuggestions]=useState(false),[showCitySuggestions,setShowCitySuggestions]=useState(false);
+ const [catalogReady,setCatalogReady]=useState(false);
 
  const loadEvents=useCallback(async()=>{
   const supabase=createClient(); const {data:{user},error:authError}=await supabase.auth.getUser();
@@ -27,6 +31,10 @@ export default function EventosPage() {
   setLoading(false);
  },[router]);
  useEffect(()=>{void loadEvents();},[loadEvents]);
+
+ useEffect(()=>{let cancelled=false;async function loadCatalog(){const {error}=await createClient().from("cities").select("id").limit(1);if(!cancelled)setCatalogReady(!error);}void loadCatalog();return()=>{cancelled=true};},[]);
+ useEffect(()=>{let cancelled=false;const timer=setTimeout(async()=>{if(!venue.trim()||!catalogReady){setVenueSuggestions([]);return;}const {data}=await createClient().from("venues").select("id,name,address,cities(name,state_code)").eq("active",true).ilike("name","%"+venue.trim()+"%").order("name").limit(8);if(cancelled)return;setVenueSuggestions((data??[]).map((v:any)=>({id:v.id,name:v.name,address:v.address,city_name:v.cities?.name??null,state_code:v.cities?.state_code??null})));},220);return()=>{cancelled=true;clearTimeout(timer)};},[venue,catalogReady]);
+ useEffect(()=>{let cancelled=false;const timer=setTimeout(async()=>{if(!city.trim()||!catalogReady){setCitySuggestions([]);return;}const {data}=await createClient().from("cities").select("id,name,state_code").eq("active",true).ilike("name","%"+city.trim()+"%").order("name").limit(8);if(!cancelled)setCitySuggestions(data??[]);},180);return()=>{cancelled=true;clearTimeout(timer)};},[city,catalogReady]);
 
  async function createEvent(e:FormEvent<HTMLFormElement>){
   e.preventDefault();setSaving(true);setMessage("");setIsError(false);
@@ -59,7 +67,16 @@ export default function EventosPage() {
    <form onSubmit={createEvent}>
     <div className="field"><label htmlFor="event-title">Nome do show / evento *</label><input id="event-title" value={title} onChange={e=>setTitle(e.target.value)} placeholder="Ex.: Pagode ao vivo" required maxLength={120}/></div>
     <div className="cards" style={{gridTemplateColumns:"repeat(auto-fit,minmax(220px,1fr))"}}><div className="field"><label htmlFor="event-start">Data e horário de início *</label><input id="event-start" type="datetime-local" value={startsAt} onChange={e=>setStartsAt(e.target.value)} required/></div><div className="field"><label htmlFor="event-end">Data e horário de término</label><input id="event-end" type="datetime-local" value={endsAt} onChange={e=>setEndsAt(e.target.value)}/></div></div>
-    <div className="cards" style={{gridTemplateColumns:"repeat(auto-fit,minmax(220px,1fr))"}}><div className="field"><label htmlFor="event-venue">Local / estabelecimento</label><input id="event-venue" value={venue} onChange={e=>setVenue(e.target.value)} placeholder="Nome do bar, casa de shows..."/></div><div className="field"><label htmlFor="event-city">Cidade</label><input id="event-city" value={city} onChange={e=>setCity(e.target.value)} placeholder="Ex.: São Paulo - SP"/></div></div>
+    <div className="cards" style={{gridTemplateColumns:"repeat(auto-fit,minmax(220px,1fr))"}}>
+     <div className="field" style={{position:"relative"}}><label htmlFor="event-venue">Local / estabelecimento</label><div style={{position:"relative"}}><input id="event-venue" value={venue} autoComplete="off" onFocus={()=>setShowVenueSuggestions(true)} onBlur={()=>setTimeout(()=>setShowVenueSuggestions(false),160)} onChange={e=>{setVenue(e.target.value);setShowVenueSuggestions(true)}} placeholder="Pesquise uma casa ou digite o local..."/><Search size={15} style={{position:"absolute",right:12,top:14,color:"var(--muted)",pointerEvents:"none"}}/></div>
+      {showVenueSuggestions&&venue.trim()&&venueSuggestions.length>0&&<div role="listbox" aria-label="Casas de shows encontradas" style={{position:"absolute",zIndex:10,top:"100%",left:0,right:0,background:"var(--panel)",border:"1px solid var(--line)",borderRadius:10,boxShadow:"0 12px 28px #0003",overflow:"hidden"}}>{venueSuggestions.map(item=><button type="button" key={item.id} onMouseDown={e=>e.preventDefault()} onClick={()=>{setVenue(item.name);if(item.city_name)setCity(item.city_name+(item.state_code?" - "+item.state_code:""));setShowVenueSuggestions(false)}} style={{display:"block",width:"100%",textAlign:"left",padding:"11px 13px",border:0,borderBottom:"1px solid var(--line)",background:"transparent",color:"var(--text)",cursor:"pointer"}}><strong>{item.name}</strong><span style={{display:"block",fontSize:12,color:"var(--muted)",marginTop:3}}>{[item.address,item.city_name,item.state_code].filter(Boolean).join(" · ")}</span></button>)}</div>}
+      <p style={{fontSize:11,color:"var(--muted)",marginTop:5}}>Você também pode digitar um local que ainda não esteja no catálogo.</p>
+     </div>
+     <div className="field" style={{position:"relative"}}><label htmlFor="event-city">Cidade</label><input id="event-city" value={city} autoComplete="off" onFocus={()=>setShowCitySuggestions(true)} onBlur={()=>setTimeout(()=>setShowCitySuggestions(false),160)} onChange={e=>{setCity(e.target.value);setShowCitySuggestions(true)}} placeholder="Comece a digitar a cidade..."/>
+      {showCitySuggestions&&city.trim()&&citySuggestions.length>0&&<div role="listbox" aria-label="Cidades encontradas" style={{position:"absolute",zIndex:10,top:"100%",left:0,right:0,background:"var(--panel)",border:"1px solid var(--line)",borderRadius:10,boxShadow:"0 12px 28px #0003",overflow:"hidden"}}>{citySuggestions.map(item=><button type="button" key={item.id} onMouseDown={e=>e.preventDefault()} onClick={()=>{setCity(item.name+" - "+item.state_code);setShowCitySuggestions(false)}} style={{display:"flex",alignItems:"center",justifyContent:"space-between",gap:8,width:"100%",textAlign:"left",padding:"11px 13px",border:0,borderBottom:"1px solid var(--line)",background:"transparent",color:"var(--text)",cursor:"pointer"}}><span>{item.name} - {item.state_code}</span>{city===item.name+" - "+item.state_code&&<Check size={15}/>}</button>)}</div>}
+      <p style={{fontSize:11,color:"var(--muted)",marginTop:5}}>{catalogReady?"Selecione uma sugestão ou mantenha sua própria descrição.":"O catálogo será ativado após executar a migração SQL no Supabase."}</p>
+     </div>
+    </div>
     <div className="field"><label htmlFor="event-description">Descrição e observações</label><textarea id="event-description" value={description} onChange={e=>setDescription(e.target.value)} placeholder="Detalhes do evento..." rows={3} style={{width:"100%",padding:13,border:"1px solid var(--line)",background:"var(--panel)",borderRadius:11,color:"var(--text)",resize:"vertical"}}/></div>
     <label style={{display:"flex",gap:10,alignItems:"flex-start",margin:"8px 0 20px",fontSize:13,color:"var(--muted)"}}><input type="checkbox" checked={publicly} onChange={e=>setPublicly(e.target.checked)} style={{accentColor:"var(--lime)",marginTop:2}}/><span><strong style={{color:"var(--text)"}}>Mostrar publicamente</strong><br/>O evento fica marcado como publicado para futura exibição no portfólio.</span></label>
     {message&&<div className="coming" role="status" style={isError?{borderColor:"#754343",background:"#281919",color:"#ffb5b5"}:{}}>{message}</div>}
