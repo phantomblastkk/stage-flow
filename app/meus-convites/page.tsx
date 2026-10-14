@@ -3,7 +3,7 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { ArrowLeft, CalendarDays, Check, CheckCircle2, Clock3, LoaderCircle, MapPin, Music2, X } from "lucide-react";
+import { ArrowLeft, CalendarDays, Check, CheckCircle2, Clock3, LoaderCircle, MapPin, MessageCircle, Music2, X } from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
 
 type Invite = {
@@ -39,6 +39,12 @@ export default function MeusConvitesPage() {
   const [filter, setFilter] = useState<Filter>("all");
   const [feedback, setFeedback] = useState("");
   const [isError, setIsError] = useState(false);
+  const [whatsappPhone, setWhatsappPhone] = useState("");
+  const [whatsappConsent, setWhatsappConsent] = useState(false);
+  const [whatsappLoading, setWhatsappLoading] = useState(true);
+  const [whatsappSaving, setWhatsappSaving] = useState(false);
+  const [whatsappMessage, setWhatsappMessage] = useState("");
+  const [whatsappError, setWhatsappError] = useState(false);
 
   const reload = useCallback(async () => {
     const supabase = createClient();
@@ -61,6 +67,50 @@ export default function MeusConvitesPage() {
   useEffect(() => {
     void reload();
   }, [reload]);
+
+  useEffect(() => {
+    let active = true;
+    async function loadWhatsAppPreferences() {
+      const { data, error } = await createClient().rpc("stage_my_whatsapp_preference");
+      if (!active) return;
+      if (error) {
+        setWhatsappError(true);
+        setWhatsappMessage("Preferências de WhatsApp ainda indisponíveis. Execute whatsapp_reminders_migration.sql no Supabase.");
+      } else if (data?.[0]) {
+        setWhatsappPhone(data[0].phone || "");
+        setWhatsappConsent(Boolean(data[0].opted_in));
+      }
+      setWhatsappLoading(false);
+    }
+    void loadWhatsAppPreferences();
+    return () => { active = false; };
+  }, []);
+
+  async function saveWhatsappPreferences(e: React.FormEvent<HTMLFormElement>) {
+    e.preventDefault();
+    if (whatsappSaving) return;
+    setWhatsappSaving(true);
+    setWhatsappError(false);
+    setWhatsappMessage("");
+    const { data, error } = await createClient().rpc("stage_save_whatsapp_preference", {
+      p_phone: whatsappPhone,
+      p_opt_in: whatsappConsent,
+    });
+    if (error) {
+      setWhatsappError(true);
+      setWhatsappMessage("Não foi possível salvar: " + error.message);
+    } else if (data === "enabled") {
+      setWhatsappMessage("Autorização salva! Os organizadores dos seus convites pendentes ou confirmados poderão abrir uma conversa pelo WhatsApp.");
+    } else if (data === "disabled") {
+      setWhatsappPhone("");
+      setWhatsappConsent(false);
+      setWhatsappMessage("Autorização desativada. Seu número de lembretes não ficará mais disponível aos organizadores.");
+    } else {
+      setWhatsappError(true);
+      setWhatsappMessage(data === "invalid_phone" ? "Informe um número válido com DDD (por exemplo: 11 99999-9999)." : "Não foi possível atualizar a autorização: " + String(data));
+    }
+    setWhatsappSaving(false);
+  }
 
   const pendingCount = invites.filter((invite) => invite.status === "pending").length;
   const acceptedCount = invites.filter((invite) => invite.status === "accepted").length;
@@ -170,6 +220,24 @@ export default function MeusConvitesPage() {
       ))}
     </div>
 
+    <section className="feature" style={{ maxWidth: 800, marginTop: 30 }}>
+      <div className="eyebrow"><span className="dot"/> CONTATO OPCIONAL</div>
+      <h2 style={{ fontSize: 23, margin: "16px 0 10px" }}><MessageCircle size={21} style={{ display: "inline", verticalAlign: "middle", marginRight: 8 }}/> Lembretes no WhatsApp</h2>
+      <p style={{ marginBottom: 18 }}>Você decide se quer disponibilizar seu número aos cantores e produtores dos shows para os quais recebeu convites. O organizador abre o WhatsApp e envia a mensagem manualmente; não são notificações automáticas.</p>
+      {whatsappLoading ? <p style={{ color: "var(--muted)" }}>Carregando preferências...</p> :
+        <form onSubmit={saveWhatsappPreferences}>
+          <div className="field" style={{ maxWidth: 430 }}>
+            <label htmlFor="my-whatsapp-number">Seu WhatsApp com DDD</label>
+            <input id="my-whatsapp-number" type="tel" autoComplete="tel" value={whatsappPhone} onChange={e=>setWhatsappPhone(e.target.value)} placeholder="(11) 99999-9999" required={whatsappConsent}/>
+          </div>
+          <label style={{ display: "flex", gap: 11, alignItems: "flex-start", fontSize: 13, lineHeight: 1.6, color: "var(--muted)", marginBottom: 18 }}>
+            <input type="checkbox" checked={whatsappConsent} onChange={e=>setWhatsappConsent(e.target.checked)} style={{ marginTop: 4, accentColor: "var(--lime)", flexShrink: 0 }}/>
+            <span>Autorizo o Stage Flow a compartilhar este número apenas com os organizadores dos shows para os quais tenho convites pendentes ou aceitos, para que possam falar comigo e enviar lembretes pelo WhatsApp. Posso retirar essa autorização quando quiser.</span>
+          </label>
+          <button type="submit" className="btn btn-primary" disabled={whatsappSaving}>{whatsappSaving ? "Salvando..." : whatsappConsent ? "Salvar autorização" : "Desativar contato por WhatsApp"}</button>
+          {whatsappMessage && <div role={whatsappError ? "alert" : "status"} className="coming" style={whatsappError ? { borderColor: "#754343", background: "#281919", color: "#ffb5b5" } : {}}>{whatsappMessage}</div>}
+        </form>}
+    </section>
     <p className="fine" style={{ marginTop: 26 }}>Os convites são gratuitos. Aceitar um show não libera marketplace ou endereço personalizado.</p>
   </div></main>;
 }
