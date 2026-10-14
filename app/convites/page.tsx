@@ -7,6 +7,16 @@ import { ArrowLeft, CheckCircle2, Copy, LoaderCircle, Send, Share2, Users } from
 import { createClient } from "@/lib/supabase/client";
 
 type EventOption = { id: string; title: string; starts_at: string };
+type SentInvite = {
+  id: string;
+  event_id: string;
+  event_title: string;
+  event_starts_at: string;
+  status: "pending" | "accepted" | "declined" | "cancelled";
+  musician_name: string | null;
+  invite_code: string | null;
+  created_at: string;
+};
 
 export default function ConvitesPage() {
   const router = useRouter();
@@ -19,6 +29,8 @@ export default function ConvitesPage() {
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [copied, setCopied] = useState(false);
+  const [sentInvites, setSentInvites] = useState<SentInvite[]>([]);
+  const [sentError, setSentError] = useState("");
 
   const chosenEvent = events.find((event) => event.id === eventId);
   const shareText = chosenEvent
@@ -27,6 +39,31 @@ export default function ConvitesPage() {
   const whatsappUrl = inviteLink
     ? "https://wa.me/?text=" + encodeURIComponent(shareText + "\n" + inviteLink)
     : "";
+
+  async function reloadSent() {
+    const { data, error } = await createClient().rpc("stage_sent_invitations");
+    if (error) {
+      setSentError("O acompanhamento de respostas será ativado após executar received_invitations_migration.sql no Supabase.");
+    } else {
+      setSentInvites((data ?? []) as SentInvite[]);
+      setSentError("");
+    }
+  }
+
+  async function shareExisting(invite: SentInvite) {
+    if (!invite.invite_code) return;
+    const url = window.location.origin + "/convite?codigo=" + encodeURIComponent(invite.invite_code);
+    const text = "Convite para participar de " + invite.event_title + " no Stage Flow!";
+    if (navigator.share) {
+      try {
+        await navigator.share({ title: "Convite Stage Flow", text, url });
+        return;
+      } catch (error) {
+        if (error instanceof Error && error.name === "AbortError") return;
+      }
+    }
+    window.open("https://wa.me/?text=" + encodeURIComponent(text + "\n" + url), "_blank", "noopener,noreferrer");
+  }
 
   useEffect(() => {
     let active = true;
@@ -56,6 +93,7 @@ export default function ConvitesPage() {
         setEvents((data ?? []) as EventOption[]);
       }
       setLoading(false);
+      void reloadSent();
     }
     void load();
     return () => { active = false; };
@@ -106,6 +144,7 @@ export default function ConvitesPage() {
       // Tentativa imediata: funciona em alguns navegadores; caso contrário,
       // o botão Compartilhar permite uma nova interação do usuário.
       void openShareSheet(url, chosenEvent?.title ?? "um show");
+      void reloadSent();
     }
     setSaving(false);
   }
@@ -177,6 +216,34 @@ export default function ConvitesPage() {
         </div>}
       </form>}
     </section>
+    <section style={{ maxWidth: 760, marginTop: 34 }} aria-label="Convites enviados">
+      <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 12, marginBottom: 14, flexWrap: "wrap" }}>
+        <div>
+          <div className="eyebrow"><span className="dot"/> ACOMPANHAMENTO</div>
+          <h2 style={{ fontSize: 24, margin: "12px 0 0" }}>Convites enviados</h2>
+        </div>
+        <button type="button" className="btn btn-quiet" onClick={() => void reloadSent()}>Atualizar respostas</button>
+      </div>
+      {sentError && <div className="coming">{sentError}</div>}
+      {!sentError && sentInvites.length === 0 && <div className="feature"><p style={{ margin: 0 }}>Os convites que você criar aparecerão aqui com a situação de cada músico.</p></div>}
+      <div style={{ display: "grid", gap: 10 }}>
+        {sentInvites.map((invite) => {
+          const assigned = Boolean(invite.musician_name);
+          const label = invite.status === "accepted" ? "Confirmado" : invite.status === "declined" ? "Recusado" : invite.status === "cancelled" ? "Cancelado" : assigned ? "Aguardando resposta" : "Aguardando cadastro";
+          return <article className="feature" key={invite.id} style={{ padding: 17 }}>
+            <div style={{ display: "flex", gap: 12, flexWrap: "wrap", justifyContent: "space-between", alignItems: "center" }}>
+              <div style={{ flex: 1, minWidth: 180 }}>
+                <strong style={{ display: "block", marginBottom: 4 }}>{invite.event_title}</strong>
+                <span style={{ fontSize: 12, color: "var(--muted)" }}>{invite.musician_name || "Link ainda não utilizado"}</span>
+              </div>
+              <span style={{ border: "1px solid var(--line)", borderRadius: 99, padding: "6px 11px", fontSize: 12, fontWeight: 700, color: invite.status === "accepted" ? "var(--lime)" : "var(--text)" }}>{label}</span>
+            </div>
+            {invite.invite_code && <button type="button" className="btn btn-quiet" style={{ width: "100%", marginTop: 13 }} onClick={() => void shareExisting(invite)}><Share2 size={15}/> Recompartilhar link</button>}
+          </article>;
+        })}
+      </div>
+    </section>
+
     <div className="coming" style={{ maxWidth: 760, marginTop: 20 }}>
       <Users size={16} style={{ display: "inline", verticalAlign: "middle", marginRight: 7 }}/>
       Um link é válido para apenas uma conta. O músico pode entrar com uma conta existente ou se cadastrar gratuitamente. O convite não libera marketplace ou subdomínio próprio.
