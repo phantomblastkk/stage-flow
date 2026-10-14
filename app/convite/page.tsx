@@ -112,8 +112,8 @@ export default function AbrirConvitePage() {
       {status === "ready" && <><p>Você está conectado ao Stage Flow. Confirme para vincular este convite à sua conta de músico. Cada link só pode ser utilizado uma vez.</p><button className="btn btn-primary" style={{ width: "100%", justifyContent: "center" }} onClick={() => void claimInvite()}><CheckCircle2 size={17}/> Vincular convite à minha conta</button></>}
       {isSuccess && <>
         <p role="status" style={{ marginTop: 22 }}><CheckCircle2 color="#c6f36b" size={20} style={{ verticalAlign: "middle", marginRight: 7 }}/> <strong>Convite vinculado à sua conta!</strong></p>
-        <p>Você já está associado a este convite. A confirmação da participação será feita na área de convites do Stage Flow.</p>
-        <Link href="/painel" className="btn btn-primary" style={{ width: "100%", justifyContent: "center" }}>Ir para meu painel</Link>
+        <p>Você já está associado a este convite. Abra seus convites para aceitar ou recusar esta participação.</p>
+        <Link href="/meus-convites" className="btn btn-primary" style={{ width: "100%", justifyContent: "center" }}>Ver convite e responder</Link>
       </>}
       {isAvailable && <>
         <p style={{ marginTop: 22 }}>Você foi convidado a participar de um show. Entre com sua conta ou cadastre-se gratuitamente para vincular seu convite.</p>
