@@ -27,14 +27,14 @@ export default function ConvitesPage() {
       const supabase = createClient();
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) { router.replace("/login"); return; }
-      const { data: profile } = await supabase.from("profiles").select("role").eq("id", user.id).maybeSingle();
-      if (profile?.role !== "producer") {
+      const { data: profile } = await supabase.from("profiles").select("role,is_artist,is_producer").eq("id", user.id).maybeSingle();
+      if (!profile?.is_artist && !profile?.is_producer && profile?.role !== "producer") {
         router.replace("/painel");
         return;
       }
       const [{ data: eventRows }, { data: musicianRows }] = await Promise.all([
         supabase.from("events").select("id,title,starts_at").eq("producer_id", user.id).order("starts_at", { ascending: true }),
-        supabase.from("profiles").select("id,display_name,username,city").eq("role", "musician").order("display_name").limit(200),
+        supabase.from("profiles").select("id,display_name,username,city").eq("is_artist", true).order("display_name").limit(200),
       ]);
       if (!active) return;
       setEvents((eventRows ?? []) as EventOption[]);
@@ -77,7 +77,7 @@ export default function ConvitesPage() {
 
   return <main><div className="container">
     <nav className="nav"><Link className="brand" href="/"><span className="brand-mark">S</span> stage flow</Link><Link className="btn btn-quiet" href="/painel"><ArrowLeft size={15}/> Voltar ao painel</Link></nav>
-    <section style={{ padding: "42px 0 24px" }}><div className="eyebrow"><span className="dot"/> EQUIPE DO EVENTO</div><h1 style={{ fontSize: "clamp(34px,5vw,46px)" }}>Convidar <span className="accent">músicos.</span></h1><p className="lead">Escolha um evento e convide um músico cadastrado para organizar a participação dele no Stage Flow.</p></section>
+    <section style={{ padding: "42px 0 24px" }}><div className="eyebrow"><span className="dot"/> EQUIPE DO EVENTO</div><h1 style={{ fontSize: "clamp(34px,5vw,46px)" }}>Convidar <span className="accent">músicos.</span></h1><p className="lead">Como artista ou produtor, escolha um evento e convide músicos para organizar a participação deles no Stage Flow.</p></section>
     <section className="feature" style={{ maxWidth: 760 }}>
       {events.length === 0 ? <><h2>Crie um evento primeiro</h2><p>Você precisa cadastrar um evento antes de convidar músicos para participar.</p><Link className="btn btn-primary" href="/eventos">Ir para a agenda</Link></> :
       <form onSubmit={sendInvite}>
