@@ -13,6 +13,8 @@ export default function EventosPage() {
  const [events,setEvents]=useState<EventRow[]>([]);
  const [loading,setLoading]=useState(true),[saving,setSaving]=useState(false),[ownerId,setOwnerId]=useState("");
  const [message,setMessage]=useState(""),[isError,setIsError]=useState(false);
+ const [calendarMonth,setCalendarMonth]=useState(()=>new Date(new Date().getFullYear(),new Date().getMonth(),1));
+ const [selectedDate,setSelectedDate]=useState<string|null>(null);
  const [title,setTitle]=useState(""),[description,setDescription]=useState(""),[venue,setVenue]=useState(""),[city,setCity]=useState(""),[startsAt,setStartsAt]=useState(""),[endsAt,setEndsAt]=useState(""),[publicly,setPublicly]=useState(true);
 
  const loadEvents=useCallback(async()=>{
