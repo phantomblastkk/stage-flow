@@ -1,8 +1,8 @@
 "use client";
-import { FormEvent, useCallback, useEffect, useState } from "react";
+import { FormEvent, useCallback, useEffect, useMemo, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { ArrowLeft, CalendarDays, Plus, MapPin, Clock3, LoaderCircle, Trash2 } from "lucide-react";
+import { ArrowLeft, CalendarDays, Plus, MapPin, Clock3, LoaderCircle, Trash2, ChevronLeft, ChevronRight, Mic } from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
 
 type EventRow = { id:string; title:string; description:string|null; venue:string|null; city:string|null; starts_at:string; ends_at:string|null; status:"draft"|"published"|"cancelled"|"completed"; show_publicly:boolean };
@@ -43,6 +43,13 @@ export default function EventosPage() {
   if(error){setIsError(true);setMessage("Não foi possível excluir: "+error.message);}else{setEvents(rows=>rows.filter(item=>item.id!==id));setMessage("Evento excluído.");setIsError(false);}
  }
  const labels={draft:"Privado",published:"Publicado",cancelled:"Cancelado",completed:"Concluído"};
+ const monthLabel=calendarMonth.toLocaleDateString("pt-BR",{month:"long",year:"numeric"});
+ const firstWeekday=new Date(calendarMonth.getFullYear(),calendarMonth.getMonth(),1).getDay();
+ const daysInMonth=new Date(calendarMonth.getFullYear(),calendarMonth.getMonth()+1,0).getDate();
+ const eventDays=new Set(events.map(event=>{const d=new Date(event.starts_at);return d.getFullYear()+"-"+String(d.getMonth()+1).padStart(2,"0")+"-"+String(d.getDate()).padStart(2,"0")}));
+ const dateKey=(day:number)=>calendarMonth.getFullYear()+"-"+String(calendarMonth.getMonth()+1).padStart(2,"0")+"-"+String(day).padStart(2,"0");
+ const visibleEvents=selectedDate?events.filter(event=>{const d=new Date(event.starts_at);return d.getFullYear()+"-"+String(d.getMonth()+1).padStart(2,"0")+"-"+String(d.getDate()).padStart(2,"0")===selectedDate}):events;
+
  return <main><div className="container">
   <nav className="nav"><Link className="brand" href="/"><span className="brand-mark">S</span> stage flow</Link><Link className="btn btn-quiet" href="/painel"><ArrowLeft size={15}/> Voltar ao painel</Link></nav>
   <section style={{padding:"42px 0 24px"}}><div className="eyebrow"><span className="dot"/> AGENDA PROFISSIONAL</div><h1 style={{fontSize:"clamp(34px,5vw,46px)"}}>Seus <span className="accent">eventos.</span></h1><p className="lead">Cadastre apresentações, organize horários e acompanhe sua agenda.</p></section>
@@ -57,8 +64,20 @@ export default function EventosPage() {
     <button className="btn btn-primary" type="submit" disabled={saving||!ownerId}><Plus size={16}/>{saving?"Salvando...":"Salvar evento"}</button>
    </form>
   </section>
-  <section className="section" style={{paddingTop:12}}><div className="section-heading"><h2><CalendarDays size={25} style={{display:"inline",verticalAlign:"middle"}}/> Sua agenda</h2><p>Eventos salvos na sua conta, em ordem de data.</p></div>
-   {loading?<p style={{color:"var(--muted)"}}><LoaderCircle size={16} style={{display:"inline",verticalAlign:"middle"}}/> Carregando agenda...</p>:events.length===0?<div className="feature"><p style={{margin:0,color:"var(--muted)"}}>Você ainda não cadastrou eventos. Use o formulário acima para criar o primeiro.</p></div>:<div className="feature">{events.map(event=><article className="event" key={event.id} style={{alignItems:"flex-start"}}><div className="event-date"><div><strong>{new Date(event.starts_at).toLocaleDateString("pt-BR",{day:"2-digit"})}</strong><br/><span>{new Date(event.starts_at).toLocaleDateString("pt-BR",{month:"short"}).replace(".","").toUpperCase()}</span></div></div><div className="event-info"><strong>{event.title}</strong><span style={{display:"block",marginTop:5}}><Clock3 size={12} style={{display:"inline",verticalAlign:"middle"}}/> {formatDate(event.starts_at)}</span>{(event.venue||event.city)&&<span style={{display:"block",marginTop:5}}><MapPin size={12} style={{display:"inline",verticalAlign:"middle"}}/> {[event.venue,event.city].filter(Boolean).join(" · ")}</span>}{event.description&&<p style={{color:"var(--muted)",fontSize:13,margin:"8px 0"}}>{event.description}</p>}<span className="event-pill" style={{display:"inline-block",marginTop:7}}>{labels[event.status]}</span></div><button className="btn btn-quiet" aria-label={"Excluir "+event.title} title="Excluir evento" onClick={()=>void deleteEvent(event.id)} style={{padding:9}}><Trash2 size={15}/></button></article>)}</div>}
+  <section className="feature" style={{marginBottom:28}}>
+   <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",gap:12,marginBottom:18}}>
+    <div><div className="eyebrow"><span className="dot"/> CALENDÁRIO</div><h2 style={{textTransform:"capitalize",margin:"8px 0 0"}}>{monthLabel}</h2></div>
+    <div style={{display:"flex",gap:8}}><button type="button" className="btn btn-quiet" aria-label="Mês anterior" onClick={()=>setCalendarMonth(new Date(calendarMonth.getFullYear(),calendarMonth.getMonth()-1,1))}><ChevronLeft size={18}/></button><button type="button" className="btn btn-quiet" aria-label="Próximo mês" onClick={()=>setCalendarMonth(new Date(calendarMonth.getFullYear(),calendarMonth.getMonth()+1,1))}><ChevronRight size={18}/></button></div>
+   </div>
+   <div style={{display:"grid",gridTemplateColumns:"repeat(7,minmax(0,1fr))",gap:6,textAlign:"center",fontSize:12,color:"var(--muted)",marginBottom:8}}>{["Dom","Seg","Ter","Qua","Qui","Sex","Sáb"].map(day=><div key={day} style={{padding:"6px 0"}}>{day}</div>)}</div>
+   <div style={{display:"grid",gridTemplateColumns:"repeat(7,minmax(0,1fr))",gap:6}}>
+    {Array.from({length:firstWeekday},(_,i)=><div key={"empty-"+i} aria-hidden="true"/>)}
+    {Array.from({length:daysInMonth},(_,i)=>{const day=i+1,key=dateKey(day),hasShow=eventDays.has(key),selected=selectedDate===key;return <button type="button" key={key} onClick={()=>setSelectedDate(selected?null:key)} aria-label={day+" de "+monthLabel+(hasShow?", tem show":"")} style={{minHeight:58,padding:"7px 2px",borderRadius:10,border:selected?"1px solid var(--lime)":"1px solid var(--line)",background:selected?"rgba(198,243,107,.12)":"var(--panel)",color:"var(--text)",display:"flex",flexDirection:"column",alignItems:"center",justifyContent:"center",gap:4,cursor:"pointer"}}><span>{day}</span>{hasShow&&<Mic size={14} color="#c6f36b" aria-label="Dia com show"/>}</button>})}
+   </div>
+   <p style={{fontSize:12,color:"var(--muted)",marginBottom:0}}><Mic size={13} style={{display:"inline",verticalAlign:"middle"}} color="#c6f36b"/> Dia com show. Clique em uma data para filtrar a lista; clique novamente para mostrar todos.</p>
+  </section>
+  <section className="section" style={{paddingTop:12}}><div className="section-heading"><h2><CalendarDays size={25} style={{display:"inline",verticalAlign:"middle"}}/> Sua agenda</h2><p>{selectedDate ? "Shows do dia " + new Date(selectedDate+"T12:00:00").toLocaleDateString("pt-BR") : "Eventos salvos na sua conta, em ordem de data."}</p></div>
+   {loading?<p style={{color:"var(--muted)"}}><LoaderCircle size={16} style={{display:"inline",verticalAlign:"middle"}}/> Carregando agenda...</p>:visibleEvents.length===0?<div className="feature"><p style={{margin:0,color:"var(--muted)"}}>Você ainda não cadastrou eventos. Use o formulário acima para criar o primeiro.</p></div>:<div className="feature">{visibleEvents.map(event=><article className="event" key={event.id} style={{alignItems:"flex-start"}}><div className="event-date"><div><strong>{new Date(event.starts_at).toLocaleDateString("pt-BR",{day:"2-digit"})}</strong><br/><span>{new Date(event.starts_at).toLocaleDateString("pt-BR",{month:"short"}).replace(".","").toUpperCase()}</span></div></div><div className="event-info"><strong>{event.title}</strong><span style={{display:"block",marginTop:5}}><Clock3 size={12} style={{display:"inline",verticalAlign:"middle"}}/> {formatDate(event.starts_at)}</span>{(event.venue||event.city)&&<span style={{display:"block",marginTop:5}}><MapPin size={12} style={{display:"inline",verticalAlign:"middle"}}/> {[event.venue,event.city].filter(Boolean).join(" · ")}</span>}{event.description&&<p style={{color:"var(--muted)",fontSize:13,margin:"8px 0"}}>{event.description}</p>}<span className="event-pill" style={{display:"inline-block",marginTop:7}}>{labels[event.status]}</span></div><button className="btn btn-quiet" aria-label={"Excluir "+event.title} title="Excluir evento" onClick={()=>void deleteEvent(event.id)} style={{padding:9}}><Trash2 size={15}/></button></article>)}</div>}
   </section>
  </div></main>;
 }
