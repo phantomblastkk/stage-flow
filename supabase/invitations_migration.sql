@@ -44,15 +44,3 @@ using (
   )
 );
 
-drop policy if exists "Musicians can respond to own invitations" on public.invitations;
-create policy "Musicians can respond to own invitations"
-on public.invitations for update to authenticated
-using (auth.uid() = musician_id)
-with check (
-  auth.uid() = musician_id
-  and exists (
-    select 1 from public.invitations original
-    where original.id = id
-      and original.musician_id = auth.uid()
-  )
-);
