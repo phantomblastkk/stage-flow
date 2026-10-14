@@ -9,6 +9,8 @@ import { createClient } from "@/lib/supabase/client";
 type Profile = {
   id: string;
   role: "musician" | "producer";
+  is_artist: boolean;
+  is_producer: boolean;
   display_name: string;
   username: string | null;
   city: string | null;
@@ -38,7 +40,7 @@ export default function Dashboard() {
       setEmail(user.email ?? "");
       const { data, error } = await supabase
         .from("profiles")
-        .select("id, role, display_name, username, city")
+        .select("id, role, is_artist, is_producer, display_name, username, city")
         .eq("id", user.id)
         .maybeSingle();
 
@@ -65,7 +67,7 @@ export default function Dashboard() {
     router.refresh();
   }
 
-  const roleLabel = profile?.role === "producer" ? "Produtor" : "Músico";
+  const roleLabel = profile ? [profile.is_artist ? "Artista" : "", profile.is_producer ? "Produtor" : ""].filter(Boolean).join(" + ") || "Músico" : "Conta";
 
   if (loading) {
     return <main><div className="container" style={{ minHeight: "100vh", display: "grid", placeItems: "center" }}>
@@ -112,8 +114,8 @@ export default function Dashboard() {
         </div>
         <div className="feature">
           <div className="feature-icon"><Users size={21}/></div>
-          <h3>{profile?.role === "producer" ? "Artistas e convites" : "Convites para tocar"}</h3>
-          <p>{profile?.role === "producer" ? "A próxima etapa permitirá organizar eventos e convidar músicos." : "Aqui você acompanhará convites recebidos de produtores e outros artistas."}</p>
+          <h3>{profile?.is_producer ? "Eventos e convites" : "Convites para tocar"}</h3>
+          <p>{profile?.is_producer ? "Organize eventos e convide músicos para sua equipe." : "Aqui você acompanhará convites recebidos e organizará sua participação nos shows."}</p>
         </div>
         <div className="feature">
           <div className="feature-icon"><Bell size={21}/></div>
@@ -123,9 +125,9 @@ export default function Dashboard() {
       </div>
       <div className="hero-actions" style={{ marginTop: 24 }}>
         <Link className="btn btn-primary" href="/eventos"><Plus size={16}/> Gerenciar agenda</Link>
-        {profile?.role === "producer" && <Link className="btn btn-quiet" href="/convites"><Users size={16}/> Convidar músicos</Link>}
-        {profile?.role === "musician" && profile.username && <Link className="btn btn-quiet" href={`/artista/${profile.username}`}>Ver meu portfólio</Link>}
-        {profile?.role === "musician" && !profile.username && <span className="fine">Seu perfil público será configurado em uma próxima etapa.</span>}
+        {profile?.is_artist && <Link className="btn btn-quiet" href="/convites"><Users size={16}/> Convidar músicos</Link>}{profile?.is_producer && !profile.is_artist && <Link className="btn btn-quiet" href="/convites"><Users size={16}/> Convidar músicos</Link>}
+        {profile?.is_artist && profile.username && <Link className="btn btn-quiet" href={`/artista/${profile.username}`}>Ver meu portfólio</Link>}
+        {profile?.is_artist && !profile.username && <span className="fine">Seu perfil público será configurado em uma próxima etapa.</span>}
       </div>
     </section>
     <div className="coming">Esta versão já lê sua sessão e seu perfil real. A agenda, os convites e as notificações ainda serão implementados; os botões dessas funções não criam eventos neste momento.</div>
