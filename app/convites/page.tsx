@@ -3,7 +3,7 @@
 import { FormEvent, useEffect, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { ArrowLeft, CheckCircle2, Copy, LoaderCircle, Send, Share2, Users } from "lucide-react";
+import { ArrowLeft, CheckCircle2, Copy, LoaderCircle, MessageCircle, RefreshCw, Send, Share2, Users } from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
 
 type EventOption = { id: string; title: string; starts_at: string };
@@ -12,11 +12,16 @@ type SentInvite = {
   event_id: string;
   event_title: string;
   event_starts_at: string;
+  event_venue: string | null;
+  event_city: string | null;
   status: "pending" | "accepted" | "declined" | "cancelled";
   musician_name: string | null;
+  musician_phone: string | null;
   invite_code: string | null;
   created_at: string;
+  responded_at: string | null;
 };
+type TrackingFilter = "all" | "pending" | "accepted" | "declined" | "unclaimed";
 
 export default function ConvitesPage() {
   const router = useRouter();
@@ -31,6 +36,9 @@ export default function ConvitesPage() {
   const [copied, setCopied] = useState(false);
   const [sentInvites, setSentInvites] = useState<SentInvite[]>([]);
   const [sentError, setSentError] = useState("");
+  const [trackingEventId, setTrackingEventId] = useState("");
+  const [trackingFilter, setTrackingFilter] = useState<TrackingFilter>("all");
+  const [reloading, setReloading] = useState(false);
 
   const chosenEvent = events.find((event) => event.id === eventId);
   const shareText = chosenEvent
@@ -41,13 +49,55 @@ export default function ConvitesPage() {
     : "";
 
   async function reloadSent() {
-    const { data, error } = await createClient().rpc("stage_sent_invitations");
+    setReloading(true);
+    const { data, error } = await createClient().rpc("stage_sent_invitations_with_whatsapp");
     if (error) {
-      setSentError("O acompanhamento de respostas será ativado após executar received_invitations_migration.sql no Supabase.");
+      setSentError("Não foi possível consultar os convites e os contatos autorizados. Execute whatsapp_reminders_migration.sql no Supabase. Detalhes: " + error.message);
     } else {
       setSentInvites((data ?? []) as SentInvite[]);
       setSentError("");
     }
+    setReloading(false);
+  }
+
+  const scopedInvites = trackingEventId
+    ? sentInvites.filter(invite => invite.event_id === trackingEventId)
+    : sentInvites;
+  const acceptedCount = scopedInvites.filter(invite => invite.status === "accepted").length;
+  const declinedCount = scopedInvites.filter(invite => invite.status === "declined").length;
+  const pendingCount = scopedInvites.filter(invite => invite.status === "pending" && invite.musician_name).length;
+  const unclaimedCount = scopedInvites.filter(invite => invite.status === "pending" && !invite.musician_name).length;
+  const filteredInvites = scopedInvites.filter(invite => {
+    if (trackingFilter === "all") return true;
+    if (trackingFilter === "unclaimed") return invite.status === "pending" && !invite.musician_name;
+    if (trackingFilter === "pending") return invite.status === "pending" && Boolean(invite.musician_name);
+    return invite.status === trackingFilter;
+  });
+  const groupedInvites = events
+    .map(event => ({
+      event,
+      rows: filteredInvites.filter(invite => invite.event_id === event.id),
+    }))
+    .filter(group => group.rows.length > 0);
+
+  function reminderFor(invite: SentInvite) {
+    const name = invite.musician_name || "tudo bem";
+    const date = new Date(invite.event_starts_at).toLocaleString("pt-BR", { dateStyle: "full", timeStyle: "short" });
+    const venue = [invite.event_venue, invite.event_city].filter(Boolean).join(" - ");
+    const details = venue ? "\\nLocal: " + venue : "";
+    if (invite.status === "accepted") {
+      return "Olá, " + name + "! Passando para lembrar do nosso show \"" + invite.event_title + "\". 🎶\\nData: " + date + details + "\\nSua participação já está confirmada no Stage Flow. Até lá!";
+    }
+    return "Olá, " + name + "! Tudo bem? 🎶 Passando para lembrar do convite para o show \"" + invite.event_title + "\".\\nData: " + date + details + "\\nConsegue confirmar ou recusar sua participação aqui? " + window.location.origin + "/meus-convites";
+  }
+
+  function openWhatsAppReminder(invite: SentInvite) {
+    if (!invite.musician_name || (invite.status !== "pending" && invite.status !== "accepted")) return;
+    const base = invite.musician_phone && /^[1-9][0-9]{9,14}$/.test(invite.musician_phone)
+      ? "https://wa.me/" + invite.musician_phone
+      : "https://wa.me/";
+    const target = base + "?text=" + encodeURIComponent(reminderFor(invite));
+    window.open(target, "_blank", "noopener,noreferrer");
   }
 
   async function shareExisting(invite: SentInvite) {
@@ -216,32 +266,71 @@ export default function ConvitesPage() {
         </div>}
       </form>}
     </section>
-    <section style={{ maxWidth: 760, marginTop: 34 }} aria-label="Convites enviados">
-      <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 12, marginBottom: 14, flexWrap: "wrap" }}>
+    <section style={{ maxWidth: 820, marginTop: 34 }} aria-label="Convites enviados">
+      <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 12, marginBottom: 16, flexWrap: "wrap" }}>
         <div>
-          <div className="eyebrow"><span className="dot"/> ACOMPANHAMENTO</div>
-          <h2 style={{ fontSize: 24, margin: "12px 0 0" }}>Convites enviados</h2>
+          <div className="eyebrow"><span className="dot"/> ORGANIZAÇÃO DA EQUIPE</div>
+          <h2 style={{ fontSize: 25, margin: "12px 0 0" }}>Respostas dos músicos</h2>
         </div>
-        <button type="button" className="btn btn-quiet" onClick={() => void reloadSent()}>Atualizar respostas</button>
+        <button type="button" className="btn btn-quiet" onClick={() => void reloadSent()} disabled={reloading}>
+          <RefreshCw size={16}/>{reloading ? "Atualizando..." : "Atualizar respostas"}
+        </button>
       </div>
-      {sentError && <div className="coming">{sentError}</div>}
-      {!sentError && sentInvites.length === 0 && <div className="feature"><p style={{ margin: 0 }}>Os convites que você criar aparecerão aqui com a situação de cada músico.</p></div>}
-      <div style={{ display: "grid", gap: 10 }}>
-        {sentInvites.map((invite) => {
-          const assigned = Boolean(invite.musician_name);
-          const label = invite.status === "accepted" ? "Confirmado" : invite.status === "declined" ? "Recusado" : invite.status === "cancelled" ? "Cancelado" : assigned ? "Aguardando resposta" : "Aguardando cadastro";
-          return <article className="feature" key={invite.id} style={{ padding: 17 }}>
-            <div style={{ display: "flex", gap: 12, flexWrap: "wrap", justifyContent: "space-between", alignItems: "center" }}>
-              <div style={{ flex: 1, minWidth: 180 }}>
-                <strong style={{ display: "block", marginBottom: 4 }}>{invite.event_title}</strong>
-                <span style={{ fontSize: 12, color: "var(--muted)" }}>{invite.musician_name || "Link ainda não utilizado"}</span>
-              </div>
-              <span style={{ border: "1px solid var(--line)", borderRadius: 99, padding: "6px 11px", fontSize: 12, fontWeight: 700, color: invite.status === "accepted" ? "var(--lime)" : "var(--text)" }}>{label}</span>
+      <p style={{ fontSize: 13, color: "var(--muted)", lineHeight: 1.6 }}>
+        Veja quem aceitou, recusou ou ainda não respondeu. Os lembretes abrem o WhatsApp com uma mensagem pronta; você confirma o envio no aplicativo.
+      </p>
+      {sentError && <div className="coming" role="alert" style={{ borderColor: "#754343", background: "#281919", color: "#ffb5b5" }}>{sentError}</div>}
+      {!sentError && <>
+        <div className="field" style={{ maxWidth: 520 }}>
+          <label htmlFor="tracking-event">Acompanhar qual show?</label>
+          <select id="tracking-event" value={trackingEventId} onChange={e=>setTrackingEventId(e.target.value)}>
+            <option value="">Todos os shows</option>
+            {events.map(event=><option key={event.id} value={event.id}>{event.title} · {new Date(event.starts_at).toLocaleDateString("pt-BR")}</option>)}
+          </select>
+        </div>
+        <div className="stat-row" style={{ marginBottom: 18 }}>
+          <div className="stat"><strong>{acceptedCount}</strong><span>Aceitaram</span></div>
+          <div className="stat"><strong>{declinedCount}</strong><span>Recusaram</span></div>
+          <div className="stat"><strong>{pendingCount}</strong><span>Sem resposta</span></div>
+        </div>
+        <p style={{ fontSize: 12, color: "var(--muted)", margin: "0 0 12px" }}>{unclaimedCount} link(s) ainda sem músico cadastrado.</p>
+        <div style={{ display: "flex", flexWrap: "wrap", gap: 8, marginBottom: 20 }}>
+          {([
+            ["all", "Todos"],
+            ["accepted", "Aceitaram"],
+            ["declined", "Recusaram"],
+            ["pending", "Sem resposta"],
+            ["unclaimed", "Links abertos"],
+          ] as const).map(([value,label])=><button key={value} type="button" className={trackingFilter===value?"btn btn-primary":"btn btn-quiet"} onClick={()=>setTrackingFilter(value)} aria-pressed={trackingFilter===value} style={{ padding: "10px 12px" }}>{label}</button>)}
+        </div>
+        {filteredInvites.length===0 && <div className="feature"><p style={{ margin: 0 }}>Nenhum convite nesta categoria.</p></div>}
+        <div style={{ display: "grid", gap: 18 }}>
+          {groupedInvites.map(group=><div key={group.event.id} className="feature" style={{ padding: "20px 16px" }}>
+            <h3 style={{ margin: "0 0 5px" }}>{group.event.title}</h3>
+            <p style={{ fontSize: 12, color: "var(--muted)", marginBottom: 14 }}>{new Date(group.event.starts_at).toLocaleString("pt-BR", { dateStyle: "medium", timeStyle: "short" })} · {group.rows.length} convite(s)</p>
+            <div style={{ display: "grid", gap: 10 }}>
+              {group.rows.map(invite=>{
+                const assigned=Boolean(invite.musician_name);
+                const statusLabel=invite.status==="accepted"?"Aceitou":invite.status==="declined"?"Recusou":invite.status==="cancelled"?"Cancelado":assigned?"Aguardando resposta":"Link não utilizado";
+                const canRemind=assigned && (invite.status==="pending"||invite.status==="accepted");
+                return <article key={invite.id} style={{ border: "1px solid var(--line)", borderRadius: 14, background: "var(--panel2)", padding: 14 }}>
+                  <div style={{ display: "flex", gap: 8, alignItems: "flex-start", justifyContent: "space-between", flexWrap: "wrap" }}>
+                    <div style={{ flex: 1, minWidth: 140 }}>
+                      <strong style={{ display: "block", fontSize: 15 }}>{invite.musician_name || "Convite por link"}</strong>
+                      <span style={{ color: "var(--muted)", fontSize: 12 }}>{assigned ? (invite.musician_phone ? "Contato autorizado para lembretes" : "Contato será escolhido no WhatsApp") : "Aguardando o músico abrir o link"}</span>
+                    </div>
+                    <span style={{ fontSize: 12, fontWeight: 700, padding: "6px 10px", border: "1px solid var(--line)", borderRadius: 99, color: invite.status==="accepted"?"var(--lime)":invite.status==="declined"?"#ffb5b5":"var(--text)" }}>{statusLabel}</span>
+                  </div>
+                  {canRemind && <button type="button" className="btn btn-quiet" style={{ width: "100%", marginTop: 13 }} onClick={()=>openWhatsAppReminder(invite)}>
+                    <MessageCircle size={16}/>{invite.musician_phone ? "Lembrar no WhatsApp do músico" : "Compartilhar lembrete no WhatsApp"}
+                  </button>}
+                  {invite.invite_code && <button type="button" className="btn btn-quiet" style={{ width: "100%", marginTop: 13 }} onClick={()=>void shareExisting(invite)}><Share2 size={16}/> Reenviar link de convite</button>}
+                </article>;
+              })}
             </div>
-            {invite.invite_code && <button type="button" className="btn btn-quiet" style={{ width: "100%", marginTop: 13 }} onClick={() => void shareExisting(invite)}><Share2 size={15}/> Recompartilhar link</button>}
-          </article>;
-        })}
-      </div>
+          </div>)}
+        </div>
+      </>}
     </section>
 
     <div className="coming" style={{ maxWidth: 760, marginTop: 20 }}>
