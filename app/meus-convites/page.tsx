@@ -105,9 +105,8 @@ export default function MeusConvitesPage() {
     } else if (data === "enabled") {
       setWhatsappMessage("Autorização salva! Os organizadores dos seus convites pendentes ou confirmados poderão abrir uma conversa pelo WhatsApp.");
     } else if (data === "disabled") {
-      setWhatsappPhone("");
       setWhatsappConsent(false);
-      setWhatsappMessage("Autorização desativada. Seu número de lembretes não ficará mais disponível aos organizadores.");
+      setWhatsappMessage("Autorização desativada. Seu número continuará guardado de forma privada, mas não ficará disponível aos organizadores.");
     } else {
       setWhatsappError(true);
       setWhatsappMessage(data === "invalid_phone" ? "Informe um número válido com DDD (por exemplo: 11 99999-9999)." : "Não foi possível atualizar a autorização: " + String(data));
@@ -224,9 +223,9 @@ export default function MeusConvitesPage() {
     </div>
 
     <section className="feature" style={{ maxWidth: 800, marginTop: 30 }}>
-      <div className="eyebrow"><span className="dot"/> CONTATO OPCIONAL</div>
+      <div className="eyebrow"><span className="dot"/> WHATSAPP E PRIVACIDADE</div>
       <h2 style={{ fontSize: 23, margin: "16px 0 10px" }}><MessageCircle size={21} style={{ display: "inline", verticalAlign: "middle", marginRight: 8 }}/> Lembretes no WhatsApp</h2>
-      <p style={{ marginBottom: 18 }}>Você decide se quer disponibilizar seu número aos cantores e produtores dos shows para os quais recebeu convites. O organizador abre o WhatsApp e envia a mensagem manualmente; não são notificações automáticas.</p>
+      <p style={{ marginBottom: 18 }}>Seu número é solicitado no cadastro dos músicos. Aqui você pode atualizá-lo e decidir se permite que os organizadores dos seus convites pendentes ou confirmados abram a conversa diretamente para enviar lembretes. O envio da mensagem é manual.</p>
       {whatsappLoading ? <p style={{ color: "var(--muted)" }}>Carregando preferências...</p> :
         <form onSubmit={saveWhatsappPreferences}>
           <div className="field" style={{ maxWidth: 430 }}>
@@ -237,7 +236,7 @@ export default function MeusConvitesPage() {
             <input type="checkbox" checked={whatsappConsent} onChange={e=>setWhatsappConsent(e.target.checked)} style={{ marginTop: 4, accentColor: "var(--lime)", flexShrink: 0 }}/>
             <span>Autorizo o Stage Flow a compartilhar este número apenas com os organizadores dos shows para os quais tenho convites pendentes ou aceitos, para que possam falar comigo e enviar lembretes pelo WhatsApp. Posso retirar essa autorização quando quiser.</span>
           </label>
-          <button type="submit" className="btn btn-primary" disabled={whatsappSaving}>{whatsappSaving ? "Salvando..." : whatsappConsent ? "Salvar autorização" : "Desativar contato por WhatsApp"}</button>
+          <button type="submit" className="btn btn-primary" disabled={whatsappSaving}>{whatsappSaving ? "Salvando..." : whatsappConsent ? "Salvar número e autorização" : "Salvar sem permitir lembretes"}</button>
           {whatsappMessage && <div role={whatsappError ? "alert" : "status"} className="coming" style={whatsappError ? { borderColor: "#754343", background: "#281919", color: "#ffb5b5" } : {}}>{whatsappMessage}</div>}
         </form>}
     </section>
