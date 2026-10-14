@@ -47,6 +47,25 @@ export default function LocaisPage() {
     if (!userId) return;
     setSaving(true); setMessage(""); setIsError(false);
     const supabase = createClient();
+    const { data: existing, error: lookupError } = await supabase
+      .from("venues")
+      .select("id,name")
+      .eq("active", true)
+      .eq("city_id", Number(cityId))
+      .ilike("name", name.trim())
+      .limit(1);
+    if (lookupError) {
+      setIsError(true);
+      setMessage("Não foi possível verificar se esse local já existe. Tente novamente.");
+      setSaving(false);
+      return;
+    }
+    if (existing?.length) {
+      setIsError(true);
+      setMessage("Esse local já está cadastrado nessa cidade. Pesquise o nome na agenda para usá-lo, sem criar uma cópia.");
+      setSaving(false);
+      return;
+    }
     const { error } = await supabase.from("venues").insert({
       name: name.trim(),
       address: address.trim() || null,
@@ -55,9 +74,11 @@ export default function LocaisPage() {
     });
     if (error) {
       setIsError(true);
-      setMessage(error.message.includes("row-level security")
-        ? "O banco ainda não liberou o cadastro de locais. Execute o arquivo venues_catalog_contributions.sql no Supabase."
-        : "Não foi possível cadastrar o local: " + error.message);
+      setMessage(error.code === "23505"
+        ? "Esse local já foi cadastrado nessa cidade. Pesquise o nome na agenda para usá-lo."
+        : error.message.includes("row-level security")
+          ? "O banco ainda não liberou o cadastro de locais. Execute o arquivo venues_catalog_contributions.sql no Supabase."
+          : "Não foi possível cadastrar o local: " + error.message);
     } else {
       setMessage("Local adicionado ao catálogo! Ele poderá aparecer nas sugestões da agenda.");
       setName(""); setAddress("");
