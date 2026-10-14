@@ -101,3 +101,44 @@ grant execute on function public.stage_respond_invite(uuid, boolean) to authenti
 drop policy if exists "Musicians can respond to own invitations" on public.invitations;
 revoke update on table public.invitations from authenticated;
 revoke update (status, responded_at) on table public.invitations from authenticated;
+
+-- Acompanhamento do organizador: somente convites de eventos pertencentes à conta.
+-- Só devolve código de links genéricos que ainda não foram utilizados.
+create or replace function public.stage_sent_invitations()
+returns table (
+  id uuid,
+  event_id uuid,
+  event_title text,
+  event_starts_at timestamptz,
+  status text,
+  musician_name text,
+  invite_code text,
+  created_at timestamptz
+)
+language sql
+stable
+security definer
+set search_path = ''
+as $$
+  select
+    i.id,
+    e.id,
+    e.title,
+    e.starts_at,
+    i.status::text,
+    m.display_name,
+    case
+      when i.musician_id is null and i.invited_email is null and i.status = 'pending'
+      then i.invite_code
+      else null
+    end,
+    i.created_at
+  from public.events e
+  join public.invitations i on i.event_id = e.id
+  left join public.profiles m on m.id = i.musician_id
+  where e.producer_id = auth.uid()
+  order by e.starts_at desc, i.created_at desc;
+$$;
+
+revoke all on function public.stage_sent_invitations() from public;
+grant execute on function public.stage_sent_invitations() to authenticated;
