@@ -12,6 +12,7 @@ create unique index if not exists invitations_invite_code_unique
   where invite_code is not null;
 
 drop policy if exists "Producers can invite musicians to own events" on public.invitations;
+drop policy if exists "Users with artist or producer function can invite musicians to own events" on public.invitations;
 create policy "Users with artist or producer function can invite musicians to own events"
 on public.invitations for insert to authenticated
 with check (
