@@ -71,7 +71,10 @@ export default function MeusConvitesPage() {
   useEffect(() => {
     let active = true;
     async function loadWhatsAppPreferences() {
-      const { data, error } = await createClient().rpc("stage_my_whatsapp_preference");
+      const supabase = createClient();
+      const { data: authData } = await supabase.auth.getUser();
+      if (!active || !authData.user) return;
+      const { data, error } = await supabase.rpc("stage_my_whatsapp_preference");
       if (!active) return;
       if (error) {
         setWhatsappError(true);
