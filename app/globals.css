@@ -384,3 +384,53 @@
   .artist-free-intro h1{font-size:34px}
   .artist-free-footer{flex-direction:column;gap:7px}
 }
+
+
+/* ── Perfis GRATUITOS de cantores: fotos e personalização básica ── */
+.artist-free-page{--artist-free-accent:#a99bff}
+.artist-free-hero{isolation:isolate;background:
+  radial-gradient(ellipse at 70% 10%,color-mix(in srgb,var(--artist-free-accent),transparent 80%),transparent 61%),
+  linear-gradient(145deg,#181f31,#10141c)}
+.artist-free-hero:after{z-index:0}
+.artist-free-cover-photo{position:absolute;inset:0;background-size:cover;background-position:center;opacity:.33;z-index:0}
+.artist-free-cover-photo:after{content:"";position:absolute;inset:0;background:linear-gradient(90deg,#10141cef,#10141c88 70%,#10141c99)}
+.artist-free-overline,.artist-free-monogram,.artist-free-intro{position:relative;z-index:1}
+.artist-free-overline,.artist-free-label{color:var(--artist-free-accent)}
+.artist-free-handle{color:var(--artist-free-accent)}
+.artist-free-monogram{background:linear-gradient(135deg,var(--artist-free-accent),#c1d9eb);overflow:hidden}
+.artist-free-monogram img{width:100%;height:100%;object-fit:cover;display:block}
+.artist-free-tagline{flex-wrap:wrap}
+.artist-free-editor-preview{
+  --artist-free-accent:#a99bff;
+  border:1px solid #333d50;border-radius:15px;overflow:hidden;
+  margin-top:19px;background:#121926;
+}
+.artist-free-editor-cover{
+  min-height:155px;padding:20px;display:flex;align-items:flex-end;
+  background:radial-gradient(ellipse at 80% 0%,color-mix(in srgb,var(--artist-free-accent),transparent 65%),transparent 70%),#22273a;
+  background-size:cover;background-position:center;
+}
+.artist-free-editor-avatar{
+  width:78px;height:78px;border-radius:17px;display:grid;place-items:center;
+  background:var(--artist-free-accent);color:#151b24;font:900 24px Manrope,sans-serif;
+  border:2px solid #fff3;overflow:hidden;
+}
+.artist-free-editor-avatar img{width:100%;height:100%;object-fit:cover}
+.artist-free-editor-preview-info{padding:20px}
+.artist-free-editor-preview-info>span{display:block;color:var(--artist-free-accent);font-size:11px;font-weight:800;margin-bottom:8px}
+.artist-free-editor-preview-info>strong{display:block;font:800 24px/1.15 Manrope,sans-serif;letter-spacing:-1px;overflow-wrap:anywhere}
+.artist-free-editor-preview-info>p{font-size:12px;color:#b9c5d7;margin-top:8px;line-height:1.7}
+.artist-free-photo-fields{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px}
+.artist-free-color-options{display:flex;gap:10px;flex-wrap:wrap}
+.artist-free-color{
+  display:inline-flex;align-items:center;gap:9px;border:1px solid var(--line);
+  border-radius:13px;background:var(--panel2);color:var(--text);
+  font-size:12px;font-weight:700;padding:10px 13px;cursor:pointer;
+}
+.artist-free-color[aria-pressed="true"]{outline:2px solid var(--lime);outline-offset:2px}
+.artist-free-color>span{width:19px;height:19px;border-radius:50%;display:block}
+@media(max-width:620px){
+  .artist-free-photo-fields{grid-template-columns:1fr}
+  .artist-free-hero{padding:24px}
+  .artist-free-monogram{margin-top:12px}
+}
