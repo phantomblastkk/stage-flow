@@ -1,53 +1,164 @@
 import Link from "next/link";
-import { ArrowRight, CalendarDays, Check, Globe2, Music2, Users, Zap, Instagram, Play, Bell } from "lucide-react";
+import {
+  ArrowRight, ArrowUpRight, BadgeCheck, CalendarDays, Check,
+  CirclePlay, Guitar, Headphones, Mic2, Music2, Play,
+  ShieldCheck, Sparkles, Users, Wallet
+} from "lucide-react";
 
 export default function Home() {
-  return (
-    <main>
-      <div className="container">
-        <nav className="nav">
-          <Link className="brand" href="/"><span className="brand-mark">S</span> stage flow</Link>
-          <div className="nav-links">
-            <a className="hide-mobile" href="#recursos">Recursos</a>
-            <a className="hide-mobile" href="#artistas">Para artistas</a>
-            <Link className="btn btn-quiet" href="/login">Entrar</Link>
-            <Link className="btn btn-primary" href="/cadastro">Criar conta <ArrowRight size={15}/></Link>
+  return <main className="home-shell">
+    <div className="container">
+      <nav className="nav home-nav">
+        <Link className="brand" href="/"><span className="brand-mark">S</span> stage flow</Link>
+        <div className="nav-links">
+          <a className="hide-mobile" href="#recursos">Funcionalidades</a>
+          <a className="hide-mobile" href="#musicos">Para músicos</a>
+          <Link className="btn btn-quiet" href="/login">Entrar</Link>
+          <Link className="btn btn-primary" href="/cadastro">Criar conta <ArrowRight size={15}/></Link>
+        </div>
+      </nav>
+
+      <section className="home-hero">
+        <div className="home-hero-copy">
+          <div className="home-pill"><span className="home-live-dot"/> O palco é seu. A organização também.</div>
+          <h1>Mais música.<br/><span>Menos correria.</span></h1>
+          <p>Shows, músicos, convites e cachês em um só lugar. O Stage Flow conecta sua agenda ao que realmente importa: fazer a música acontecer.</p>
+          <div className="hero-actions">
+            <Link className="btn btn-primary" href="/cadastro">Começar gratuitamente <ArrowRight size={17}/></Link>
+            <a className="btn btn-quiet" href="#recursos">Descobrir o Stage Flow <ArrowUpRight size={16}/></a>
           </div>
-        </nav>
-        <section className="hero">
-          <div>
-            <div className="eyebrow"><span className="dot"/> A música acontece. A organização também.</div>
-            <h1>Sua carreira musical, <span className="accent">no ritmo certo.</span></h1>
-            <p className="lead">Organize shows, confirme convites e apresente seu trabalho em um só lugar. Menos mensagens perdidas, mais música acontecendo.</p>
-            <div className="hero-actions">
-              <Link className="btn btn-primary" href="/cadastro">Começar agora <ArrowRight size={16}/></Link>
-              <a className="btn btn-quiet" href="#recursos">Conhecer a plataforma</a>
+          <div className="home-hero-points">
+            <span><Check size={15}/> Agenda profissional</span>
+            <span><Check size={15}/> Convites por link</span>
+            <span><Check size={15}/> Portfólio gratuito</span>
+          </div>
+        </div>
+
+        <div className="home-stage">
+          <div className="home-stage-glow" aria-hidden="true"/>
+          <div className="home-stage-card">
+            <div className="home-stage-top">
+              <span><span className="home-stage-dot"/> STAGE FLOW / SHOWS</span>
+              <span className="home-stage-tag">Painel ilustrativo</span>
             </div>
-            <p className="fine">Para músicos, bandas, produtores e equipes de eventos.</p>
+            <div className="home-stage-title">
+              <div>
+                <span className="home-stage-muted">OUTUBRO / AGENDA</span>
+                <h2>Próximos palcos.</h2>
+              </div>
+              <span className="home-stage-calendar"><CalendarDays size={22}/></span>
+            </div>
+            <div className="home-stage-events">
+              <div className="home-stage-event">
+                <span className="home-stage-date"><strong>18</strong><small>OUT</small></span>
+                <span className="home-stage-event-info"><strong>Pagode na Praça</strong><small>São Paulo · 20h</small></span>
+                <span className="home-stage-status"><Check size={13}/> Confirmado</span>
+              </div>
+              <div className="home-stage-event">
+                <span className="home-stage-date"><strong>22</strong><small>OUT</small></span>
+                <span className="home-stage-event-info"><strong>Festival de Música</strong><small>Guarulhos · 18h</small></span>
+                <span className="home-stage-status home-stage-status-other">Em negociação</span>
+              </div>
+              <div className="home-stage-event">
+                <span className="home-stage-date"><strong>26</strong><small>OUT</small></span>
+                <span className="home-stage-event-info"><strong>Show particular</strong><small>São Paulo · 15h</small></span>
+                <span className="home-stage-status"><Check size={13}/> Confirmado</span>
+              </div>
+            </div>
+            <div className="home-stage-bottom">
+              <div><span className="home-stage-overlap"><Users size={17}/></span><span>Equipe organizada para o próximo show</span></div>
+              <span><ArrowUpRight size={17}/></span>
+            </div>
           </div>
-          <div className="preview">
-            <div className="preview-top"><div><div className="tiny-label">PAINEL DO ARTISTA</div><div className="preview-title">Sua agenda</div></div><span className="status">● Tudo organizado</span></div>
-            <div className="stat-row"><div className="stat"><strong>08</strong><span>Shows no mês</span></div><div className="stat"><strong>03</strong><span>Convites novos</span></div><div className="stat"><strong>100%</strong><span>No controle</span></div></div>
-            <div className="event"><div className="event-date"><div><strong>18</strong><br/><span>OUT</span></div></div><div className="event-info"><strong>Pagode na Praça</strong><span>São Paulo · 20h</span></div><span className="event-pill">Confirmado</span></div>
-            <div className="event"><div className="event-date"><div><strong>22</strong><br/><span>OUT</span></div></div><div className="event-info"><strong>Festival de Música</strong><span>Guarulhos · 18h</span></div><span className="event-pill">Convite</span></div>
-            <div className="event"><div className="event-date"><div><strong>26</strong><br/><span>OUT</span></div></div><div className="event-info"><strong>Evento particular</strong><span>São Paulo · 15h</span></div><span className="event-pill">Confirmado</span></div>
+          <div className="home-floating-note">
+            <span><BadgeCheck size={18}/></span>
+            <div><strong>Convite aceito!</strong><small>Mais uma participação confirmada</small></div>
           </div>
-        </section>
-        <section className="section" id="recursos">
-          <div className="section-heading"><h2>Feito para quem vive de música.</h2><p>Uma rotina mais simples para quem sobe no palco e para quem faz os shows acontecerem nos bastidores.</p></div>
-          <div className="cards">
-            <article className="feature"><div className="feature-icon"><CalendarDays/></div><h3>Agenda sem conflito</h3><p>Centralize datas, horários, locais e detalhes dos eventos para consultar tudo com clareza.</p></article>
-            <article className="feature"><div className="feature-icon"><Users/></div><h3>Convites organizados</h3><p>Produtores convidam músicos e acompanham as confirmações em um só fluxo.</p></article>
-            <article className="feature"><div className="feature-icon"><Bell/></div><h3>Notificações importantes</h3><p>Tenha um lugar central para acompanhar convites, alterações e atualizações da agenda.</p></article>
+        </div>
+      </section>
+
+      <section id="recursos" className="home-resource-section">
+        <div className="home-section-heading">
+          <span className="home-kicker">TUDO CONECTADO</span>
+          <h2>Da primeira conversa <span>até o último acorde.</span></h2>
+          <p>Menos informações espalhadas pelo WhatsApp. Mais clareza para músicos, cantores e contratantes.</p>
+        </div>
+        <div className="home-resource-grid">
+          <article className="home-resource-card">
+            <span className="home-resource-icon"><CalendarDays size={21}/></span>
+            <span className="home-resource-index">01 / AGENDA</span>
+            <h3>Seus shows em ordem.</h3>
+            <p>Organize datas, locais, horários e as participações que você já confirmou.</p>
+          </article>
+          <article className="home-resource-card">
+            <span className="home-resource-icon"><Wallet size={21}/></span>
+            <span className="home-resource-index">02 / NEGOCIAÇÃO</span>
+            <h3>Convites e cachês privados.</h3>
+            <p>Envie convites individuais e negocie propostas e contrapropostas com privacidade.</p>
+          </article>
+          <article className="home-resource-card">
+            <span className="home-resource-icon"><Users size={21}/></span>
+            <span className="home-resource-index">03 / FORMAÇÕES</span>
+            <h3>Sua equipe de sempre.</h3>
+            <p>Salve músicos em formações reutilizáveis para convidar nos próximos shows.</p>
+          </article>
+          <article className="home-resource-card">
+            <span className="home-resource-icon"><Music2 size={21}/></span>
+            <span className="home-resource-index">04 / PORTFÓLIO</span>
+            <h3>Seu trabalho merece aparecer.</h3>
+            <p>Crie uma página gratuita com instrumentos, trabalhos e o estilo visual que combina com você.</p>
+          </article>
+        </div>
+      </section>
+
+      <section id="musicos" className="home-musician-section">
+        <div className="home-musician-copy">
+          <div className="home-pill"><Sparkles size={14}/> NOVIDADE PARA MÚSICOS</div>
+          <h2>Uma página com <span>a sua cara.</span></h2>
+          <p>Seu talento não cabe numa mensagem de texto. Mostre seus instrumentos, experiências e trabalhos num portfólio que é realmente seu.</p>
+          <div className="home-musician-benefits">
+            <span><ShieldCheck size={17}/> Cachês de shows negociados em particular</span>
+            <span><PaletteIcon/> Temas, cores, capa e foto personalizados</span>
+            <span><Guitar size={17}/> Instrumentos e estilos em destaque</span>
           </div>
-        </section>
-        <section className="section" id="artistas">
-          <div className="section-heading"><h2>Seu talento merece uma vitrine própria.</h2><p>Estamos preparando páginas públicas personalizadas para artistas compartilharem sua agenda, história e contatos profissionais.</p></div>
-          <div className="profile-demo"><div className="avatar">CS</div><div className="profile-copy"><h3>Cantor Sousa</h3><p>Samba · Pagode · São Paulo, SP</p><div className="profile-url">cantorsousa.stageflow.com <span style={{color:"#98a3b6"}}>· exemplo de endereço futuro</span></div></div><div style={{display:"flex",gap:8,color:"#c6f36b"}}><Instagram/><Music2/><Play/></div></div>
-        </section>
-        <section className="cta"><div><h2>Vamos colocar sua agenda em movimento?</h2><p>Crie seu acesso e acompanhe a evolução do Stage Flow.</p></div><Link className="btn btn-primary" href="/cadastro">Criar minha conta <ArrowRight size={16}/></Link></section>
-        <footer className="footer"><Link className="brand" href="/"><span className="brand-mark">S</span> stage flow</Link><span>Projeto em desenvolvimento · Nome e domínio provisórios</span><span>© {new Date().getFullYear()} Stage Flow</span></footer>
-      </div>
-    </main>
-  );
+          <Link href="/meu-portfolio" className="btn btn-primary">Personalizar meu portfólio <ArrowUpRight size={17}/></Link>
+          <p className="fine" style={{ marginTop: 15 }}>Página simples e gratuita, sem necessidade de subdomínio.</p>
+        </div>
+        <div className="home-musician-card">
+          <div className="home-musician-cover">
+            <div className="home-musician-lines" aria-hidden="true"/>
+            <span className="home-musician-label">STAGE FLOW / MÚSICO</span>
+            <div className="home-musician-identity">
+              <span className="home-musician-avatar">JO</span>
+              <div><span>PERCUSSIONISTA · SÃO PAULO</span><strong>João Oliveira</strong><small>Samba, pagode e música ao vivo.</small></div>
+            </div>
+          </div>
+          <div className="home-musician-body">
+            <div className="home-musician-chips"><span>Pandeiro</span><span>Tantã</span><span>Repique de mão</span></div>
+            <div className="home-musician-bottom"><span>CACHÊ DE REFERÊNCIA<strong>Sob consulta</strong></span><span className="home-musician-play"><CirclePlay size={27}/></span></div>
+          </div>
+          <span className="home-musician-caption">Prévia ilustrativa · personalize seu próprio perfil</span>
+        </div>
+      </section>
+
+      <section className="home-closing">
+        <div>
+          <span className="home-kicker">SEU PRÓXIMO SHOW COMEÇA AQUI</span>
+          <h2>Menos burocracia. <span>Mais palco.</span></h2>
+          <p>Organize seu próximo projeto musical com quem faz parte dele.</p>
+        </div>
+        <Link className="btn btn-primary" href="/cadastro">Criar minha conta <ArrowRight size={16}/></Link>
+      </section>
+
+      <footer className="footer">
+        <Link className="brand" href="/"><span className="brand-mark">S</span> stage flow</Link>
+        <span>Plataforma em desenvolvimento · Marketplace em preparação</span>
+        <span>© {new Date().getFullYear()} Stage Flow</span>
+      </footer>
+    </div>
+  </main>;
+}
+
+function PaletteIcon() {
+  return <span className="home-inline-palette" aria-hidden="true"><Headphones size={17}/></span>;
 }
