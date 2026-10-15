@@ -203,7 +203,8 @@ export default function Dashboard() {
   if (isLead) {
     secondary.push(
       { href: "/meus-convites", title: "Convites para tocar", description: "Cantores também podem participar de outros shows.", icon: Bell },
-      { href: "/meu-portfolio", title: "Portfólio simples de músico", description: "Use também sua vitrine de instrumentista.", icon: Guitar }
+      { href: "/meu-portfolio", title: "Portfólio simples de músico", description: "Use também sua vitrine de instrumentista.", icon: Guitar },
+      { href: "/meu-perfil-artistico/site-profissional", title: "Prévia do site profissional", description: "Veja como poderá ficar seu futuro site premium, sem contratar agora.", icon: Mic2 }
     );
   }
   if (profile?.is_artist && profile.username && profile.is_public) {
