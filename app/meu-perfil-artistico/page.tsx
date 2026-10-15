@@ -355,6 +355,12 @@ export default function MeuPerfilArtistico() {
           <div className="eyebrow"><span className="dot"/> RECURSO PROFISSIONAL</div>
           <h2 style={{ fontSize: 22, marginTop: 19 }}>Site próprio e subdomínio</h2>
           <p>O site profissional completo, com visual como o de um grande artista, galeria, vídeos, agenda avançada e endereço do tipo <strong style={{ color: "var(--text)" }}>{config.username || "seuusuario"}.stageflow.com</strong>, será uma contratação adicional.</p>
+          <Link href="/meu-perfil-artistico/site-profissional" className="btn btn-primary" style={{ marginTop: 16, width: "100%", justifyContent: "center" }}>
+            <Globe2 size={17}/> Ver prévia do site profissional <ArrowUpRight size={15}/>
+          </Link>
+          <p style={{ color: "var(--muted)", fontSize: 12, lineHeight: 1.6, marginTop: 10 }}>
+            Prévia privada e gratuita usando seus dados. Não ativa subdomínio ou assinatura.
+          </p>
           <div className="artist-free-premium-note">
             <LockKeyhole size={18}/>
             <span>{config.custom_subdomain_enabled
