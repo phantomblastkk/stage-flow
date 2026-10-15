@@ -3,18 +3,33 @@
 import { useEffect, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { ArrowLeft, CalendarDays, Users, Bell, Plus, LogOut, Music2, UserRound, LoaderCircle } from "lucide-react";
+import {
+  ArrowLeft, ArrowRight, Bell, CalendarDays, Check, Guitar,
+  LoaderCircle, LogOut, Mic2, Music2, Plus, Settings2,
+  UserRound, Users, Wallet
+} from "lucide-react";
+import type { LucideIcon } from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
 
+type ArtistKind = "lead" | "support";
 type Profile = {
   id: string;
   role: "musician" | "producer";
   is_artist: boolean;
   is_producer: boolean;
+  artist_kind?: ArtistKind | null;
   display_name: string;
   username: string | null;
   city: string | null;
   is_public: boolean;
+};
+
+type Shortcut = {
+  href: string;
+  title: string;
+  description: string;
+  icon: LucideIcon;
+  label?: string;
 };
 
 export default function Dashboard() {
@@ -23,7 +38,9 @@ export default function Dashboard() {
   const [email, setEmail] = useState("");
   const [loading, setLoading] = useState(true);
   const [message, setMessage] = useState("");
+  const [messageError, setMessageError] = useState(false);
   const [signingOut, setSigningOut] = useState(false);
+  const [changingKind, setChangingKind] = useState(false);
 
   useEffect(() => {
     let active = true;
@@ -47,18 +64,58 @@ export default function Dashboard() {
 
       if (!active) return;
       if (error) {
-        setMessage("Não conseguimos carregar seu perfil. Confira se as consultas SQL do Supabase foram executadas corretamente.");
+        setMessageError(true);
+        setMessage("Não conseguimos carregar seu perfil. Confira se as migrações do Supabase foram executadas.");
       } else if (!data) {
-        setMessage("Sua conta está autenticada, mas o perfil ainda não apareceu no banco. Saia e entre novamente; se continuar, avise para corrigirmos.");
+        setMessageError(true);
+        setMessage("Sua conta está autenticada, mas o perfil não foi encontrado. Saia e entre novamente; se continuar, avise para corrigirmos.");
       } else {
-        setProfile(data as Profile);
+        // A consulta separada não interrompe o painel enquanto a nova
+        // migração ainda não tiver sido executada pelo administrador.
+        let kind: ArtistKind | null = data.is_artist
+          ? (data.username ? "lead" : "support") : null;
+        if (data.is_artist) {
+          const { data: experience } = await supabase
+            .from("profiles")
+            .select("artist_kind")
+            .eq("id", user.id)
+            .maybeSingle();
+          if (!active) return;
+          if (experience?.artist_kind === "lead" || experience?.artist_kind === "support") {
+            kind = experience.artist_kind;
+          }
+        }
+        setProfile({ ...data, artist_kind: kind } as Profile);
       }
       setLoading(false);
     }
 
-    loadDashboard();
+    void loadDashboard();
     return () => { active = false; };
   }, [router]);
+
+  async function changeExperience(kind: ArtistKind) {
+    if (!profile?.is_artist || changingKind || profile.artist_kind === kind) return;
+    setChangingKind(true);
+    setMessage("");
+    setMessageError(false);
+
+    const { data, error } = await createClient().rpc(
+      "stage_choose_artist_experience", { p_kind: kind }
+    );
+    if (error || data !== "saved") {
+      setMessageError(true);
+      setMessage(error?.message
+        ? "Não foi possível trocar de visualização. Execute artist_account_experience_migration.sql no Supabase. " + error.message
+        : "Não foi possível mudar a experiência. Confira suas permissões.");
+    } else {
+      setProfile(previous => previous ? { ...previous, artist_kind: kind } : null);
+      setMessage("Seu painel agora prioriza as ferramentas de " +
+        (kind === "lead" ? "cantor/artista principal." : "músico de apoio.") +
+        " Seus dados e permissões foram preservados.");
+    }
+    setChangingKind(false);
+  }
 
   async function handleSignOut() {
     setSigningOut(true);
@@ -68,73 +125,181 @@ export default function Dashboard() {
     router.refresh();
   }
 
-  const roleLabel = profile ? [profile.is_artist ? "Artista" : "", profile.is_producer ? "Produtor" : ""].filter(Boolean).join(" + ") || "Músico" : "Conta";
+  if (loading) return <main><div className="container" style={{ minHeight: "100vh", display: "grid", placeItems: "center" }}>
+    <p style={{ color: "var(--muted)", display: "flex", alignItems: "center", gap: 10 }}>
+      <LoaderCircle size={18}/> Carregando seu Stage Flow...
+    </p>
+  </div></main>;
 
-  if (loading) {
-    return <main><div className="container" style={{ minHeight: "100vh", display: "grid", placeItems: "center" }}>
-      <p style={{ color: "var(--muted)", display: "flex", alignItems: "center", gap: 10 }}><LoaderCircle size={18} /> Carregando seu Stage Flow...</p>
-    </div></main>;
+  const kind: ArtistKind = profile?.artist_kind === "support" ? "support" : "lead";
+  const isSupport = profile?.is_artist && kind === "support";
+  const isLead = profile?.is_artist && kind === "lead";
+  const roleLabel = !profile ? "Conta"
+    : isSupport ? "Músico de apoio" + (profile.is_producer ? " + Produtor" : "")
+    : isLead ? "Cantor / artista" + (profile.is_producer ? " + Produtor" : "")
+    : "Produtor / contratante";
+
+  let primary: Shortcut[];
+  if (isSupport) {
+    primary = [
+      {
+        href: "/meus-convites", title: "Meus convites", icon: Bell,
+        description: "Receba oportunidades, confirme participações e negocie seu cachê em particular.",
+        label: "COMECE AQUI"
+      },
+      {
+        href: "/meu-portfolio", title: "Meu portfólio de músico", icon: Guitar,
+        description: "Divulgue instrumentos, trabalhos, cidade e escolha entre mostrar cachê ou sob consulta."
+      },
+      {
+        href: "/eventos", title: "Minha agenda", icon: CalendarDays,
+        description: "Veja seus shows e as participações que já estão confirmadas."
+      }
+    ];
+  } else if (isLead) {
+    primary = [
+      {
+        href: "/eventos", title: "Minha agenda de shows", icon: CalendarDays,
+        description: "Cadastre shows, locais e horários e escolha quais eventos serão públicos.",
+        label: "COMECE AQUI"
+      },
+      {
+        href: "/meu-perfil-artistico", title: "Minha página de cantor", icon: Mic2,
+        description: "Divulgue sua carreira no endereço gratuito com seu @ artístico."
+      },
+      {
+        href: "/convites", title: "Convidar músicos", icon: Users,
+        description: "Envie propostas individuais e acompanhe respostas e negociações."
+      },
+      {
+        href: "/equipes", title: "Minhas equipes", icon: Music2,
+        description: "Salve formações para reutilizar nos próximos shows."
+      }
+    ];
+  } else {
+    primary = [
+      {
+        href: "/eventos", title: "Meus eventos", icon: CalendarDays,
+        description: "Organize os shows que você produz ou contrata.", label: "COMECE AQUI"
+      },
+      {
+        href: "/convites", title: "Convidar músicos", icon: Users,
+        description: "Acompanhe respostas e negocie valores individuais de contratação."
+      },
+      {
+        href: "/equipes", title: "Formações de músicos", icon: Music2,
+        description: "Crie equipes recorrentes e reutilize-as em novos eventos."
+      }
+    ];
   }
 
-  return <main><div className="container">
+  const secondary: Shortcut[] = [];
+  if (isSupport) {
+    secondary.push(
+      { href: "/convites", title: "Convidar músicos para um show", description: "Se também organizar uma apresentação.", icon: Users },
+      { href: "/equipes", title: "Gerenciar minhas formações", description: "Se quiser criar sua própria equipe.", icon: Music2 }
+    );
+  }
+  if (isLead) {
+    secondary.push(
+      { href: "/meus-convites", title: "Convites para tocar", description: "Cantores também podem participar de outros shows.", icon: Bell },
+      { href: "/meu-portfolio", title: "Portfólio simples de músico", description: "Use também sua vitrine de instrumentista.", icon: Guitar }
+    );
+  }
+  if (profile?.is_artist && profile.username && profile.is_public) {
+    secondary.push({
+      href: "/" + profile.username, title: "Abrir minha página @" + profile.username,
+      description: "Veja o seu perfil gratuito como o público vê.", icon: UserRound
+    });
+  }
+
+  return <main><div className="container" style={{ paddingBottom: 60 }}>
     <nav className="nav">
       <Link className="brand" href="/"><span className="brand-mark">S</span> stage flow</Link>
       <div style={{ display: "flex", gap: 10, alignItems: "center" }}>
         <Link className="btn btn-quiet" href="/"><ArrowLeft size={15}/> Site</Link>
-        <button className="btn btn-quiet" onClick={handleSignOut} disabled={signingOut}><LogOut size={15}/>{signingOut ? "Saindo..." : "Sair"}</button>
+        <button className="btn btn-quiet" onClick={() => void handleSignOut()} disabled={signingOut}>
+          <LogOut size={15}/>{signingOut ? "Saindo..." : "Sair"}
+        </button>
       </div>
     </nav>
 
-    <section style={{ padding: "48px 0 28px" }}>
-      <div className="eyebrow"><span className="dot"/> ÁREA DO USUÁRIO · {roleLabel.toUpperCase()}</div>
-      <h1 style={{ fontSize: "clamp(34px, 5vw, 46px)", marginBottom: 12 }}>
+    <section style={{ padding: "48px 0 26px" }}>
+      <div className="eyebrow"><span className="dot"/> PAINEL STAGE FLOW · {roleLabel.toUpperCase()}</div>
+      <h1 style={{ fontSize: "clamp(33px, 5vw, 47px)", marginBottom: 12 }}>
         Olá, <span className="accent">{profile?.display_name || "bem-vindo(a)"}</span>!
       </h1>
-      <p className="lead">Este é seu espaço no Stage Flow. Vamos construir sua agenda e suas ferramentas por aqui.</p>
-      <p style={{ color: "var(--muted)", fontSize: 13, overflowWrap: "anywhere" }}>{email}</p>
+      <p className="lead" style={{ maxWidth: 690 }}>
+        {isSupport
+          ? "Seu espaço para receber convites, acertar cachês e mostrar seu trabalho aos contratantes."
+          : isLead
+            ? "Seus shows, sua equipe e sua presença artística, tudo no mesmo lugar."
+            : "Organize eventos, monte equipes e acompanhe os músicos contratados."}
+      </p>
+      <p style={{ color: "var(--muted)", fontSize: 12, overflowWrap: "anywhere" }}>{email}</p>
     </section>
 
-    {message && <div className="coming" role="status">{message}</div>}
-
-    {profile && <div className="stat-row">
-      <div className="stat"><UserRound color="#c6f36b"/><strong>{roleLabel}</strong><span>Tipo da sua conta</span></div>
-      <div className="stat"><CalendarDays color="#c6f36b"/><strong>Agenda</strong><span>Seus shows e compromissos</span></div>
-      <div className="stat"><Music2 color="#c6f36b"/><strong>{profile.username ? "@" + profile.username : "Não definido"}</strong><span>Nome de usuário</span></div>
+    {message && <div className="coming" role={messageError ? "alert" : "status"}
+      style={messageError ? { borderColor: "#754343", background: "#281919", color: "#ffb5b5" } : {}}>
+      {message}
     </div>}
 
-    <section className="section" style={{ paddingTop: 30 }}>
+    {profile?.is_artist && <section className="dashboard-experience" aria-label="Escolha como usar o Stage Flow">
+      <div>
+        <span className="dashboard-experience-eyebrow"><Settings2 size={15}/> MINHA ATIVIDADE PRINCIPAL</span>
+        <p>Escolha quais ferramentas aparecem primeiro. Pode mudar quando quiser, sem perder dados.</p>
+      </div>
+      <div className="dashboard-experience-actions">
+        <button type="button" className="dashboard-experience-choice" aria-pressed={kind === "lead"}
+          disabled={changingKind} onClick={() => void changeExperience("lead")}>
+          <Mic2 size={17}/> Cantor / artista {kind === "lead" && <Check size={15}/>}
+        </button>
+        <button type="button" className="dashboard-experience-choice" aria-pressed={kind === "support"}
+          disabled={changingKind} onClick={() => void changeExperience("support")}>
+          <Guitar size={17}/> Músico de apoio {kind === "support" && <Check size={15}/>}
+        </button>
+      </div>
+    </section>}
+
+    <section className="section" style={{ paddingTop: 34 }}>
       <div className="section-heading">
-        <h2>Seu espaço de trabalho</h2>
-        <p>Organize sua agenda, convide músicos e acompanhe as participações dos seus shows.</p>
+        <h2>{isSupport ? "Seu trabalho musical" : isLead ? "Sua carreira, organizada" : "Gestão de eventos"}</h2>
+        <p>{isSupport ? "Tudo o que você precisa para tocar em novos shows." :
+          isLead ? "Acesse as ferramentas essenciais para cuidar das suas apresentações." :
+          "Suas principais ferramentas de produção em um só lugar."}</p>
       </div>
-      <div className="cards">
-        <div className="feature">
-          <div className="feature-icon"><CalendarDays size={21}/></div>
-          <h3>Agenda de shows</h3>
-          <p>Cadastre apresentações, informe locais e horários e acompanhe seus próximos compromissos.</p>
-        </div>
-        <div className="feature">
-          <div className="feature-icon"><Users size={21}/></div>
-          <h3>{profile?.is_producer ? "Eventos e convites" : "Convites para tocar"}</h3>
-          <p>{profile?.is_producer ? "Organize eventos e convide músicos para sua equipe." : "Consulte seus convites e confirme os shows dos quais vai participar."}</p>
-        </div>
-        <div className="feature">
-          <div className="feature-icon"><Bell size={21}/></div>
-          <h3>Notificações</h3>
-          <p>Mais adiante, você verá respostas a convites e atualizações importantes da sua agenda.</p>
-        </div>
-      </div>
-      <div className="hero-actions" style={{ marginTop: 24 }}>
-        <Link className="btn btn-primary" href="/eventos"><Plus size={16}/> Gerenciar agenda</Link>
-        {profile?.is_artist && <Link className="btn btn-quiet" href="/meus-convites"><Bell size={16}/> Meus convites</Link>}
-        {profile?.is_artist && <Link className="btn btn-quiet" href="/meu-portfolio"><Music2 size={16}/> Meu portfólio de músico</Link>}
-        {profile?.is_artist && <Link className="btn btn-quiet" href="/meu-perfil-artistico"><UserRound size={16}/> Minha página de cantor</Link>}
-        {(profile?.is_artist || profile?.is_producer) && <Link className="btn btn-quiet" href="/equipes"><Users size={16}/> Minhas equipes</Link>}
-        {profile?.is_artist && <Link className="btn btn-quiet" href="/convites"><Users size={16}/> Convidar músicos</Link>}{profile?.is_producer && !profile.is_artist && <Link className="btn btn-quiet" href="/convites"><Users size={16}/> Convidar músicos</Link>}
-        {profile?.is_artist && profile.username && profile.is_public && <Link className="btn btn-quiet" href={`/${profile.username}`}>Abrir meu perfil @{profile.username}</Link>}
-        {profile?.is_artist && !profile.username && <span className="fine">Para ter uma página pública de cantor, configure seu @ artístico.</span>}
+      <div className="dashboard-shortcuts">
+        {primary.map(item => {
+          const Icon = item.icon;
+          return <Link className="dashboard-shortcut" href={item.href} key={item.href}>
+            <div className="dashboard-shortcut-top">
+              <span className="dashboard-shortcut-icon"><Icon size={22}/></span>
+              {item.label && <span className="dashboard-shortcut-tag">{item.label}</span>}
+              <ArrowRight size={16} className="dashboard-shortcut-arrow"/>
+            </div>
+            <h3>{item.title}</h3>
+            <p>{item.description}</p>
+          </Link>;
+        })}
       </div>
     </section>
-    <div className="coming">Sua agenda e os convites já são conectados ao Supabase. Os recursos do marketplace e planos pagos continuam em desenvolvimento.</div>
+
+    {secondary.length > 0 && <section style={{ paddingTop: 14 }}>
+      <h2 className="dashboard-secondary-title">Outras ferramentas</h2>
+      <div className="dashboard-secondary-grid">
+        {secondary.map(item => {
+          const Icon = item.icon;
+          return <Link className="dashboard-secondary-link" href={item.href} key={item.href}>
+            <Icon size={17}/><span><strong>{item.title}</strong><small>{item.description}</small></span>
+            <ArrowRight size={15}/>
+          </Link>;
+        })}
+      </div>
+    </section>}
+
+    {profile && <p className="fine" style={{ marginTop: 35, lineHeight: 1.7 }}>
+      As preferências de visualização não alteram seus papéis, cachês ou assinatura.
+      Marketplace e subdomínios personalizados continuam em desenvolvimento.
+    </p>}
   </div></main>;
 }
