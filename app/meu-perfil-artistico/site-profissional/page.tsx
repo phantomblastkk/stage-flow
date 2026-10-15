@@ -171,7 +171,6 @@ export default function SiteProfissionalPreview() {
           <div className="premium-site-identity">
             <div className="premium-site-small-label"><span/> ARTISTA / SITE PROFISSIONAL</div>
             <h1>{firstName}</h1>
-            <p className="premium-site-lead">{artist.headline || "Sua música, sua história, seu próximo palco."}</p>
             {artist.city && <p className="premium-site-city"><MapPin size={16}/> {artist.city}</p>}
             <p className="premium-site-intro">{artist.bio?.trim()
               ? artist.bio.length > 320 ? artist.bio.slice(0, 317) + "…" : artist.bio
@@ -191,6 +190,11 @@ export default function SiteProfissionalPreview() {
             <div className="premium-site-identity-foot">
               <span><CheckCircle2 size={15}/> Dados do seu perfil Stage Flow</span>
               <span>{events.length} {events.length === 1 ? "show público futuro" : "shows públicos futuros"}</span>
+            </div>
+            <div className="premium-site-signature-area">
+              <p className="premium-site-signature">
+                {artist.headline || "Sua música, sua história, seu próximo palco."}
+              </p>
             </div>
           </div>
         </section>
