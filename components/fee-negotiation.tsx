@@ -64,7 +64,7 @@ export default function FeeNegotiation({ invitationId, perspective, onChanged }:
     e.preventDefault();
     if (busy) return;
     const parsed = Number(amount.replace(",", "."));
-    if (!Number.isFinite(parsed) || parsed <= 0 || parsed > 999999.99 || Math.round(parsed * 100) !== parsed * 100) {
+    if (!Number.isFinite(parsed) || parsed <= 0 || parsed > 999999.99 || Math.abs(Math.round(parsed * 100) - parsed * 100) > 0.000001) {
       setHasError(true);
       setFeedback("Informe um valor válido em reais com até duas casas decimais.");
       return;
