@@ -5,6 +5,7 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { ArrowLeft, CheckCircle2, Copy, LoaderCircle, MessageCircle, RefreshCw, Send, Share2, Users } from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
+import FeeNegotiation from "@/components/fee-negotiation";
 
 type EventOption = { id: string; title: string; starts_at: string };
 type SentInvite = {
@@ -327,6 +328,7 @@ export default function ConvitesPage() {
                       )}
                     </div>
                   </div>
+                  <FeeNegotiation invitationId={invite.id} perspective="organizer" onChanged={() => void reloadSent()}/>
                   {canRemind && !directWhatsApp && <p style={{ fontSize: 12, color: "var(--muted)", margin: "10px 0 0" }}>O músico ainda precisa autorizar lembretes pelo WhatsApp na área Meus convites.</p>}
                   {invite.invite_code && <button type="button" className="btn btn-quiet" style={{ width: "100%", marginTop: 13 }} onClick={()=>void shareExisting(invite)}><Share2 size={16}/> Reenviar link de convite</button>}
                 </article>;
