@@ -155,7 +155,6 @@ declare
   v_amount numeric(10,2);
   v_avatar text := nullif(btrim(coalesce(p_avatar_url, '')), '');
   v_cover text := nullif(btrim(coalesce(p_cover_url, '')), '');
-  v_prefix text;
 begin
   if auth.uid() is null then return 'login_required'; end if;
   if not exists(select 1 from public.profiles where id = auth.uid() and is_artist = true)
@@ -211,12 +210,8 @@ begin
     v_amount := null;
   end if;
 
-  -- URLs públicas só podem apontar para o próprio diretório de uploads.
-  -- A base vem da configuração real do Supabase em vez de ser informada pelo cliente.
-  select rtrim(current_setting('request.headers', true)::jsonb->>'host', '/')
-    into v_prefix;
-  -- Validamos principalmente o caminho associado ao usuário; o cliente deve
-  -- enviar a URL HTTPS gerada por storage.getPublicUrl().
+  -- Aceita HTTPS com caminho público do bucket dentro da pasta do usuário.
+  -- O cliente usa o endereço retornado por storage.getPublicUrl().
   if v_avatar is not null and
     (char_length(v_avatar) > 2000 or v_avatar !~* '^https://'
      or position('/storage/v1/object/public/stage-musician-media/' ||
