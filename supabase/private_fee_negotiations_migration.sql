@@ -5,7 +5,7 @@
 create table if not exists public.stage_fee_negotiations (
   invitation_id uuid primary key references public.invitations(id) on delete cascade,
   last_amount numeric(10,2) not null check (last_amount > 0 and last_amount <= 999999.99),
-  last_by uuid not null references public.profiles(id),
+  last_by uuid not null references public.profiles(id) on delete cascade,
   last_note text check (last_note is null or char_length(last_note) <= 500),
   agreed_amount numeric(10,2) check (agreed_amount is null or agreed_amount > 0),
   updated_at timestamptz not null default now()
@@ -14,7 +14,7 @@ create table if not exists public.stage_fee_negotiations (
 create table if not exists public.stage_fee_offer_history (
   id uuid primary key default gen_random_uuid(),
   invitation_id uuid not null references public.invitations(id) on delete cascade,
-  offered_by uuid not null references public.profiles(id),
+  offered_by uuid not null references public.profiles(id) on delete cascade,
   amount numeric(10,2) not null check (amount > 0 and amount <= 999999.99),
   note text check (note is null or char_length(note) <= 500),
   created_at timestamptz not null default now()
