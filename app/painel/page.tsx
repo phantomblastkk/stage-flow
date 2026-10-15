@@ -14,6 +14,7 @@ type Profile = {
   display_name: string;
   username: string | null;
   city: string | null;
+  is_public: boolean;
 };
 
 export default function Dashboard() {
@@ -40,7 +41,7 @@ export default function Dashboard() {
       setEmail(user.email ?? "");
       const { data, error } = await supabase
         .from("profiles")
-        .select("id, role, is_artist, is_producer, display_name, username, city")
+        .select("id, role, is_artist, is_producer, display_name, username, city, is_public")
         .eq("id", user.id)
         .maybeSingle();
 
@@ -127,10 +128,11 @@ export default function Dashboard() {
         <Link className="btn btn-primary" href="/eventos"><Plus size={16}/> Gerenciar agenda</Link>
         {profile?.is_artist && <Link className="btn btn-quiet" href="/meus-convites"><Bell size={16}/> Meus convites</Link>}
         {profile?.is_artist && <Link className="btn btn-quiet" href="/meu-portfolio"><Music2 size={16}/> Meu portfólio de músico</Link>}
+        {profile?.is_artist && <Link className="btn btn-quiet" href="/meu-perfil-artistico"><UserRound size={16}/> Minha página de cantor</Link>}
         {(profile?.is_artist || profile?.is_producer) && <Link className="btn btn-quiet" href="/equipes"><Users size={16}/> Minhas equipes</Link>}
         {profile?.is_artist && <Link className="btn btn-quiet" href="/convites"><Users size={16}/> Convidar músicos</Link>}{profile?.is_producer && !profile.is_artist && <Link className="btn btn-quiet" href="/convites"><Users size={16}/> Convidar músicos</Link>}
-        {profile?.is_artist && profile.username && <Link className="btn btn-quiet" href={`/artista/${profile.username}`}>Ver meu portfólio</Link>}
-        {profile?.is_artist && !profile.username && <span className="fine">Seu perfil público será configurado em uma próxima etapa.</span>}
+        {profile?.is_artist && profile.username && profile.is_public && <Link className="btn btn-quiet" href={`/${profile.username}`}>Abrir meu perfil @{profile.username}</Link>}
+        {profile?.is_artist && !profile.username && <span className="fine">Para ter uma página pública de cantor, configure seu @ artístico.</span>}
       </div>
     </section>
     <div className="coming">Sua agenda e os convites já são conectados ao Supabase. Os recursos do marketplace e planos pagos continuam em desenvolvimento.</div>
