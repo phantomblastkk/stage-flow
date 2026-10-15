@@ -5,6 +5,14 @@ import { useEffect, useState } from "react";
 import { ArrowLeft, Music2, Building2 } from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
 
+const reservedArtistUsernames = new Set([
+  "admin", "api", "auth", "artista", "artistas", "cadastro", "configuracoes",
+  "convite", "convites", "dashboard", "entrar", "equipes", "eventos",
+  "login", "logout", "marketplace", "meu-perfil", "meu-perfil-artistico",
+  "meu-portfolio", "meus-convites", "musico", "musicos", "painel", "planos",
+  "privacidade", "publico", "sobre", "suporte", "termos", "www"
+]);
+
 export default function CadastroPage() {
   const [isArtist, setIsArtist] = useState(true);
   const [inviteCode, setInviteCode] = useState("");
@@ -26,6 +34,9 @@ export default function CadastroPage() {
       if (!inviteCode && !isArtist && !isProducer) throw new Error("Selecione pelo menos uma função para sua conta.");
       const supabase = createClient();
       const cleanUsername = username.trim().toLowerCase();
+      if (isArtist && !inviteCode && reservedArtistUsernames.has(cleanUsername)) {
+        throw new Error("Este @ é reservado para o Stage Flow. Escolha outro nome artístico.");
+      }
       const needsMusicianPhone = Boolean(inviteCode) || isArtist;
       const rawPhone = whatsappPhone.replace(/\D/g, "");
       const internationalPhone = rawPhone.length === 10 || rawPhone.length === 11 ? "55" + rawPhone : rawPhone;
@@ -73,7 +84,7 @@ export default function CadastroPage() {
       </div>}
       <form onSubmit={handleSubmit}>
         <div className="field"><label htmlFor="name">Nome {inviteCode ? "completo" : isProducer && !isArtist ? "do produtor ou empresa" : "artístico / profissional"}</label><input id="name" autoComplete="name" value={displayName} onChange={e=>setDisplayName(e.target.value)} placeholder={isProducer && !isArtist ? "Nome da produtora" : "Ex.: Cantor Sousa"} required /></div>
-        {isArtist&&!inviteCode&&<div className="field"><label htmlFor="slug">Nome de usuário do perfil artístico</label><input id="slug" value={username} onChange={e=>setUsername(e.target.value.toLowerCase().replace(/[^a-z0-9-]/g,""))} placeholder="cantorsousa" pattern="[a-z0-9-]{3,30}" minLength={3} maxLength={30} required /><span className="field-help">Esse nome identifica seu perfil artístico. Criar subdomínio próprio é um recurso separado e não será liberado automaticamente.</span></div>}
+        {isArtist&&!inviteCode&&<div className="field"><label htmlFor="slug">Nome de usuário do perfil artístico</label><input id="slug" value={username} onChange={e=>setUsername(e.target.value.toLowerCase().replace(/[^a-z0-9-]/g,""))} placeholder="cantorsousa" pattern="[a-z0-9-]{3,30}" minLength={3} maxLength={30} required /><span className="field-help">Seu @ gratuito criará o endereço stageflow.com/{username || "seuusuario"} quando publicá-lo, após o domínio oficial ficar disponível. O subdomínio personalizado é um adicional pago separado.</span></div>}
         {(isArtist || Boolean(inviteCode)) && <>
           <div className="field">
             <label htmlFor="whatsapp">Seu WhatsApp com DDD *</label>
