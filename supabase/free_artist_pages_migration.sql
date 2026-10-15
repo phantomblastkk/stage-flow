@@ -146,3 +146,43 @@ end;
 $$;
 revoke all on function public.stage_save_artist_page(text,text,text,text,text,boolean) from PUBLIC;
 grant execute on function public.stage_save_artist_page(text,text,text,text,text,boolean) to authenticated;
+
+
+-- Contas antigas ou criadas por convite podem não ter @.
+-- Permite escolher o primeiro nome de usuário, UMA vez, sem abrir
+-- alterações de papéis nem de assinatura.
+create or replace function public.stage_claim_artist_username(p_username text)
+returns text
+language plpgsql security definer set search_path = ''
+as $$
+declare
+  v_username text := lower(btrim(coalesce(p_username,'')));
+begin
+  if auth.uid() is null then return 'login_required'; end if;
+  if v_username !~ '^[a-z0-9-]{3,30}$' then return 'invalid'; end if;
+  if v_username = any(array[
+    'admin','api','auth','artista','artistas','cadastro','configuracoes',
+    'convite','convites','dashboard','entrar','equipes','eventos',
+    'login','logout','marketplace','meu-perfil','meu-perfil-artistico',
+    'meu-portfolio','meus-convites','musico','musicos','painel','planos',
+    'privacidade','publico','sobre','suporte','termos','www'
+  ]) then return 'reserved'; end if;
+  if not exists (
+    select 1 from public.profiles
+    where id = auth.uid() and is_artist = true
+  ) then return 'artist_required'; end if;
+
+  update public.profiles
+  set username = v_username, updated_at = now()
+  where id = auth.uid() and username is null and is_artist = true;
+  if found then return 'claimed'; end if;
+  if exists (
+    select 1 from public.profiles
+    where id = auth.uid() and username = v_username
+  ) then return 'unchanged'; end if;
+  return 'already_set';
+exception when unique_violation then return 'taken';
+end;
+$$;
+revoke all on function public.stage_claim_artist_username(text) from PUBLIC;
+grant execute on function public.stage_claim_artist_username(text) to authenticated;
