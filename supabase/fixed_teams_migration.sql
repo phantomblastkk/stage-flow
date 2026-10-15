@@ -254,7 +254,11 @@ begin
   if v_total = 0 then return jsonb_build_object('status', 'empty_team'); end if;
 
   insert into public.invitations (event_id, musician_id, message)
-  select p_event_id, tm.musician_id, v_message
+  select p_event_id, tm.musician_id,
+         case when tm.instrument <> '' then
+           left('Instrumento na formação: ' || tm.instrument ||
+                case when v_message is null then '' else E'\n' || v_message end, 500)
+         else v_message end
   from public.stage_team_members tm
   join public.profiles p on p.id = tm.musician_id
   where tm.team_id = p_team_id and p.is_artist = true
