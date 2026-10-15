@@ -1,11 +1,12 @@
 "use client";
 
-import { FormEvent, useEffect, useState } from "react";
+import { ChangeEvent, FormEvent, useEffect, useState } from "react";
+import type { CSSProperties } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import {
   ArrowLeft, ArrowUpRight, CheckCircle2, Eye, EyeOff,
-  ExternalLink, Globe2, Instagram, LoaderCircle, LockKeyhole, Music2, Save
+  ExternalLink, Globe2, ImagePlus, LoaderCircle, LockKeyhole, Music2, Palette, Save, Upload
 } from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
 
@@ -19,12 +20,21 @@ type ArtistConfig = {
   spotify_url: string | null;
   is_public: boolean;
   custom_subdomain_enabled: boolean;
+  headline?: string;
+  accent?: "violet" | "lime" | "cyan";
+  avatar_path?: string | null;
+  cover_path?: string | null;
 };
 
 export default function MeuPerfilArtistico() {
   const router = useRouter();
   const [config, setConfig] = useState<ArtistConfig | null>(null);
   const [bio, setBio] = useState("");
+  const [headline, setHeadline] = useState("");
+  const [accent, setAccent] = useState<"violet" | "lime" | "cyan">("violet");
+  const [avatarPath, setAvatarPath] = useState<string | null>(null);
+  const [coverPath, setCoverPath] = useState<string | null>(null);
+  const [uploading, setUploading] = useState<"avatar" | "cover" | null>(null);
   const [city, setCity] = useState("");
   const [instagram, setInstagram] = useState("");
   const [youtube, setYoutube] = useState("");
@@ -57,6 +67,10 @@ export default function MeuPerfilArtistico() {
         const p = data as ArtistConfig;
         setConfig(p);
         setBio(p.bio || "");
+        setHeadline(p.headline || "");
+        setAccent(p.accent === "lime" || p.accent === "cyan" ? p.accent : "violet");
+        setAvatarPath(p.avatar_path || null);
+        setCoverPath(p.cover_path || null);
         setCity(p.city || "");
         setInstagram(p.instagram_url || "");
         setYoutube(p.youtube_url || "");
@@ -96,24 +110,73 @@ export default function MeuPerfilArtistico() {
     setClaimingUsername(false);
   }
 
+  async function uploadPhoto(kind: "avatar" | "cover", event: ChangeEvent<HTMLInputElement>) {
+    const file = event.target.files?.[0];
+    event.target.value = "";
+    if (!file || uploading || saving) return;
+    const extensions: Record<string, string> = {
+      "image/jpeg": "jpg", "image/png": "png", "image/webp": "webp"
+    };
+    if (!extensions[file.type] || file.size > 5 * 1024 * 1024) {
+      setError(true);
+      setMessage("Selecione um arquivo JPG, PNG ou WebP com até 5 MB.");
+      return;
+    }
+    setUploading(kind);
+    setMessage("");
+    setError(false);
+    const supabase = createClient();
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) {
+      setError(true);
+      setMessage("Entre novamente na sua conta para enviar imagens.");
+      setUploading(null);
+      return;
+    }
+    const imagePath = user.id + "/" + crypto.randomUUID() + "." + extensions[file.type];
+    const { error: uploadError } = await supabase.storage.from("stage-artist-public").upload(
+      imagePath, file, { upsert: false, contentType: file.type, cacheControl: "3600" }
+    );
+    if (uploadError) {
+      setError(true);
+      setMessage("Falha ao enviar. Execute free_artist_visuals_migration.sql no Supabase. Detalhes: " + uploadError.message);
+    } else {
+      if (kind === "avatar") setAvatarPath(imagePath);
+      else setCoverPath(imagePath);
+      setMessage("Imagem enviada! Clique em Salvar para aplicar na sua página pública.");
+    }
+    setUploading(null);
+  }
+
+  function photoUrl(path: string | null) {
+    return path ? createClient().storage.from("stage-artist-public").getPublicUrl(path).data.publicUrl : "";
+  }
+
   async function save(e: FormEvent<HTMLFormElement>) {
     e.preventDefault();
-    if (saving) return;
+    if (saving || uploading) return;
     setSaving(true);
     setError(false);
     setMessage("");
     const { data, error: requestError } = await createClient().rpc(
-      "stage_save_artist_page", {
+      "stage_save_artist_page_v2", {
         p_bio: bio,
         p_city: city,
         p_instagram_url: instagram || null,
         p_youtube_url: youtube || null,
         p_spotify_url: spotify || null,
-        p_is_public: published
+        p_is_public: published,
+        p_headline: headline,
+        p_accent: accent,
+        p_avatar_path: avatarPath,
+        p_cover_path: coverPath
       }
     );
     const messages: Record<string,string> = {
-      username_required: "Você ainda não possui um @ artístico. Por enquanto, ele precisa ser definido na criação da conta.",
+      username_required: "Defina seu @ gratuito no formulário acima antes de publicar.",
+      invalid_accent: "Escolha uma das três cores gratuitas disponíveis.",
+      invalid_avatar: "A foto de perfil precisa ter sido enviada por esta página.",
+      invalid_cover: "A capa precisa ter sido enviada por esta página.",
       text_too_long: "A apresentação ou a cidade ultrapassou o limite permitido.",
       invalid_link: "Use links HTTPS completos do Instagram, YouTube ou Spotify, conforme o campo.",
       artist_required: "Esta conta não tem a função de artista habilitada."
@@ -178,6 +241,54 @@ export default function MeuPerfilArtistico() {
 
           <form onSubmit={save} style={{ display: "grid", gap: 12, marginTop: 21 }}>
             <div className="field">
+              <label htmlFor="artist-headline">Frase de destaque</label>
+              <input id="artist-headline" maxLength={100} value={headline}
+                onChange={e => setHeadline(e.target.value)}
+                placeholder="Ex.: Pagode, samba e muita energia em cada show"/>
+              <span className="field-help">Aparece abaixo do nome. Até 100 caracteres.</span>
+            </div>
+            <div className="field">
+              <label><Palette size={15} style={{ display: "inline", verticalAlign: "middle" }}/> Cor do perfil gratuito</label>
+              <div className="artist-free-color-options">
+                {([
+                  ["violet", "Roxo", "#a99bff"],
+                  ["lime", "Verde", "#c6f36b"],
+                  ["cyan", "Azul", "#72dce7"]
+                ] as const).map(([value, label, color]) =>
+                  <button type="button" key={value} aria-pressed={accent === value}
+                    onClick={() => setAccent(value)} className="artist-free-color"
+                    aria-label={"Selecionar " + label}>
+                    <span style={{ background: color }}/>
+                    {label}
+                  </button>
+                )}
+              </div>
+              <span className="field-help">Temas e layouts adicionais farão parte do site profissional premium.</span>
+            </div>
+            <div className="artist-free-photo-fields">
+              <div className="field">
+                <label htmlFor="artist-avatar-upload">Foto de perfil</label>
+                <label className="mp-file-upload"><Upload size={16}/>
+                  {uploading === "avatar" ? "Enviando..." : "Enviar foto"}
+                  <input id="artist-avatar-upload" type="file"
+                    accept="image/jpeg,image/png,image/webp" disabled={Boolean(uploading) || saving}
+                    onChange={e => void uploadPhoto("avatar", e)}/>
+                </label>
+                {avatarPath && <button type="button" className="btn btn-quiet" onClick={() => setAvatarPath(null)}>Remover foto</button>}
+              </div>
+              <div className="field">
+                <label htmlFor="artist-cover-upload">Imagem de capa</label>
+                <label className="mp-file-upload"><ImagePlus size={16}/>
+                  {uploading === "cover" ? "Enviando..." : "Enviar capa"}
+                  <input id="artist-cover-upload" type="file"
+                    accept="image/jpeg,image/png,image/webp" disabled={Boolean(uploading) || saving}
+                    onChange={e => void uploadPhoto("cover", e)}/>
+                </label>
+                {coverPath && <button type="button" className="btn btn-quiet" onClick={() => setCoverPath(null)}>Remover capa</button>}
+              </div>
+            </div>
+            <p className="field-help">Fotos são arquivos públicos de divulgação, mesmo quando o perfil ainda está em rascunho. Não envie documentos ou imagens privadas.</p>
+            <div className="field">
               <label htmlFor="artist-bio">Apresentação artística</label>
               <textarea id="artist-bio" value={bio} onChange={e => setBio(e.target.value)}
                 maxLength={1000} rows={5}
@@ -213,7 +324,7 @@ export default function MeuPerfilArtistico() {
                 </span>
               </span>
             </label>
-            <button type="submit" className="btn btn-primary" disabled={saving || (published && !config.username)} style={{ justifyContent: "center" }}>
+            <button type="submit" className="btn btn-primary" disabled={saving || Boolean(uploading) || (published && !config.username)} style={{ justifyContent: "center" }}>
               {saving ? <LoaderCircle size={16}/> : <Save size={16}/>}
               {saving ? "Salvando..." : published ? "Salvar e publicar" : "Salvar rascunho"}
             </button>
@@ -223,7 +334,24 @@ export default function MeuPerfilArtistico() {
           </Link>}
         </section>
 
-        <aside className="feature" style={{ alignSelf: "start" }}>
+        <aside style={{ alignSelf: "start", display: "grid", gap: 17 }}>
+          <section className="feature">
+            <div className="eyebrow"><span className="dot"/> PRÉVIA EM TEMPO REAL</div>
+            <div className="artist-free-editor-preview" style={{ "--artist-free-accent": accent === "lime" ? "#c6f36b" : accent === "cyan" ? "#72dce7" : "#a99bff" } as CSSProperties}>
+              <div className="artist-free-editor-cover" style={coverPath ? { backgroundImage: `linear-gradient(0deg,#0e1420cc,#10121b66),url("${photoUrl(coverPath)}")` } : {}}>
+                <div className="artist-free-editor-avatar">
+                  {avatarPath ? <img src={photoUrl(avatarPath)} alt="Sua foto de perfil"/> : (config.name.trim().split(/\s+/).slice(0,2).map(n=>n[0]?.toUpperCase()).join("") || "SF")}
+                </div>
+              </div>
+              <div className="artist-free-editor-preview-info">
+                <span>@{config.username || "seuusuario"}</span>
+                <strong>{config.name}</strong>
+                <p>{headline || "Música ao vivo"}{city && " · " + city}</p>
+              </div>
+            </div>
+            <p className="field-help" style={{ marginTop: 12 }}>Sua capa, foto e cor são mostradas aqui antes de publicar.</p>
+          </section>
+          <section className="feature">
           <div className="eyebrow"><span className="dot"/> RECURSO PROFISSIONAL</div>
           <h2 style={{ fontSize: 22, marginTop: 19 }}>Site próprio e subdomínio</h2>
           <p>O site profissional completo, com visual como o de um grande artista, galeria, vídeos, agenda avançada e endereço do tipo <strong style={{ color: "var(--text)" }}>{config.username || "seuusuario"}.stageflow.com</strong>, será uma contratação adicional.</p>
@@ -243,6 +371,7 @@ export default function MeuPerfilArtistico() {
               <Music2 size={16}/> Ver portfólio simples de músico
             </Link>
           </div>
+          </section>
         </aside>
       </div>}
     </div>
