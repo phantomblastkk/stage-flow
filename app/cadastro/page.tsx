@@ -32,6 +32,9 @@ export default function CadastroPage() {
       if (needsMusicianPhone && !/^55[1-9][0-9]{9,10}$/.test(internationalPhone)) {
         throw new Error("Informe um WhatsApp brasileiro válido, com DDD. Exemplo: (11) 99999-9999.");
       }
+      if (needsMusicianPhone && !whatsappConsent) {
+        throw new Error("Para concluir o cadastro de músico, confirme a autorização de contato pelo WhatsApp.");
+      }
       const { data: signupData, error: signUpError } = await supabase.auth.signUp({
         email, password,
         options: {
@@ -78,8 +81,8 @@ export default function CadastroPage() {
             <span className="field-help">Número obrigatório para contas de músicos. Ele fica armazenado de forma privada e não aparece no seu perfil público.</span>
           </div>
           <label style={{ display: "flex", alignItems: "flex-start", gap: 10, fontSize: 12, lineHeight: 1.6, color: "var(--muted)", marginBottom: 20 }}>
-            <input type="checkbox" checked={whatsappConsent} onChange={e=>setWhatsappConsent(e.target.checked)} style={{ marginTop: 4, flexShrink: 0, accentColor: "var(--lime)" }}/>
-            <span>Autorizo que os organizadores dos shows para os quais fui convidado e ainda não recusei possam usar meu número para abrir conversas e enviar lembretes pelo WhatsApp. Posso desativar essa autorização em Meus convites.</span>
+            <input type="checkbox" checked={whatsappConsent} onChange={e=>setWhatsappConsent(e.target.checked)} required aria-required="true" style={{ marginTop: 4, flexShrink: 0, accentColor: "var(--lime)" }}/>
+            <span>Li e autorizo que os organizadores dos shows para os quais tenho convites pendentes ou aceitos visualizem meu número para entrar em contato e enviar lembretes manuais pelo WhatsApp. Esta confirmação é obrigatória para o cadastro de músico e posso desativar os contatos depois em Meus convites. *</span>
           </label>
         </>}
         <div className="field"><label htmlFor="email">E-mail</label><input id="email" type="email" autoComplete="email" value={email} onChange={e=>setEmail(e.target.value)} placeholder="voce@exemplo.com" required /></div>
