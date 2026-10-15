@@ -182,6 +182,7 @@ export default function FeeNegotiation({ invitationId, perspective, onChanged }:
           </div>)}
         </div>}
       </>}
+      {!loading && <button type="button" className="btn btn-quiet" style={{ justifyContent: "center", fontSize: 12 }} onClick={() => void loadFee()} disabled={busy}>Atualizar negociação</button>}
       {feedback && <div role={hasError ? "alert" : "status"} className="coming"
         style={hasError ? { borderColor: "#754343", background: "#281919", color: "#ffb5b5" } : {}}>{feedback}</div>}
     </div>}
