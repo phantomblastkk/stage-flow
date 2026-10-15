@@ -97,19 +97,39 @@ export default function MeusConvitesPage() {
     setWhatsappMessage("");
     const { data, error } = await createClient().rpc("stage_save_whatsapp_preference", {
       p_phone: whatsappPhone,
-      p_opt_in: whatsappConsent,
+      p_opt_in: true,
     });
     if (error) {
       setWhatsappError(true);
       setWhatsappMessage("Não foi possível salvar: " + error.message);
     } else if (data === "enabled") {
-      setWhatsappMessage("Autorização salva! Os organizadores dos seus convites pendentes ou confirmados poderão abrir uma conversa pelo WhatsApp.");
+      setWhatsappConsent(true);
+      setWhatsappMessage("Número salvo! Os organizadores dos seus convites pendentes ou confirmados poderão abrir uma conversa pelo WhatsApp.");
     } else if (data === "disabled") {
       setWhatsappConsent(false);
       setWhatsappMessage("Autorização desativada. Seu número continuará guardado de forma privada, mas não ficará disponível aos organizadores.");
     } else {
       setWhatsappError(true);
       setWhatsappMessage(data === "invalid_phone" ? "Informe um número válido com DDD (por exemplo: 11 99999-9999)." : "Não foi possível atualizar a autorização: " + String(data));
+    }
+    setWhatsappSaving(false);
+  }
+
+  async function disableWhatsapp() {
+    if (whatsappSaving) return;
+    setWhatsappSaving(true);
+    setWhatsappMessage("");
+    setWhatsappError(false);
+    const { data, error } = await createClient().rpc("stage_save_whatsapp_preference", {
+      p_phone: whatsappPhone,
+      p_opt_in: false,
+    });
+    if (error || data !== "disabled") {
+      setWhatsappError(true);
+      setWhatsappMessage("Não foi possível desativar os contatos: " + (error?.message || String(data)));
+    } else {
+      setWhatsappConsent(false);
+      setWhatsappMessage("Contatos desativados. O número continua privado e não será mostrado aos organizadores.");
     }
     setWhatsappSaving(false);
   }
@@ -225,18 +245,24 @@ export default function MeusConvitesPage() {
     <section className="feature" style={{ maxWidth: 800, marginTop: 30 }}>
       <div className="eyebrow"><span className="dot"/> WHATSAPP E PRIVACIDADE</div>
       <h2 style={{ fontSize: 23, margin: "16px 0 10px" }}><MessageCircle size={21} style={{ display: "inline", verticalAlign: "middle", marginRight: 8 }}/> Lembretes no WhatsApp</h2>
-      <p style={{ marginBottom: 18 }}>Seu número é solicitado no cadastro dos músicos. Aqui você pode atualizá-lo e decidir se permite que os organizadores dos seus convites pendentes ou confirmados abram a conversa diretamente para enviar lembretes. O envio da mensagem é manual.</p>
+      <p style={{ marginBottom: 18 }}>A autorização para contato é registrada no cadastro. Aqui você pode corrigir seu número ou desativar os contatos a qualquer momento. Os lembretes são enviados manualmente pelo organizador.</p>
       {whatsappLoading ? <p style={{ color: "var(--muted)" }}>Carregando preferências...</p> :
         <form onSubmit={saveWhatsappPreferences}>
           <div className="field" style={{ maxWidth: 430 }}>
             <label htmlFor="my-whatsapp-number">Seu WhatsApp com DDD</label>
             <input id="my-whatsapp-number" type="tel" autoComplete="tel" value={whatsappPhone} onChange={e=>setWhatsappPhone(e.target.value)} placeholder="(11) 99999-9999" required={whatsappConsent}/>
           </div>
-          <label style={{ display: "flex", gap: 11, alignItems: "flex-start", fontSize: 13, lineHeight: 1.6, color: "var(--muted)", marginBottom: 18 }}>
-            <input type="checkbox" checked={whatsappConsent} onChange={e=>setWhatsappConsent(e.target.checked)} style={{ marginTop: 4, accentColor: "var(--lime)", flexShrink: 0 }}/>
-            <span>Autorizo o Stage Flow a compartilhar este número apenas com os organizadores dos shows para os quais tenho convites pendentes ou aceitos, para que possam falar comigo e enviar lembretes pelo WhatsApp. Posso retirar essa autorização quando quiser.</span>
-          </label>
-          <button type="submit" className="btn btn-primary" disabled={whatsappSaving}>{whatsappSaving ? "Salvando..." : whatsappConsent ? "Salvar número e autorização" : "Salvar sem permitir lembretes"}</button>
+          <p style={{ fontSize: 13, color: "var(--muted)", margin: "8px 0 18px" }}>
+            {whatsappConsent
+              ? "Contato pelo WhatsApp ativado no cadastro. Seu número só fica disponível aos organizadores de convites pendentes ou aceitos."
+              : "Contato pelo WhatsApp desativado. Se quiser voltar a receber lembretes, ative novamente abaixo."}
+          </p>
+          <div style={{ display: "flex", gap: 10, flexWrap: "wrap" }}>
+            <button type="submit" className="btn btn-primary" disabled={whatsappSaving}>
+              {whatsappSaving ? "Salvando..." : whatsappConsent ? "Atualizar meu número" : "Ativar contato pelo WhatsApp"}
+            </button>
+            {whatsappConsent && <button type="button" className="btn btn-quiet" disabled={whatsappSaving} onClick={() => void disableWhatsapp()}>Desativar contatos</button>}
+          </div>
           {whatsappMessage && <div role={whatsappError ? "alert" : "status"} className="coming" style={whatsappError ? { borderColor: "#754343", background: "#281919", color: "#ffb5b5" } : {}}>{whatsappMessage}</div>}
         </form>}
     </section>
