@@ -233,6 +233,7 @@ export default function ConvitesPage() {
       <div className="eyebrow"><span className="dot"/> EQUIPE DO EVENTO</div>
       <h1 style={{ fontSize: "clamp(34px,5vw,46px)" }}>Convidar <span className="accent">músicos.</span></h1>
       <p className="lead">Sem precisar saber o e-mail: gere um link único e compartilhe pelo WhatsApp ou pelo aplicativo que preferir.</p>
+      <Link href="/equipes" className="btn btn-quiet" style={{ marginTop: 14 }}><Users size={16}/> Usar uma equipe salva</Link>
     </section>
     <section className="feature" style={{ maxWidth: 760 }}>
       {events.length === 0 && !isError ? <>
