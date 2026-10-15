@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import type { CSSProperties } from "react";
 import Link from "next/link";
 import { useParams } from "next/navigation";
 import { ArrowLeft, ArrowUpRight, CalendarDays, Instagram, LoaderCircle, MapPin, Music2, Play, Share2 } from "lucide-react";
@@ -14,6 +15,10 @@ type PublicArtist = {
   instagram_url: string | null;
   youtube_url: string | null;
   spotify_url: string | null;
+  headline?: string;
+  accent?: "violet" | "lime" | "cyan";
+  avatar_path?: string | null;
+  cover_path?: string | null;
 };
 
 type PublicEvent = {
@@ -56,6 +61,11 @@ export default function FreeArtistPage() {
     return () => { active = false; };
   }, [username]);
 
+  const mediaUrl = (path?: string | null) =>
+    path ? createClient().storage.from("stage-artist-public").getPublicUrl(path).data.publicUrl : null;
+  const accent = artist?.accent === "lime" ? "#c6f36b" : artist?.accent === "cyan" ? "#72dce7" : "#a99bff";
+  const themeStyle = { "--artist-free-accent": accent } as CSSProperties;
+
   async function shareProfile() {
     const url = window.location.href;
     if (navigator.share) {
@@ -85,15 +95,20 @@ export default function FreeArtistPage() {
         <h1 style={{ fontSize: 34, marginTop: 20 }}>Página não encontrada.</h1>
         <p>{problem || "Este artista ainda não publicou seu perfil ou este nome de usuário não existe."}</p>
         <Link className="btn btn-primary" href="/" style={{ marginTop: 16 }}>Voltar ao Stage Flow</Link>
-      </section> : <div className="artist-free-page">
+      </section> : <div className="artist-free-page" style={themeStyle}>
         <section className="artist-free-hero">
+          {artist.cover_path && <div className="artist-free-cover-photo" style={{ backgroundImage: `url("${mediaUrl(artist.cover_path)}")` }} aria-hidden="true"/>}
           <div className="artist-free-overline">STAGE FLOW / ARTISTA</div>
-          <div className="artist-free-monogram">{artist.name.trim().split(/\s+/).slice(0,2).map(x => x[0]?.toUpperCase()).join("")}</div>
+          <div className="artist-free-monogram">
+            {artist.avatar_path
+              ? <img src={mediaUrl(artist.avatar_path)!} alt={"Foto de " + artist.name} loading="lazy"/>
+              : artist.name.trim().split(/\s+/).slice(0,2).map(x => x[0]?.toUpperCase()).join("")}
+          </div>
           <div className="artist-free-intro">
             <div>
               <div className="artist-free-handle">@{artist.username}</div>
               <h1>{artist.name}</h1>
-              <p className="artist-free-tagline"><Music2 size={17}/> Música ao vivo{artist.city && <> <span>·</span> <MapPin size={16}/>{artist.city}</>}</p>
+              <p className="artist-free-tagline"><Music2 size={17}/> {artist.headline || "Música ao vivo"}{artist.city && <> <span>·</span> <MapPin size={16}/>{artist.city}</>}</p>
             </div>
             <button type="button" className="btn btn-quiet" onClick={() => void shareProfile()}>
               <Share2 size={16}/>{copied ? "Link copiado!" : "Compartilhar"}
