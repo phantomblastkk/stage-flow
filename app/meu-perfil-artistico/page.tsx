@@ -31,6 +31,8 @@ export default function MeuPerfilArtistico() {
   const [spotify, setSpotify] = useState("");
   const [published, setPublished] = useState(false);
   const [savedPublished, setSavedPublished] = useState(false);
+  const [requestedUsername, setRequestedUsername] = useState("");
+  const [claimingUsername, setClaimingUsername] = useState(false);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [message, setMessage] = useState("");
@@ -67,6 +69,32 @@ export default function MeuPerfilArtistico() {
     void load();
     return () => { active = false; };
   }, [router]);
+
+  async function claimUsername(e: FormEvent<HTMLFormElement>) {
+    e.preventDefault();
+    if (!config || config.username || claimingUsername) return;
+    setClaimingUsername(true);
+    setError(false);
+    setMessage("");
+    const clean = requestedUsername.trim().toLowerCase();
+    const { data, error: claimError } = await createClient().rpc(
+      "stage_claim_artist_username", { p_username: clean }
+    );
+    if (claimError || (data !== "claimed" && data !== "unchanged")) {
+      const reasons: Record<string,string> = {
+        invalid: "Use de 3 a 30 caracteres: letras minúsculas, números ou hífens.",
+        reserved: "Este @ é reservado para uma área do Stage Flow. Escolha outro.",
+        taken: "Este @ já pertence a outro artista. Escolha outro.",
+        already_set: "Sua conta já possui um @. Reabra a página para conferir."
+      };
+      setError(true);
+      setMessage(claimError?.message || reasons[String(data)] || "Não foi possível definir seu @.");
+    } else {
+      setConfig(prev => prev ? { ...prev, username: clean } : prev);
+      setMessage("Seu @ gratuito foi registrado! Agora você já pode publicar seu perfil.");
+    }
+    setClaimingUsername(false);
+  }
 
   async function save(e: FormEvent<HTMLFormElement>) {
     e.preventDefault();
@@ -133,6 +161,20 @@ export default function MeuPerfilArtistico() {
             <span>{config.username ? "No domínio oficial, quando estiver disponível" : "Você ainda não cadastrou um nome de usuário"}</span>
           </div>
           <p className="fine">Você não precisa pagar para ter esse endereço. O @ é único e pertence à sua conta.</p>
+          {!config.username && <form onSubmit={claimUsername} style={{ marginTop: 17 }}>
+            <div className="field">
+              <label htmlFor="claim-artist-username">Escolher meu @ gratuito *</label>
+              <input id="claim-artist-username" value={requestedUsername}
+                onChange={e => setRequestedUsername(e.target.value.toLowerCase().replace(/[^a-z0-9-]/g, ""))}
+                minLength={3} maxLength={30} required pattern="[a-z0-9-]{3,30}"
+                placeholder="ex.: cantorsousa"/>
+              <span className="field-help">Você poderá escolher o @ uma vez. Ele será a parte final do seu endereço.</span>
+            </div>
+            <button type="submit" className="btn btn-primary" disabled={claimingUsername}>
+              {claimingUsername ? <LoaderCircle size={16}/> : <Globe2 size={16}/>}
+              {claimingUsername ? "Registrando..." : "Reservar meu @"}
+            </button>
+          </form>}
 
           <form onSubmit={save} style={{ display: "grid", gap: 12, marginTop: 21 }}>
             <div className="field">
