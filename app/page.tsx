@@ -1,7 +1,7 @@
 import Link from "next/link";
 import {
   ArrowRight, ArrowUpRight, BadgeCheck, CalendarDays, Check,
-  CirclePlay, Guitar, Headphones, Mic2, Music2, Play,
+  CirclePlay, Guitar, Music2, Palette,
   ShieldCheck, Sparkles, Users, Wallet
 } from "lucide-react";
 
@@ -118,7 +118,7 @@ export default function Home() {
           <p>Seu talento não cabe numa mensagem de texto. Mostre seus instrumentos, experiências e trabalhos num portfólio que é realmente seu.</p>
           <div className="home-musician-benefits">
             <span><ShieldCheck size={17}/> Cachês de shows negociados em particular</span>
-            <span><PaletteIcon/> Temas, cores, capa e foto personalizados</span>
+            <span><Palette size={17}/> Temas, cores, capa e foto personalizados</span>
             <span><Guitar size={17}/> Instrumentos e estilos em destaque</span>
           </div>
           <Link href="/meu-portfolio" className="btn btn-primary">Personalizar meu portfólio <ArrowUpRight size={17}/></Link>
@@ -159,6 +159,3 @@ export default function Home() {
   </main>;
 }
 
-function PaletteIcon() {
-  return <span className="home-inline-palette" aria-hidden="true"><Headphones size={17}/></span>;
-}
