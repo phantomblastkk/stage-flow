@@ -89,17 +89,33 @@
 .premium-site-small-label{display:flex;align-items:center;gap:10px;color:var(--pro-accent-soft);font:800 10px "Manrope",sans-serif;letter-spacing:.14em}
 .premium-site-small-label span{width:7px;height:7px;border-radius:50%;background:var(--pro-accent);box-shadow:0 0 14px var(--pro-accent)}
 .premium-site-identity h1{font:900 clamp(33px,4vw,54px)/1.08 "Manrope",sans-serif;letter-spacing:-.064em;margin:18px 0 10px;overflow-wrap:anywhere}
-/* Frase artística no estilo assinatura: destaque intencional, sem alterar
-   os demais textos e mantendo fallback legível até a fonte carregar. */
-.premium-site-lead{
+/* Assinatura no canto inferior direito do hero.
+   Mantemos uma área dedicada para nunca cobrir botões, biografia ou
+   dados do artista, inclusive com frases mais longas. */
+.premium-site-signature-area{
+  display:flex;
+  justify-content:flex-end;
+  align-items:flex-end;
+  width:100%;
+  min-height:112px;
+  margin-top:15px;
+  padding:24px 14px 12px 36px;
+}
+.premium-site-signature{
+  max-width:min(94%,360px);
+  margin:0;
+  text-align:right;
   font-family:"Great Vibes","Brush Script MT",cursive;
-  font-size:clamp(32px,3.7vw,48px);
+  font-size:clamp(30px,3.6vw,46px);
   font-weight:400;
-  line-height:1.23;
+  line-height:1.24;
   letter-spacing:.01em;
   color:var(--pro-accent-soft);
-  overflow-wrap:break-word;
-  padding:5px 4px 8px 0;
+  overflow-wrap:anywhere;
+  transform:rotate(-10deg);
+  transform-origin:right bottom;
+  text-shadow:0 5px 20px #0006;
+  pointer-events:none;
 }
 .premium-site-city{display:flex;align-items:center;gap:7px;font-size:12px;color:#a8b9df;margin-top:11px!important}
 .premium-site-intro{margin-top:21px!important;color:#b3bfd5;font-size:13px;line-height:1.9;white-space:pre-wrap;overflow-wrap:anywhere}
@@ -250,7 +266,16 @@
 }
 @media(prefers-reduced-motion:reduce){.premium-site *{transition:none!important;animation:none!important}}
 
-/* A assinatura mantém leitura e respiro adequados em telas pequenas. */
+/* Área de assinatura reservada no mobile, sem encostar nos botões. */
 @media(max-width:700px){
-  .premium-site-lead{font-size:clamp(31px,8vw,43px);line-height:1.24;padding-bottom:9px}
+  .premium-site-signature-area{
+    min-height:105px;
+    margin-top:18px;
+    padding:24px 13px 13px 22px;
+  }
+  .premium-site-signature{
+    max-width:min(92%,320px);
+    font-size:clamp(28px,7.5vw,40px);
+    transform:rotate(-8deg);
+  }
 }
