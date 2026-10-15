@@ -5,6 +5,7 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { ArrowLeft, CalendarDays, Check, CheckCircle2, Clock3, LoaderCircle, MapPin, MessageCircle, Music2, X } from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
+import FeeNegotiation from "@/components/fee-negotiation";
 
 type Invite = {
   id: string;
@@ -158,8 +159,9 @@ export default function MeusConvitesPage() {
       setFeedback(data === "accepted" ? "Presença confirmada! O organizador poderá acompanhar sua resposta." : "Convite recusado. Sua resposta foi registrada.");
     } else {
       setIsError(true);
-      setFeedback(data === "already_responded"
-        ? "Esse convite já foi respondido. Atualize a página para conferir."
+      setFeedback(data === "fee_pending"
+        ? "Existe uma proposta de cachê aguardando acordo. Combine o valor na seção Cachê e propostas privadas antes de confirmar o show."
+        : data === "already_responded" ? "Esse convite já foi respondido. Atualize a página para conferir."
         : "Não foi possível responder a esse convite. Atualize a página e tente novamente.");
     }
     setProcessingId(null);
@@ -226,6 +228,8 @@ export default function MeusConvitesPage() {
             {(invite.event_venue || invite.event_city) && <div style={{ display: "flex", alignItems: "flex-start", gap: 9 }}><MapPin size={17} style={{ flexShrink: 0 }}/>{[invite.event_venue, invite.event_city].filter(Boolean).join(" · ")}</div>}
             {invite.message && <p style={{ margin: "8px 0", overflowWrap: "anywhere", color: "var(--text)" }}><strong>Recado:</strong> {invite.message}</p>}
           </div>
+
+          <FeeNegotiation invitationId={invite.id} perspective="musician" onChanged={() => void reload()}/>
 
           {invite.status === "pending" && <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit,minmax(150px,1fr))", gap: 10, marginTop: 22 }}>
             <button type="button" className="btn btn-primary" disabled={Boolean(processingId)} onClick={() => void respond(invite, true)}>
