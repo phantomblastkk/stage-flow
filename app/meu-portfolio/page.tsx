@@ -9,7 +9,7 @@ import {
 } from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
 import MusicianPortfolioView, {
-  MusicianPortfolio, MusicianTheme, MusicianAccent, MusicianLayout,
+  MusicianPortfolio, MusicianLayout,
   musicianThemes, musicianAccents
 } from "@/components/musician-portfolio-view";
 
