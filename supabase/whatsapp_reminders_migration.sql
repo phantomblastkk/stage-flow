@@ -42,7 +42,10 @@ begin
   if auth.uid() is null then return 'login_required'; end if;
 
   if not coalesce(p_opt_in, false) then
-    delete from public.musician_whatsapp_preferences
+    -- Revogação efetiva: mantenha o número privado para a própria pessoa
+    -- editar mais tarde, mas nunca o exponha aos organizadores.
+    update public.musician_whatsapp_preferences
+      set opted_in = false, updated_at = now()
     where profile_id = auth.uid();
     return 'disabled';
   end if;
@@ -128,3 +131,48 @@ as $$
 $$;
 revoke all on function public.stage_sent_invitations_with_whatsapp() from PUBLIC;
 grant execute on function public.stage_sent_invitations_with_whatsapp() to authenticated;
+
+
+-- Cadastro inicial: salva o WhatsApp num espaço privado, separado do perfil
+-- público. A autorização é independente do número; sem consentimento,
+-- opted_in permanece false e nenhum organizador recebe o contato.
+-- Não sobrescreve preferências existentes (incluindo autorização revogada).
+create or replace function public.stage_save_signup_whatsapp()
+returns trigger
+language plpgsql
+security definer
+set search_path = ''
+as $$
+declare
+  v_phone text;
+  v_consent boolean;
+begin
+  if not new.is_artist then return new; end if;
+
+  select u.raw_user_meta_data ->> 'whatsapp_phone',
+         coalesce(u.raw_user_meta_data ->> 'whatsapp_opt_in', 'false') = 'true'
+    into v_phone, v_consent
+  from auth.users u
+  where u.id = new.id;
+
+  if v_phone is null or v_phone !~ '^55[1-9][0-9]{9,10}$' then
+    return new;
+  end if;
+
+  insert into public.musician_whatsapp_preferences
+    (profile_id, phone_e164, opted_in, updated_at)
+  values (new.id, v_phone, v_consent, now())
+  on conflict (profile_id) do nothing;
+
+  return new;
+end;
+$$;
+
+drop trigger if exists stage_signup_whatsapp_trigger on public.profiles;
+create trigger stage_signup_whatsapp_trigger
+  after insert on public.profiles
+  for each row execute function public.stage_save_signup_whatsapp();
+
+-- Quem se cadastrou antes deste trigger deve informar/autorizar o número em
+-- "Meus convites". Não fazemos backfill automático para evitar reativar
+-- consentimentos previamente revogados.
