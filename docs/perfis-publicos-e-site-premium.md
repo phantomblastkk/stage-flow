@@ -47,3 +47,17 @@ Decisão de produto (15/10/2026).
 - Páginas avançadas premium precisam de regras explícitas no servidor
   para não vazarem simplesmente por outra rota.
 - As buscas futuras e a presença no marketplace terão regras e monetização próprias.
+
+
+## Prévia privada do site premium (implementada)
+
+- Rota autenticada: /meu-perfil-artistico/site-profissional
+- Somente contas com função de artista e sessão válida podem visualizar o conceito; a RPC stage_my_artist_page retorna dados da própria conta.
+- Visual inspirado na referência aprovada: hero com foto, capa, biografia, botões de contato, portfólio, redes, calendário navegável e lista de shows.
+- Mostra somente apresentações do próprio artista que estejam simultaneamente published e show_publicly = true. Os números exibidos são contagens reais, não métricas inventadas.
+- Imagens já cadastradas no perfil gratuito são reutilizadas apenas para ilustrar a aparência futura.
+- Sem SQL novo: lê as estruturas da página gratuita e eventos já existentes.
+- Nenhum subdomínio é criado e nenhuma cobrança, assinatura ou site premium público é ativado.
+- Galeria detalhada e formulário de contratação aparecem como conceitos/estado em preparação; não são funcionalidade disponível.
+- Perfil gratuito /[username] permanece independente de contratação.
+- A prévia está aninhada sob a rota estática já reservada meu-perfil-artistico, evitando colisões com @ artísticos.
