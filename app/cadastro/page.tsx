@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { useEffect, useState } from "react";
-import { ArrowLeft, Music2, Building2, Mic2, Guitar, CheckCircle2 } from "lucide-react";
+import { ArrowLeft, Building2, Mic2, Guitar, CheckCircle2 } from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
 
 const reservedArtistUsernames = new Set([
@@ -71,8 +71,10 @@ export default function CadastroPage() {
         }
       });
       if (signUpError) throw signUpError;
-      if (inviteCode && signupData.session) {
-        window.location.href = "/convite?codigo=" + encodeURIComponent(inviteCode);
+      if (signupData.session) {
+        window.location.href = inviteCode
+          ? "/convite?codigo=" + encodeURIComponent(inviteCode)
+          : "/painel";
         return;
       }
       setMessage(inviteCode
