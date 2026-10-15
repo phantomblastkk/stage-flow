@@ -5,8 +5,8 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import {
   ArrowLeft, ArrowRight, Bell, CalendarDays, Check, Guitar,
-  LoaderCircle, LogOut, Mic2, Music2, Plus, Settings2,
-  UserRound, Users, Wallet
+  LoaderCircle, LogOut, Mic2, Music2, Settings2,
+  UserRound, Users
 } from "lucide-react";
 import type { LucideIcon } from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
