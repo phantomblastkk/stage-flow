@@ -279,3 +279,238 @@
     transform:rotate(-8deg);
   }
 }
+
+
+/* Editor premium: somente rascunho privado, nunca publica subdomínio. */
+.premium-design-editor{
+  max-width:1170px;margin:0 auto 18px;padding:25px 27px;
+  border-radius:17px;border:1px solid #45405b;
+  background:linear-gradient(120deg,#20243b,#171d30);
+  box-shadow:0 14px 50px #0003;
+  color:#edf0fa;
+}
+.premium-design-heading{
+  display:flex;justify-content:space-between;align-items:center;
+  gap:16px
+}
+.premium-design-heading>div{flex:1}
+.premium-design-eyebrow{
+  display:inline-flex;align-items:center;gap:8px;
+  font:800 10px "Manrope",sans-serif;
+  letter-spacing:.14em;color:#c5aeff
+}
+.premium-design-heading h2{
+  font:900 clamp(21px,3vw,27px)/1.2 "Manrope",sans-serif;
+  letter-spacing:-.05em;margin:9px 0 7px;
+}
+.premium-design-heading p{font-size:12px;line-height:1.7;color:#b2bed2;margin:0}
+.premium-design-collapse{
+  display:inline-flex;align-items:center;gap:8px;white-space:nowrap;
+  color:#ded4fb;background:#30304c;border:1px solid #555174;
+  border-radius:10px;padding:12px 14px;font-size:11px;font-weight:800;cursor:pointer
+}
+.premium-design-collapse[aria-expanded="false"] svg{transform:rotate(90deg)}
+.premium-design-controls{
+  display:grid;grid-template-columns:minmax(0,1.24fr) minmax(255px,.76fr);
+  column-gap:27px;row-gap:16px;margin-top:22px;padding-top:22px;
+  border-top:1px solid #42435f
+}
+.premium-design-options{display:flex;flex-direction:column;gap:22px}
+.premium-design-group h3,.premium-design-sections h3{
+  font:800 13px "Manrope",sans-serif;margin:0 0 13px
+}
+.premium-design-themes{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:9px}
+.premium-design-theme{
+  display:flex;flex-direction:column;gap:5px;
+  text-align:left;padding:8px;background:#1a2234;
+  border-radius:12px;border:1px solid #34415a;
+  color:#e4e8f1;cursor:pointer
+}
+.premium-design-theme[aria-pressed="true"]{
+  border-color:#c2a4fe;box-shadow:0 0 0 1px #c2a4fe
+}
+.premium-design-theme-swatch{
+  height:64px;display:block;border-radius:7px;position:relative;
+  overflow:hidden;background:#08132a
+}
+.premium-design-theme-concert .premium-design-theme-swatch{
+  background:radial-gradient(ellipse at 60% 0%,#a547a7,#1d0e36 72%)
+}
+.premium-design-theme-ivory .premium-design-theme-swatch{
+  background:radial-gradient(ellipse at 90% 0%,#e9d4ff,#e9eaf3 75%)
+}
+.premium-design-theme-swatch i{
+  position:absolute;left:13px;top:14px;width:37%;height:34px;border-radius:5px;
+  background:#7182aa55
+}
+.premium-design-theme-ivory .premium-design-theme-swatch i{background:#776a9755}
+.premium-design-theme-swatch b{
+  position:absolute;right:13px;top:21px;width:27%;height:6px;border-radius:6px;
+  background:#b8a8fc88
+}
+.premium-design-theme strong{font:800 11px "Manrope",sans-serif;margin:4px 0 0}
+.premium-design-theme small{font-size:10px;line-height:1.45;color:#acb8cd}
+.premium-design-colors{display:flex;gap:9px;flex-wrap:wrap}
+.premium-design-color{
+  display:inline-flex;align-items:center;gap:7px;cursor:pointer;
+  padding:8px 10px;border:1px solid #39445c;border-radius:99px;
+  background:#192437;color:#c7d2e7;font-size:11px
+}
+.premium-design-color[aria-pressed="true"]{border-color:#c4abff;background:#343052;color:white}
+.premium-design-color span{display:block;width:16px;height:16px;border-radius:99px}
+.premium-design-sections-heading{display:flex;flex-direction:column;gap:4px;margin-bottom:14px}
+.premium-design-sections-heading h3{margin:0}
+.premium-design-sections-heading>span{font-size:11px;color:#acb8cd;line-height:1.5}
+.premium-design-section-item{
+  border:1px solid #39435b;border-radius:10px;
+  background:#171f31;display:flex;align-items:center;justify-content:space-between;
+  gap:12px;padding:10px 11px;margin-bottom:8px
+}
+.premium-design-section-item label{display:flex;align-items:center;gap:9px;cursor:pointer;min-width:0}
+.premium-design-section-item label>input{width:16px;height:16px;accent-color:#be9fff;flex:none}
+.premium-design-section-item label>span{display:flex;color:#a9b8cf;align-items:center}
+.premium-design-section-item label strong{font-size:12px;font-weight:700}
+.premium-design-section-item>div{display:flex;gap:6px}
+.premium-design-section-item>div button{
+  width:30px;height:30px;display:grid;place-items:center;
+  border:1px solid #384562;border-radius:8px;background:#26324a;
+  color:#d6e0f5;cursor:pointer
+}
+.premium-design-section-item button:disabled{opacity:.25;cursor:not-allowed}
+.premium-design-footer{
+  grid-column:1/-1;border-top:1px solid #42435f;padding-top:17px;
+  display:flex;flex-wrap:wrap;align-items:center;gap:10px
+}
+.premium-design-save-status{color:#aab8cc;font-size:11px;margin-right:auto}
+.premium-design-reset{
+  display:inline-flex;align-items:center;gap:7px;border:1px solid #3e4962;
+  color:#c2cde0;background:none;padding:10px 13px;
+  border-radius:10px;font-size:11px;font-weight:700;cursor:pointer
+}
+.premium-design-feedback{
+  margin:13px 0 0;padding:11px 13px;border:1px solid #4c604a;
+  background:#1b2b24;border-radius:11px;font-size:12px;color:#bde6bf;line-height:1.6
+}
+.premium-design-error{border-color:#764d58;background:#34212b;color:#ffc0cc}
+.premium-site-sections{display:flex;flex-direction:column}
+.premium-site-sections > section{min-width:0;scroll-margin-top:20px}
+/* Cores personalizáveis independentes da página artística gratuita. */
+.premium-site-gold{--pro-accent:#f0bd65;--pro-accent-soft:#f5d29c}
+.premium-site-coral{--pro-accent:#ff978b;--pro-accent-soft:#ffc0b9}
+/* Tema Concert: atmosfera de show noturno, com brilhos violetas. */
+.premium-theme-concert{background:#120d23}
+.premium-theme-concert .premium-site-nav{
+  background:#150e2c;border-color:#443359
+}
+.premium-theme-concert .premium-site-photo{
+  background:radial-gradient(ellipse at 30% 0%,#973f9c,#2a163c 58%,#120c22)
+}
+.premium-theme-concert .premium-site-identity{
+  background:radial-gradient(ellipse at 80% 15%,#4d286a,#170e2d 75%)
+}
+.premium-theme-concert .premium-site-tabs,
+.premium-theme-concert .premium-site-about,
+.premium-theme-concert .premium-site-work,
+.premium-theme-concert .premium-site-agenda,
+.premium-theme-concert .premium-site-footer{border-color:#47365d}
+.premium-theme-concert .premium-site-work-tile{
+  background:linear-gradient(145deg,#2b1c41,#170f31);border-color:#54386a
+}
+.premium-theme-concert .premium-site-calendar,
+.premium-theme-concert .premium-site-showlist,
+.premium-theme-concert .premium-site-summary{
+  background:#201630;border-color:#513968
+}
+.premium-theme-concert .premium-site-daygrid button,
+.premium-theme-concert .premium-site-day-empty{background:#201630;border-color:#473358}
+.premium-theme-concert .premium-site-daygrid .premium-site-day-selected{
+  background:var(--pro-accent);color:#1a1429
+}
+.premium-theme-concert .premium-site-contact{background:#28193c;border-color:#664b7a}
+/* Tema Ivory: visual claro sem comprometer a legibilidade. */
+.premium-theme-ivory{
+  background:#f2eff1;color:#272134;
+  --pro-panel:#fff9fa;
+  --pro-accent-soft:var(--pro-accent);
+}
+.premium-theme-ivory .premium-site-nav{
+  background:#f9f7f8;border-color:#d9d1de
+}
+.premium-theme-ivory .premium-site-brand{color:#292336}
+.premium-theme-ivory .premium-site-nav>nav a,
+.premium-theme-ivory .premium-site-tabs a{color:#61576c}
+.premium-theme-ivory .premium-site-identity{
+  background:radial-gradient(ellipse at 80% 2%,#e6d3fa,#f6f1f4 67%)
+}
+.premium-theme-ivory .premium-site-photo{background:#d1c0dd}
+.premium-theme-ivory .premium-site-intro,
+.premium-theme-ivory .premium-site-about>div:first-child>p,
+.premium-theme-ivory .premium-site-agenda .premium-site-section-head p,
+.premium-theme-ivory .premium-site-work-tile p,
+.premium-theme-ivory .premium-site-summary p,
+.premium-theme-ivory .premium-site-contact p{color:#61596c}
+.premium-theme-ivory .premium-site-small-label,
+.premium-theme-ivory .premium-site-city,
+.premium-theme-ivory .premium-site-socials,
+.premium-theme-ivory .premium-site-identity-foot{color:#5c5469}
+.premium-theme-ivory .premium-site-tabs,
+.premium-theme-ivory .premium-site-about,
+.premium-theme-ivory .premium-site-work,
+.premium-theme-ivory .premium-site-agenda,
+.premium-theme-ivory .premium-site-footer{border-color:#d9d1de}
+.premium-theme-ivory .premium-site-summary,
+.premium-theme-ivory .premium-site-work-tile,
+.premium-theme-ivory .premium-site-calendar,
+.premium-theme-ivory .premium-site-showlist,
+.premium-theme-ivory .premium-site-contact{
+  background:#fcf9fb;border-color:#d8cedc;color:#292336
+}
+.premium-theme-ivory .premium-site-work-featured{background:#e9d9ee}
+.premium-theme-ivory .premium-site-calendar-heading,
+.premium-theme-ivory .premium-site-showlist-head{border-color:#d8cedc}
+.premium-theme-ivory .premium-site-daygrid button,
+.premium-theme-ivory .premium-site-day-empty{
+  background:#fcf9fb;color:#383344;border-color:#e5dce8
+}
+.premium-theme-ivory .premium-site-daygrid button:hover{background:#eee5f3}
+.premium-theme-ivory .premium-site-daygrid .premium-site-day-selected{
+  background:var(--pro-accent);color:#171122
+}
+.premium-theme-ivory .premium-site-daynames,
+.premium-theme-ivory .premium-site-calendar-legend,
+.premium-theme-ivory .premium-site-showinfo>span,
+.premium-theme-ivory .premium-site-no-shows,
+.premium-theme-ivory .premium-site-summary small{color:#6c6475}
+.premium-theme-ivory .premium-site-showdate{background:#eee4f1;color:#332940}
+.premium-theme-ivory .premium-site-showpill{background:#eee2f0;color:#625170}
+.premium-theme-ivory .premium-site-show{border-color:#e0d5e2}
+.premium-theme-ivory .premium-site-no-shows strong{color:#322b3a}
+.premium-theme-ivory .premium-site-calendar-heading button{
+  background:#ebe2ef;border-color:#d5c8dc;color:#554964
+}
+.premium-theme-ivory .premium-site-agenda-link{color:#634186!important}
+.premium-theme-ivory .premium-site-contact .premium-site-contact-icon{color:#22172e}
+.premium-theme-ivory .premium-site-footer>span:first-child{color:#3f354c}
+.premium-theme-ivory .premium-site-footer small,
+.premium-theme-ivory .premium-site-footer>span:last-child{color:#716777}
+.premium-theme-ivory .premium-site-secondary-action{
+  background:#fbf6fc;color:#594d69!important;border-color:#cfc0d7
+}
+.premium-theme-ivory .premium-site-signature{text-shadow:none}
+@media(max-width:900px){
+  .premium-design-controls{grid-template-columns:1fr}
+}
+@media(max-width:620px){
+  .premium-design-editor{padding:18px 16px;margin-bottom:12px}
+  .premium-design-heading{flex-direction:column;align-items:stretch}
+  .premium-design-collapse{align-self:flex-start}
+  .premium-design-themes{gap:6px}
+  .premium-design-theme{padding:5px}
+  .premium-design-theme-swatch{height:48px}
+  .premium-design-theme strong{font-size:10px}
+  .premium-design-theme small{font-size:9px}
+  .premium-design-colors{gap:7px}
+  .premium-design-section-item{padding:9px}
+  .premium-design-footer .btn{flex:1;justify-content:center}
+  .premium-design-save-status{flex-basis:100%;margin:0}
+}
