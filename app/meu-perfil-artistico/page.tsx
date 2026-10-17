@@ -41,6 +41,10 @@ export default function MeuPerfilArtistico() {
   const [spotify, setSpotify] = useState("");
   const [published, setPublished] = useState(false);
   const [savedPublished, setSavedPublished] = useState(false);
+  const [bookingEnabled, setBookingEnabled] = useState(false);
+  const [bookingAvailable, setBookingAvailable] = useState(false);
+  const [bookingBusy, setBookingBusy] = useState(false);
+  const [bookingNotice, setBookingNotice] = useState("");
   const [requestedUsername, setRequestedUsername] = useState("");
   const [claimingUsername, setClaimingUsername] = useState(false);
   const [loading, setLoading] = useState(true);
@@ -77,12 +81,37 @@ export default function MeuPerfilArtistico() {
         setSpotify(p.spotify_url || "");
         setPublished(Boolean(p.is_public));
         setSavedPublished(Boolean(p.is_public));
+        const { data: bookingSetting, error: bookingError } =
+          await supabase.rpc("stage_my_artist_booking_settings");
+        if (!active) return;
+        if (!bookingError && typeof bookingSetting === "boolean") {
+          setBookingAvailable(true);
+          setBookingEnabled(bookingSetting);
+        }
       }
       setLoading(false);
     }
     void load();
     return () => { active = false; };
   }, [router]);
+
+  async function changeBookingEnabled(nextValue: boolean) {
+    if (!bookingAvailable || bookingBusy) return;
+    setBookingBusy(true);
+    setBookingNotice("");
+    const { data, error: preferenceError } = await createClient().rpc(
+      "stage_set_artist_bookings_enabled", { p_enabled: nextValue }
+    );
+    if (preferenceError || data !== "saved") {
+      setBookingNotice("Não foi possível alterar agora. Confira se artist_booking_requests_migration.sql foi executado.");
+    } else {
+      setBookingEnabled(nextValue);
+      setBookingNotice(nextValue
+        ? "Pedidos habilitados. O formulário aparece assim que seu perfil gratuito estiver publicado."
+        : "Pedidos desativados. O formulário não aparece mais na página pública.");
+    }
+    setBookingBusy(false);
+  }
 
   async function claimUsername(e: FormEvent<HTMLFormElement>) {
     e.preventDefault();
@@ -329,6 +358,21 @@ export default function MeuPerfilArtistico() {
               {saving ? "Salvando..." : published ? "Salvar e publicar" : "Salvar rascunho"}
             </button>
           </form>
+          <section className="artist-booking-setting" aria-label="Recebimento de pedidos de contratação">
+            <div className="artist-free-label" style={{ marginBottom: 12 }}>CONTATO COM CONTRATANTES</div>
+            <label className="artist-booking-setting-toggle">
+              <input type="checkbox" checked={bookingEnabled}
+                disabled={!bookingAvailable || bookingBusy}
+                onChange={event => void changeBookingEnabled(event.target.checked)}/>
+              <span>
+                <strong>Receber pedidos de contratação pelo meu perfil</strong>
+                <small>Se ativado, o público poderá enviar propostas pelo formulário da página gratuita. Seus dados pessoais não aparecem no site; você receberá os contatos na sua caixa privada.</small>
+              </span>
+            </label>
+            {!bookingAvailable && <p className="field-help">Para ativar, execute artist_booking_requests_migration.sql no Supabase.</p>}
+            {bookingAvailable && !savedPublished && <p className="field-help">O formulário ficará visível somente depois de publicar sua página gratuita.</p>}
+            {bookingNotice && <p className="field-help" role="status">{bookingNotice}</p>}
+          </section>
           {savedPublished && config.username && <Link href={"/" + config.username} target="_blank" className="btn btn-quiet" style={{ marginTop: 16 }}>
             <ExternalLink size={16}/> Visualizar página pública <ArrowUpRight size={15}/>
           </Link>}
