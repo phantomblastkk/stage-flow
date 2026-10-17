@@ -254,3 +254,21 @@ $$;
 revoke all on function public.stage_set_artist_bookings_enabled(boolean) from public;
 grant execute on function public.stage_set_artist_bookings_enabled(boolean)
   to authenticated;
+
+
+-- O artista pode eliminar definitivamente um pedido antigo ou removido
+-- a pedido do solicitante. A exclusão não envia notificação automática.
+create or replace function public.stage_delete_artist_booking(p_id uuid)
+returns text
+language plpgsql security definer set search_path = ''
+as $$
+begin
+  if auth.uid() is null then return 'login_required'; end if;
+  delete from public.stage_artist_booking_requests
+  where id = p_id and artist_id = auth.uid();
+  if not found then return 'not_found'; end if;
+  return 'deleted';
+end;
+$$;
+revoke all on function public.stage_delete_artist_booking(uuid) from public;
+grant execute on function public.stage_delete_artist_booking(uuid) to authenticated;
