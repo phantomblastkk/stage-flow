@@ -83,3 +83,10 @@
   .booking-inbox-item-top{flex-wrap:wrap}
   .booking-inbox-item-top h2{font-size:19px}
 }
+
+.booking-inbox-actions .booking-inbox-delete{
+  background:#40222b;border-color:#67414b;color:#ffcbd3
+}
+.booking-inbox-actions .booking-inbox-delete:hover:not(:disabled){
+  background:#572f39
+}
