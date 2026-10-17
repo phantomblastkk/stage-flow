@@ -527,11 +527,15 @@ export default function SiteProfissionalPreview() {
           <div className="premium-site-contact-icon"><Mic2 size={27}/></div>
           <div>
             <h2>Leve {firstName} para seu evento.</h2>
-            <p>Um futuro formulário de contratação poderá receber solicitações direto pelo site.</p>
+            <p>Os pedidos de show já podem chegar pelo perfil gratuito do cantor. Este layout profissional continua sendo apenas uma prévia privada.</p>
           </div>
-          {artist.instagram_url
-            ? <a href={artist.instagram_url} target="_blank" rel="noopener noreferrer" className="premium-site-main-action"><Instagram size={17}/> Falar pelo Instagram <ArrowUpRight size={16}/></a>
-            : <span className="premium-site-contact-pending"><LockKeyhole size={16}/> Contato pelo site em preparação</span>}
+          {artist.username && artist.is_public
+            ? <Link href={"/" + artist.username + "#contratar"} target="_blank" className="premium-site-main-action">
+                <Mic2 size={17}/> Testar pedido no perfil gratuito <ArrowUpRight size={16}/>
+              </Link>
+            : artist.instagram_url
+              ? <a href={artist.instagram_url} target="_blank" rel="noopener noreferrer" className="premium-site-main-action"><Instagram size={17}/> Falar pelo Instagram <ArrowUpRight size={16}/></a>
+              : <span className="premium-site-contact-pending"><LockKeyhole size={16}/> Publique sua página gratuita para receber pedidos</span>}
         </section>}
         </div>
 
@@ -548,6 +552,7 @@ export default function SiteProfissionalPreview() {
           <h2>Seu site profissional, quando você quiser.</h2>
           <p>Esta é uma prévia privada usando informações da sua conta. A experiência completa — com galeria avançada, agenda pública, contratação e subdomínio do tipo <strong>{artist.username || "seuusuario"}.stageflow.com</strong> — será oferecida como adicional pago em uma etapa futura.</p>
           <p className="premium-preview-protection"><LockKeyhole size={16}/> Prévia gratuita. Sem cobrança, sem ativação de plano e sem publicação de subdomínio.</p>
+          <p>Os contatos enviados pela página gratuita ficam na sua <Link href="/meu-perfil-artistico/solicitacoes" style={{ color: "#d8c0ff", textDecoration: "underline" }}>caixa privada de pedidos de contratação</Link>.</p>
         </div>
         <Link href="/meu-perfil-artistico" className="btn btn-quiet">Editar meus dados <ArrowUpRight size={15}/></Link>
       </section>
