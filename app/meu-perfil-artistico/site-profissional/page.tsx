@@ -9,7 +9,7 @@ import {
   ArrowLeft, ArrowRight, ArrowUpRight, CalendarDays, CheckCircle2,
   ChevronLeft, ChevronRight, Crown, ExternalLink, Globe2, Instagram,
   LockKeyhole, LoaderCircle, MapPin, Mic2, Music2, PlayCircle,
-  Sparkles, Youtube
+  Sparkles, Youtube, Palette, Save, Eye, EyeOff, RotateCcw, ArrowUp, ArrowDown
 } from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
 
@@ -28,6 +28,39 @@ type ArtistPreview = {
   is_public: boolean;
   custom_subdomain_enabled: boolean;
 };
+
+type SectionId = "about" | "portfolio" | "agenda" | "contact";
+type PreviewTheme = "midnight" | "concert" | "ivory";
+type PreviewAccent = "violet" | "lime" | "cyan" | "gold" | "coral";
+type PremiumDraft = {
+  theme: PreviewTheme;
+  accent: PreviewAccent;
+  section_order: SectionId[];
+  visible_sections: SectionId[];
+};
+
+const SECTION_IDS: SectionId[] = ["about","portfolio","agenda","contact"];
+const SECTION_LABELS: Record<SectionId, string> = {
+  about: "Sobre", portfolio: "Portfólio", agenda: "Agenda", contact: "Contato"
+};
+const defaultDraft = (): PremiumDraft => ({
+  theme: "midnight",
+  accent: "violet",
+  section_order: [...SECTION_IDS],
+  visible_sections: [...SECTION_IDS]
+});
+const themeChoices: { id: PreviewTheme; title: string; description: string }[] = [
+  { id: "midnight", title: "Midnight", description: "Azul escuro e elegante" },
+  { id: "concert", title: "Concert", description: "Roxo e luz de palco" },
+  { id: "ivory", title: "Ivory", description: "Claro e sofisticado" }
+];
+const accentChoices: { id: PreviewAccent; name: string; color: string }[] = [
+  { id: "violet", name: "Roxo", color: "#a976ff" },
+  { id: "lime", name: "Verde", color: "#b2e65f" },
+  { id: "cyan", name: "Ciano", color: "#60cde9" },
+  { id: "gold", name: "Dourado", color: "#f0bd65" },
+  { id: "coral", name: "Coral", color: "#ff978b" }
+];
 
 type PublicShow = {
   id: string;
@@ -69,6 +102,13 @@ export default function SiteProfissionalPreview() {
   const [problem, setProblem] = useState("");
   const [month, setMonth] = useState(() => new Date(new Date().getFullYear(), new Date().getMonth(), 1));
   const [selectedDate, setSelectedDate] = useState<string | null>(null);
+  const [draft, setDraft] = useState<PremiumDraft>(defaultDraft);
+  const [savedDraft, setSavedDraft] = useState<PremiumDraft>(defaultDraft);
+  const [savingDraft, setSavingDraft] = useState(false);
+  const [draftError, setDraftError] = useState("");
+  const [draftMessage, setDraftMessage] = useState("");
+  const [editorOpen, setEditorOpen] = useState(true);
+  const [draftReady, setDraftReady] = useState(false);
 
   useEffect(() => {
     let active = true;
@@ -96,6 +136,31 @@ export default function SiteProfissionalPreview() {
       }
       setArtist(owner as ArtistPreview);
 
+      const { data: savedDesign, error: designError } = await supabase.rpc("stage_my_premium_site_draft");
+      if (!active) return;
+      if (designError) {
+        setDraftError("Para salvar seu rascunho, execute premium_site_draft_editor_migration.sql no Supabase. Você pode testar as opções enquanto isso.");
+      } else if (savedDesign) {
+        const saved = savedDesign as Partial<PremiumDraft>;
+        const validOrder = Array.isArray(saved.section_order)
+          && saved.section_order.length === 4
+          && SECTION_IDS.every(id => saved.section_order?.includes(id));
+        const validVisible = Array.isArray(saved.visible_sections)
+          && saved.visible_sections.length >= 1
+          && saved.visible_sections.every(id => SECTION_IDS.includes(id));
+        const next: PremiumDraft = {
+          theme: themeChoices.some(item => item.id === saved.theme) ? saved.theme! : "midnight",
+          accent: accentChoices.some(item => item.id === saved.accent) ? saved.accent! : "violet",
+          section_order: validOrder ? [...saved.section_order!] : [...SECTION_IDS],
+          visible_sections: validVisible ? [...saved.visible_sections!] : [...SECTION_IDS]
+        };
+        setDraft(next);
+        setSavedDraft(next);
+        setDraftReady(true);
+      } else {
+        setDraftError("Não foi possível carregar o rascunho profissional. Confira a configuração do Supabase.");
+      }
+
       // Exibe APENAS eventos que o próprio artista marcou como públicos e publicados.
       // Esta consulta usa a sessão do proprietário e as políticas já existentes.
       const { data: ownerEvents, error: eventsError } = await supabase
@@ -119,8 +184,64 @@ export default function SiteProfissionalPreview() {
 
   const datesWithShows = useMemo(() => new Set(events.map(e => showCode(e.starts_at))), [events]);
   const selectedShows = selectedDate ? events.filter(e => showCode(e.starts_at) === selectedDate) : events;
-  const accent = artist?.accent === "lime" ? "lime" : artist?.accent === "cyan" ? "cyan" : "violet";
   const firstName = artist?.name || "Seu nome artístico";
+  const visibleOrder = draft.section_order.filter(section => draft.visible_sections.includes(section));
+  const unsaved = JSON.stringify(draft) !== JSON.stringify(savedDraft);
+
+  function moveSection(section: SectionId, direction: -1 | 1) {
+    setDraft(prev => {
+      const current = prev.section_order.indexOf(section);
+      const target = current + direction;
+      if (target < 0 || target >= prev.section_order.length) return prev;
+      const reordered = [...prev.section_order];
+      [reordered[current], reordered[target]] = [reordered[target], reordered[current]];
+      return { ...prev, section_order: reordered };
+    });
+    setDraftMessage("");
+  }
+
+  function toggleSection(section: SectionId) {
+    setDraft(prev => {
+      const shown = prev.visible_sections.includes(section);
+      if (shown && prev.visible_sections.length === 1) {
+        setDraftMessage("Mantenha pelo menos uma seção visível.");
+        return prev;
+      }
+      setDraftMessage("");
+      return {
+        ...prev,
+        visible_sections: shown
+          ? prev.visible_sections.filter(id => id !== section)
+          : [...prev.visible_sections, section]
+      };
+    });
+  }
+
+  async function saveDraft() {
+    if (!artist || savingDraft) return;
+    setSavingDraft(true);
+    setDraftMessage("");
+    const { data, error: saveError } = await createClient().rpc("stage_save_premium_site_draft", {
+      p_theme: draft.theme,
+      p_accent: draft.accent,
+      p_section_order: draft.section_order,
+      p_visible_sections: draft.visible_sections
+    });
+    if (saveError || data !== "saved") {
+      setDraftError("Não foi possível salvar. Confira se premium_site_draft_editor_migration.sql foi executado no Supabase.");
+      setDraftMessage("Rascunho ainda não salvo. Suas escolhas permanecem na prévia aberta.");
+    } else {
+      setDraftError("");
+      setSavedDraft({
+        ...draft,
+        section_order: [...draft.section_order],
+        visible_sections: [...draft.visible_sections]
+      });
+      setDraftReady(true);
+      setDraftMessage("Rascunho salvo! Suas escolhas permanecem privadas e não ativam um site pago.");
+    }
+    setSavingDraft(false);
+  }
 
   const imageUrl = (path?: string | null) =>
     path ? createClient().storage.from("stage-artist-public").getPublicUrl(path).data.publicUrl : "";
@@ -148,14 +269,98 @@ export default function SiteProfissionalPreview() {
       <p>Entre com uma conta artística e configure sua página gratuita antes de experimentar a prévia.</p>
       <Link href="/meu-perfil-artistico" className="btn btn-primary">Configurar meu perfil <ArrowRight size={16}/></Link>
     </div> : <>
-      <div className={"premium-site premium-site-" + accent}>
+      <section className="premium-design-editor" aria-label="Personalização do site profissional">
+        <div className="premium-design-heading">
+          <div>
+            <span className="premium-design-eyebrow"><Palette size={15}/> PERSONALIZAÇÃO DO SITE PROFISSIONAL</span>
+            <h2>Seu estilo, seu palco.</h2>
+            <p>Experimente temas, cores e seções. Salve seu rascunho sem contratar ou publicar nada.</p>
+          </div>
+          <button type="button" className="premium-design-collapse"
+            onClick={() => setEditorOpen(current => !current)}
+            aria-expanded={editorOpen}>{editorOpen ? "Ocultar opções" : "Personalizar"} <ArrowRight size={15}/></button>
+        </div>
+        {editorOpen && <div className="premium-design-controls">
+          <div className="premium-design-options">
+            <div className="premium-design-group">
+              <h3>Tema do site</h3>
+              <div className="premium-design-themes">
+                {themeChoices.map(choice =>
+                  <button key={choice.id} type="button" className={"premium-design-theme premium-design-theme-" + choice.id}
+                    aria-pressed={draft.theme === choice.id}
+                    onClick={() => { setDraft(prev => ({ ...prev, theme: choice.id })); setDraftMessage(""); }}>
+                    <span className="premium-design-theme-swatch"><i/><b/></span>
+                    <strong>{choice.title}</strong><small>{choice.description}</small>
+                  </button>
+                )}
+              </div>
+            </div>
+            <div className="premium-design-group">
+              <h3>Cor de destaque</h3>
+              <div className="premium-design-colors">
+                {accentChoices.map(choice =>
+                  <button key={choice.id} type="button" aria-pressed={draft.accent === choice.id}
+                    className="premium-design-color"
+                    onClick={() => { setDraft(prev => ({...prev, accent: choice.id})); setDraftMessage(""); }}
+                    aria-label={"Cor " + choice.name}>
+                    <span style={{backgroundColor:choice.color}}/>
+                    {choice.name}
+                  </button>
+                )}
+              </div>
+            </div>
+          </div>
+          <div className="premium-design-sections">
+            <div className="premium-design-sections-heading">
+              <h3>Organizar seções</h3>
+              <span>Mude a ordem e escolha o que aparece na prévia.</span>
+            </div>
+            {draft.section_order.map((section, index) =>
+              <div className="premium-design-section-item" key={section}>
+                <label>
+                  <input type="checkbox" checked={draft.visible_sections.includes(section)}
+                    onChange={() => toggleSection(section)}
+                    disabled={draft.visible_sections.length === 1 && draft.visible_sections.includes(section)}
+                    aria-label={"Exibir seção " + SECTION_LABELS[section]}/>
+                  <span>{draft.visible_sections.includes(section) ? <Eye size={15}/> : <EyeOff size={15}/>}</span>
+                  <strong>{SECTION_LABELS[section]}</strong>
+                </label>
+                <div>
+                  <button type="button" aria-label={"Subir " + SECTION_LABELS[section]}
+                    disabled={index === 0} onClick={() => moveSection(section,-1)}><ArrowUp size={15}/></button>
+                  <button type="button" aria-label={"Descer " + SECTION_LABELS[section]}
+                    disabled={index === draft.section_order.length - 1} onClick={() => moveSection(section,1)}><ArrowDown size={15}/></button>
+                </div>
+              </div>
+            )}
+          </div>
+          <div className="premium-design-footer">
+            <span className="premium-design-save-status">
+              {unsaved ? "Alterações ainda não salvas" : draftReady ? "Seu rascunho está salvo" : "Experimente o editor"}
+            </span>
+            <button type="button" className="premium-design-reset"
+              onClick={() => {setDraft(defaultDraft());setDraftMessage("Padrão restaurado na prévia. Salve para manter.");}}>
+              <RotateCcw size={15}/> Restaurar padrão
+            </button>
+            <button type="button" className="btn btn-primary" onClick={() => void saveDraft()}
+              disabled={savingDraft || (!unsaved && draftReady)}>
+              {savingDraft ? <LoaderCircle size={16}/> : <Save size={16}/>}
+              {savingDraft ? "Salvando..." : "Salvar rascunho"}
+            </button>
+          </div>
+        </div>}
+        {draftError && <p className="premium-design-feedback premium-design-error" role="alert">{draftError}</p>}
+        {draftMessage && <p className="premium-design-feedback" role="status">{draftMessage}</p>}
+      </section>
+      <div className={"premium-site premium-theme-" + draft.theme + " premium-site-" + draft.accent}>
         <header className="premium-site-nav">
           <Link href="/" className="premium-site-brand"><span className="premium-site-signal"><Music2 size={20}/></span> STAGE FLOW</Link>
           <nav aria-label="Seções do site profissional">
-            <a href="#premium-sobre">Sobre</a>
-            <a href="#premium-agenda">Agenda</a>
-            <a href="#premium-portfolio">Portfólio</a>
-            <a href="#premium-contato">Contato</a>
+            {visibleOrder.map(section =>
+              <a href={"#premium-" + (section === "about" ? "sobre" : section === "portfolio" ? "portfolio" : section === "agenda" ? "agenda" : "contato")} key={section}>
+                {SECTION_LABELS[section]}
+              </a>
+            )}
           </nav>
           <span className="premium-site-example"><Sparkles size={13}/> CONCEITO PREMIUM</span>
         </header>
@@ -184,8 +389,8 @@ export default function SiteProfissionalPreview() {
             </div>
 
             <div className="premium-site-actions">
-              <a href="#premium-contato" className="premium-site-main-action"><Mic2 size={17}/> Solicitar contratação <ArrowUpRight size={16}/></a>
-              <a href="#premium-agenda" className="premium-site-secondary-action"><CalendarDays size={17}/> Próximos shows</a>
+              {draft.visible_sections.includes("contact") && <a href="#premium-contato" className="premium-site-main-action"><Mic2 size={17}/> Solicitar contratação <ArrowUpRight size={16}/></a>}
+              {draft.visible_sections.includes("agenda") && <a href="#premium-agenda" className="premium-site-secondary-action"><CalendarDays size={17}/> Próximos shows</a>}
             </div>
             <div className="premium-site-identity-foot">
               <span><CheckCircle2 size={15}/> Dados do seu perfil Stage Flow</span>
@@ -200,13 +405,14 @@ export default function SiteProfissionalPreview() {
         </section>
 
         <div className="premium-site-tabs" aria-label="Navegação por seções">
-          <a href="#premium-sobre">Sobre</a>
-          <a href="#premium-portfolio">Portfólio</a>
-          <a href="#premium-agenda">Agenda</a>
-          <a href="#premium-contato">Contato</a>
+          {visibleOrder.map(section =>
+            <a href={"#premium-" + (section === "about" ? "sobre" : section === "portfolio" ? "portfolio" : section === "agenda" ? "agenda" : "contato")} key={section}>
+              {SECTION_LABELS[section]}
+            </a>
+          )}
         </div>
-
-        <section id="premium-sobre" className="premium-site-about">
+        <div className="premium-site-sections">
+        {draft.visible_sections.includes("about") && <section id="premium-sobre" className="premium-site-about" style={{order:draft.section_order.indexOf("about")}}>
           <div>
             <span className="premium-site-section-overline">01 / A HISTÓRIA POR TRÁS DO SOM</span>
             <h2>Sobre <em>o artista.</em></h2>
@@ -220,9 +426,9 @@ export default function SiteProfissionalPreview() {
               Abrir meu perfil gratuito <ArrowUpRight size={15}/>
             </Link>}
           </div>
-        </section>
+        </section>}
 
-        <section id="premium-portfolio" className="premium-site-work">
+        {draft.visible_sections.includes("portfolio") && <section id="premium-portfolio" className="premium-site-work" style={{order:draft.section_order.indexOf("portfolio")}}>
           <div className="premium-site-section-head">
             <div>
               <span className="premium-site-section-overline">02 / MINHA MÚSICA</span>
@@ -250,9 +456,9 @@ export default function SiteProfissionalPreview() {
               {artist.instagram_url ? <a href={artist.instagram_url} target="_blank" rel="noopener noreferrer">Ver Instagram <ArrowUpRight size={14}/></a> : <small>Galeria de fotos: planejada para o site pago.</small>}
             </div>
           </div>
-        </section>
+        </section>}
 
-        <section id="premium-agenda" className="premium-site-agenda">
+        {draft.visible_sections.includes("agenda") && <section id="premium-agenda" className="premium-site-agenda" style={{order:draft.section_order.indexOf("agenda")}}>
           <div className="premium-site-section-head">
             <div>
               <span className="premium-site-section-overline">03 / PRÓXIMAS APRESENTAÇÕES</span>
@@ -312,9 +518,9 @@ export default function SiteProfissionalPreview() {
               <Link className="premium-site-agenda-link" href="/eventos">Gerenciar meus shows <ArrowRight size={16}/></Link>
             </div>
           </div>
-        </section>
+        </section>}
 
-        <section id="premium-contato" className="premium-site-contact">
+        {draft.visible_sections.includes("contact") && <section id="premium-contato" className="premium-site-contact" style={{order:draft.section_order.indexOf("contact")}}>
           <div className="premium-site-contact-icon"><Mic2 size={27}/></div>
           <div>
             <h2>Leve {firstName} para seu evento.</h2>
@@ -323,7 +529,8 @@ export default function SiteProfissionalPreview() {
           {artist.instagram_url
             ? <a href={artist.instagram_url} target="_blank" rel="noopener noreferrer" className="premium-site-main-action"><Instagram size={17}/> Falar pelo Instagram <ArrowUpRight size={16}/></a>
             : <span className="premium-site-contact-pending"><LockKeyhole size={16}/> Contato pelo site em preparação</span>}
-        </section>
+        </section>}
+        </div>
 
         <footer className="premium-site-footer">
           <span><Music2 size={18}/> STAGE FLOW <small>Conectando artistas, músicos e produtores</small></span>
