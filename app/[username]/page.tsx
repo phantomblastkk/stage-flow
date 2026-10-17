@@ -4,8 +4,9 @@ import { useEffect, useState } from "react";
 import type { CSSProperties } from "react";
 import Link from "next/link";
 import { useParams } from "next/navigation";
-import { ArrowLeft, ArrowUpRight, CalendarDays, Instagram, LoaderCircle, MapPin, Music2, Play, Share2 } from "lucide-react";
+import { ArrowLeft, ArrowUpRight, CalendarDays, Instagram, LoaderCircle, MapPin, Music2, Play, Share2, Send } from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
+import ArtistBookingForm from "@/components/artist-booking-form";
 
 type PublicArtist = {
   name: string;
@@ -110,9 +111,14 @@ export default function FreeArtistPage() {
               <h1>{artist.name}</h1>
               <p className="artist-free-tagline"><Music2 size={17}/> {artist.headline || "Música ao vivo"}{artist.city && <> <span>·</span> <MapPin size={16}/>{artist.city}</>}</p>
             </div>
-            <button type="button" className="btn btn-quiet" onClick={() => void shareProfile()}>
-              <Share2 size={16}/>{copied ? "Link copiado!" : "Compartilhar"}
-            </button>
+            <div className="artist-free-hero-actions">
+              <a href="#contratar" className="btn btn-primary">
+                <Send size={16}/> Solicitar show
+              </a>
+              <button type="button" className="btn btn-quiet" onClick={() => void shareProfile()}>
+                <Share2 size={16}/>{copied ? "Link copiado!" : "Compartilhar"}
+              </button>
+            </div>
           </div>
         </section>
 
@@ -146,6 +152,8 @@ export default function FreeArtistPage() {
                 </div>)}
               </div>}
           </section>
+
+          <ArtistBookingForm username={artist.username} artistName={artist.name}/>
         </div>
         {problem && <p role="alert" style={{ color: "#ffb5b5", paddingTop: 20 }}>{problem}</p>}
         <footer className="artist-free-footer">
