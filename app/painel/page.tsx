@@ -6,7 +6,7 @@ import { useRouter } from "next/navigation";
 import {
   ArrowLeft, ArrowRight, Bell, CalendarDays, Check, Guitar,
   LoaderCircle, LogOut, Mic2, Music2, Settings2,
-  UserRound, Users
+  UserRound, Users, Inbox
 } from "lucide-react";
 import type { LucideIcon } from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
@@ -168,6 +168,10 @@ export default function Dashboard() {
         description: "Divulgue sua carreira no endereço gratuito com seu @ artístico."
       },
       {
+        href: "/meu-perfil-artistico/solicitacoes", title: "Pedidos de contratação", icon: Inbox,
+        description: "Leia as solicitações recebidas pela página pública e responda aos interessados."
+      },
+      {
         href: "/convites", title: "Convidar músicos", icon: Users,
         description: "Envie propostas individuais e acompanhe respostas e negociações."
       },
@@ -197,7 +201,8 @@ export default function Dashboard() {
   if (isSupport) {
     secondary.push(
       { href: "/convites", title: "Convidar músicos para um show", description: "Se também organizar uma apresentação.", icon: Users },
-      { href: "/equipes", title: "Gerenciar minhas formações", description: "Se quiser criar sua própria equipe.", icon: Music2 }
+      { href: "/equipes", title: "Gerenciar minhas formações", description: "Se quiser criar sua própria equipe.", icon: Music2 },
+      { href: "/meu-perfil-artistico/solicitacoes", title: "Pedidos de contratação", description: "Veja contatos enviados pela sua página pública de artista.", icon: Inbox }
     );
   }
   if (isLead) {
