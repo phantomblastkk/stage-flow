@@ -1,0 +1,149 @@
+/* Galeria premium em rascunho privado – editor e prévia do portfólio */
+.premium-media-editor{
+  max-width:1170px;margin:0 auto 18px;padding:26px 27px;
+  border:1px solid #44415e;border-radius:17px;
+  background:linear-gradient(130deg,#1c2639,#171c30);
+  color:#ecf0fa
+}
+.premium-media-editor-heading{
+  display:flex;justify-content:space-between;align-items:center;gap:15px;margin-bottom:21px
+}
+.premium-media-editor-heading h2{
+  font:900 clamp(21px,3vw,27px)/1.15 "Manrope",sans-serif;
+  letter-spacing:-.045em;margin:9px 0 8px
+}
+.premium-media-editor-heading p{font-size:12px;color:#b9c3d6;line-height:1.7;margin:0}
+.premium-media-count{
+  flex:none;color:#d5bcff;background:#302b4c;border:1px solid #51466b;
+  padding:9px 13px;border-radius:99px;font-size:11px;font-weight:800
+}
+.premium-media-inputs{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:15px}
+.premium-media-add-box{
+  display:flex;flex-direction:column;gap:9px;
+  border:1px solid #35435c;border-radius:14px;
+  background:#151f32;padding:18px;min-width:0
+}
+.premium-media-add-box h3{
+  display:flex;align-items:center;gap:9px;font:800 14px "Manrope",sans-serif;
+  margin:0 0 4px
+}
+.premium-media-add-box h3 svg{color:#c4a2ff}
+.premium-media-add-box label{font-size:11px;color:#cbd2df;font-weight:700}
+.premium-media-add-box input:not([type="file"]),
+.premium-media-rename input{
+  min-width:0;width:100%;background:#0e192c;border:1px solid #35435f;
+  border-radius:10px;color:#e8edf9;padding:12px;font:500 12px "DM Sans",sans-serif;
+  outline:none
+}
+.premium-media-add-box input:focus,.premium-media-rename input:focus{border-color:#bca4fc}
+.premium-media-upload{
+  display:inline-flex;align-items:center;justify-content:center;gap:9px;
+  cursor:pointer;color:#16101f;background:#bba1f6;border:0;border-radius:10px;
+  padding:12px;font:800 12px "Manrope",sans-serif;margin-top:3px
+}
+.premium-media-upload.is-disabled,.premium-media-upload:disabled{cursor:not-allowed;opacity:.45}
+.premium-media-file{position:absolute;width:1px;height:1px;opacity:0;overflow:hidden}
+.premium-media-add-box small{font-size:10px;line-height:1.6;color:#9aaecb}
+.premium-media-feedback{font-size:12px;line-height:1.6;color:#c2ebc7;background:#1b3029;border:1px solid #456554;padding:12px 14px;border-radius:10px;margin:15px 0 0}
+.premium-media-feedback.is-error{color:#ffc7cd;background:#361f2c;border-color:#704452}
+.premium-media-empty,.premium-media-loading{
+  margin-top:18px;padding:23px;color:#a9b9d4;text-align:center;border:1px dashed #42516e;
+  border-radius:12px;font-size:12px;line-height:1.65
+}
+.premium-media-loading{display:flex;justify-content:center;align-items:center;gap:8px}
+.premium-media-list{display:grid;gap:11px;margin-top:19px}
+.premium-media-list-item{
+  display:grid;grid-template-columns:128px minmax(0,1fr);gap:15px;
+  background:#131c2e;border:1px solid #35435e;border-radius:13px;padding:11px
+}
+.premium-media-list-photo{
+  background:#0c1526;height:103px;border-radius:10px;overflow:hidden
+}
+.premium-media-list-photo img{
+  width:100%;height:100%;object-fit:cover;display:block
+}
+.premium-media-missing{
+  width:100%;height:100%;display:grid;place-content:center;justify-items:center;gap:7px;
+  color:#a8b6cf;font-size:11px;background:#1c2b43
+}
+.premium-media-item-info{min-width:0;padding:4px 0;display:flex;flex-direction:column;gap:9px}
+.premium-media-item-info>strong{
+  font:800 14px/1.4 "Manrope",sans-serif;overflow-wrap:anywhere
+}
+.premium-media-item-flags{display:flex;flex-wrap:wrap;align-items:center;gap:8px}
+.premium-media-item-flags>span{
+  color:#adbbd6;background:#222c42;border-radius:6px;font:800 9px "Manrope",sans-serif;
+  padding:4px 7px;letter-spacing:.05em
+}
+.premium-media-item-flags .premium-media-featured{
+  color:#f9d28a;background:#483822;display:inline-flex;align-items:center;gap:4px
+}
+.premium-media-actions{display:flex;gap:6px;flex-wrap:wrap;align-items:center;margin-top:auto}
+.premium-media-actions button,.premium-media-rename button{
+  display:inline-flex;gap:5px;align-items:center;justify-content:center;
+  color:#d0d9eb;background:#253249;border:1px solid #374965;
+  border-radius:8px;padding:7px 9px;font-size:10px;cursor:pointer
+}
+.premium-media-actions button:hover:not(:disabled),.premium-media-rename button:hover:not(:disabled){
+  background:#3a4462
+}
+.premium-media-actions button:disabled{opacity:.4;cursor:not-allowed}
+.premium-media-actions .premium-media-delete-confirm{background:#5c2937;color:#ffe3e3;border-color:#945265}
+.premium-media-rename{display:flex;align-items:center;gap:6px}
+.premium-media-rename input{flex:1;padding:8px}
+.premium-media-privacy{
+  margin:16px 0 0;font-size:10px;color:#9daec8;line-height:1.7
+}
+.premium-media-privacy strong{color:#d9dbea}
+/* Galeria personalizada da seção Portfólio – a prévia continua privada. */
+.premium-media-showcase{
+  display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:13px
+}
+.premium-media-showcase-card{
+  border:1px solid #334264;border-radius:14px;overflow:hidden;
+  background:#111e36;min-width:0
+}
+.premium-media-showcase-card.is-featured{grid-column:span 2;grid-row:span 2}
+.premium-media-showcase-photo{
+  position:relative;width:100%;height:172px;overflow:hidden;
+  background:#1d2943
+}
+.premium-media-showcase-card.is-featured .premium-media-showcase-photo{height:350px}
+.premium-media-showcase-photo img{width:100%;height:100%;object-fit:cover;display:block}
+.premium-media-showcase-photo>a{display:block}
+.premium-media-play{
+  position:absolute;inset:0;display:grid;place-items:center;
+  color:#f7f6ff;background:#050c1580;opacity:.85
+}
+.premium-media-showcase-details{padding:14px 15px}
+.premium-media-showcase-details>span{
+  display:block;color:var(--pro-accent-soft);font:800 9px "Manrope",sans-serif;
+  letter-spacing:.1em;margin-bottom:6px
+}
+.premium-media-showcase-details h3{
+  font:800 15px/1.45 "Manrope",sans-serif;overflow-wrap:anywhere
+}
+.premium-media-showcase-details a{
+  display:inline-flex;align-items:center;gap:7px;color:var(--pro-accent-soft);
+  font-size:11px;margin-top:10px;font-weight:700
+}
+.premium-theme-ivory .premium-media-showcase-card{background:#fff;border-color:#d6cddd;color:#292538}
+.premium-theme-ivory .premium-media-showcase-details a{color:#684890}
+.premium-theme-ivory .premium-media-showcase-details>span{color:#684890}
+@media(max-width:830px){
+  .premium-media-inputs{grid-template-columns:1fr}
+  .premium-media-showcase{grid-template-columns:repeat(2,minmax(0,1fr))}
+  .premium-media-showcase-card.is-featured{grid-column:span 2;grid-row:auto}
+  .premium-media-showcase-card.is-featured .premium-media-showcase-photo{height:280px}
+}
+@media(max-width:560px){
+  .premium-media-editor{padding:19px 15px}
+  .premium-media-editor-heading{align-items:flex-start;flex-direction:column}
+  .premium-media-list-item{grid-template-columns:87px minmax(0,1fr);gap:10px;padding:8px}
+  .premium-media-list-photo{height:93px}
+  .premium-media-showcase{grid-template-columns:1fr}
+  .premium-media-showcase-card.is-featured{grid-column:auto}
+  .premium-media-showcase-card.is-featured .premium-media-showcase-photo{height:220px}
+  .premium-media-showcase-photo{height:200px}
+  .premium-media-actions button{padding:7px}
+}
