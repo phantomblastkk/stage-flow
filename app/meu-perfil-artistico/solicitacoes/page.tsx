@@ -5,7 +5,7 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import {
   Archive, ArrowLeft, ArrowUpRight, CalendarDays, CheckCircle2, Clock3,
-  Inbox, LoaderCircle, Mail, MapPin, MessageCircle, RotateCcw, ShieldCheck
+  Inbox, LoaderCircle, Mail, MapPin, MessageCircle, RotateCcw, ShieldCheck, Trash2
 } from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
 import "./booking-inbox.css";
@@ -48,6 +48,7 @@ export default function ArtistBookingInboxPage() {
   const [success, setSuccess] = useState("");
   const [updating, setUpdating] = useState<string | null>(null);
   const [filter, setFilter] = useState<"active" | "archived" | "all">("active");
+  const [deletingId, setDeletingId] = useState<string | null>(null);
 
   const loadBookings = useCallback(async () => {
     const supabase = createClient();
@@ -98,6 +99,24 @@ export default function ArtistBookingInboxPage() {
       ));
       setSuccess("Andamento atualizado. Nenhuma mensagem foi enviada automaticamente ao solicitante.");
     }
+    setUpdating(null);
+  }
+
+  async function permanentlyDelete(item: Booking) {
+    if (updating) return;
+    setUpdating(item.id);
+    setError("");
+    setSuccess("");
+    const { data, error: deleteError } = await createClient().rpc(
+      "stage_delete_artist_booking", { p_id: item.id }
+    );
+    if (deleteError || data !== "deleted") {
+      setError("Não foi possível excluir. Tente novamente ou verifique a migração de solicitações.");
+    } else {
+      setBookings(previous => previous.filter(b => b.id !== item.id));
+      setSuccess("Solicitação excluída definitivamente. Os dados desse pedido foram removidos da caixa de entrada.");
+    }
+    setDeletingId(null);
     setUpdating(null);
   }
 
@@ -194,13 +213,29 @@ export default function ArtistBookingInboxPage() {
                   onClick={() => void changeStatus(item, "new")}>
                   <RotateCcw size={15}/> Marcar como novo
                 </button>}
+                {item.status === "archived" && (deletingId === item.id ?
+                  <>
+                    <button type="button" className="booking-inbox-delete"
+                      disabled={Boolean(updating)}
+                      onClick={() => void permanentlyDelete(item)}>
+                      <Trash2 size={15}/> Confirmar exclusão definitiva
+                    </button>
+                    <button type="button" disabled={Boolean(updating)}
+                      onClick={() => setDeletingId(null)}>Cancelar</button>
+                  </> :
+                  <button type="button" className="booking-inbox-delete"
+                    disabled={Boolean(updating)}
+                    onClick={() => setDeletingId(item.id)}>
+                    <Trash2 size={15}/> Excluir dados
+                  </button>
+                )}
               </div>
             </article>;
           })}
         </div>}
       <footer className="booking-inbox-footer">
         Os pedidos são privados. Abrir e-mail ou WhatsApp não envia mensagens automaticamente.
-        Os status servem apenas para sua organização; não representam contratação confirmada.
+        Os status servem apenas para sua organização; não representam contratação confirmada. Você pode arquivar e excluir definitivamente solicitações antigas, inclusive quando o solicitante pedir a remoção de seus dados.
       </footer>
     </div>
   </main>;
