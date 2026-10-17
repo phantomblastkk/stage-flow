@@ -61,3 +61,26 @@ Decisão de produto (15/10/2026).
 - Galeria detalhada e formulário de contratação aparecem como conceitos/estado em preparação; não são funcionalidade disponível.
 - Perfil gratuito /[username] permanece independente de contratação.
 - A prévia está aninhada sob a rota estática já reservada meu-perfil-artistico, evitando colisões com @ artísticos.
+
+
+## Editor visual de rascunho premium (outubro de 2026)
+
+- Rota privada de edição: /meu-perfil-artistico/site-profissional.
+- Três temas: Midnight, Concert e Ivory.
+- Cinco cores: violeta, verde, ciano, dourado e coral, independentes da página gratuita.
+- Organize e oculte Sobre, Portfólio, Agenda e Contato; exige pelo menos uma seção visível.
+- A prévia atualiza imediatamente, incluindo navegação e botões para seções visíveis.
+- Rascunho privado por conta: stage_my_premium_site_draft e stage_save_premium_site_draft.
+- Migração: supabase/premium_site_draft_editor_migration.sql; executar depois das migrações de perfis.
+- Tabela stage_premium_site_drafts tem RLS sem policies públicas; uso somente por RPCs autenticadas que conferem auth.uid().
+- A página pública gratuita não lê dados deste rascunho premium.
+- Salvar NÃO altera assinatura, direito a subdomínio nem publica qualquer site pago.
+- Cobrança, DNS, galeria avançada e formulário de contratação continuam não implementados.
+
+## Checklist de teste
+1. Execute premium_site_draft_editor_migration.sql no Supabase.
+2. Entre como cantor, abra a prévia, escolha Concert e dourado.
+3. Oculte Contato e mova Agenda para cima. Confira navegação e ordem.
+4. Salve o rascunho, atualize a página e confira as preferências.
+5. Verifique que a página pública /cantorsousa não usa o tema premium.
+6. Confirme que não ocorreu compra, nem publicação de subdomínio.
