@@ -29,3 +29,15 @@
   .artist-booking-fields{grid-template-columns:1fr}
   .artist-booking-submit{width:100%}
 }
+
+/* Formulário ocupa toda a largura disponível abaixo de Sobre/Agenda. */
+.artist-free-content>.artist-booking-form{grid-column:1/-1}
+.artist-free-hero-actions{
+  display:flex;align-items:center;gap:10px;flex-wrap:wrap;
+  position:relative;z-index:2
+}
+.artist-free-hero-actions .btn{white-space:nowrap}
+@media(max-width:620px){
+  .artist-free-hero-actions{width:100%}
+  .artist-free-hero-actions .btn{flex:1;justify-content:center}
+}
