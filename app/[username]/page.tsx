@@ -33,6 +33,7 @@ export default function FreeArtistPage() {
   const { username } = useParams<{username: string}>();
   const [artist, setArtist] = useState<PublicArtist | null>(null);
   const [events, setEvents] = useState<PublicEvent[]>([]);
+  const [bookingEnabled, setBookingEnabled] = useState(false);
   const [loading, setLoading] = useState(true);
   const [problem, setProblem] = useState("");
   const [copied, setCopied] = useState(false);
@@ -50,11 +51,13 @@ export default function FreeArtistPage() {
         setProblem("A página não está disponível agora. Confira se a migração de perfis gratuitos foi executada.");
       } else if (data) {
         setArtist(data as PublicArtist);
-        const { data: publicEvents } = await supabase.rpc(
-          "stage_public_artist_events", { p_username: username }
-        );
+        const [showsResult, bookingResult] = await Promise.all([
+          supabase.rpc("stage_public_artist_events", { p_username: username }),
+          supabase.rpc("stage_public_artist_accepts_bookings", { p_username: username })
+        ]);
         if (!active) return;
-        setEvents((publicEvents ?? []) as PublicEvent[]);
+        setEvents((showsResult.data ?? []) as PublicEvent[]);
+        setBookingEnabled(bookingResult.error === null && bookingResult.data === true);
       }
       setLoading(false);
     }
@@ -112,9 +115,9 @@ export default function FreeArtistPage() {
               <p className="artist-free-tagline"><Music2 size={17}/> {artist.headline || "Música ao vivo"}{artist.city && <> <span>·</span> <MapPin size={16}/>{artist.city}</>}</p>
             </div>
             <div className="artist-free-hero-actions">
-              <a href="#contratar" className="btn btn-primary">
+              {bookingEnabled && <a href="#contratar" className="btn btn-primary">
                 <Send size={16}/> Solicitar show
-              </a>
+              </a>}
               <button type="button" className="btn btn-quiet" onClick={() => void shareProfile()}>
                 <Share2 size={16}/>{copied ? "Link copiado!" : "Compartilhar"}
               </button>
@@ -153,7 +156,7 @@ export default function FreeArtistPage() {
               </div>}
           </section>
 
-          <ArtistBookingForm username={artist.username} artistName={artist.name}/>
+          {bookingEnabled && <ArtistBookingForm username={artist.username} artistName={artist.name}/>}
         </div>
         {problem && <p role="alert" style={{ color: "#ffb5b5", paddingTop: 20 }}>{problem}</p>}
         <footer className="artist-free-footer">
