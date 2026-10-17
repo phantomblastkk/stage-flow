@@ -6,7 +6,7 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import {
   ArrowLeft, ArrowUpRight, CheckCircle2, Eye, EyeOff,
-  ExternalLink, Globe2, ImagePlus, LoaderCircle, LockKeyhole, Music2, Palette, Save, Upload
+  ExternalLink, Globe2, ImagePlus, Inbox, LoaderCircle, LockKeyhole, Music2, Palette, Save, Upload
 } from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
 
@@ -332,6 +332,10 @@ export default function MeuPerfilArtistico() {
           {savedPublished && config.username && <Link href={"/" + config.username} target="_blank" className="btn btn-quiet" style={{ marginTop: 16 }}>
             <ExternalLink size={16}/> Visualizar página pública <ArrowUpRight size={15}/>
           </Link>}
+          <Link href="/meu-perfil-artistico/solicitacoes" className="btn btn-quiet"
+            style={{ marginTop: 12, justifyContent: "center" }}>
+            <Inbox size={17}/> Pedidos de contratação <ArrowUpRight size={15}/>
+          </Link>
         </section>
 
         <aside style={{ alignSelf: "start", display: "grid", gap: 17 }}>
