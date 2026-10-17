@@ -75,7 +75,7 @@ Decisão de produto (15/10/2026).
 - Tabela stage_premium_site_drafts tem RLS sem policies públicas; uso somente por RPCs autenticadas que conferem auth.uid().
 - A página pública gratuita não lê dados deste rascunho premium.
 - Salvar NÃO altera assinatura, direito a subdomínio nem publica qualquer site pago.
-- Cobrança, DNS, galeria avançada e formulário de contratação continuam não implementados.
+- Cobrança, DNS e publicação do formulário avançado dentro de um subdomínio pago continuam não implementados. O formulário básico de contato já pode funcionar na página gratuita do artista, com opt-in explícito.
 
 ## Checklist de teste
 1. Execute premium_site_draft_editor_migration.sql no Supabase.
@@ -108,3 +108,26 @@ Decisão de produto (15/10/2026).
 6. Renomeie e remova o vídeo; depois remova a foto, confirmando a exclusão.
 7. Verifique que a galeria continua ausente do perfil comum /cantorsousa.
 8. Sem estar logado como dono, confira que não é possível consultar registros ou abrir arquivos privados do bucket.
+
+## Pedidos de contratação pelo perfil gratuito (outubro de 2026)
+
+- A página pública /[username] só exibe o formulário e o botão Solicitar show quando is_public=true E accept_booking_requests=true.
+- O cantor liga/desliga em /meu-perfil-artistico. Desligado por padrão, sem ativação automática com a publicação do perfil.
+- O solicitante informa nome, e-mail, WhatsApp opcional, cidade, data opcional e detalhes do evento e autoriza expressamente o compartilhamento dos dados com o artista para retorno.
+- Mensagens e dados de contato são privados, não entram no perfil gratuito nem na prévia premium.
+- RPC pública stage_submit_artist_booking grava dados somente para artistas publicados e opt-in; valida tamanhos, data, e-mail e telefone, usa honeypot e limites persistentes de 60 pedidos/artista/dia e 2 por e-mail/artista/dia.
+- A caixa privada /meu-perfil-artistico/solicitacoes permite ler até 100 pedidos recentes, filtrar, marcar como Em contato, arquivar, restaurar e excluir definitivamente pedidos arquivados.
+- Respostas por e-mail/WhatsApp são atalhos manuais; nenhum envio automático, notificação ou confirmação de disponibilidade ou reserva.
+- Banco stage_artist_booking_requests tem RLS ativado e acesso direto negado. Só RPCs com auth.uid() do dono leem/atualizam/excluem pedidos.
+- Migração necessária: supabase/artist_booking_requests_migration.sql, após free_artist_pages_migration.sql (e demais migrações de perfil já exigidas).
+- A prévia premium tem link para testar o formulário no perfil gratuito e para abrir a caixa de solicitações. A contratação premium e o subdomínio seguem indisponíveis.
+- Antes de disponibilizar amplamente, adicionar CAPTCHA gerenciado, políticas de retenção de dados e avisos de privacidade/termos definitivos. O honeypot e os limites SQL são proteção inicial, não antibot completo.
+
+### Teste manual
+1. Executar artist_booking_requests_migration.sql no Supabase SQL Editor.
+2. Entrar no editor do cantor, ativar Receber pedidos de contratação e manter o perfil gratuito publicado.
+3. Abrir /cantorsousa em sessão anônima, preencher formulário com contatos de teste e aceitar o compartilhamento.
+4. Voltar à caixa privada, confirmar o recebimento e testar Em contato/Arquivar/Excluir dados.
+5. Confirmar que o público não pode ler dados de contatos ou consultar a caixa do artista.
+6. Desativar a opção no editor e atualizar /cantorsousa: formulário e botão Solicitar show devem desaparecer.
+7. Confirmar que nenhum plano foi ativado, nenhuma cobrança ocorreu e nenhum subdomínio foi publicado.
