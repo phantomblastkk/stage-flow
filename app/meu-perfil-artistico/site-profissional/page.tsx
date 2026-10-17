@@ -12,6 +12,7 @@ import {
   Sparkles, Youtube, Palette, Save, Eye, EyeOff, RotateCcw, ArrowUp, ArrowDown
 } from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
+import { PremiumGalleryEditor, PremiumGalleryShowcase, usePremiumGallery } from "./premium-media-gallery";
 
 type ArtistPreview = {
   name: string;
@@ -109,6 +110,7 @@ export default function SiteProfissionalPreview() {
   const [draftMessage, setDraftMessage] = useState("");
   const [editorOpen, setEditorOpen] = useState(true);
   const [draftReady, setDraftReady] = useState(false);
+  const gallery = usePremiumGallery(Boolean(artist));
 
   useEffect(() => {
     let active = true;
@@ -350,6 +352,7 @@ export default function SiteProfissionalPreview() {
         {draftError && <p className="premium-design-feedback premium-design-error" role="alert">{draftError}</p>}
         {draftMessage && <p className="premium-design-feedback" role="status">{draftMessage}</p>}
       </section>
+      <PremiumGalleryEditor gallery={gallery}/>
       <div className={"premium-site premium-theme-" + draft.theme + " premium-site-" + draft.accent}>
         <header className="premium-site-nav">
           <Link href="/" className="premium-site-brand"><span className="premium-site-signal"><Music2 size={20}/></span> STAGE FLOW</Link>
@@ -434,7 +437,9 @@ export default function SiteProfissionalPreview() {
             </div>
             <span className="premium-site-section-icon"><PlayCircle size={25}/></span>
           </div>
-          <div className="premium-site-work-grid">
+          {gallery.items.length > 0
+            ? <PremiumGalleryShowcase items={gallery.items}/>
+            : <div className="premium-site-work-grid">
             <div className="premium-site-work-tile premium-site-work-featured">
               <span><PlayCircle size={28}/></span>
               <strong>Apresentações ao vivo</strong>
@@ -453,7 +458,7 @@ export default function SiteProfissionalPreview() {
               <p>Uma futura galeria para imagens de shows e projetos.</p>
               {artist.instagram_url ? <a href={artist.instagram_url} target="_blank" rel="noopener noreferrer">Ver Instagram <ArrowUpRight size={14}/></a> : <small>Galeria de fotos: planejada para o site pago.</small>}
             </div>
-          </div>
+          </div>}
         </section>}
 
         {draft.visible_sections.includes("agenda") && <section id="premium-agenda" className="premium-site-agenda" style={{order:draft.section_order.indexOf("agenda")}}>
