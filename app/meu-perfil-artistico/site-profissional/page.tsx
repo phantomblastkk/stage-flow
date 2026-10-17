@@ -201,20 +201,18 @@ export default function SiteProfissionalPreview() {
   }
 
   function toggleSection(section: SectionId) {
-    setDraft(prev => {
-      const shown = prev.visible_sections.includes(section);
-      if (shown && prev.visible_sections.length === 1) {
-        setDraftMessage("Mantenha pelo menos uma seção visível.");
-        return prev;
-      }
-      setDraftMessage("");
-      return {
-        ...prev,
-        visible_sections: shown
-          ? prev.visible_sections.filter(id => id !== section)
-          : [...prev.visible_sections, section]
-      };
-    });
+    const shown = draft.visible_sections.includes(section);
+    if (shown && draft.visible_sections.length === 1) {
+      setDraftMessage("Mantenha pelo menos uma seção visível.");
+      return;
+    }
+    setDraftMessage("");
+    setDraft(prev => ({
+      ...prev,
+      visible_sections: shown
+        ? prev.visible_sections.filter(id => id !== section)
+        : [...prev.visible_sections, section]
+    }));
   }
 
   async function saveDraft() {
@@ -414,7 +412,7 @@ export default function SiteProfissionalPreview() {
         <div className="premium-site-sections">
         {draft.visible_sections.includes("about") && <section id="premium-sobre" className="premium-site-about" style={{order:draft.section_order.indexOf("about")}}>
           <div>
-            <span className="premium-site-section-overline">01 / A HISTÓRIA POR TRÁS DO SOM</span>
+            <span className="premium-site-section-overline">{String(draft.section_order.indexOf("about") + 1).padStart(2,"0")} / A HISTÓRIA POR TRÁS DO SOM</span>
             <h2>Sobre <em>o artista.</em></h2>
             <p>{artist.bio || "Sua biografia ficará aqui. Escreva sua trajetória na página gratuita de cantor para ver como ela aparece no site profissional."}</p>
           </div>
@@ -431,7 +429,7 @@ export default function SiteProfissionalPreview() {
         {draft.visible_sections.includes("portfolio") && <section id="premium-portfolio" className="premium-site-work" style={{order:draft.section_order.indexOf("portfolio")}}>
           <div className="premium-site-section-head">
             <div>
-              <span className="premium-site-section-overline">02 / MINHA MÚSICA</span>
+              <span className="premium-site-section-overline">{String(draft.section_order.indexOf("portfolio") + 1).padStart(2,"0")} / MINHA MÚSICA</span>
               <h2>Portfólio <em>& vídeos.</em></h2>
             </div>
             <span className="premium-site-section-icon"><PlayCircle size={25}/></span>
@@ -461,7 +459,7 @@ export default function SiteProfissionalPreview() {
         {draft.visible_sections.includes("agenda") && <section id="premium-agenda" className="premium-site-agenda" style={{order:draft.section_order.indexOf("agenda")}}>
           <div className="premium-site-section-head">
             <div>
-              <span className="premium-site-section-overline">03 / PRÓXIMAS APRESENTAÇÕES</span>
+              <span className="premium-site-section-overline">{String(draft.section_order.indexOf("agenda") + 1).padStart(2,"0")} / PRÓXIMAS APRESENTAÇÕES</span>
               <h2>Agenda <em>de shows.</em></h2>
               <p>Somente shows marcados como públicos e publicados no Stage Flow.</p>
             </div>
