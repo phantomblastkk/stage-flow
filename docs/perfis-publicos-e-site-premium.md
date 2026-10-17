@@ -84,3 +84,27 @@ Decisão de produto (15/10/2026).
 4. Salve o rascunho, atualize a página e confira as preferências.
 5. Verifique que a página pública /cantorsousa não usa o tema premium.
 6. Confirme que não ocorreu compra, nem publicação de subdomínio.
+
+## Galeria de fotos e vídeos no rascunho profissional (outubro de 2026)
+
+- Editor integrado à rota /meu-perfil-artistico/site-profissional, antes da prévia.
+- Enviar fotos JPG, PNG e WEBP até 5 MB cada; adicionar vídeos por links HTTPS válidos do YouTube (watch, shorts, live, youtu.be).
+- Até 20 trabalhos por artista, com título de 1 a 90 caracteres.
+- Ordenar trabalhos, editar títulos, selecionar um único destaque e remover trabalhos; destaque ocupa cartão maior na prévia.
+- A seção Portfólio & vídeos da prévia é atualizada após cada operação com o material cadastrado, mantendo os cartões ilustrativos quando vazia.
+- Banco: tabela privada stage_premium_site_media, RLS sem acesso direto ao cliente, RPCs do proprietário via auth.uid() para ler, adicionar, renomear, destacar, reordenar e remover.
+- Arquivos no bucket PRIVADO stage-premium-drafts, sem liberação pública; só o proprietário autenticado consegue criar URLs assinadas de curta duração.
+- Ao remover um registro de foto, o cliente tenta remover também o arquivo do bucket. Em caso de falha nessa limpeza, avisa o usuário.
+- Apenas miniaturas do YouTube e vídeos externos são públicos no próprio YouTube; o vídeo abre no serviço, não há upload de vídeo para o Supabase.
+- Nenhuma mídia de rascunho é incluída nas RPCs públicas do perfil gratuito /[username]. Não ativa assinatura, subdomínio nem site premium.
+- SQL novo: supabase/premium_site_media_gallery_migration.sql, depois de multi_role_accounts_migration.sql e premium_site_draft_editor_migration.sql.
+
+### Teste manual da galeria
+1. Execute premium_site_media_gallery_migration.sql no SQL Editor do Supabase.
+2. No editor profissional, envie uma foto de apresentação menor que 5 MB.
+3. Cole o link de um vídeo do YouTube e atribua título.
+4. Escolha o vídeo como destaque e troque sua posição com a foto.
+5. Confirme as alterações na prévia, atualize a página e confira a persistência.
+6. Renomeie e remova o vídeo; depois remova a foto, confirmando a exclusão.
+7. Verifique que a galeria continua ausente do perfil comum /cantorsousa.
+8. Sem estar logado como dono, confira que não é possível consultar registros ou abrir arquivos privados do bucket.
