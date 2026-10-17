@@ -526,3 +526,19 @@
   .dashboard-shortcut{min-height:0}
   .dashboard-shortcut-top{margin-bottom:18px}
 }
+
+
+/* Preferência do artista: permitir ou bloquear pedidos de contratação. */
+.artist-booking-setting{
+  border:1px solid var(--line);border-radius:13px;
+  padding:19px 17px;margin:20px 0 4px;background:var(--panel2)
+}
+.artist-booking-setting-toggle{
+  display:flex;align-items:flex-start;gap:12px;cursor:pointer
+}
+.artist-booking-setting-toggle input{accent-color:var(--lime);width:17px;height:17px;flex:none;margin-top:3px}
+.artist-booking-setting-toggle input:disabled{opacity:.4;cursor:not-allowed}
+.artist-booking-setting-toggle>span{display:grid;gap:8px;min-width:0}
+.artist-booking-setting-toggle strong{font-size:13px;line-height:1.55;color:var(--text)}
+.artist-booking-setting-toggle small{font-size:11px;color:var(--muted);line-height:1.8}
+.artist-booking-setting .field-help{margin:12px 0 0}
