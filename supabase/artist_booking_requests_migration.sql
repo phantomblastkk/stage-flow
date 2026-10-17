@@ -7,6 +7,11 @@
 
 create extension if not exists pgcrypto;
 
+-- A página publicada não ativa pedidos automaticamente.
+-- O dono precisa habilitar explicitamente o formulário.
+alter table public.profiles
+  add column if not exists accept_booking_requests boolean not null default false;
+
 create table if not exists public.stage_artist_booking_requests (
   id uuid primary key default gen_random_uuid(),
   artist_id uuid not null references public.profiles(id) on delete cascade,
@@ -99,6 +104,7 @@ begin
   select id into v_artist_id
   from public.profiles
   where username = v_slug and is_artist = true and is_public = true
+    and accept_booking_requests = true
   limit 1;
   if v_artist_id is null then return 'unavailable'; end if;
 
@@ -196,3 +202,55 @@ grant execute on function public.stage_update_artist_booking_status(uuid,text)
 
 -- IMPORTANTE: o público pode ENVIAR pedidos apenas pelo formulário;
 -- visualizar ou administrar sempre exige auth.uid() do artista.
+
+
+-- Indicação pública sem vazamento de identidade ou dados de contato.
+create or replace function public.stage_public_artist_accepts_bookings(
+  p_username text
+)
+returns boolean
+language sql stable security definer set search_path = ''
+as $$
+  select exists(
+    select 1 from public.profiles p
+    where p.username = lower(btrim(p_username))
+      and p.is_artist = true
+      and p.is_public = true
+      and p.accept_booking_requests = true
+  );
+$$;
+revoke all on function public.stage_public_artist_accepts_bookings(text) from public;
+grant execute on function public.stage_public_artist_accepts_bookings(text)
+  to anon, authenticated;
+
+-- O próprio artista consulta sua preferência privada.
+create or replace function public.stage_my_artist_booking_settings()
+returns boolean
+language sql stable security definer set search_path = ''
+as $$
+  select p.accept_booking_requests from public.profiles p
+  where p.id = auth.uid() and p.is_artist = true
+  limit 1;
+$$;
+revoke all on function public.stage_my_artist_booking_settings() from public;
+grant execute on function public.stage_my_artist_booking_settings()
+  to authenticated;
+
+-- Liga/desliga o recebimento de pedidos; não altera plano/premium.
+create or replace function public.stage_set_artist_bookings_enabled(p_enabled boolean)
+returns text
+language plpgsql security definer set search_path = ''
+as $$
+begin
+  if auth.uid() is null then return 'login_required'; end if;
+  if p_enabled is null then return 'invalid'; end if;
+  update public.profiles
+  set accept_booking_requests = p_enabled, updated_at = now()
+  where id = auth.uid() and is_artist = true;
+  if not found then return 'artist_required'; end if;
+  return 'saved';
+end;
+$$;
+revoke all on function public.stage_set_artist_bookings_enabled(boolean) from public;
+grant execute on function public.stage_set_artist_bookings_enabled(boolean)
+  to authenticated;
