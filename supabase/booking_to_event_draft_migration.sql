@@ -35,7 +35,11 @@ begin
         'status', b.status,
         'created_at', b.created_at,
         'event_id', b.event_id,
-        'event_status', e.status
+        'event_status', e.status,
+        'event_title', e.title,
+        'event_starts_at', e.starts_at,
+        'event_venue', e.venue,
+        'event_description', e.description
       ) order by b.created_at desc, b.id desc
     )
     from (
