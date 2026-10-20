@@ -7,7 +7,7 @@
 alter table public.stage_artist_booking_requests
   add column if not exists event_id uuid references public.events(id) on delete set null;
 
-create index if not exists stage_booking_linked_event_idx
+create unique index if not exists stage_booking_linked_event_unique_idx
   on public.stage_artist_booking_requests(event_id) where event_id is not null;
 
 -- Dados do pedido ligados ao show só são visíveis ao próprio cantor autenticado.
