@@ -1,11 +1,12 @@
 "use client";
 
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { FormEvent, useCallback, useEffect, useMemo, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import {
   Archive, ArrowLeft, ArrowUpRight, CalendarDays, CheckCircle2, Clock3,
-  Inbox, LoaderCircle, Mail, MapPin, MessageCircle, RotateCcw, ShieldCheck, Trash2
+  Inbox, LoaderCircle, Mail, MapPin, MessageCircle, RotateCcw, ShieldCheck, Trash2,
+  Plus, Pencil, Save, ExternalLink
 } from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
 import "./booking-inbox.css";
@@ -21,7 +22,31 @@ type Booking = {
   message: string;
   status: BookingStatus;
   created_at: string;
+  event_id?: string | null;
+  event_status?: "draft" | "published" | "cancelled" | "completed" | null;
+  event_title?: string | null;
+  event_starts_at?: string | null;
+  event_venue?: string | null;
+  event_description?: string | null;
 };
+
+type EventDraftForm = {
+  requestId: string;
+  title: string;
+  date: string;
+  time: string;
+  venue: string;
+  description: string;
+};
+
+function localDateKey(date: Date) {
+  return [date.getFullYear(), String(date.getMonth() + 1).padStart(2, "0"),
+    String(date.getDate()).padStart(2, "0")].join("-");
+}
+function localTimeKey(date: Date) {
+  return String(date.getHours()).padStart(2, "0") + ":" +
+    String(date.getMinutes()).padStart(2, "0");
+}
 
 function formatDate(input: string, withTime = false) {
   const date = new Date(input);
@@ -49,6 +74,9 @@ export default function ArtistBookingInboxPage() {
   const [updating, setUpdating] = useState<string | null>(null);
   const [filter, setFilter] = useState<"active" | "archived" | "all">("active");
   const [deletingId, setDeletingId] = useState<string | null>(null);
+  const [eventForm, setEventForm] = useState<EventDraftForm | null>(null);
+  const [eventError, setEventError] = useState("");
+  const [eventSaving, setEventSaving] = useState(false);
 
   const loadBookings = useCallback(async () => {
     const supabase = createClient();
@@ -83,6 +111,82 @@ export default function ArtistBookingInboxPage() {
       ? b.status === "archived" : b.status !== "archived"
   ), [bookings, filter]);
 
+  function editBookingEvent(item: Booking) {
+    if (updating || eventSaving) return;
+    const existingDate = item.event_starts_at ? new Date(item.event_starts_at) : null;
+    setEventError("");
+    setEventForm({
+      requestId: item.id,
+      title: item.event_title || ("Show em " + item.event_city).slice(0, 120),
+      date: existingDate && !Number.isNaN(existingDate.getTime())
+        ? localDateKey(existingDate)
+        : (item.event_date || ""),
+      time: existingDate && !Number.isNaN(existingDate.getTime())
+        ? localTimeKey(existingDate) : "",
+      venue: item.event_venue || "",
+      // Dados do contratante não são copiados: descrição pode ficar pública
+      // futuramente se o dono publicar voluntariamente este show.
+      description: item.event_description || ""
+    });
+    setSuccess("");
+  }
+
+  async function saveBookingEvent(e: FormEvent<HTMLFormElement>) {
+    e.preventDefault();
+    if (!eventForm || eventSaving || updating) return;
+    setEventError("");
+    setSuccess("");
+    const { requestId, title, date, time, venue, description } = eventForm;
+    if (!/^\d{4}-\d{2}-\d{2}$/.test(date) || !/^\d{2}:\d{2}$/.test(time)) {
+      setEventError("Informe uma data e um horário de início.");
+      return;
+    }
+    const timestamp = new Date(date + "T" + time + ":00");
+    if (Number.isNaN(timestamp.getTime())
+      || localDateKey(timestamp) !== date
+      || localTimeKey(timestamp) !== time
+      || timestamp.getTime() < Date.now()) {
+      setEventError("Escolha uma data e um horário futuros válidos para o show.");
+      return;
+    }
+    if (!title.trim() || title.trim().length < 3 || title.trim().length > 120) {
+      setEventError("O nome do show precisa ter entre 3 e 120 caracteres.");
+      return;
+    }
+    setEventSaving(true);
+    const { data, error: saveError } = await createClient().rpc(
+      "stage_save_event_from_booking", {
+        p_booking_id: requestId,
+        p_title: title.trim(),
+        p_starts_at: timestamp.toISOString(),
+        p_venue: venue.trim() || null,
+        p_description: description.trim() || null
+      }
+    );
+    const result = data as { status?: string; event_id?: string } | null;
+    if (saveError || !["created", "updated"].includes(result?.status || "")) {
+      const explanations: Record<string, string> = {
+        booking_not_found: "Este pedido não está mais disponível na sua conta.",
+        not_editable: "Este show já deixou de ser rascunho. Ele não pode ser alterado por aqui.",
+        invalid_date: "A data precisa ser futura e estar dentro dos próximos três anos.",
+        invalid_title: "Informe um nome com 3 a 120 caracteres.",
+        invalid_venue: "O nome do local é muito longo.",
+        invalid_description: "A descrição excede 1.500 caracteres.",
+        artist_required: "Sua conta precisa ter a função de artista."
+      };
+      setEventError(saveError?.code === "PGRST202" || saveError?.code === "42883"
+        ? "Execute booking_to_event_draft_migration.sql no Supabase antes de usar esta integração."
+        : saveError?.message || explanations[result?.status || ""] || "Não foi possível salvar o show.");
+    } else {
+      await loadBookings();
+      setEventForm(null);
+      setSuccess(result?.status === "updated"
+        ? "Rascunho atualizado na agenda. Nenhum convite foi enviado."
+        : "Show criado como rascunho privado na agenda. A contratação não foi confirmada e nenhum convite foi enviado.");
+    }
+    setEventSaving(false);
+  }
+
   async function changeStatus(item: Booking, status: BookingStatus) {
     if (updating) return;
     setUpdating(item.id);
@@ -114,7 +218,7 @@ export default function ArtistBookingInboxPage() {
       setError("Não foi possível excluir. Tente novamente ou verifique a migração de solicitações.");
     } else {
       setBookings(previous => previous.filter(b => b.id !== item.id));
-      setSuccess("Solicitação excluída definitivamente. Os dados desse pedido foram removidos da caixa de entrada.");
+      setSuccess("Solicitação excluída definitivamente. Os dados do contato foram removidos. Se havia um show vinculado, ele permanece na agenda.");
     }
     setDeletingId(null);
     setUpdating(null);
@@ -178,9 +282,14 @@ export default function ArtistBookingInboxPage() {
                   <p><MapPin size={14}/> {item.event_city}
                     {item.event_date && <> · <CalendarDays size={14}/> {formatDate(item.event_date)}</>}</p>
                 </div>
-                <span className={"booking-inbox-status is-" + item.status}>
-                  {item.status === "new" ? "Novo pedido" : item.status === "contacted" ? "Em contato" : "Arquivado"}
-                </span>
+                <div className="booking-inbox-status-stack">
+                  <span className={"booking-inbox-status is-" + item.status}>
+                    {item.status === "new" ? "Novo pedido" : item.status === "contacted" ? "Em contato" : "Arquivado"}
+                  </span>
+                  {item.event_id && <span className="booking-inbox-linked-tag">
+                    <CalendarDays size={12}/> {item.event_status === "draft" ? "Rascunho na agenda" : "Show na agenda"}
+                  </span>}
+                </div>
               </div>
 
               <p className="booking-inbox-description">{item.message}</p>
@@ -200,6 +309,88 @@ export default function ArtistBookingInboxPage() {
                 </div>
               </div>
 
+              <div className="booking-inbox-event-panel">
+                <div>
+                  <strong><CalendarDays size={17}/> Show na agenda</strong>
+                  <p>{item.event_id
+                    ? "Este pedido já está ligado a um show. Os detalhes do contratante permanecem somente nesta caixa privada."
+                    : "Aproveite a cidade e a data do pedido para preparar um show. Você confirma o horário antes de criar o rascunho privado."}</p>
+                </div>
+                <div className="booking-inbox-event-controls">
+                  {(!item.event_id || item.event_status === "draft") &&
+                    <button type="button" className="btn btn-primary" disabled={eventSaving || Boolean(updating)}
+                      onClick={() => {
+                        if (eventForm?.requestId === item.id) { setEventForm(null); setEventError(""); }
+                        else editBookingEvent(item);
+                      }}>
+                      {item.event_id ? <Pencil size={15}/> : <Plus size={15}/>}
+                      {eventForm?.requestId === item.id ? "Fechar formulário" :
+                        item.event_id ? "Editar rascunho" : "Criar show a partir do pedido"}
+                    </button>}
+                  {item.event_id && <Link className="btn btn-quiet" href={"/eventos?evento=" + encodeURIComponent(item.event_id)}>
+                    <ExternalLink size={15}/> Ver na agenda
+                  </Link>}
+                </div>
+              </div>
+              {eventForm?.requestId === item.id && <form
+                className="booking-inbox-event-form" onSubmit={e => void saveBookingEvent(e)}>
+                <h3>{item.event_id ? "Editar show privado" : "Preparar rascunho do show"}</h3>
+                <p className="booking-inbox-event-explain">
+                  O pedido não confirma a contratação. Revise a data, informe o horário e salve.
+                  O evento fica privado e nenhum convite é enviado automaticamente.
+                </p>
+                <div className="booking-inbox-event-fields">
+                  <label className="booking-inbox-event-field booking-inbox-event-wide">
+                    Nome do evento *
+                    <input type="text" required minLength={3} maxLength={120}
+                      value={eventForm.title}
+                      onChange={e => setEventForm(prev => prev ? {...prev,title:e.target.value} : null)}
+                      placeholder="Ex.: Show de pagode"/>
+                  </label>
+                  <label className="booking-inbox-event-field">
+                    Data do show *
+                    <input type="date" required value={eventForm.date}
+                      onChange={e => setEventForm(prev => prev ? {...prev,date:e.target.value} : null)}/>
+                  </label>
+                  <label className="booking-inbox-event-field">
+                    Horário de início *
+                    <input type="time" required value={eventForm.time}
+                      onChange={e => setEventForm(prev => prev ? {...prev,time:e.target.value} : null)}/>
+                  </label>
+                  <label className="booking-inbox-event-field">
+                    Cidade do evento
+                    <input type="text" readOnly value={item.event_city}
+                      title="Cidade informada no pedido original" />
+                  </label>
+                  <label className="booking-inbox-event-field">
+                    Local / estabelecimento (opcional)
+                    <input type="text" maxLength={180} value={eventForm.venue}
+                      onChange={e => setEventForm(prev => prev ? {...prev,venue:e.target.value} : null)}
+                      placeholder="A definir"/>
+                  </label>
+                  <label className="booking-inbox-event-field booking-inbox-event-wide">
+                    Observações do show (opcional)
+                    <textarea rows={3} maxLength={1500} value={eventForm.description}
+                      onChange={e => setEventForm(prev => prev ? {...prev,description:e.target.value} : null)}
+                      placeholder="Anotações para o evento, sem dados pessoais do contratante"/>
+                  </label>
+                </div>
+                <p className="booking-inbox-event-privacy">
+                  <ShieldCheck size={16}/> Nome, e-mail, WhatsApp e mensagem do contratante
+                  continuam somente neste pedido e não são copiados para o evento.
+                </p>
+                {eventError && <div className="booking-inbox-event-error" role="alert">{eventError}</div>}
+                <div className="booking-inbox-event-form-actions">
+                  <button className="btn btn-primary" type="submit" disabled={eventSaving}>
+                    {eventSaving ? <LoaderCircle size={16}/> : <Save size={16}/>}
+                    {eventSaving ? "Salvando rascunho..." : item.event_id ? "Salvar alterações" : "Criar rascunho privado"}
+                  </button>
+                  <button className="btn btn-quiet" type="button" disabled={eventSaving}
+                    onClick={() => {setEventForm(null);setEventError("");}}>
+                    Cancelar
+                  </button>
+                </div>
+              </form>}
               <div className="booking-inbox-actions">
                 {item.status !== "contacted" && <button type="button" disabled={Boolean(updating)}
                   onClick={() => void changeStatus(item, "contacted")}>
