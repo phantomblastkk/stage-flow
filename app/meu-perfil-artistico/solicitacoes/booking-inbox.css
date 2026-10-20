@@ -90,3 +90,96 @@
 .booking-inbox-actions .booking-inbox-delete:hover:not(:disabled){
   background:#572f39
 }
+
+
+/* Converter pedido em evento sem copiar dados privados do contratante. */
+.booking-inbox-status-stack{
+  display:flex;align-items:flex-end;flex-direction:column;gap:7px
+}
+.booking-inbox-linked-tag{
+  display:inline-flex;align-items:center;gap:5px;
+  padding:6px 9px;border:1px solid #456042;background:#1c3229;
+  border-radius:9px;font-size:10px;font-weight:800;color:#c8efb4;
+  white-space:nowrap
+}
+.booking-inbox-event-panel{
+  margin:0 0 16px;
+  padding:18px;
+  border:1px solid #3a4d42;border-radius:13px;
+  background:linear-gradient(135deg,#1b2926,#15222c);
+  display:flex;align-items:center;justify-content:space-between;gap:18px
+}
+.booking-inbox-event-panel>div:first-child{flex:1;min-width:0}
+.booking-inbox-event-panel strong{
+  display:inline-flex;align-items:center;gap:8px;
+  font:800 13px Manrope,sans-serif
+}
+.booking-inbox-event-panel strong svg{color:var(--lime)}
+.booking-inbox-event-panel p{
+  font-size:11px;color:#afbfd0;line-height:1.8;margin:8px 0 0
+}
+.booking-inbox-event-controls{
+  display:flex;flex-wrap:wrap;align-items:center;justify-content:flex-end;
+  gap:8px
+}
+.booking-inbox-event-controls .btn{
+  display:inline-flex;gap:8px;align-items:center;font-size:11px;
+  text-align:center;white-space:normal;line-height:1.4
+}
+.booking-inbox-event-form{
+  display:grid;gap:15px;padding:20px;margin:0 0 17px;
+  border:1px solid #6b8051;background:#1a242b;
+  border-radius:14px
+}
+.booking-inbox-event-form h3{font:800 19px Manrope,sans-serif;margin:0}
+.booking-inbox-event-explain{font-size:12px;color:#afbed0;line-height:1.75;margin:0}
+.booking-inbox-event-fields{
+  display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:13px
+}
+.booking-inbox-event-field{
+  display:flex;flex-direction:column;gap:7px;font-size:11px;
+  font-weight:700;color:#d4ddeb;min-width:0
+}
+.booking-inbox-event-field input,
+.booking-inbox-event-field textarea{
+  width:100%;min-width:0;background:#101923;color:#eff3f9;
+  border:1px solid #455163;border-radius:10px;
+  padding:11px 12px;font:500 12px "DM Sans",sans-serif;
+  outline:none
+}
+.booking-inbox-event-field input:focus,
+.booking-inbox-event-field textarea:focus{
+  border-color:var(--lime)
+}
+.booking-inbox-event-field input[readonly]{
+  color:#aabdc7;background:#253139;cursor:default
+}
+.booking-inbox-event-field input[type="date"],
+.booking-inbox-event-field input[type="time"]{color-scheme:dark}
+.booking-inbox-event-field textarea{resize:vertical;line-height:1.7}
+.booking-inbox-event-wide{grid-column:1/-1}
+.booking-inbox-event-privacy{
+  display:flex;gap:9px;align-items:flex-start;
+  font-size:11px;line-height:1.7;color:#b2d6bb;margin:0
+}
+.booking-inbox-event-privacy svg{flex:none;margin-top:2px}
+.booking-inbox-event-error{
+  padding:11px 12px;background:#3a2228;border:1px solid #86484a;
+  color:#ffbec2;border-radius:9px;font-size:12px;line-height:1.6
+}
+.booking-inbox-event-form-actions{display:flex;flex-wrap:wrap;gap:9px}
+.booking-inbox-event-form-actions .btn{
+  display:inline-flex;justify-content:center;gap:8px
+}
+@media(max-width:780px){
+  .booking-inbox-event-panel{flex-direction:column;align-items:stretch}
+  .booking-inbox-event-controls{justify-content:flex-start}
+}
+@media(max-width:560px){
+  .booking-inbox-event-panel{padding:14px}
+  .booking-inbox-event-form{padding:14px}
+  .booking-inbox-event-fields{grid-template-columns:1fr}
+  .booking-inbox-event-wide{grid-column:auto}
+  .booking-inbox-event-form-actions .btn{flex:1}
+  .booking-inbox-status-stack{align-items:flex-start}
+}
