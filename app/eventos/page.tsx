@@ -19,6 +19,7 @@ export default function EventosPage() {
  const [message,setMessage]=useState(""),[isError,setIsError]=useState(false);
  const [calendarMonth,setCalendarMonth]=useState(()=>new Date(new Date().getFullYear(),new Date().getMonth(),1));
  const [selectedDate,setSelectedDate]=useState<string|null>(null);
+ const [spotlightEventId,setSpotlightEventId]=useState<string|null>(null);
  const [title,setTitle]=useState(""),[description,setDescription]=useState(""),[venue,setVenue]=useState(""),[city,setCity]=useState(""),[startsAt,setStartsAt]=useState(""),[endsAt,setEndsAt]=useState(""),[publicly,setPublicly]=useState(true);
  const [venueSuggestions,setVenueSuggestions]=useState<{id:string;name:string;address:string|null;city_name:string|null;state_code:string|null}[]>([]);
  const [citySuggestions,setCitySuggestions]=useState<{id:number;name:string;state_code:string}[]>([]);
@@ -44,6 +45,18 @@ export default function EventosPage() {
   setLoading(false);
  },[router]);
  useEffect(()=>{void loadEvents();},[loadEvents]);
+ // Um show vindo de um pedido de contratação pode ser aberto diretamente.
+ // Lemos o parâmetro no cliente para não exigir Suspense/useSearchParams.
+ useEffect(()=>{
+  const eventId=new URLSearchParams(window.location.search).get("evento");
+  if(eventId&&/^[a-f0-9-]{36}$/i.test(eventId))setSpotlightEventId(eventId);
+ },[]);
+ useEffect(()=>{
+  if(loading||!spotlightEventId||!events.some(event=>event.id===spotlightEventId))return;
+  document.getElementById("stage-event-"+spotlightEventId)?.scrollIntoView({
+   behavior:"smooth",block:"center"
+  });
+ },[loading,spotlightEventId,events]);
 
  useEffect(()=>{let cancelled=false;async function loadCatalog(){const {error}=await createClient().from("cities").select("id").limit(1);if(!cancelled)setCatalogReady(!error);}void loadCatalog();return()=>{cancelled=true};},[]);
  useEffect(()=>{let cancelled=false;const timer=setTimeout(async()=>{if(!venue.trim()||!catalogReady){setVenueSuggestions([]);return;}const supabase=createClient();let query=supabase.from("venues").select("id,name,address,cities(name,state_code)").eq("active",true).ilike("name","%"+venue.trim()+"%");const cityParts=city.trim().split(" - ");if(cityParts[0]){let cityQuery=supabase.from("cities").select("id").eq("active",true).ilike("name",cityParts[0].trim());if(cityParts[1])cityQuery=cityQuery.eq("state_code",cityParts[1].trim());const {data:cityRows}=await cityQuery.limit(1);if(cityRows?.[0])query=query.eq("city_id",cityRows[0].id);}const {data}=await query.order("name").limit(8);if(cancelled)return;setVenueSuggestions((data??[]).map((v:any)=>({id:v.id,name:v.name,address:v.address,city_name:v.cities?.name??null,state_code:v.cities?.state_code??null})));},220);return()=>{cancelled=true;clearTimeout(timer)};},[venue,city,catalogReady]);
@@ -111,7 +124,20 @@ export default function EventosPage() {
    <p style={{fontSize:12,color:"var(--muted)",marginBottom:0}}><Mic size={13} style={{display:"inline",verticalAlign:"middle"}} color="#c6f36b"/> Show próprio · <Users size={13} style={{display:"inline",verticalAlign:"middle"}} color="#a99bff"/> Participação confirmada. Toque na data para filtrar; toque de novo para mostrar todos.</p>
   </section>
   <section className="section" style={{paddingTop:12}}><div className="section-heading"><h2><CalendarDays size={25} style={{display:"inline",verticalAlign:"middle"}}/> Shows próprios</h2><p>{selectedDate ? "Shows próprios do dia " + new Date(selectedDate+"T12:00:00").toLocaleDateString("pt-BR") : "Eventos criados por você, em ordem de data."}</p></div>
-   {loading?<p style={{color:"var(--muted)"}}><LoaderCircle size={16} style={{display:"inline",verticalAlign:"middle"}}/> Carregando agenda...</p>:visibleEvents.length===0?<div className="feature"><p style={{margin:0,color:"var(--muted)"}}>{selectedDate?"Nenhum show próprio nesta data.":"Você ainda não cadastrou shows próprios. Use o formulário acima para criar o primeiro."}</p></div>:<div className="feature">{visibleEvents.map(event=><article className="event" key={event.id} style={{alignItems:"flex-start"}}><div className="event-date"><div><strong>{new Date(event.starts_at).toLocaleDateString("pt-BR",{day:"2-digit"})}</strong><br/><span>{new Date(event.starts_at).toLocaleDateString("pt-BR",{month:"short"}).replace(".","").toUpperCase()}</span></div></div><div className="event-info"><strong>{event.title}</strong><span style={{display:"block",marginTop:5}}><Clock3 size={12} style={{display:"inline",verticalAlign:"middle"}}/> {formatDate(event.starts_at)}</span>{(event.venue||event.city)&&<span style={{display:"block",marginTop:5}}><MapPin size={12} style={{display:"inline",verticalAlign:"middle"}}/> {[event.venue,event.city].filter(Boolean).join(" · ")}</span>}{event.description&&<p style={{color:"var(--muted)",fontSize:13,margin:"8px 0"}}>{event.description}</p>}<span className="event-pill" style={{display:"inline-block",marginTop:7}}>{labels[event.status]}</span></div><button className="btn btn-quiet" aria-label={"Excluir "+event.title} title="Excluir evento" onClick={()=>void deleteEvent(event.id)} style={{padding:9}}><Trash2 size={15}/></button></article>)}</div>}
+   {loading?<p style={{color:"var(--muted)"}}><LoaderCircle size={16} style={{display:"inline",verticalAlign:"middle"}}/> Carregando agenda...</p>:visibleEvents.length===0?<div className="feature"><p style={{margin:0,color:"var(--muted)"}}>{selectedDate?"Nenhum show próprio nesta data.":"Você ainda não cadastrou shows próprios. Use o formulário acima para criar o primeiro."}</p></div>:<div className="feature">{visibleEvents.map(event=><article
+    className="event"
+    id={"stage-event-"+event.id}
+    key={event.id}
+    style={{
+     alignItems:"flex-start",
+     scrollMarginTop:30,
+     border:event.id===spotlightEventId?"1px solid var(--lime)":undefined,
+     background:event.id===spotlightEventId?"rgba(198,243,107,.07)":undefined,
+     borderRadius:12
+    }}><div className="event-date"><div><strong>{new Date(event.starts_at).toLocaleDateString("pt-BR",{day:"2-digit"})}</strong><br/><span>{new Date(event.starts_at).toLocaleDateString("pt-BR",{month:"short"}).replace(".","").toUpperCase()}</span></div></div><div className="event-info"><strong>{event.title}</strong>{event.id===spotlightEventId&&
+    <span style={{display:"block",color:"var(--lime)",fontSize:11,marginTop:5}}>
+     Show vinculado ao pedido de contratação · {event.status==="draft"?"rascunho privado":labels[event.status]}
+    </span>}<span style={{display:"block",marginTop:5}}><Clock3 size={12} style={{display:"inline",verticalAlign:"middle"}}/> {formatDate(event.starts_at)}</span>{(event.venue||event.city)&&<span style={{display:"block",marginTop:5}}><MapPin size={12} style={{display:"inline",verticalAlign:"middle"}}/> {[event.venue,event.city].filter(Boolean).join(" · ")}</span>}{event.description&&<p style={{color:"var(--muted)",fontSize:13,margin:"8px 0"}}>{event.description}</p>}<span className="event-pill" style={{display:"inline-block",marginTop:7}}>{labels[event.status]}</span></div><button className="btn btn-quiet" aria-label={"Excluir "+event.title} title="Excluir evento" onClick={()=>void deleteEvent(event.id)} style={{padding:9}}><Trash2 size={15}/></button></article>)}</div>}
   </section>
   <section className="section" style={{paddingTop:6}}>
    <div className="section-heading">
