@@ -5,7 +5,8 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import {
   ArrowLeft, Check, CheckCircle2, Copy, ExternalLink, Eye, EyeOff,
-  ImagePlus, LoaderCircle, Palette, Save, Share2, SlidersHorizontal, Sparkles, Upload
+  ImagePlus, LoaderCircle, Palette, Save, Share2, SlidersHorizontal, Sparkles, Upload,
+  BriefcaseBusiness, Clock3, Instagram, Youtube, Headphones, ListChecks
 } from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
 import MusicianPortfolioView, {
@@ -31,7 +32,15 @@ const blank: EditorPortfolio = {
   accent: "lime",
   layout_style: "spotlight",
   avatar_url: null,
-  cover_url: null
+  cover_url: null,
+  experience_years: null,
+  performance_types: [],
+  career_highlights: [],
+  availability_note: "",
+  additional_media_urls: [],
+  instagram_url: null,
+  youtube_url: null,
+  spotify_url: null
 };
 
 const fieldStyle = {
@@ -53,6 +62,9 @@ export default function MeuPortfolioDeMusico() {
   const [portfolio, setPortfolio] = useState<EditorPortfolio>(blank);
   const [instrumentsText, setInstrumentsText] = useState("");
   const [genresText, setGenresText] = useState("");
+  const [performancesText, setPerformancesText] = useState("");
+  const [highlightsText, setHighlightsText] = useState("");
+  const [additionalMediaText, setAdditionalMediaText] = useState("");
   const [referenceFeeText, setReferenceFeeText] = useState("");
   const [savedSlug, setSavedSlug] = useState("");
   const [savedPublished, setSavedPublished] = useState(false);
@@ -79,7 +91,7 @@ export default function MeuPortfolioDeMusico() {
       if (!active) return;
       if (requestError) {
         setError(true);
-        setStatus("Para usar o novo editor, execute musician_portfolio_appearance_migration.sql no Supabase. Detalhes: " + requestError.message);
+        setStatus("Para usar o portfólio completo, execute musician_portfolio_complete_migration.sql no Supabase. Detalhes: " + requestError.message);
       } else if (!data) {
         setError(true);
         setStatus("Esta área é exclusiva para contas com a função de músico/artista.");
@@ -98,11 +110,22 @@ export default function MeuPortfolioDeMusico() {
           media_url: row.media_url || null,
           avatar_url: row.avatar_url || null,
           cover_url: row.cover_url || null,
+          experience_years: row.experience_years ?? null,
+          performance_types: Array.isArray(row.performance_types) ? row.performance_types : [],
+          career_highlights: Array.isArray(row.career_highlights) ? row.career_highlights : [],
+          availability_note: row.availability_note || "",
+          additional_media_urls: Array.isArray(row.additional_media_urls) ? row.additional_media_urls : [],
+          instagram_url: row.instagram_url || null,
+          youtube_url: row.youtube_url || null,
+          spotify_url: row.spotify_url || null,
           is_published: Boolean(row.is_published)
         };
         setPortfolio(next);
         setInstrumentsText(next.instruments.join(", "));
         setGenresText(next.genres.join(", "));
+        setPerformancesText(next.performance_types.join(", "));
+        setHighlightsText(next.career_highlights.join("\n"));
+        setAdditionalMediaText(next.additional_media_urls.join("\n"));
         setReferenceFeeText(next.reference_fee == null ? "" : String(next.reference_fee));
         setSavedSlug(row.is_published ? (row.slug || "") : "");
         setSavedPublished(Boolean(row.is_published));
@@ -162,6 +185,22 @@ export default function MeuPortfolioDeMusico() {
 
     const instrumentList = instrumentsText.split(",").map(v => v.trim()).filter(Boolean);
     const genreList = genresText.split(",").map(v => v.trim()).filter(Boolean);
+    const performanceList = performancesText.split(",").map(v => v.trim()).filter(Boolean);
+    const highlightList = highlightsText.split("\n").map(v => v.trim()).filter(Boolean);
+    const additionalLinks = additionalMediaText.split("\n").map(v => v.trim()).filter(Boolean);
+    if (performanceList.length > 5 || highlightList.length > 4 || additionalLinks.length > 2) {
+      setError(true);
+      setStatus("Use até 5 formatos de apresentação, 4 destaques de carreira e 2 links extras.");
+      setSaving(false);
+      return;
+    }
+    if (performanceList.some(v => v.length < 2 || v.length > 45) ||
+        highlightList.some(v => v.length < 4 || v.length > 120)) {
+      setError(true);
+      setStatus("Cada formato deve ter 2 a 45 caracteres e cada destaque 4 a 120.");
+      setSaving(false);
+      return;
+    }
     const amount = portfolio.price_mode === "from"
       ? Number(referenceFeeText.replace(",", ".")) : null;
     if (instrumentList.length > 10 || genreList.length > 10) {
@@ -171,7 +210,7 @@ export default function MeuPortfolioDeMusico() {
       return;
     }
     const { data, error: saveError } = await createClient().rpc(
-      "stage_save_musician_portfolio_v2", {
+      "stage_save_musician_portfolio_v3", {
         p_slug: portfolio.slug.trim(),
         p_bio: portfolio.bio.trim(),
         p_city: portfolio.city.trim(),
@@ -186,7 +225,15 @@ export default function MeuPortfolioDeMusico() {
         p_accent: portfolio.accent,
         p_layout_style: portfolio.layout_style,
         p_avatar_url: portfolio.avatar_url || null,
-        p_cover_url: portfolio.cover_url || null
+        p_cover_url: portfolio.cover_url || null,
+        p_experience_years: portfolio.experience_years,
+        p_performance_types: performanceList,
+        p_career_highlights: highlightList,
+        p_availability_note: portfolio.availability_note.trim(),
+        p_additional_media_urls: additionalLinks,
+        p_instagram_url: portfolio.instagram_url?.trim() || null,
+        p_youtube_url: portfolio.youtube_url?.trim() || null,
+        p_spotify_url: portfolio.spotify_url?.trim() || null
       }
     );
 
@@ -203,12 +250,24 @@ export default function MeuPortfolioDeMusico() {
         invalid_style: "Selecione um dos temas, cores e layouts disponíveis.",
         invalid_avatar: "A foto precisa ter sido enviada pela área de upload deste portfólio.",
         invalid_cover: "A capa precisa ter sido enviada pela área de upload deste portfólio.",
-        text_too_long: "Algum texto ultrapassou o limite permitido."
+        text_too_long: "Algum texto ultrapassou o limite permitido.",
+        invalid_experience: "Informe entre 0 e 60 anos de experiência ou deixe vazio.",
+        invalid_availability: "A informação sobre disponibilidade deve ter até 140 caracteres.",
+        too_many_details: "Use no máximo 5 formatos, 4 destaques e 2 vídeos extras.",
+        invalid_performance: "Cada formato de apresentação precisa ter entre 2 e 45 caracteres.",
+        invalid_highlights: "Cada destaque precisa ter entre 4 e 120 caracteres.",
+        invalid_social: "Confira os links: use Instagram, YouTube ou Spotify com endereço HTTPS."
       };
       setError(true);
-      setStatus(saveError?.message || messages[String(data)] || "Não foi possível salvar o portfólio.");
+      setStatus((saveError?.code === "PGRST202" || saveError?.code === "42883")
+        ? "Para salvar os novos campos, execute musician_portfolio_complete_migration.sql no Supabase."
+        : saveError?.message || messages[String(data)] || "Não foi possível salvar o portfólio.");
     } else {
-      setPortfolio(prev => ({ ...prev, instruments: instrumentList, genres: genreList, reference_fee: amount }));
+      setPortfolio(prev => ({
+        ...prev, instruments: instrumentList, genres: genreList,
+        performance_types: performanceList, career_highlights: highlightList,
+        additional_media_urls: additionalLinks, reference_fee: amount
+      }));
       setSavedSlug(portfolio.slug);
       setSavedPublished(portfolio.is_published);
       setStatus(portfolio.is_published
@@ -222,10 +281,21 @@ export default function MeuPortfolioDeMusico() {
     ...portfolio,
     instruments: instrumentsText.split(",").map(v => v.trim()).filter(Boolean).slice(0, 10),
     genres: genresText.split(",").map(v => v.trim()).filter(Boolean).slice(0, 10),
+    performance_types: performancesText.split(",").map(v => v.trim()).filter(Boolean).slice(0, 5),
+    career_highlights: highlightsText.split("\n").map(v => v.trim()).filter(Boolean).slice(0, 4),
+    additional_media_urls: additionalMediaText.split("\n").map(v => v.trim()).filter(Boolean).slice(0, 2),
     reference_fee: portfolio.price_mode === "from" && Number(referenceFeeText.replace(",", ".")) > 0
       ? Number(referenceFeeText.replace(",", ".")) : null
   };
   const publicPath = "/musico/" + savedSlug;
+  const completed = [
+    Boolean(portfolio.avatar_url),
+    Boolean(portfolio.bio.trim()),
+    Boolean(instrumentsText.trim()),
+    Boolean(portfolio.city.trim()),
+    Boolean(portfolio.headline.trim()),
+    Boolean(portfolio.media_url || additionalMediaText.trim())
+  ].filter(Boolean).length;
 
   async function sharePortfolio() {
     if (!savedPublished || !savedSlug) return;
@@ -250,7 +320,12 @@ export default function MeuPortfolioDeMusico() {
     <section style={{ padding: "38px 0 24px" }}>
       <div className="eyebrow"><span className="dot"/> SEU ESPAÇO NA MÚSICA</div>
       <h1 style={{ fontSize: "clamp(32px,5vw,46px)", margin: "14px 0 12px" }}>Sua página. <span className="accent">Seu estilo.</span></h1>
-      <p className="lead" style={{ maxWidth: 760 }}>Personalize seu portfólio gratuito com foto, capa, cores e instrumentos. Acompanhe a aparência em tempo real e publique quando estiver pronto.</p>
+      <p className="lead" style={{ maxWidth: 760 }}>Deixe seu portfólio gratuito pronto para ser compartilhado com contratantes: fotos, instrumentos, trajetória, vídeos e redes sociais, tudo organizado em uma página profissional.</p>
+      <div className="mp-editor-progress" aria-label={"Perfil com " + completed + " de 6 informações essenciais"}>
+        <div><ListChecks size={16}/><strong>{completed}/6</strong> informações essenciais preenchidas</div>
+        <div className="mp-editor-progress-bar" aria-hidden="true"><span style={{ width: Math.round(completed / 6 * 100) + "%" }}/></div>
+        <small>Foto, apresentação, instrumentos, cidade, frase de destaque e vídeo.</small>
+      </div>
     </section>
 
     {status && <div className="coming" role={error ? "alert" : "status"} style={error ? { borderColor: "#754343", background: "#281919", color: "#ffb5b5" } : {}}>
@@ -389,10 +464,78 @@ export default function MeuPortfolioDeMusico() {
                 placeholder="Samba, Pagode, MPB"/>
             </div>
             <div className="field" style={{ marginBottom: 0 }}>
-              <label htmlFor="portfolio-media">Vídeo ou link para seus trabalhos</label>
+              <label htmlFor="portfolio-media">Link da apresentação principal</label>
               <input id="portfolio-media" type="url" value={portfolio.media_url || ""}
                 onChange={e => update("media_url", e.target.value || null)}
-                placeholder="https://youtube.com/..."/>
+                placeholder="https://www.youtube.com/watch?v=..."/>
+              <span className="field-help">Seu vídeo principal aparece em destaque na seção de trabalhos.</span>
+            </div>
+          </section>
+
+          <section className="mp-editor-panel">
+            <h2><BriefcaseBusiness size={18} style={{ verticalAlign: "middle", marginRight: 7 }}/> Experiência e trajetória</h2>
+            <p>Mostre ao contratante onde você atua e as experiências que fazem parte da sua carreira.</p>
+            <div className="field">
+              <label htmlFor="mp-years"><Clock3 size={14} style={{ verticalAlign: "middle" }}/> Anos de experiência (opcional)</label>
+              <input id="mp-years" type="number" min={0} max={60} step={1}
+                placeholder="Ex.: 5" value={portfolio.experience_years ?? ""}
+                onChange={e => update("experience_years", e.target.value === ""
+                  ? null : Number(e.target.value))}/>
+              <span className="field-help">Use 0 se está começando na música. Não invente tempo de carreira.</span>
+            </div>
+            <div className="field">
+              <label htmlFor="mp-formats">Formatos de apresentação</label>
+              <input id="mp-formats" value={performancesText}
+                onChange={e => setPerformancesText(e.target.value)}
+                placeholder="Banda completa, Roda de samba, Eventos corporativos"/>
+              <span className="field-help">Separe por vírgulas. Até 5 formatos, com 45 caracteres cada.</span>
+            </div>
+            <div className="field">
+              <label htmlFor="mp-highlights">Projetos, apresentações ou experiências marcantes</label>
+              <textarea id="mp-highlights" rows={5} maxLength={520}
+                value={highlightsText} onChange={e => setHighlightsText(e.target.value)}
+                placeholder={"Participação no grupo X\nShow na casa de samba Y\nGravação do projeto Z"}
+                style={{ ...fieldStyle, resize: "vertical" }}/>
+              <span className="field-help">Um destaque por linha, até 4, com 120 caracteres cada. Informe somente experiências reais.</span>
+            </div>
+            <div className="field" style={{ marginBottom: 0 }}>
+              <label htmlFor="mp-availability">Regiões e disponibilidade para shows</label>
+              <input id="mp-availability" value={portfolio.availability_note}
+                onChange={e => update("availability_note", e.target.value)}
+                maxLength={140} placeholder="Ex.: Atendo São Paulo e região, inclusive finais de semana"/>
+              <span className="field-help">Esse texto é informativo; não reserva horários nem confirma disponibilidade.</span>
+            </div>
+          </section>
+
+          <section className="mp-editor-panel">
+            <h2><Youtube size={18} style={{ verticalAlign: "middle", marginRight: 7 }}/> Vídeos e redes sociais</h2>
+            <p>Seu portfólio gratuito pode mostrar até 3 trabalhos externos, sem precisar fazer upload de vídeos.</p>
+            <div className="field">
+              <label htmlFor="mp-extra-media">Mais vídeos ou apresentações (opcional)</label>
+              <textarea id="mp-extra-media" rows={3} maxLength={1020}
+                value={additionalMediaText} onChange={e => setAdditionalMediaText(e.target.value)}
+                placeholder={"https://youtu.be/....\nhttps://www.youtube.com/watch?v=...."}
+                style={{ ...fieldStyle, resize: "vertical" }}/>
+              <span className="field-help">Um endereço HTTPS por linha. Até 2 links extras além da apresentação principal.</span>
+            </div>
+            <div className="field">
+              <label htmlFor="mp-instagram"><Instagram size={14} style={{ verticalAlign: "middle" }}/> Instagram</label>
+              <input id="mp-instagram" type="url" value={portfolio.instagram_url || ""}
+                onChange={e => update("instagram_url", e.target.value || null)}
+                placeholder="https://www.instagram.com/seuperfil"/>
+            </div>
+            <div className="field">
+              <label htmlFor="mp-youtube"><Youtube size={14} style={{ verticalAlign: "middle" }}/> Canal no YouTube</label>
+              <input id="mp-youtube" type="url" value={portfolio.youtube_url || ""}
+                onChange={e => update("youtube_url", e.target.value || null)}
+                placeholder="https://www.youtube.com/@seucanal"/>
+            </div>
+            <div className="field" style={{ marginBottom: 0 }}>
+              <label htmlFor="mp-spotify"><Headphones size={14} style={{ verticalAlign: "middle" }}/> Spotify</label>
+              <input id="mp-spotify" type="url" value={portfolio.spotify_url || ""}
+                onChange={e => update("spotify_url", e.target.value || null)}
+                placeholder="https://open.spotify.com/artist/..."/>
+              <span className="field-help">Esses links e os vídeos ficarão públicos apenas quando você publicar o portfólio.</span>
             </div>
           </section>
 
