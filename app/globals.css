@@ -289,7 +289,7 @@
 .home-musician-bottom strong{display:block;font:800 23px Manrope,sans-serif;color:#f7f9fd;letter-spacing:-.6px;margin-top:7px}
 .home-musician-play{color:var(--accent)}
 .home-musician-caption{display:block;text-align:center;color:#8d97a9;background:#0f141e;padding:10px;font-size:10px}
-.home-closing{display:flex;justify-content:space-between;align-items:center;gap:22px;padding:43px;border:1px solid #405a38;border-radius:25px;background:radial-gradient(ellipse at 85% 5%,#253b22,#11171c 65%);margin:0 0 85px}
+.home-closing{display:flex;justify-content:space-between;align-items:center;gap:22px;padding:43px;border:1px solid #50366F;border-radius:25px;background:radial-gradient(ellipse at 85% 5%,#2B2049,#11171c 65%);margin:0 0 85px}
 .home-closing h2{font:800 clamp(26px,3.6vw,39px)/1.2 Manrope,sans-serif;letter-spacing:-1.4px;margin:12px 0}
 .home-closing p{font-size:13px;color:var(--muted);margin:0}
 .home-closing .btn{white-space:nowrap}
@@ -465,7 +465,7 @@
 .signup-producer-add small{display:block;color:var(--muted);font-size:11px;line-height:1.6;margin-top:4px}
 /* ── Painel de acordo com a atividade principal ── */
 .dashboard-experience{
-  border:1px solid #344538;background:linear-gradient(120deg,#1a251d,#151b21);
+  border:1px solid #49365F;background:linear-gradient(120deg,#211A39,#171727);
   border-radius:17px;padding:19px 22px;display:flex;
   align-items:center;justify-content:space-between;gap:20px;
 }
@@ -483,7 +483,7 @@
   cursor:pointer;min-height:42px
 }
 .dashboard-experience-choice[aria-pressed="true"]{
-  color:#BFA7FF;background:#283826;border-color:#769a57
+  color:#BFA7FF;background:#302447;border-color:#8D62E9
 }
 .dashboard-experience-choice:disabled{opacity:.55;cursor:wait}
 .dashboard-shortcuts{display:grid;grid-template-columns:repeat(auto-fit,minmax(240px,1fr));gap:14px}
@@ -492,11 +492,11 @@
   border-radius:18px;padding:22px;min-height:209px;display:flex;flex-direction:column;
   transition:border-color .18s,transform .18s
 }
-.dashboard-shortcut:hover{border-color:#5d794b;transform:translateY(-2px)}
+.dashboard-shortcut:hover{border-color:#956DF1;transform:translateY(-2px)}
 .dashboard-shortcut-top{display:flex;align-items:center;gap:9px;margin-bottom:28px}
 .dashboard-shortcut-icon{
   display:grid;place-items:center;width:44px;height:44px;border-radius:13px;
-  background:#293b29;color:var(--accent)
+  background:#30234E;color:var(--accent)
 }
 .dashboard-shortcut-tag{color:var(--accent);font:800 9px Manrope,sans-serif;letter-spacing:.08em}
 .dashboard-shortcut-arrow{margin-left:auto;color:#8995a7}

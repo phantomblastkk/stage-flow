@@ -59,7 +59,7 @@
 .booking-inbox-private>div{display:flex;gap:9px;flex-wrap:wrap;align-items:center}
 .booking-inbox-contact{
   display:inline-flex;align-items:center;gap:7px;
-  color:#d7f2be;background:#283526;border:1px solid #465744;
+  color:#D4C3FF;background:#2B2142;border:1px solid #54406F;
   border-radius:10px;padding:9px 11px;font-size:11px;font-weight:800
 }
 .booking-inbox-email{font-size:11px;color:var(--muted);overflow-wrap:anywhere}
@@ -98,15 +98,15 @@
 }
 .booking-inbox-linked-tag{
   display:inline-flex;align-items:center;gap:5px;
-  padding:6px 9px;border:1px solid #456042;background:#1c3229;
-  border-radius:9px;font-size:10px;font-weight:800;color:#c8efb4;
+  padding:6px 9px;border:1px solid #67488C;background:#29213F;
+  border-radius:9px;font-size:10px;font-weight:800;color:#CFBAFF;
   white-space:nowrap
 }
 .booking-inbox-event-panel{
   margin:0 0 16px;
   padding:18px;
-  border:1px solid #3a4d42;border-radius:13px;
-  background:linear-gradient(135deg,#1b2926,#15222c);
+  border:1px solid #4E3B67;border-radius:13px;
+  background:linear-gradient(135deg,#211B36,#15222c);
   display:flex;align-items:center;justify-content:space-between;gap:18px
 }
 .booking-inbox-event-panel>div:first-child{flex:1;min-width:0}
@@ -128,7 +128,7 @@
 }
 .booking-inbox-event-form{
   display:grid;gap:15px;padding:20px;margin:0 0 17px;
-  border:1px solid #6b8051;background:#1a242b;
+  border:1px solid #65508A;background:#1a242b;
   border-radius:14px
 }
 .booking-inbox-event-form h3{font:800 19px Manrope,sans-serif;margin:0}
