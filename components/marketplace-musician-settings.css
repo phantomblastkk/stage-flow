@@ -1,0 +1,96 @@
+/* Preferências privadas do músico; não ativam o marketplace */
+.mp-market-settings{
+ padding:24px;margin:24px 0;border:1px solid #4b526d;border-radius:17px;
+ background:linear-gradient(135deg,#232538,#171e2e);color:#edf1fb
+}
+.mp-market-settings-header{
+ display:flex;justify-content:space-between;align-items:flex-start;
+ gap:20px;margin-bottom:19px;flex-wrap:wrap
+}
+.mp-market-settings-header>div{flex:1;min-width:210px}
+.mp-market-eyebrow{
+ display:inline-flex;gap:8px;align-items:center;color:#c4b0ed;
+ font-size:10px;letter-spacing:.12em;font-weight:900
+}
+.mp-market-settings h2{
+ font:800 clamp(20px,3vw,27px)/1.18 Manrope,sans-serif;
+ letter-spacing:-.04em;margin:10px 0 9px
+}
+.mp-market-settings-header p{font-size:12px;line-height:1.8;color:#b7c4da;margin:0}
+.mp-market-coming{
+ display:inline-flex;gap:7px;align-items:center;border:1px solid #75608d;
+ background:#392c4c;color:#dccbf5;border-radius:99px;
+ font-size:10px;letter-spacing:.1em;font-weight:900;padding:10px 13px
+}
+.mp-market-form{display:grid;gap:17px}
+.mp-market-join{
+ display:flex;align-items:flex-start;gap:12px;padding:17px;
+ background:#1b2835;border:1px solid #46566d;border-radius:13px;cursor:pointer
+}
+.mp-market-join input{width:17px;height:17px;accent-color:#bde390;margin-top:3px;flex:none}
+.mp-market-join>span{display:flex;flex-direction:column;gap:7px;min-width:0}
+.mp-market-join strong{font-size:13px;line-height:1.6}
+.mp-market-join small{font-size:11px;line-height:1.8;color:#b5c4d5}
+.mp-market-hint{
+ border:1px solid #746342;border-radius:10px;
+ color:#f0dba9;background:#39312a;padding:12px;font-size:11px;line-height:1.8;margin:0
+}
+.mp-market-availability-control,.mp-market-date-section{display:flex;flex-direction:column;gap:9px}
+.mp-market-availability-control>label,.mp-market-date-section>label{
+ display:inline-flex;align-items:center;gap:8px;color:#d8e6f2;
+ font-size:12px;font-weight:800
+}
+.mp-market-availability-control select,.mp-market-add-date input{
+ background:#121e2d;border:1px solid #455671;border-radius:10px;
+ padding:12px 13px;color:#e8ecf6;font:500 12px "DM Sans",sans-serif
+}
+.mp-market-availability-control select:focus,.mp-market-add-date input:focus{border-color:#b9da9e}
+.mp-market-availability-control small,.mp-market-date-section p{
+ font-size:10px;line-height:1.75;color:#a2b6ca;margin:0
+}
+.mp-market-add-date{display:flex;gap:8px;align-items:center;flex-wrap:wrap}
+.mp-market-add-date input{flex:1;min-width:160px;color-scheme:dark}
+.mp-market-add-date button{
+ display:inline-flex;align-items:center;justify-content:center;gap:7px;
+ border-radius:9px;border:1px solid #586a83;background:#2c3e55;
+ color:#e2e9f7;padding:12px;font-size:11px;font-weight:800;cursor:pointer
+}
+.mp-market-add-date button:disabled{opacity:.45;cursor:not-allowed}
+.mp-market-date-chips{display:flex;flex-wrap:wrap;gap:8px}
+.mp-market-date-chips>span{
+ display:inline-flex;align-items:center;gap:8px;border-radius:9px;
+ background:#32415b;border:1px solid #526381;color:#d9e5f5;
+ font-size:11px;padding:8px 9px
+}
+.mp-market-date-chips button{
+ background:none;border:0;color:#e8bfbe;cursor:pointer;
+ display:grid;place-items:center;padding:0
+}
+.mp-market-controls{display:flex;align-items:center;flex-wrap:wrap;gap:15px;margin-top:5px}
+.mp-market-save{
+ display:inline-flex;gap:8px;align-items:center;justify-content:center;
+ background:#c5e79f;color:#1b261c;font:800 12px "Manrope",sans-serif;
+ border:1px solid #c5e79f;border-radius:10px;padding:12px 17px;cursor:pointer
+}
+.mp-market-save:disabled{opacity:.55;cursor:not-allowed}
+.mp-market-link{color:#c2d5e7;font-size:11px;font-weight:800}
+.mp-market-loading{display:flex;align-items:center;gap:8px;color:#adbbd0;font-size:12px}
+.mp-market-error,.mp-market-success{
+ display:flex;align-items:flex-start;gap:8px;border-radius:9px;
+ margin:14px 0 0;padding:12px;font-size:11px;line-height:1.7
+}
+.mp-market-error{color:#ffbec8;border:1px solid #805058;background:#38252d}
+.mp-market-success{color:#cdebc7;border:1px solid #547b58;background:#223729}
+.mp-market-success svg{flex:none;margin-top:1px}
+.mp-market-footer{
+ display:flex;align-items:flex-start;gap:11px;
+ margin-top:20px;padding-top:16px;border-top:1px solid #454b66;
+ font-size:10px;color:#aebcd0;line-height:1.8
+}
+.mp-market-footer svg{flex:none;margin-top:2px;color:#c5b9e5}
+.mp-market-footer strong{color:#dfe4f0}
+@media(max-width:580px){
+ .mp-market-settings{padding:17px 13px}
+ .mp-market-add-date button,.mp-market-add-date input{width:100%;flex:auto}
+ .mp-market-save{width:100%}
+}
