@@ -149,10 +149,10 @@ export default function EventosPage() {
         aria-expanded={openTeamEventId===event.id}
         onClick={()=>setOpenTeamEventId(current=>current===event.id?null:event.id)}
         style={{display:"inline-flex",alignItems:"center",gap:8,fontSize:12}}>
-        <Users size={16}/>{openTeamEventId===event.id?"Fechar equipe":"Equipe e convites"}
+        <Users size={16}/>{openTeamEventId===event.id?"Fechar painel":"Equipe, convites e financeiro"}
        </button>
        {event.id===spotlightEventId&&<span style={{fontSize:11,color:"var(--muted)"}}>
-        Organize os músicos sem publicar este show.
+        Organize músicos e confira os cachês sem publicar este show.
        </span>}
       </div>
       {openTeamEventId===event.id&&<EventTeamInvites
