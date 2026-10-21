@@ -13,6 +13,7 @@ import MusicianPortfolioView, {
   MusicianPortfolio, MusicianLayout,
   musicianThemes, musicianAccents
 } from "@/components/musician-portfolio-view";
+import "./musician-portfolio-editor.css";
 
 type EditorPortfolio = MusicianPortfolio & { is_published: boolean };
 
