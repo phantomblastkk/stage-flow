@@ -63,6 +63,17 @@ const genres = [
   "Pagode","Samba","Sertanejo","MPB","Pop","Rock","Forró",
   "Gospel","Jazz","Funk","Axé","Reggae","Choro","Rap","R&B"
 ];
+function localDateISO(){
+  const d = new Date();
+  return [d.getFullYear(),String(d.getMonth()+1).padStart(2,"0"),
+    String(d.getDate()).padStart(2,"0")].join("-");
+}
+function lastSelectableDate(){
+  const d = new Date();
+  d.setDate(d.getDate()+366);
+  return [d.getFullYear(),String(d.getMonth()+1).padStart(2,"0"),
+    String(d.getDate()).padStart(2,"0")].join("-");
+}
 const money = (n: number) =>
   new Intl.NumberFormat("pt-BR",{style:"currency",currency:"BRL"}).format(n);
 const dateBR = (date: string) => {
@@ -269,6 +280,7 @@ export default function MarketplaceCatalog({preview=false}:Props) {
       const reasons:Record<string,string>={
         event_not_found:"O show não está disponível na sua conta ou já terminou.",
         not_listed:"O músico não está recebendo propostas no marketplace.",
+        date_unavailable:"O músico marcou a data do show como indisponível no marketplace.",
         invalid_message:"A mensagem deve ter até 500 caracteres.",
         not_released:"Marketplace não liberado para a sua conta."
       };
@@ -392,7 +404,7 @@ export default function MarketplaceCatalog({preview=false}:Props) {
             <label htmlFor="market-date">Data desejada (opcional)</label>
             <div className="market-input-icon"><CalendarDays size={15}/>
               <input id="market-date" type="date" value={filters.date}
-                min={new Date().toLocaleDateString("en-CA")}
+                min={localDateISO()} max={lastSelectableDate()}
                 onChange={e=>setFilters(f=>({...f,date:e.target.value}))}/></div>
             <label className="market-check">
               <input type="checkbox" checked={filters.available}
