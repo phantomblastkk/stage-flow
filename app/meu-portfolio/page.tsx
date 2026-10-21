@@ -14,6 +14,7 @@ import MusicianPortfolioView, {
   musicianThemes, musicianAccents
 } from "@/components/musician-portfolio-view";
 import "./musician-portfolio-editor.css";
+import MarketplaceMusicianSettings from "@/components/marketplace-musician-settings";
 
 type EditorPortfolio = MusicianPortfolio & { is_published: boolean };
 
@@ -333,6 +334,8 @@ export default function MeuPortfolioDeMusico() {
       {!error && <CheckCircle2 size={17} style={{ display: "inline", verticalAlign: "middle", marginRight: 6 }}/>}
       {status}
     </div>}
+
+    <MarketplaceMusicianSettings portfolioPublished={portfolio.is_published}/>
 
     <div className="mp-editor-columns">
       <div>
