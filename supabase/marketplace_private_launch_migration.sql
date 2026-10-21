@@ -357,6 +357,17 @@ begin
     where m.profile_id=p_musician_id and m.is_published=true
       and s.listed=true and s.availability_mode<>'unavailable'
   ) then return jsonb_build_object('status','not_listed');end if;
+  -- Um dia bloqueado explicitamente pelo musico nao pode ser convidado
+  -- via marketplace. Sao Paulo e a timezone padrao inicial do produto;
+  -- horarios de eventos em outros fusos devem ser definidos futuramente.
+  if exists (
+    select 1 from public.events e
+    join public.stage_marketplace_musician_settings s
+      on s.musician_id=p_musician_id
+    where e.id=p_event_id and e.producer_id=auth.uid()
+      and (e.starts_at at time zone 'America/Sao_Paulo')::date
+        =any(s.blocked_dates)
+  ) then return jsonb_build_object('status','date_unavailable');end if;
 
   insert into public.invitations(event_id,musician_id,message,status)
   values(p_event_id,p_musician_id,v_message,'pending')
