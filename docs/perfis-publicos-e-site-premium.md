@@ -131,3 +131,31 @@ Decisão de produto (15/10/2026).
 5. Confirmar que o público não pode ler dados de contatos ou consultar a caixa do artista.
 6. Desativar a opção no editor e atualizar /cantorsousa: formulário e botão Solicitar show devem desaparecer.
 7. Confirmar que nenhum plano foi ativado, nenhuma cobrança ocorreu e nenhum subdomínio foi publicado.
+
+## Portfólio gratuito do músico v3 — visual e conteúdo profissional (outubro de 2026)
+
+A versão gratuita em `/musico/[slug]` foi ampliada e redesenhada sem alterar o Premium do cantor.
+
+- Visual responsivo mais trabalhado: capa, foto, nome e especialidade, cidade, tempo de carreira, navegação pelas seções, instrumentos em cartões, currículo em destaques e links sociais.
+- Editor em `/meu-portfolio` mantém **3 temas** (Midnight, Ivory e Stage), **5 cores de destaque**, **2 layouts**, capa, avatar, biografia, estilos, instrumentos e cachê público “sob consulta” ou “a partir de R$ X”.
+- Novidades opcionais: **0–60 anos de experiência** (0 = início de carreira), **até 5 formatos de apresentação**, **até 4 experiências/projetos**, disponibilidade/região em **140 caracteres**, **até 2 links extras** além do vídeo principal e links de Instagram, YouTube e Spotify.
+- Vídeos do YouTube recebem miniaturas clicáveis automaticamente. Outros links HTTPS de trabalhos abrem em nova aba. Nenhum vídeo precisa ser enviado ao Supabase.
+- O editor mostra um indicador de **6 informações essenciais preenchidas** e uma prévia que muda conforme o usuário digita.
+- Portfólios antigos permanecem compatíveis e continuam publicados com suas mesmas URLs, temas, fotos e valores após a migração. Campos novos começam vazios e seus blocos só aparecem quando preenchidos.
+- Dados só aparecem na página pública se `is_published = true`; nada dos convites, números de WhatsApp, e-mails privados, acordos de cachê ou negociações individuais é incluído. Links sociais e vídeos informados serão **públicos** após a publicação.
+- Continuam exclusivos do produto Premium do cantor: galeria privada com upload e destaques avançados, calendário profissional, organização livre das seções, ferramentas de conversão/contratação premium e subdomínio próprio. O músico não recebe essas ferramentas.
+- O recurso **não cria contatos, convites ou propostas automáticas**. A página do músico mantém apenas links de divulgação externos e compartilhamento.
+
+### Ativação no Supabase
+
+Execute `supabase/musician_portfolio_complete_migration.sql` no Supabase SQL Editor **depois de** `musician_portfolios_migration.sql` e `musician_portfolio_appearance_migration.sql`. Esse arquivo é aditivo e introduz a RPC `stage_save_musician_portfolio_v3`; as RPCs v1/v2 continuam para compatibilidade.
+
+### Testes sugeridos
+
+1. Abra o editor gratuito e confirme que os dados antigos continuam preenchidos, inclusive foto, capa, temas e publicação.
+2. Preencha experiência, formatos, destaques, links sociais e dois links extras de vídeo. Confira a prévia ao digitar.
+3. Salve e atualize a página: os novos campos devem permanecer preenchidos.
+4. Abra `/musico/<seu-slug>` em uma janela anônima e confira que o portfólio publicado apresenta os novos blocos corretamente, sem expor contato privado.
+5. Teste no celular. Confira os três temas, as cores, o layout Minimalista, os cartões e os vídeos.
+6. Desmarque Publicar, salve e confirme que o endereço público deixa de mostrar o portfólio.
+7. Confirme que não foi criado site Premium, assinatura nem subdomínio.
