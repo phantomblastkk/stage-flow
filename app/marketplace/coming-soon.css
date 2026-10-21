@@ -1,0 +1,90 @@
+.market-coming-page{
+  min-height:100vh;background:#0c121b;color:#f0f4f9;
+  background-image:radial-gradient(ellipse 60% 40% at 90% 12%,#3b325448,transparent 78%)
+}
+.market-coming-wrap{width:min(1120px,calc(100% - 36px));margin:0 auto}
+.market-coming-nav{
+  height:82px;border-bottom:1px solid #2d3848;
+  display:flex;align-items:center;justify-content:space-between;gap:16px
+}
+.market-coming-return{
+  display:inline-flex;align-items:center;gap:8px;color:#b7c5d5;
+  font-size:12px;font-weight:700;text-decoration:none
+}
+.market-coming-return:hover{color:#eaf6dc}
+.market-coming-hero{
+  min-height:590px;position:relative;display:flex;align-items:center;
+  overflow:hidden;border-bottom:1px solid #2d3848;padding:85px 0
+}
+.market-coming-content{max-width:710px;position:relative;z-index:2}
+.market-coming-pill{
+  display:inline-flex;gap:9px;align-items:center;
+  background:#29273a;border:1px solid #5c4c6e;border-radius:99px;
+  color:#d4baf1;font-size:10px;letter-spacing:.1em;font-weight:900;padding:10px 13px
+}
+.market-coming-mark{margin:31px 0 0;font-size:11px;letter-spacing:.18em;font-weight:900;color:#c2e5a5}
+.market-coming-mark span{color:#9aaec1}
+.market-coming-content h1{
+  font:900 clamp(42px,5.8vw,75px)/1.09 "Manrope",sans-serif;
+  letter-spacing:-.065em;margin:19px 0 20px;overflow-wrap:anywhere
+}
+.market-coming-content h1 em{color:#b8e58b;font-style:normal}
+.market-coming-content>p{
+  color:#b3c0d3;font-size:16px;line-height:1.9;max-width:580px;margin:0
+}
+.market-coming-status{
+  display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin-top:29px;
+  color:#aabccc;font-size:11px
+}
+.market-coming-status strong{color:#c6e9a5;font-size:12px}
+.market-coming-dot{width:8px;height:8px;background:#b9e18b;border-radius:50%;box-shadow:0 0 13px #b9e18b88}
+.market-coming-actions{display:flex;flex-wrap:wrap;gap:10px;margin-top:28px}
+.market-coming-primary,.market-coming-secondary{
+  min-height:48px;display:inline-flex;align-items:center;justify-content:center;gap:10px;
+  padding:13px 18px;border-radius:11px;font:800 12px "Manrope",sans-serif;text-decoration:none
+}
+.market-coming-primary{background:#c0e69c;color:#17221a;border:1px solid #c0e69c}
+.market-coming-secondary{color:#deebf4;background:#222c3a;border:1px solid #465268}
+.market-coming-orbits{
+  position:absolute;right:-90px;top:50%;transform:translateY(-50%);
+  width:480px;height:480px;display:grid;place-items:center;opacity:.75;
+  border:1px solid #a5a0d02b;border-radius:50%;color:#b8dd9f;
+  background:radial-gradient(ellipse,#61517833,transparent 65%);
+  pointer-events:none
+}
+.market-coming-orbits>span{
+  position:absolute;inset:60px;border:1px solid #aca6d035;border-radius:50%
+}
+.market-coming-orbits>span:nth-child(2){inset:124px}
+.market-coming-orbits>span:nth-child(3){inset:-57px;border-color:#aca6d019}
+.market-coming-features{
+  display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:12px;padding:27px 0 45px
+}
+.market-coming-features>div{
+  display:flex;flex-direction:column;gap:9px;
+  background:#151e2b;border:1px solid #303d4f;border-radius:14px;padding:20px
+}
+.market-coming-features svg{color:#b4dc9c;margin-bottom:5px}
+.market-coming-features strong{font:800 14px "Manrope",sans-serif}
+.market-coming-features span{font-size:11px;color:#a0b0c4;line-height:1.7}
+.market-coming-footer{
+  display:flex;justify-content:space-between;gap:12px;flex-wrap:wrap;
+  border-top:1px solid #2b3647;padding:22px 0 36px;color:#899aaf;font-size:10px
+}
+.market-coming-footer>span:first-child{display:flex;align-items:center;gap:8px}
+@media(max-width:740px){
+  .market-coming-orbits{right:-225px;opacity:.32}
+  .market-coming-hero{min-height:580px}
+  .market-coming-features{grid-template-columns:1fr}
+  .market-coming-features>div{padding:16px}
+}
+@media(max-width:510px){
+  .market-coming-nav{height:70px}
+  .market-coming-return{font-size:11px}
+  .market-coming-hero{padding:60px 0;min-height:550px}
+  .market-coming-content h1{font-size:clamp(39px,10.7vw,54px)}
+  .market-coming-content>p{font-size:13px}
+  .market-coming-actions{flex-direction:column}
+  .market-coming-primary,.market-coming-secondary{width:100%}
+  .market-coming-status{gap:8px}
+}
