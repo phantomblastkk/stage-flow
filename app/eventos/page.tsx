@@ -4,6 +4,7 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { ArrowLeft, CalendarDays, Plus, MapPin, Clock3, LoaderCircle, Trash2, ChevronLeft, ChevronRight, Mic, Users, Search, Check } from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
+import EventTeamInvites from "@/components/event-team-invites";
 
 type EventRow = { id:string; title:string; description:string|null; venue:string|null; city:string|null; starts_at:string; ends_at:string|null; status:"draft"|"published"|"cancelled"|"completed"; show_publicly:boolean };
 type GuestShow = { event_id:string; title:string; venue:string|null; city:string|null; starts_at:string; ends_at:string|null; event_status:"draft"|"published"|"cancelled"|"completed"; organizer_name:string };
@@ -20,6 +21,7 @@ export default function EventosPage() {
  const [calendarMonth,setCalendarMonth]=useState(()=>new Date(new Date().getFullYear(),new Date().getMonth(),1));
  const [selectedDate,setSelectedDate]=useState<string|null>(null);
  const [spotlightEventId,setSpotlightEventId]=useState<string|null>(null);
+ const [openTeamEventId,setOpenTeamEventId]=useState<string|null>(null);
  const [title,setTitle]=useState(""),[description,setDescription]=useState(""),[venue,setVenue]=useState(""),[city,setCity]=useState(""),[startsAt,setStartsAt]=useState(""),[endsAt,setEndsAt]=useState(""),[publicly,setPublicly]=useState(true);
  const [venueSuggestions,setVenueSuggestions]=useState<{id:string;name:string;address:string|null;city_name:string|null;state_code:string|null}[]>([]);
  const [citySuggestions,setCitySuggestions]=useState<{id:number;name:string;state_code:string}[]>([]);
@@ -49,7 +51,11 @@ export default function EventosPage() {
  // Lemos o parâmetro no cliente para não exigir Suspense/useSearchParams.
  useEffect(()=>{
   const eventId=new URLSearchParams(window.location.search).get("evento");
-  if(eventId&&/^[a-f0-9-]{36}$/i.test(eventId))setSpotlightEventId(eventId);
+  if(eventId&&/^[a-f0-9-]{36}$/i.test(eventId)){
+   setSpotlightEventId(eventId);
+   if(new URLSearchParams(window.location.search).get("equipe")==="1")
+    setOpenTeamEventId(eventId);
+  }
  },[]);
  useEffect(()=>{
   if(loading||!spotlightEventId||!events.some(event=>event.id===spotlightEventId))return;
@@ -137,7 +143,21 @@ export default function EventosPage() {
     }}><div className="event-date"><div><strong>{new Date(event.starts_at).toLocaleDateString("pt-BR",{day:"2-digit"})}</strong><br/><span>{new Date(event.starts_at).toLocaleDateString("pt-BR",{month:"short"}).replace(".","").toUpperCase()}</span></div></div><div className="event-info"><strong>{event.title}</strong>{event.id===spotlightEventId&&
     <span style={{display:"block",color:"var(--lime)",fontSize:11,marginTop:5}}>
      Show vinculado ao pedido de contratação · {event.status==="draft"?"rascunho privado":labels[event.status]}
-    </span>}<span style={{display:"block",marginTop:5}}><Clock3 size={12} style={{display:"inline",verticalAlign:"middle"}}/> {formatDate(event.starts_at)}</span>{(event.venue||event.city)&&<span style={{display:"block",marginTop:5}}><MapPin size={12} style={{display:"inline",verticalAlign:"middle"}}/> {[event.venue,event.city].filter(Boolean).join(" · ")}</span>}{event.description&&<p style={{color:"var(--muted)",fontSize:13,margin:"8px 0"}}>{event.description}</p>}<span className="event-pill" style={{display:"inline-block",marginTop:7}}>{labels[event.status]}</span></div><button className="btn btn-quiet" aria-label={"Excluir "+event.title} title="Excluir evento" onClick={()=>void deleteEvent(event.id)} style={{padding:9}}><Trash2 size={15}/></button></article>)}</div>}
+    </span>}<span style={{display:"block",marginTop:5}}><Clock3 size={12} style={{display:"inline",verticalAlign:"middle"}}/> {formatDate(event.starts_at)}</span>{(event.venue||event.city)&&<span style={{display:"block",marginTop:5}}><MapPin size={12} style={{display:"inline",verticalAlign:"middle"}}/> {[event.venue,event.city].filter(Boolean).join(" · ")}</span>}{event.description&&<p style={{color:"var(--muted)",fontSize:13,margin:"8px 0"}}>{event.description}</p>}<span className="event-pill" style={{display:"inline-block",marginTop:7}}>{labels[event.status]}</span>
+      <div style={{marginTop:11,display:"flex",flexWrap:"wrap",gap:9,alignItems:"center"}}>
+       <button className={openTeamEventId===event.id?"btn btn-primary":"btn btn-quiet"} type="button"
+        aria-expanded={openTeamEventId===event.id}
+        onClick={()=>setOpenTeamEventId(current=>current===event.id?null:event.id)}
+        style={{display:"inline-flex",alignItems:"center",gap:8,fontSize:12}}>
+        <Users size={16}/>{openTeamEventId===event.id?"Fechar equipe":"Equipe e convites"}
+       </button>
+       {event.id===spotlightEventId&&<span style={{fontSize:11,color:"var(--muted)"}}>
+        Organize os músicos sem publicar este show.
+       </span>}
+      </div>
+      {openTeamEventId===event.id&&<EventTeamInvites
+       eventId={event.id} eventTitle={event.title} eventStatus={event.status}/>}
+     </div><button className="btn btn-quiet" aria-label={"Excluir "+event.title} title="Excluir evento" onClick={()=>void deleteEvent(event.id)} style={{padding:9}}><Trash2 size={15}/></button></article>)}</div>}
   </section>
   <section className="section" style={{paddingTop:6}}>
    <div className="section-heading">
