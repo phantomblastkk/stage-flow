@@ -6,7 +6,7 @@ import { useRouter } from "next/navigation";
 import {
   ArrowLeft, ArrowRight, Bell, CalendarDays, Check, Guitar,
   LoaderCircle, LogOut, Mic2, Music2, Settings2,
-  UserRound, Users, Inbox
+  UserRound, Users, Inbox, Search
 } from "lucide-react";
 import type { LucideIcon } from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
@@ -212,6 +212,11 @@ export default function Dashboard() {
       { href: "/meu-perfil-artistico/site-profissional", title: "Prévia do site profissional", description: "Veja como poderá ficar seu futuro site premium, sem contratar agora.", icon: Mic2 }
     );
   }
+  secondary.push({
+    href: "/marketplace", title: "Marketplace de músicos · Em breve",
+    description: "Conheça o próximo espaço para descobrir talentos. O catálogo ainda não foi lançado.",
+    icon: Search
+  });
   if (profile?.is_artist && profile.username && profile.is_public) {
     secondary.push({
       href: "/" + profile.username, title: "Abrir minha página @" + profile.username,
