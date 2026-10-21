@@ -6,7 +6,7 @@ import { useRouter } from "next/navigation";
 import {
   Archive, ArrowLeft, ArrowUpRight, CalendarDays, CheckCircle2, Clock3,
   Inbox, LoaderCircle, Mail, MapPin, MessageCircle, RotateCcw, ShieldCheck, Trash2,
-  Plus, Pencil, Save, ExternalLink
+  Plus, Pencil, Save, ExternalLink, Users
 } from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
 import "./booking-inbox.css";
@@ -327,9 +327,15 @@ export default function ArtistBookingInboxPage() {
                       {eventForm?.requestId === item.id ? "Fechar formulário" :
                         item.event_id ? "Editar rascunho" : "Criar show a partir do pedido"}
                     </button>}
-                  {item.event_id && <Link className="btn btn-quiet" href={"/eventos?evento=" + encodeURIComponent(item.event_id)}>
-                    <ExternalLink size={15}/> Ver na agenda
-                  </Link>}
+                  {item.event_id && <>
+                    <Link className="btn btn-quiet" href={"/eventos?evento=" + encodeURIComponent(item.event_id)}>
+                      <ExternalLink size={15}/> Ver na agenda
+                    </Link>
+                    {item.event_status !== "cancelled" && item.event_status !== "completed" &&
+                      <Link className="btn btn-quiet" href={"/eventos?evento=" + encodeURIComponent(item.event_id) + "&equipe=1"}>
+                        <Users size={15}/> Organizar músicos
+                      </Link>}
+                  </>}
                 </div>
               </div>
               {eventForm?.requestId === item.id && <form
