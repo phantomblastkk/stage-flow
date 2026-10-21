@@ -7,6 +7,7 @@ import {
   LoaderCircle, Music2, RefreshCw, Send, ShieldCheck, Users
 } from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
+import EventFinancialSummary from "./event-financial-summary";
 import "./event-team-invites.css";
 
 type SavedTeam = {
@@ -49,6 +50,7 @@ export default function EventTeamInvites({ eventId, eventTitle, eventStatus }: P
   const [notice, setNotice] = useState("");
   const [message, setMessage] = useState("");
   const [showMembers, setShowMembers] = useState(true);
+  const [financialRefresh, setFinancialRefresh] = useState(0);
   const chosen = teams.find(item => item.id === teamId);
 
   const readData = useCallback(async () => {
@@ -71,6 +73,8 @@ export default function EventTeamInvites({ eventId, eventTitle, eventStatus }: P
     }
     setLoading(false);
     setRefreshing(false);
+    // Revalida também o financeiro ao atualizar a equipe ou gerar convites.
+    setFinancialRefresh(value => value + 1);
   }, [eventId]);
 
   useEffect(() => { void readData(); }, [readData]);
@@ -168,6 +172,8 @@ export default function EventTeamInvites({ eventId, eventTitle, eventStatus }: P
         <span><CheckCircle2 size={15}/> {accepted} aceito(s)</span>
         <span>{declined} recusado(s)</span>
       </div>
+
+      <EventFinancialSummary eventId={eventId} refreshToken={financialRefresh}/>
 
       {teams.length === 0 ? <div className="event-team-empty">
         <Users size={20}/>
