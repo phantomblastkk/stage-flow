@@ -1,0 +1,198 @@
+/* Financeiro de show: receitas/recebimentos, custos extras e resultado parcial. */
+.event-budget-panel {
+  margin-top:18px;padding:22px 21px;
+  border:1px solid #455d69;border-radius:15px;
+  background:linear-gradient(130deg,#172837,#171d2f 80%);
+  color:#e9edf7;
+}
+.event-budget-header{
+  display:flex;justify-content:space-between;align-items:flex-start;
+  gap:14px;flex-wrap:wrap;margin-bottom:18px;
+}
+.event-budget-header>div{flex:1;min-width:200px}
+.event-budget-eyebrow{
+  display:inline-flex;align-items:center;gap:8px;
+  color:#a9d6eb;font:800 10px "Manrope",sans-serif;letter-spacing:.11em
+}
+.event-budget-header h4{
+  display:flex;align-items:center;gap:9px;
+  font:800 clamp(19px,2.5vw,24px)/1.25 "Manrope",sans-serif;
+  letter-spacing:-.03em;margin:10px 0 7px;
+}
+.event-budget-header h4 svg{color:#afdef0}
+.event-budget-header p{color:#b5c5d8;font-size:12px;line-height:1.7;margin:0}
+.event-budget-refresh{
+  display:inline-flex;align-items:center;gap:7px;
+  border:1px solid #4d6471;background:#263b50;
+  color:#dcecf6;border-radius:9px;padding:9px 12px;
+  font-size:11px;font-weight:800;cursor:pointer
+}
+.event-budget-refresh:disabled{opacity:.5;cursor:not-allowed}
+.event-budget-loading{
+  display:flex;align-items:center;gap:8px;
+  color:#b5c9dc;font-size:12px;padding:13px 0
+}
+.event-budget-error,.event-budget-success{
+  display:flex;align-items:flex-start;gap:9px;
+  padding:12px;border-radius:10px;font-size:12px;
+  line-height:1.7;margin:12px 0;
+}
+.event-budget-error{color:#ffd0d7;background:#3b242e;border:1px solid #8c5560}
+.event-budget-success{color:#c4eec6;background:#1d322c;border:1px solid #4d745d}
+.event-budget-error svg,.event-budget-success svg{flex:none;margin-top:2px}
+.event-budget-overview{display:grid;gap:12px}
+.event-budget-highlight{
+  padding:22px;border-radius:14px;
+  border:1px solid #457c78;
+  background:linear-gradient(110deg,#234c4d,#1a383b 70%);
+  display:flex;flex-direction:column;gap:8px
+}
+.event-budget-highlight>span{color:#c3e6e4;font-size:12px;font-weight:800}
+.event-budget-highlight>strong{
+  font:900 clamp(27px,4vw,39px)/1.2 "Manrope",sans-serif;
+  color:#e3ffec;letter-spacing:-.05em;overflow-wrap:anywhere
+}
+.event-budget-highlight>strong.is-negative{color:#ffd1b8}
+.event-budget-highlight>small{
+  font-size:11px;color:#afcccb;line-height:1.6
+}
+.event-budget-summary-grid{
+  display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:9px
+}
+.event-budget-summary-grid>div{
+  display:flex;flex-direction:column;gap:8px;
+  border:1px solid #354b61;border-radius:11px;
+  padding:14px 12px;min-width:0;background:#1b3040
+}
+.event-budget-summary-grid span{font-size:11px;font-weight:700;color:#b1c4d8;line-height:1.5}
+.event-budget-summary-grid strong{
+  font:800 clamp(16px,2vw,20px)/1.3 "Manrope",sans-serif;
+  color:#eff6fa;letter-spacing:-.03em;overflow-wrap:anywhere
+}
+.event-budget-warning{
+  display:flex;align-items:flex-start;gap:10px;
+  padding:12px 13px;margin:13px 0 0;
+  border:1px solid #786447;background:#3a3029;
+  border-radius:10px;color:#f4dfbc;font-size:11px;line-height:1.7
+}
+.event-budget-warning svg{flex:none;margin-top:2px}
+.event-budget-explainer{
+  margin:13px 0 0;font-size:10px;color:#a8bdce;line-height:1.75
+}
+.event-budget-explainer strong{color:#d3e5ee}
+.event-budget-editors{
+  display:grid;grid-template-columns:minmax(230px,.85fr) minmax(0,1.15fr);
+  gap:13px;margin-top:19px;align-items:start
+}
+.event-budget-editor{
+  display:flex;flex-direction:column;gap:11px;
+  min-width:0;padding:18px;
+  border:1px solid #395064;background:#192836;
+  border-radius:13px
+}
+.event-budget-subtitle{
+  display:inline-flex;align-items:center;gap:8px;
+  font:800 14px "Manrope",sans-serif;color:#e8f0f9
+}
+.event-budget-subtitle svg{color:#9fcdea}
+.event-budget-editor>p,.event-budget-expenses-title p{
+  margin:0;color:#b5c4d4;font-size:11px;line-height:1.7
+}
+.event-budget-field{display:flex;flex-direction:column;gap:7px;min-width:0}
+.event-budget-field>label{font-size:11px;font-weight:700;color:#dce6f1}
+.event-budget-field input,.event-budget-field select{
+  width:100%;min-width:0;border:1px solid #41566b;border-radius:9px;
+  color:#ecf5fa;background:#101f2c;
+  padding:11px 12px;font:500 12px "DM Sans",sans-serif;outline:none
+}
+.event-budget-field input:focus,.event-budget-field select:focus{border-color:#99d6ec}
+.event-budget-field small{font-size:10px;line-height:1.6;color:#9fb3c6}
+.event-budget-editor>.btn,.event-budget-expense-form>.btn{
+  display:inline-flex;align-items:center;justify-content:center;gap:7px;
+  align-self:flex-start;font-size:12px
+}
+.event-budget-expenses-title{
+  display:flex;justify-content:space-between;align-items:flex-start;
+  flex-wrap:wrap;gap:10px
+}
+.event-budget-expenses-title>div{flex:1;min-width:160px;display:flex;flex-direction:column;gap:9px}
+.event-budget-expenses-title>.btn{font-size:11px;padding:9px 10px;display:inline-flex;gap:6px}
+.event-budget-expense-form{
+  display:flex;flex-direction:column;gap:12px;
+  padding:14px;background:#172c35;border:1px solid #598089;
+  border-radius:11px;margin:5px 0
+}
+.event-budget-expense-form-header{
+  display:flex;justify-content:space-between;align-items:center;gap:8px
+}
+.event-budget-expense-form-header strong{
+  display:inline-flex;align-items:center;gap:6px;
+  font-size:12px;font-weight:800
+}
+.event-budget-expense-form-header button{
+  display:grid;place-items:center;border-radius:8px;
+  border:1px solid #4b6570;background:#2a4651;
+  padding:6px;color:#d8e9f4;cursor:pointer
+}
+.event-budget-field-grid{
+  display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px
+}
+.event-budget-expenses-empty{
+  display:flex;align-items:center;gap:10px;
+  padding:16px;border:1px dashed #536577;border-radius:10px;
+  font-size:11px;line-height:1.7;color:#afc1d4
+}
+.event-budget-expenses-list{display:flex;flex-direction:column;gap:9px}
+.event-budget-expense-row{
+  display:flex;justify-content:space-between;gap:9px;
+  border:1px solid #3b5366;border-radius:10px;padding:12px;
+  background:#172b39
+}
+.event-budget-expense-info{
+  display:flex;flex-direction:column;gap:6px;min-width:0
+}
+.event-budget-expense-info strong{font-size:12px;overflow-wrap:anywhere}
+.event-budget-expense-info span{font-size:10px;color:#a5c7cf}
+.event-budget-expense-info small{font-size:10px;color:#acbfd3;line-height:1.6}
+.event-budget-expense-actions{
+  display:flex;flex-direction:column;align-items:flex-end;gap:9px;flex:none
+}
+.event-budget-expense-actions>strong{
+  font-size:12px;white-space:nowrap
+}
+.event-budget-expense-actions>div{display:flex;gap:6px}
+.event-budget-expense-actions button{
+  display:grid;place-items:center;padding:7px;cursor:pointer;
+  border:1px solid #455e6d;border-radius:8px;
+  background:#283f4d;color:#dce8f1
+}
+.event-budget-expense-actions button:disabled{opacity:.4;cursor:not-allowed}
+.event-budget-expense-actions button:hover:not(:disabled){background:#39566a}
+.event-budget-expense-footer{border-top:1px solid #40556a;padding-top:11px;display:grid;gap:9px}
+.event-budget-expense-footer>div{
+  display:flex;justify-content:space-between;gap:13px;align-items:center;
+  font-size:11px;color:#b9cadd
+}
+.event-budget-expense-footer strong{color:#e5f2f6;font-size:13px;white-space:nowrap}
+.event-budget-no-double{font-size:10px!important;line-height:1.7!important;color:#abc3cb!important}
+.event-budget-privacy{
+  display:flex;gap:9px;align-items:flex-start;
+  margin:16px 0 0;color:#a5bacc;
+  font-size:10px;line-height:1.75
+}
+.event-budget-privacy svg{flex:none;margin-top:2px}
+@media(max-width:930px){
+  .event-budget-editors{grid-template-columns:1fr}
+}
+@media(max-width:680px){
+  .event-budget-panel{padding:16px 12px}
+  .event-budget-summary-grid{grid-template-columns:repeat(2,minmax(0,1fr))}
+  .event-budget-editor{padding:14px}
+  .event-budget-highlight{padding:17px}
+}
+@media(max-width:420px){
+  .event-budget-summary-grid{grid-template-columns:1fr}
+  .event-budget-field-grid{grid-template-columns:1fr}
+  .event-budget-expense-row{flex-direction:column}
+  .event-budget-expense-actions{flex-direction:row;align-items:center;justify-content:space-between}
+}
