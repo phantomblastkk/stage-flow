@@ -542,3 +542,21 @@
 .artist-booking-setting-toggle strong{font-size:13px;line-height:1.55;color:var(--text)}
 .artist-booking-setting-toggle small{font-size:11px;color:var(--muted);line-height:1.8}
 .artist-booking-setting .field-help{margin:12px 0 0}
+
+
+/* STAGE FLOW | Identidade de marca 2D (logo aprovada em roxo e azul).
+   Reutilizada na navegação e nos rodapés sem alterar os fluxos da plataforma. */
+.brand{color:var(--text);text-transform:capitalize;white-space:nowrap}
+.brand-mark{
+  display:inline-block;flex:0 0 44px;width:44px;height:35px;
+  background:transparent url("/stageflow-symbol.svg") center/contain no-repeat;
+  border:0;border-radius:0;box-shadow:none;color:transparent;font-size:0;line-height:0;
+}
+.mp-end-mark{
+  display:inline-block;flex:0 0 37px;width:37px;height:29px;
+  background:transparent url("/stageflow-symbol.svg") center/contain no-repeat;
+  color:transparent;font-size:0;line-height:0;
+}
+@media(max-width:480px){
+  .brand-mark{flex-basis:37px;width:37px;height:30px}
+}

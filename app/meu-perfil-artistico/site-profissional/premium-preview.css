@@ -514,3 +514,16 @@
   .premium-design-footer .btn{flex:1;justify-content:center}
   .premium-design-save-status{flex-basis:100%;margin:0}
 }
+
+
+/* A marca Stage Flow também acompanha a prévia do site profissional. */
+.premium-site-signal{
+  display:inline-block;width:29px;height:24px;flex:none;
+  background:transparent url("/stageflow-symbol.svg") center/contain no-repeat;
+}
+.premium-site-signal svg{visibility:hidden}
+.premium-site-footer>span:first-child::before{
+  content:"";display:inline-block;width:24px;height:19px;
+  background:transparent url("/stageflow-symbol.svg") center/contain no-repeat;
+}
+.premium-site-footer>span:first-child>svg{display:none}
