@@ -140,7 +140,15 @@ export default function ConvitesPage() {
         setIsError(true);
         setStatusMessage("Não conseguimos carregar seus eventos: " + error.message);
       } else {
-        setEvents((data ?? []) as EventOption[]);
+        const ownedEvents = (data ?? []) as EventOption[];
+        setEvents(ownedEvents);
+        // Mantém o evento vindo da agenda selecionado para novos convites
+        // e para acompanhar somente a negociação deste show.
+        const linkedEventId = new URLSearchParams(window.location.search).get("evento");
+        if (linkedEventId && ownedEvents.some(event => event.id === linkedEventId)) {
+          setEventId(linkedEventId);
+          setTrackingEventId(linkedEventId);
+        }
       }
       setLoading(false);
       void reloadSent();
@@ -233,7 +241,14 @@ export default function ConvitesPage() {
       <div className="eyebrow"><span className="dot"/> EQUIPE DO EVENTO</div>
       <h1 style={{ fontSize: "clamp(34px,5vw,46px)" }}>Convidar <span className="accent">músicos.</span></h1>
       <p className="lead">Sem precisar saber o e-mail: gere um link único e compartilhe pelo WhatsApp ou pelo aplicativo que preferir.</p>
-      <Link href="/equipes" className="btn btn-quiet" style={{ marginTop: 14 }}><Users size={16}/> Usar uma equipe salva</Link>
+      <Link href={eventId ? "/equipes?evento=" + encodeURIComponent(eventId) : "/equipes"}
+        className="btn btn-quiet" style={{ marginTop: 14 }}>
+        <Users size={16}/> Usar uma equipe salva
+      </Link>
+      {chosenEvent && <p style={{ color: "var(--lime)", fontSize: 12, lineHeight: 1.6, marginTop: 13 }}>
+        <CheckCircle2 size={15} style={{ display: "inline", verticalAlign: "middle" }}/>
+        {" "}Show selecionado: <strong>{chosenEvent.title}</strong>. Os convites e os cachês são individuais.
+      </p>}
     </section>
     <section className="feature" style={{ maxWidth: 760 }}>
       {events.length === 0 && !isError ? <>
