@@ -8,6 +8,7 @@ import {
 } from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
 import EventFinancialSummary from "./event-financial-summary";
+import EventBudgetPanel from "./event-budget-panel";
 import "./event-team-invites.css";
 
 type SavedTeam = {
@@ -174,6 +175,7 @@ export default function EventTeamInvites({ eventId, eventTitle, eventStatus }: P
       </div>
 
       <EventFinancialSummary eventId={eventId} refreshToken={financialRefresh}/>
+      <EventBudgetPanel eventId={eventId} refreshToken={financialRefresh}/>
 
       {teams.length === 0 ? <div className="event-team-empty">
         <Users size={20}/>
