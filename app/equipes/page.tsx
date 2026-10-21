@@ -5,7 +5,7 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import {
   ArrowLeft, CheckCircle2, Clock3, LoaderCircle, Music2,
-  Pencil, Plus, RefreshCw, Send, Trash2, UserPlus, Users
+  Pencil, Plus, RefreshCw, Send, Trash2, UserPlus, Users, ArrowRight
 } from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
 
@@ -137,7 +137,14 @@ export default function EquipesPage() {
       if (eventsResult.error) {
         setNotice("Não foi possível carregar os seus eventos: " + eventsResult.error.message, true);
       } else {
-        setEvents((eventsResult.data ?? []) as EventOption[]);
+        const ownedEvents = (eventsResult.data ?? []) as EventOption[];
+        setEvents(ownedEvents);
+        // Retorna da agenda com o show correto selecionado, sem confiar em IDs
+        // externos: somente a lista de eventos do dono é aceita.
+        const linkedEventId = new URLSearchParams(window.location.search).get("evento");
+        if (linkedEventId && ownedEvents.some(event => event.id === linkedEventId)) {
+          setEventId(linkedEventId);
+        }
       }
       setLoading(false);
     }
@@ -353,6 +360,12 @@ export default function EquipesPage() {
         Minhas <span className="accent">equipes.</span>
       </h1>
       <p className="lead">Salve a formação da banda uma vez e reutilize nos próximos shows. Cada músico recebe seu próprio convite e negocia o cachê em particular.</p>
+      {events.find(event => event.id === eventId) && <div className="coming" style={{ maxWidth: 840, marginTop: 16 }}>
+        <strong>Show selecionado:</strong> {events.find(event => event.id === eventId)?.title}. Escolha uma equipe abaixo e confirme o envio dos convites somente quando estiver pronto.
+        <Link href={"/convites?evento=" + encodeURIComponent(eventId)} className="btn btn-quiet" style={{ marginTop: 12 }}>
+          Ver convites deste show <ArrowRight size={15}/>
+        </Link>
+      </div>}
     </section>
 
     {statusMessage && <div className="coming" role={isError ? "alert" : "status"}
