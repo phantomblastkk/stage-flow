@@ -30,7 +30,7 @@ const blank: EditorPortfolio = {
   reference_fee: null,
   is_published: false,
   theme: "midnight",
-  accent: "lime",
+  accent: "violet",
   layout_style: "spotlight",
   avatar_url: null,
   cover_url: null,
@@ -106,7 +106,7 @@ export default function MeuPortfolioDeMusico() {
           instruments: row.instruments || [],
           genres: row.genres || [],
           theme: row.theme || "midnight",
-          accent: row.accent || "lime",
+          accent: row.accent || "violet",
           layout_style: row.layout_style || "spotlight",
           media_url: row.media_url || null,
           avatar_url: row.avatar_url || null,
@@ -603,7 +603,7 @@ export default function MeuPortfolioDeMusico() {
 
       <aside className="mp-editor-preview">
         <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 10, marginBottom: 12 }}>
-          <div className="mp-editor-title" style={{ margin: 0 }}><Sparkles size={17} color="#c6f36b"/> Prévia em tempo real</div>
+          <div className="mp-editor-title" style={{ margin: 0 }}><Sparkles size={17} color="#C0A7FF"/> Prévia em tempo real</div>
           <button type="button" className="btn btn-quiet" style={{ padding: "8px 11px", fontSize: 12 }}
             onClick={() => setPreviewTab(prev => !prev)}>
             {previewTab ? "Ver compacta" : "Ver ampliada"}

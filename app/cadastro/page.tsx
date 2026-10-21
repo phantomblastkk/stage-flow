@@ -113,7 +113,7 @@ export default function CadastroPage() {
         {isArtist && <label className="signup-producer-add">
           <input type="checkbox" checked={isProducer} onChange={e => setIsProducer(e.target.checked)}/>
           <span><strong>Também organizo ou contrato shows</strong><small>Ativa as ferramentas de produtor nesta mesma conta.</small></span>
-          <CheckCircle2 size={18} color={isProducer ? "#c6f36b" : "#657083"}/>
+          <CheckCircle2 size={18} color={isProducer ? "#C0A7FF" : "#657083"}/>
         </label>}
       </div>}
       <form onSubmit={handleSubmit}>

@@ -20,9 +20,9 @@
   border-radius:10px;cursor:pointer;font-size:12px;font-weight:700
 }
 .booking-inbox-filters button[aria-pressed="true"]{
-  border-color:#69884f;color:var(--lime);background:#222d20
+  border-color:#8055D5;color:var(--lime);background:#2A2043
 }
-.booking-inbox-filters button span{font-size:10px;background:#35404c;padding:3px 6px;border-radius:99px}
+.booking-inbox-filters button span{font-size:10px;background:#433656;padding:3px 6px;border-radius:99px}
 .booking-inbox-feedback{padding:14px;border-radius:12px;font-size:12px;border:1px solid #4b6549;background:#1c2e1e;color:#c0e8bc;margin:0 0 16px}
 .booking-inbox-feedback.is-error{background:#311d22;color:#ffc6c6;border-color:#80515b}
 .booking-inbox-empty{
@@ -46,7 +46,7 @@
   flex:none;padding:8px 11px;border-radius:99px;
   font-size:10px;font-weight:800;white-space:nowrap
 }
-.booking-inbox-status.is-new{background:#293a20;color:#d4f3ae}
+.booking-inbox-status.is-new{background:#302247;color:#CDBBFF}
 .booking-inbox-status.is-contacted{background:#203b54;color:#a9dbf7}
 .booking-inbox-status.is-archived{background:#2a2c34;color:#a6aeba}
 .booking-inbox-description{

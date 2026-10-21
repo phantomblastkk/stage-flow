@@ -2,12 +2,12 @@
 .mp-editor-progress{
   display:flex;flex-direction:column;gap:9px;
   max-width:445px;margin-top:23px;padding:15px 17px;
-  border:1px solid #3d513b;border-radius:14px;
-  background:linear-gradient(115deg,#202f26,#182323)
+  border:1px solid #513C75;border-radius:14px;
+  background:linear-gradient(115deg,#221B36,#18192B)
 }
 .mp-editor-progress>div:first-child{
   display:flex;align-items:center;gap:8px;flex-wrap:wrap;
-  color:#d6e7d2;font-size:12px;line-height:1.5
+  color:#D6C9F2;font-size:12px;line-height:1.5
 }
 .mp-editor-progress>div:first-child svg{color:var(--lime)}
 .mp-editor-progress>div:first-child strong{
@@ -15,14 +15,14 @@
 }
 .mp-editor-progress-bar{
   width:100%;height:6px;border-radius:99px;
-  background:#38483b;overflow:hidden
+  background:#35294D;overflow:hidden
 }
 .mp-editor-progress-bar span{
   display:block;height:100%;border-radius:inherit;
-  background:linear-gradient(90deg,#93ba57,var(--lime));
+  background:linear-gradient(90deg,#8453F2,var(--lime));
   transition:width .22s ease
 }
-.mp-editor-progress small{font-size:10px;color:#b5c7b3;line-height:1.55}
+.mp-editor-progress small{font-size:10px;color:#AFA4C6;line-height:1.55}
 .mp-editor-panel .field>label svg{
   vertical-align:middle;display:inline-block;margin-right:4px;
 }
@@ -33,7 +33,7 @@
   overflow-wrap:anywhere;line-height:1.65;
 }
 .mp-editor-panel .mp-file-upload:hover{
-  border-color:var(--lime);background:#263125
+  border-color:var(--lime);background:#271E43
 }
 .mp-editor-panel .mp-file-upload:has(input:disabled){
   opacity:.55;cursor:not-allowed

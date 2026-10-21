@@ -91,7 +91,7 @@ export default function MusicianPortfolioView({ portfolio, preview = false, onSh
   const theme: MusicianTheme = musicianThemes.some(t => t.value === portfolio.theme)
     ? portfolio.theme : "midnight";
   const accent: MusicianAccent = musicianAccents.some(a => a.value === portfolio.accent)
-    ? portfolio.accent : "lime";
+    ? portfolio.accent : "violet";
   const layout: MusicianLayout = portfolio.layout_style === "minimal" ? "minimal" : "spotlight";
   const themeColor = theme === "ivory" ? accentsLight[accent] : accentsDark[accent];
 
