@@ -89,31 +89,39 @@
 .premium-site-small-label{display:flex;align-items:center;gap:10px;color:var(--pro-accent-soft);font:800 10px "Manrope",sans-serif;letter-spacing:.14em}
 .premium-site-small-label span{width:7px;height:7px;border-radius:50%;background:var(--pro-accent);box-shadow:0 0 14px var(--pro-accent)}
 .premium-site-identity h1{font:900 clamp(33px,4vw,54px)/1.08 "Manrope",sans-serif;letter-spacing:-.064em;margin:18px 0 10px;overflow-wrap:anywhere}
-/* Assinatura no canto inferior direito do hero.
-   Mantemos uma área dedicada para nunca cobrir botões, biografia ou
-   dados do artista, inclusive com frases mais longas. */
-.premium-site-signature-area{
-  display:flex;
-  justify-content:flex-end;
-  align-items:flex-end;
+/* O nome e a frase-assinatura dividem a mesma linha no hero.
+   Grid reserva espaço próprio para evitar sobreposição em nomes longos. */
+.premium-site-name-row{
+  display:grid;
+  grid-template-columns:minmax(0,1fr) minmax(125px,37%);
+  align-items:center;
+  gap:clamp(12px,2vw,23px);
   width:100%;
-  min-height:112px;
-  margin-top:15px;
-  padding:24px 14px 12px 36px;
+  min-width:0;
+  margin:18px 0 10px;
 }
-.premium-site-signature{
-  max-width:min(94%,360px);
+.premium-site-identity .premium-site-name-row h1{
+  min-width:0;
   margin:0;
-  text-align:right;
+  overflow-wrap:anywhere;
+}
+.premium-site-name-row .premium-site-signature{
+  display:block;
+  width:100%;
+  max-width:100%;
+  margin:0;
+  padding:10px 7px 10px 0;
+  text-align:center;
   font-family:"Great Vibes","Brush Script MT",cursive;
-  font-size:clamp(30px,3.6vw,46px);
+  font-size:clamp(21px,2.6vw,36px);
   font-weight:400;
-  line-height:1.24;
+  line-height:1.2;
   letter-spacing:.01em;
   color:var(--pro-accent-soft);
   overflow-wrap:anywhere;
-  transform:rotate(-10deg);
-  transform-origin:right bottom;
+  text-wrap:balance;
+  transform:rotate(-4deg);
+  transform-origin:center;
   text-shadow:0 5px 20px #0006;
   pointer-events:none;
 }
@@ -266,20 +274,36 @@
 }
 @media(prefers-reduced-motion:reduce){.premium-site *{transition:none!important;animation:none!important}}
 
-/* Área de assinatura reservada no mobile, sem encostar nos botões. */
+/* No celular, assinatura à direita do nome, diagonal HORÁRIA (+12°).
+   Os blocos não ficam absolutamente posicionados: nomes e frases
+   maiores aumentam a altura da linha sem cobrir o restante do site. */
 @media(max-width:700px){
-  .premium-site-signature-area{
-    min-height:105px;
-    margin-top:18px;
-    padding:24px 13px 13px 22px;
+  .premium-site-name-row{
+    grid-template-columns:minmax(0,1fr) minmax(100px,37%);
+    gap:9px;
+    margin:18px 0 14px;
   }
-  .premium-site-signature{
-    max-width:min(92%,320px);
-    font-size:clamp(28px,7.5vw,40px);
-    transform:rotate(-8deg);
+  .premium-site-identity .premium-site-name-row h1{
+    font-size:clamp(27px,7.8vw,47px);
+    line-height:1.12;
+  }
+  .premium-site-name-row .premium-site-signature{
+    padding:13px 12px 13px 0;
+    font-size:clamp(19px,5.6vw,28px);
+    line-height:1.24;
+    transform:rotate(12deg);
   }
 }
-
+@media(max-width:380px){
+  .premium-site-name-row{
+    grid-template-columns:minmax(0,1fr) minmax(92px,39%);
+    gap:6px;
+  }
+  .premium-site-name-row .premium-site-signature{
+    font-size:clamp(18px,5.5vw,22px);
+    padding-right:10px;
+  }
+}
 
 /* Editor premium: somente rascunho privado, nunca publica subdomínio. */
 .premium-design-editor{
