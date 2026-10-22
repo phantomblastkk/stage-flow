@@ -31,7 +31,7 @@ type ArtistPreview = {
   custom_subdomain_enabled: boolean;
 };
 
-type SectionId = "about" | "portfolio" | "agenda" | "contact";
+type SectionId = "about" | "photos" | "videos" | "agenda" | "contact";
 type PreviewTheme = "midnight" | "concert" | "ivory";
 type PreviewAccent = "violet" | "lime" | "cyan" | "gold" | "coral";
 type PremiumDraft = {
@@ -41,10 +41,23 @@ type PremiumDraft = {
   visible_sections: SectionId[];
 };
 
-const SECTION_IDS: SectionId[] = ["about","portfolio","agenda","contact"];
+const SECTION_IDS: SectionId[] = ["about","photos","videos","agenda","contact"];
 const SECTION_LABELS: Record<SectionId, string> = {
-  about: "Sobre", portfolio: "Portfólio", agenda: "Agenda", contact: "Contato"
+  about: "Sobre", photos: "Galeria de fotos",
+  videos: "Vídeos", agenda: "Agenda", contact: "Contato"
 };
+const sectionAnchor: Record<SectionId, string> = {
+  about: "#premium-sobre", photos: "#premium-fotos",
+  videos: "#premium-videos", agenda: "#premium-agenda",
+  contact: "#premium-contato"
+};
+function upgradeSections(raw: unknown): SectionId[] {
+  if (!Array.isArray(raw)) return [...SECTION_IDS];
+  const converted = raw.flatMap((id: string) =>
+    id === "portfolio" ? ["photos","videos"] : [id]
+  ).filter((id: string) => SECTION_IDS.includes(id as SectionId));
+  return [...new Set(converted)] as SectionId[];
+}
 const defaultDraft = (): PremiumDraft => ({
   theme: "midnight",
   accent: "violet",
@@ -145,17 +158,18 @@ export default function SiteProfissionalPreview() {
         setDraftError("Para salvar seu rascunho, execute premium_site_draft_editor_migration.sql no Supabase. Você pode testar as opções enquanto isso.");
       } else if (savedDesign) {
         const saved = savedDesign as Partial<PremiumDraft>;
-        const validOrder = Array.isArray(saved.section_order)
-          && saved.section_order.length === 4
-          && SECTION_IDS.every(id => saved.section_order?.includes(id));
-        const validVisible = Array.isArray(saved.visible_sections)
-          && saved.visible_sections.length >= 1
-          && saved.visible_sections.every(id => SECTION_IDS.includes(id));
+        // Preserva rascunhos anteriores à separação do Portfólio.
+        const order = upgradeSections(saved.section_order);
+        const visible = upgradeSections(saved.visible_sections);
+        const validOrder = order.length === SECTION_IDS.length &&
+          SECTION_IDS.every(id => order.includes(id));
+        const validVisible = visible.length >= 1 &&
+          visible.every(id => SECTION_IDS.includes(id));
         const next: PremiumDraft = {
           theme: themeChoices.some(item => item.id === saved.theme) ? saved.theme! : "midnight",
           accent: accentChoices.some(item => item.id === saved.accent) ? saved.accent! : "violet",
-          section_order: validOrder ? [...saved.section_order!] : [...SECTION_IDS],
-          visible_sections: validVisible ? [...saved.visible_sections!] : [...SECTION_IDS]
+          section_order: validOrder ? order : [...SECTION_IDS],
+          visible_sections: validVisible ? visible : [...SECTION_IDS]
         };
         setDraft(next);
         setSavedDraft(next);
@@ -231,7 +245,10 @@ export default function SiteProfissionalPreview() {
       p_visible_sections: draft.visible_sections
     });
     if (saveError || data !== "saved") {
-      setDraftError("Não foi possível salvar. Confira se premium_site_draft_editor_migration.sql foi executado no Supabase.");
+      setDraftError(saveError
+        ? "Não foi possível salvar (" + saveError.code + "): " + saveError.message +
+          ". Confira a migração pro_artist_independent_media_sections_migration.sql."
+        : "Não foi possível salvar. Execute pro_artist_independent_media_sections_migration.sql no Supabase.");
       setDraftMessage("Rascunho ainda não salvo. Suas escolhas permanecem na prévia aberta.");
     } else {
       setDraftError("");
@@ -241,7 +258,7 @@ export default function SiteProfissionalPreview() {
         visible_sections: [...draft.visible_sections]
       });
       setDraftReady(true);
-      setDraftMessage("Rascunho salvo! Suas escolhas permanecem privadas e não ativam um site pago.");
+      setDraftMessage("Rascunho salvo! Fotos e Vídeos têm visibilidade e posição independentes. Clique em Republicar para atualizar o site público.");
     }
     setSavingDraft(false);
   }
@@ -277,7 +294,7 @@ export default function SiteProfissionalPreview() {
           <div>
             <span className="premium-design-eyebrow"><Palette size={15}/> PERSONALIZAÇÃO DO SITE PROFISSIONAL</span>
             <h2>Seu estilo, seu palco.</h2>
-            <p>Escolha temas, cores e seções. Salve o visual para publicar ou atualizar seu site Pro quando ele estiver habilitado.</p>
+            <p>Personalize seu site Pro. Organize Galeria de fotos e Vídeos separadamente, escolha quais aparecem e mude a ordem livremente.</p>
           </div>
           <button type="button" className="premium-design-collapse"
             onClick={() => setEditorOpen(current => !current)}
@@ -316,7 +333,7 @@ export default function SiteProfissionalPreview() {
           <div className="premium-design-sections">
             <div className="premium-design-sections-heading">
               <h3>Organizar seções</h3>
-              <span>Mude a ordem e escolha o que aparece na prévia.</span>
+              <span>Fotos e vídeos são duas seções independentes. Desmarque qualquer uma sem ocultar a outra.</span>
             </div>
             {draft.section_order.map((section, index) =>
               <div className="premium-design-section-item" key={section}>
@@ -365,7 +382,7 @@ export default function SiteProfissionalPreview() {
           <Link href="/" className="premium-site-brand"><span className="premium-site-signal"><Music2 size={20}/></span> STAGE FLOW</Link>
           <nav aria-label="Seções do site profissional">
             {visibleOrder.map(section =>
-              <a href={"#premium-" + (section === "about" ? "sobre" : section === "portfolio" ? "portfolio" : section === "agenda" ? "agenda" : "contato")} key={section}>
+              <a href={sectionAnchor[section]} key={section}>
                 {SECTION_LABELS[section]}
               </a>
             )}
@@ -414,7 +431,7 @@ export default function SiteProfissionalPreview() {
 
         <div className="premium-site-tabs" aria-label="Navegação por seções">
           {visibleOrder.map(section =>
-            <a href={"#premium-" + (section === "about" ? "sobre" : section === "portfolio" ? "portfolio" : section === "agenda" ? "agenda" : "contato")} key={section}>
+            <a href={sectionAnchor[section]} key={section}>
               {SECTION_LABELS[section]}
             </a>
           )}
@@ -436,36 +453,41 @@ export default function SiteProfissionalPreview() {
           </div>
         </section>}
 
-        {draft.visible_sections.includes("portfolio") && <section id="premium-portfolio" className="premium-site-work" style={{order:draft.section_order.indexOf("portfolio")}}>
+        {draft.visible_sections.includes("photos") && <section
+          id="premium-fotos" className="premium-site-work premium-site-media-section"
+          style={{order:draft.section_order.indexOf("photos")}}>
           <div className="premium-site-section-head">
             <div>
-              <span className="premium-site-section-overline">{String(draft.section_order.indexOf("portfolio") + 1).padStart(2,"0")} / MINHA MÚSICA</span>
-              <h2>Portfólio <em>& vídeos.</em></h2>
+              <span className="premium-site-section-overline">
+                {String(draft.section_order.indexOf("photos")+1).padStart(2,"0")} / ÁLBUM DO ARTISTA
+              </span>
+              <h2>Galeria de <em>fotos.</em></h2>
+              <p>Shows, ensaios e momentos especiais, em um álbum só de fotografias.</p>
+            </div>
+            <span className="premium-site-section-icon"><Instagram size={25}/></span>
+          </div>
+          <PremiumGalleryShowcase
+            items={gallery.items} section="photos" showEmpty
+          />
+        </section>}
+
+        {draft.visible_sections.includes("videos") && <section
+          id="premium-videos" className="premium-site-work premium-site-media-section"
+          style={{order:draft.section_order.indexOf("videos")}}>
+          <div className="premium-site-section-head">
+            <div>
+              <span className="premium-site-section-overline">
+                {String(draft.section_order.indexOf("videos")+1).padStart(2,"0")} / APRESENTAÇÕES
+              </span>
+              <h2>Vídeos <em>& apresentações.</em></h2>
+              <p>Uma área exclusiva para vídeos de shows e músicas do artista.</p>
             </div>
             <span className="premium-site-section-icon"><PlayCircle size={25}/></span>
           </div>
-          {gallery.items.length > 0
-            ? <PremiumGalleryShowcase items={gallery.items}/>
-            : <div className="premium-site-work-grid">
-            <div className="premium-site-work-tile premium-site-work-featured">
-              <span><PlayCircle size={28}/></span>
-              <strong>Apresentações ao vivo</strong>
-              <p>Galeria com seus vídeos e momentos marcantes.</p>
-              {artist.youtube_url ? <a href={artist.youtube_url} target="_blank" rel="noopener noreferrer">Ver no YouTube <ArrowUpRight size={14}/></a> : <small>Adicione seu YouTube para mostrar seus trabalhos.</small>}
-            </div>
-            <div className="premium-site-work-tile">
-              <span><Music2 size={26}/></span>
-              <strong>Meu som</strong>
-              <p>Divulgue lançamentos e músicas que fazem parte da sua trajetória.</p>
-              {artist.spotify_url ? <a href={artist.spotify_url} target="_blank" rel="noopener noreferrer">Ouvir no Spotify <ArrowUpRight size={14}/></a> : <small>Adicione seu Spotify para divulgar músicas.</small>}
-            </div>
-            <div className="premium-site-work-tile">
-              <span><Instagram size={26}/></span>
-              <strong>Bastidores & fotos</strong>
-              <p>Uma futura galeria para imagens de shows e projetos.</p>
-              {artist.instagram_url ? <a href={artist.instagram_url} target="_blank" rel="noopener noreferrer">Ver Instagram <ArrowUpRight size={14}/></a> : <small>Galeria de fotos: planejada para o site pago.</small>}
-            </div>
-          </div>}
+          <PremiumGalleryShowcase
+            items={gallery.items} section="videos" showEmpty
+            youtubeUrl={artist.youtube_url} spotifyUrl={artist.spotify_url}
+          />
         </section>}
 
         {draft.visible_sections.includes("agenda") && <section id="premium-agenda" className="premium-site-agenda" style={{order:draft.section_order.indexOf("agenda")}}>
