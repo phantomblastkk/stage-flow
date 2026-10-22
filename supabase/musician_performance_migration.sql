@@ -101,7 +101,7 @@ begin
   -- Uma linha por ID solicitado, sempre validando elegibilidade.
   with requested as (
     select distinct musician_id
-    from unnest(p_musician_ids) as musician_id
+    from unnest(p_musician_ids) as requested_ids(musician_id)
   ), eligible as (
     select m.profile_id as musician_id
     from requested req
