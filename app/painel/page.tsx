@@ -6,7 +6,7 @@ import { useRouter } from "next/navigation";
 import {
   ArrowLeft, ArrowRight, Bell, CalendarDays, Check, Guitar,
   LoaderCircle, LogOut, Mic2, Music2, Settings2,
-  UserRound, Users, Inbox, Search
+  UserRound, Users, Inbox, Search, ChartNoAxesCombined
 } from "lucide-react";
 import type { LucideIcon } from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
@@ -152,6 +152,10 @@ export default function Dashboard() {
         description: "Divulgue instrumentos, trabalhos, cidade e escolha entre mostrar cachê ou sob consulta."
       },
       {
+        href: "/meu-desempenho", title: "Meu desempenho", icon: ChartNoAxesCombined,
+        description: "Acompanhe visitas ao portfólio, visibilidade no marketplace e convites recebidos."
+      },
+      {
         href: "/eventos", title: "Minha agenda", icon: CalendarDays,
         description: "Veja seus shows e as participações que já estão confirmadas."
       }
@@ -209,6 +213,7 @@ export default function Dashboard() {
     secondary.push(
       { href: "/meus-convites", title: "Convites para tocar", description: "Cantores também podem participar de outros shows.", icon: Bell },
       { href: "/meu-portfolio", title: "Portfólio simples de músico", description: "Use também sua vitrine de instrumentista.", icon: Guitar },
+      { href: "/meu-desempenho", title: "Desempenho do portfólio de músico", description: "Visitas e oportunidades do seu perfil gratuito de instrumentista.", icon: ChartNoAxesCombined },
       { href: "/meu-perfil-artistico/site-profissional", title: "Prévia do site profissional", description: "Veja como poderá ficar seu futuro site premium, sem contratar agora.", icon: Mic2 }
     );
   }
