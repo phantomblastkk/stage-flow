@@ -5,18 +5,16 @@ import Link from "next/link";
 import { useParams } from "next/navigation";
 import {
   ArrowLeft, CalendarDays, CheckCircle2, ExternalLink, Images, Instagram,
-  MapPin, MessageCircle, Music2, Send, ShieldCheck, Sparkles, Ticket, X
+  MapPin, MessageCircle, Music2, Send, ShieldCheck, Sparkles, Ticket, X, ChevronLeft, ChevronRight
 } from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
 import VenueMonthCalendar, {
-  venueDayOfMonth, venueMonthKey, venueMonthStart
+  venueDayOfMonth, venueDayKey, venueMonthKey, venueMonthStart
 } from "@/components/venue-month-calendar";
+import { VenueFeaturedEvent, VenueShowCard, VenueFlyerCard, type VenuePublicShow } from "@/components/venue-show-visuals";
 import "./venue-public.css";
 
-type HouseShow = {
-  id: string; title: string; description: string; starts_at: string;
-  ends_at: string | null; flyer_path: string | null; status: string;
-};
+type HouseShow = VenuePublicShow;
 type Gallery = { id: string; media_path: string; caption: string };
 type House = {
   id: string; name: string; slug: string; description: string; address: string | null;
@@ -46,6 +44,7 @@ export default function CasaPublicaPage() {
   const [monthLoading,setMonthLoading] = useState(true);
   const [monthError,setMonthError] = useState("");
   const [events,setEvents] = useState<HouseShow[]>([]);
+  const [highlights,setHighlights] = useState<HouseShow[]>([]);
   const [day,setDay] = useState<number|null>(null);
   const [mode,setMode] = useState<Mode>("agenda");
   const [focusedShow,setFocusedShow] = useState<HouseShow|null>(null);
@@ -99,9 +98,33 @@ export default function CasaPublicaPage() {
     return ()=>{active=false};
   },[venue,month]);
 
+  useEffect(()=>{
+    if(!venue) return;
+    let active=true;
+    async function loadHighlights() {
+      const {data,error:queryError}=await createClient().rpc(
+        "stage_venue_public_highlights",{p_slug:venue!.slug}
+      );
+      if(!active)return;
+      if(queryError){setHighlights([]);return;}
+      const payload=data as {status:string;events?:HouseShow[]};
+      setHighlights(payload.status==="ok"?(payload.events||[]):[]);
+    }
+    void loadHighlights();
+    return ()=>{active=false;};
+  },[venue]);
+
   const visible=useMemo(()=>events.filter(e=>day===null||venueDayOfMonth(e.starts_at)===day),
     [events,day]);
   const flyers=useMemo(()=>visible.filter(e=>!!e.flyer_path),[visible]);
+  const featured=highlights[0] || null;
+  function goToShow(event:HouseShow){
+    const key=venueDayKey(event.starts_at);
+    setMonth(new Date(Date.UTC(Number(key.slice(0,4)), Number(key.slice(5,7))-1, 1)));
+    setDay(Number(key.slice(-2)));
+    setMode("agenda");
+    document.getElementById("house-calendar")?.scrollIntoView({behavior:"smooth",block:"start"});
+  }
 
   async function suggest(e:FormEvent<HTMLFormElement>){
     e.preventDefault();
@@ -150,9 +173,11 @@ export default function CasaPublicaPage() {
           </div>
         </section>
 
+        {featured&&<VenueFeaturedEvent show={featured} houseName={venue.name}
+          onOpen={setFocusedShow} onGoToCalendar={goToShow}/>}
         <div className="venue-public-layout">
           <div className="venue-public-main">
-            <section className="venue-public-section venue-public-calendar">
+            <section className="venue-public-section venue-public-calendar" id="house-calendar">
               <div className="venue-public-heading"><CalendarDays size={20}/><h2>Programação da casa</h2></div>
               <p className="venue-public-subtitle">Encontre os shows por data e reveja os flyers de meses anteriores.</p>
               <VenueMonthCalendar month={month} events={events} selectedDay={day}
@@ -166,27 +191,13 @@ export default function CasaPublicaPage() {
               {monthLoading?<p className="venue-public-placeholder">Carregando programação...</p>:
                 monthError?<p className="venue-public-placeholder" role="alert">{monthError}</p>:
                 mode==="agenda"?<div className="venue-public-events">
-                  {visible.map(event=><button type="button" className="venue-public-show-card"
-                    key={event.id} onClick={()=>setFocusedShow(event)}>
-                    {event.flyer_path?<img src={mediaUrl(event.flyer_path)} alt={"Flyer de "+event.title}/>:
-                      <span className="venue-public-show-art"><Music2 size={28}/></span>}
-                    <span className="venue-public-show-copy">
-                      <strong>{event.title}</strong>
-                      <small>{showDate(event.starts_at)}</small>
-                      {event.description&&<span className="venue-public-show-desc">{event.description}</span>}
-                      <span className="venue-public-show-open">Detalhes do evento <ExternalLink size={13}/></span>
-                    </span>
-                  </button>)}
+                  {visible.map(event=><VenueShowCard key={event.id} show={event} onOpen={setFocusedShow}/>)}
                   {!visible.length&&<p className="venue-public-placeholder">
                     Nenhum show divulgado para {day?"este dia":"este mês"}.
                     Consulte outro período para ver o histórico da casa.
                   </p>}
                 </div>:<div className="venue-public-flyers">
-                  {flyers.map(event=><button type="button" className="venue-public-flyer" key={event.id}
-                    onClick={()=>setFocusedShow(event)}>
-                    <img src={mediaUrl(event.flyer_path!)} alt={"Flyer: "+event.title}/>
-                    <span><strong>{event.title}</strong><small>{showDate(event.starts_at)}</small></span>
-                  </button>)}
+                  {flyers.map(event=><VenueFlyerCard key={event.id} show={event} onOpen={setFocusedShow}/>)}
                   {!flyers.length&&<p className="venue-public-placeholder">
                     Não há flyers publicados neste período. Escolha outro mês no calendário.
                   </p>}
