@@ -58,10 +58,10 @@ function createCalendarFile(show: ProPublicShow, artistName: string, url: string
     ...(location ? ["LOCATION:" + escapeIcs(location)] : []),
     "DESCRIPTION:" + escapeIcs(
       "Apresentação de " + artistName + ".\n" +
-      "Horário de término não informado: ajuste a duração no calendário, se necessário.\n" +
-      "Detalhes: " + url
+      "Horário de término não informado: ajuste a duração no calendário, se necessário." +
+      (url ? "\nDetalhes: " + url : "")
     ),
-    "URL:" + url,
+    ...(url ? ["URL:" + url] : []),
     "END:VEVENT",
     "END:VCALENDAR"
   ];
@@ -153,7 +153,7 @@ export default function ProShowCards({ shows, artistName, preview = false }: Pro
           <span>{month}</span>
         </div>
         <div className="pro-show-card-content">
-          <span className="pro-show-card-eyebrow"><Ticket size={12}/> SHOW CONFIRMADO NA AGENDA PÚBLICA</span>
+          <span className="pro-show-card-eyebrow"><Ticket size={12}/> SHOW PUBLICADO NA AGENDA</span>
           <h4>{show.title}</h4>
           <div className="pro-show-card-facts">
             <span><Clock3 size={15}/>
