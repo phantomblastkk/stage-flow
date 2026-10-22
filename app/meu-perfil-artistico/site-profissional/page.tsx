@@ -84,6 +84,8 @@ type PublicShow = {
   venue: string | null;
   city: string | null;
   starts_at: string;
+  flyer_path?: string | null;
+  flyer_settings?: unknown;
 };
 
 const monthTitle = (month: Date) =>
@@ -200,7 +202,24 @@ export default function SiteProfissionalPreview() {
 
       if (!active) return;
       if (eventsError) setProblem("A agenda não pôde ser carregada. " + eventsError.message);
-      else setEvents((ownerEvents || []) as PublicShow[]);
+      else {
+        // Consulta opcional: o restante da prévia continua funcionando
+        // mesmo se o administrador ainda não executou o SQL dos flyers.
+        const {data:flyers,error:flyerError}=await supabase.from("events")
+          .select("id,flyer_path,flyer_settings")
+          .eq("producer_id",user.id)
+          .eq("show_publicly",true)
+          .eq("status","published")
+          .gte("starts_at",new Date().toISOString())
+          .limit(40);
+        if(!active)return;
+        const flyerMap=new Map(
+          (flyerError?[]:(flyers||[])).map(item=>[item.id,item])
+        );
+        setEvents((ownerEvents||[]).map(item=>({
+          ...item,...(flyerMap.get(item.id)||{})
+        })) as PublicShow[]);
+      }
       setLoading(false);
     }
     void load();
