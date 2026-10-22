@@ -20,6 +20,8 @@ as $$
   );
 $$;
 revoke all on function public.stage_venue_is_admin() from public,anon,authenticated;
+-- Permite que a policy de Storage verifique apenas o booleano de permissao.
+grant execute on function public.stage_venue_is_admin() to authenticated;
 
 create or replace function public.stage_venue_admin_status()
 returns boolean language sql stable security definer set search_path=''
@@ -219,7 +221,7 @@ revoke all on public.stage_venue_show_approvals from public,anon,authenticated;
 -- a aprovacao anterior, obrigando nova revisao humana.
 create or replace function public.stage_venue_invalidate_show_approval()
 returns trigger language plpgsql security definer set search_path=''
-as $
+as $$
 begin
   if old.venue_id is distinct from new.venue_id
     or old.title is distinct from new.title
@@ -231,7 +233,7 @@ begin
   end if;
   return new;
 end;
-$;
+$$;
 revoke all on function public.stage_venue_invalidate_show_approval() from public,anon,authenticated;
 drop trigger if exists stage_venue_invalidate_show_approval on public.events;
 create trigger stage_venue_invalidate_show_approval
@@ -240,7 +242,7 @@ for each row execute function public.stage_venue_invalidate_show_approval();
 
 create or replace function public.stage_venue_admin_shows(p_venue_id uuid)
 returns jsonb language plpgsql stable security definer set search_path=''
-as $
+as $$
 declare v_items jsonb;
 begin
   if not public.stage_venue_is_admin() then
@@ -262,7 +264,7 @@ begin
     and e.starts_at<now()+interval '1 year';
   return jsonb_build_object('status','ok','items',v_items);
 end;
-$;
+$$;
 revoke all on function public.stage_venue_admin_shows(uuid) from public,anon,authenticated;
 grant execute on function public.stage_venue_admin_shows(uuid) to authenticated;
 
@@ -270,7 +272,7 @@ create or replace function public.stage_venue_admin_set_show(
   p_event_id uuid,p_approved boolean
 )
 returns text language plpgsql security definer set search_path=''
-as $
+as $$
 declare v_venue_id uuid;
 begin
   if not public.stage_venue_is_admin() then return 'forbidden';end if;
@@ -291,7 +293,7 @@ begin
   end if;
   return 'ok';
 end;
-$;
+$$;
 revoke all on function public.stage_venue_admin_set_show(uuid,boolean) from public,anon,authenticated;
 grant execute on function public.stage_venue_admin_set_show(uuid,boolean) to authenticated;
 
