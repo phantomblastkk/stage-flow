@@ -1,0 +1,102 @@
+/* Site Pro publicado; reutiliza a identidade visual do editor do cantor,
+   mas sem controles de rascunho nem dados privados. */
+.pro-public-page{
+  min-height:100vh;
+  background:radial-gradient(ellipse at 55% -12%,#30234c52,transparent 56%),#090e18;
+  padding:20px 18px 65px;
+}
+.pro-public-page .premium-site{
+  max-width:1280px;margin:0 auto;
+  border-radius:17px;
+}
+.pro-public-page .premium-site-nav{
+  flex-wrap:wrap;
+}
+.pro-public-share{
+  display:inline-flex;align-items:center;justify-content:center;gap:7px;
+  border:1px solid #4b5479;background:#1f2843;
+  border-radius:9px;color:#e6eaf6;padding:10px 12px;
+  cursor:pointer;font:800 11px "Manrope",sans-serif;
+}
+.pro-public-share:hover{border-color:var(--pro-accent)}
+.pro-public-page .premium-site-work{
+  min-height:270px;
+}
+.pro-public-page .premium-site-agenda{
+  scroll-margin-top:20px;
+}
+.pro-public-page .premium-site-contact{
+  margin-bottom:0;
+}
+.pro-public-contact{
+  padding-bottom:29px;
+}
+.pro-public-booking{
+  max-width:730px;
+  margin:24px auto 0;
+}
+.pro-public-booking .artist-booking-card{
+  margin:0;
+}
+.pro-public-media-empty{
+  display:flex;flex-direction:column;align-items:flex-start;
+  gap:13px;border-radius:14px;padding:28px;
+  border:1px dashed #4a5274;background:#161c31;
+  color:#bbc6da;
+}
+.pro-public-media-empty>svg{
+  color:var(--pro-accent)
+}
+.pro-public-media-empty p{
+  font-size:12px;line-height:1.8;
+}
+.pro-public-media-empty>div{
+  display:flex;flex-wrap:wrap;gap:8px;
+}
+.pro-public-media-empty a{
+  display:inline-flex;align-items:center;gap:7px;
+  font-size:11px;font-weight:800;color:var(--pro-accent);
+  border:1px solid #515879;border-radius:9px;
+  padding:11px;
+}
+.pro-public-unavailable,.pro-public-loading{
+  display:flex;align-items:center;justify-content:center;
+  min-height:70vh;padding:25px;color:#e7edf8;
+  background:radial-gradient(circle at 50% 0,#33294955,transparent 60%),#0e1624;
+}
+.pro-public-loading{gap:11px;color:#b8cbd9;font-size:13px}
+.pro-public-unavailable>div{
+  display:flex;align-items:flex-start;flex-direction:column;
+  gap:15px;width:min(590px,100%);
+  border:1px solid #47546c;border-radius:18px;background:#172337;
+  padding:28px;
+}
+.pro-public-unavailable svg{color:#c7e39c}
+.pro-public-unavailable h1{
+  font:900 clamp(25px,4vw,34px)/1.25 "Manrope",sans-serif;
+  letter-spacing:-.04em;margin:0;
+}
+.pro-public-unavailable p{
+  color:#b3c2d4;line-height:1.85;font-size:13px;margin:0;
+}
+.pro-public-error{
+  margin:19px auto 0;width:min(100%,1170px);
+  color:#ffbdc4;text-align:center;font-size:12px;
+}
+@media(max-width:760px){
+  .pro-public-page{
+    padding:0 0 40px;
+  }
+  .pro-public-page .premium-site{
+    border-radius:0;border-left:0;border-right:0;
+  }
+  .pro-public-page .premium-site-nav{
+    align-items:center;gap:12px;
+  }
+  .pro-public-share{padding:9px 10px}
+  .pro-public-booking{padding:0 13px}
+  .pro-public-media-empty{padding:19px}
+}
+@media(max-width:390px){
+  .pro-public-share{width:100%}
+}
