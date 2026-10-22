@@ -32,6 +32,7 @@ type ProDesign={
 };
 type PublicShow={
   id:string;title:string;venue:string|null;city:string|null;starts_at:string;
+  flyer_path?:string|null;flyer_settings?:unknown;
 };
 type PublicPro={
   artist:ProArtist;
