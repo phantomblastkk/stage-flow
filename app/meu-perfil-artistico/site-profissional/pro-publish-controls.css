@@ -1,0 +1,124 @@
+/* Publicação protegida do site profissional do cantor */
+.pro-publish-controls{
+  max-width:1170px;margin:24px auto 27px;padding:26px;
+  border:1px solid #5c5577;border-radius:17px;
+  background:linear-gradient(130deg,#251f3a,#172235 85%);
+  color:#edf0fc;
+}
+.pro-publish-head{
+  display:flex;align-items:flex-start;justify-content:space-between;
+  gap:20px;flex-wrap:wrap;margin-bottom:22px
+}
+.pro-publish-head>div{min-width:0;flex:1}
+.pro-publish-eyebrow{
+  display:inline-flex;align-items:center;gap:8px;
+  color:#cdbcf2;font:900 10px "Manrope",sans-serif;
+  letter-spacing:.13em
+}
+.pro-publish-head h2{
+  font:900 clamp(21px,3vw,31px)/1.23 "Manrope",sans-serif;
+  letter-spacing:-.04em;margin:12px 0 10px;
+}
+.pro-publish-head p{
+  font-size:12px;line-height:1.8;color:#b9c6d8;max-width:690px
+}
+.pro-publish-status{
+  display:inline-flex;align-items:center;gap:7px;
+  color:#ddc6ed;background:#413351;border:1px solid #756488;
+  border-radius:99px;padding:9px 12px;
+  font:900 10px "Manrope",sans-serif;
+  letter-spacing:.05em;white-space:nowrap
+}
+.pro-publish-status.is-live{
+  background:#263e31;border-color:#659674;color:#cdeecb
+}
+.pro-publish-grid{
+  display:grid;grid-template-columns:1.08fr .92fr;
+  align-items:start;gap:16px
+}
+.pro-publish-info,.pro-publish-action-area{
+  display:flex;flex-direction:column;gap:14px;
+  background:#192639;border:1px solid #3b4b65;
+  padding:18px;border-radius:13px;min-width:0;
+}
+.pro-publish-checklist{display:grid;gap:16px}
+.pro-publish-checklist>div{display:flex;align-items:start;gap:10px}
+.pro-publish-checklist>div>span{
+  width:30px;height:30px;flex:none;display:grid;place-items:center;
+  color:#b4e0ac;background:#284438;border-radius:8px
+}
+.pro-publish-checklist>div>div{display:grid;gap:5px}
+.pro-publish-checklist strong{font:800 12px "Manrope",sans-serif}
+.pro-publish-checklist small{font-size:11px;color:#abbdd2;line-height:1.65}
+.pro-publish-entitlement-note,.pro-publish-privacy{
+  display:flex;align-items:start;gap:9px;
+  font-size:11px;line-height:1.75;color:#b7c8d9;
+  margin:0
+}
+.pro-publish-entitlement-note svg,.pro-publish-privacy svg{
+  flex:none;margin-top:2px;color:#d5bdf4
+}
+.pro-publish-entitlement-note{
+  border:1px solid #756444;background:#39332c;
+  padding:12px;border-radius:9px;color:#efdcb4
+}
+.pro-publish-url{display:flex;flex-direction:column;gap:7px}
+.pro-publish-url>span{
+  font-size:10px;font-weight:900;letter-spacing:.08em;color:#aebed3
+}
+.pro-publish-url strong{
+  font-size:12px;color:#d1e9b2;overflow-wrap:anywhere;
+  line-height:1.6
+}
+.pro-publish-links{display:flex;align-items:center;gap:8px;flex-wrap:wrap}
+.pro-publish-links>*{
+  display:inline-flex;align-items:center;justify-content:center;gap:7px;
+  font-size:10px;font-weight:800;padding:10px 11px;border-radius:9px;
+  border:1px solid #59677d;background:#2c3e57;
+  color:#e4eef6;text-decoration:none;cursor:pointer
+}
+.pro-publish-main-button{
+  display:inline-flex;align-items:center;justify-content:center;gap:9px;
+  border:1px solid #bee39c;background:#c5e6a3;color:#1e2a20;
+  border-radius:10px;padding:14px 15px;
+  font:900 12px "Manrope",sans-serif;cursor:pointer
+}
+.pro-publish-main-button.is-update{
+  color:#231b33;background:#d2bbef;border-color:#d2bbef
+}
+.pro-publish-main-button:disabled{
+  opacity:.48;cursor:not-allowed
+}
+.pro-publish-unpublish{
+  display:inline-flex;align-items:center;justify-content:center;gap:8px;
+  border:1px solid #7f525f;background:#332732;color:#f1c4ca;
+  border-radius:10px;padding:12px 14px;
+  font:800 11px "Manrope",sans-serif;cursor:pointer
+}
+.pro-publish-unpublish:disabled{opacity:.5;cursor:not-allowed}
+.pro-publish-info-text{
+  color:#aabed1;font-size:10px;line-height:1.8
+}
+.pro-publish-error,.pro-publish-warning,.pro-publish-success{
+  display:flex;gap:9px;align-items:start;line-height:1.7;
+  font-size:12px;padding:13px;border-radius:10px;margin-top:16px
+}
+.pro-publish-warning,.pro-publish-error{
+  color:#ffd3d9;border:1px solid #87515c;background:#3a2630
+}
+.pro-publish-success{
+  color:#d0eac7;border:1px solid #5d8867;background:#283e32
+}
+.pro-publish-success svg{flex:none;margin-top:2px}
+.pro-publish-loading{
+  display:flex;align-items:center;gap:9px;font-size:12px;color:#bdd0df
+}
+@media(max-width:780px){
+  .pro-publish-grid{grid-template-columns:1fr}
+  .pro-publish-controls{padding:17px}
+}
+@media(max-width:480px){
+  .pro-publish-controls{padding:15px 12px}
+  .pro-publish-status{width:100%;justify-content:center}
+  .pro-publish-main-button,.pro-publish-unpublish{width:100%}
+}
