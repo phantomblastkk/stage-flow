@@ -1,0 +1,39 @@
+# Checklist de validação: gestores de casas parceiras (Stage Flow)
+
+**Somente branch develop.** Nenhum teste abaixo depende de realizar deploy. O nome correto da casa de referência é **Deck Espeto Bar**.
+
+## 1) Contratos estáticos (sem banco, sem credenciais)
+Em uma cópia local do repositório, executar:
+```bash
+npm run test:venue-security
+```
+O comando executa `tests/venue-partner-security.test.mjs` com o test runner nativo do Node 22. Verifica se as funções SQL têm autorização por casa, a listagem só mostra vínculos do próprio usuário, só administradores globais concedem acessos e o upload de gestores fica restrito a flyers e galeria.
+
+**Limite:** validação estática não comprova que o Supabase aplicou migrações, executou grants ou respeita políticas de Storage na prática.
+
+Também há workflow opcional `.github/workflows/venue-security.yml` apenas para verificações. Não publica nem chama a Vercel. Confirmar que as GitHub Actions estão habilitadas no repositório.
+
+## 2) Banco de testes (NÃO usar produção)
+Depois de criar um projeto de teste Supabase com o schema base:
+1. Rodar, nesta ordem: `supabase/venue_admin_migration.sql`, `supabase/venue_calendar_gallery_suggestions_migration.sql` e `supabase/venue_partner_management_migration.sql`.
+2. Criar duas casas **ativas + oficiais + parceiras**: X (ex.: Deck Espeto Bar) e Y (outra casa de teste). Não usar dados reais de shows.
+3. Criar duas contas de teste com seus registros em `auth.users` e `public.profiles`. Escolher a conta A **sem** permissão de administrador global.
+4. Como administrador global, no painel `/admin/casas`, conceder permissão da casa X ao e-mail da conta A. Não vincular A à casa Y.
+5. Executar todo o arquivo `tests/sql/venue-partner-isolation.sql` de uma vez, no SQL Editor do **projeto de teste**.
+6. Esperado: mensagem `PASSOU` e final `ROLLBACK`. O SQL cria dados temporários e reverte tudo ao final. Se o script falhar, interromper a validação, investigar e executar `ROLLBACK;` antes de sair.
+
+**O script SQL cobre:** isolamento entre X e Y; lista do portal; cadastro permitido de show em X; rejeição de inclusão/remoção em Y; rejeição de acesso à galeria de Y; rejeição de uploads fora da casa; proibição de logo/capa e de concessão de administradores; usuário sem vínculo.
+
+## 3) Teste de RLS/Storage com sessões reais
+A simulação SQL usa `request.jwt.claim.sub` dentro do SQL Editor. Ela **não** substitui a verificação com sessões Auth reais (role `authenticated`):
+- Entrar com a conta A, tentar upload em `X/gallery` (esperado: permitido), em `X/logo` (negado) e em `Y/gallery` (negado).
+- Testar requisições PostgREST diretas de A aos RPCs administrativos globais; todas devem retornar `forbidden` ou acesso negado.
+- Tentar ler diretamente `public.stage_venue_managers`, `stage_venue_gallery` e `stage_venue_artist_suggestions`. Sem concessão de tabela, devem falhar.
+- Desmarcar X como parceiro e verificar que o acesso A é imediatamente revogado, sem login/logout.
+- Testar como administrador global: acesso a ambas as casas, concessão, revogação e restauração.
+
+## 4) Antes de publicar
+- Executar `npm run build` e `npm run lint` no ambiente apropriado.
+- Inspecionar manualmente a tela `/parceiros` e a página de edição em desktop e mobile.
+- Nenhum script de teste deve rodar no banco de produção.
+- O projeto **Deck Espeto Bar** do Stage Flow não deve reutilizar credenciais ou banco de qualquer sistema de reservas separado.
