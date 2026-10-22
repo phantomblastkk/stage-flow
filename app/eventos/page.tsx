@@ -2,9 +2,10 @@
 import { FormEvent, useCallback, useEffect, useMemo, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { ArrowLeft, CalendarDays, Plus, MapPin, Clock3, LoaderCircle, Trash2, ChevronLeft, ChevronRight, Mic, Users, Search, Check } from "lucide-react";
+import { ArrowLeft, CalendarDays, Plus, MapPin, Clock3, LoaderCircle, Trash2, ImagePlus, ChevronLeft, ChevronRight, Mic, Users, Search, Check } from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
 import EventTeamInvites from "@/components/event-team-invites";
+import ShowFlyerManager from "./show-flyer-manager";
 
 type EventRow = { id:string; title:string; description:string|null; venue:string|null; city:string|null; starts_at:string; ends_at:string|null; status:"draft"|"published"|"cancelled"|"completed"; show_publicly:boolean };
 type GuestShow = { event_id:string; title:string; venue:string|null; city:string|null; starts_at:string; ends_at:string|null; event_status:"draft"|"published"|"cancelled"|"completed"; organizer_name:string };
@@ -22,6 +23,7 @@ export default function EventosPage() {
  const [selectedDate,setSelectedDate]=useState<string|null>(null);
  const [spotlightEventId,setSpotlightEventId]=useState<string|null>(null);
  const [openTeamEventId,setOpenTeamEventId]=useState<string|null>(null);
+ const [openFlyerEventId,setOpenFlyerEventId]=useState<string|null>(null);
  const [title,setTitle]=useState(""),[description,setDescription]=useState(""),[venue,setVenue]=useState(""),[city,setCity]=useState(""),[startsAt,setStartsAt]=useState(""),[endsAt,setEndsAt]=useState(""),[publicly,setPublicly]=useState(true);
  const [venueSuggestions,setVenueSuggestions]=useState<{id:string;name:string;address:string|null;city_name:string|null;state_code:string|null}[]>([]);
  const [citySuggestions,setCitySuggestions]=useState<{id:number;name:string;state_code:string}[]>([]);
@@ -112,6 +114,7 @@ export default function EventosPage() {
      </div>
     </div>
     <div className="field"><label htmlFor="event-description">Descrição e observações</label><textarea id="event-description" value={description} onChange={e=>setDescription(e.target.value)} placeholder="Detalhes do evento..." rows={3} style={{width:"100%",padding:13,border:"1px solid var(--line)",background:"var(--panel)",borderRadius:11,color:"var(--text)",resize:"vertical"}}/></div>
+    <p style={{fontSize:12,color:"var(--muted)",lineHeight:1.6,margin:"10px 0"}}>Depois de salvar o show, use <strong>Flyer para Instagram/WhatsApp</strong> no card do evento para enviar a arte e gerar os dois tamanhos.</p>
     <label style={{display:"flex",gap:10,alignItems:"flex-start",margin:"8px 0 20px",fontSize:13,color:"var(--muted)"}}><input type="checkbox" checked={publicly} onChange={e=>setPublicly(e.target.checked)} style={{accentColor:"var(--lime)",marginTop:2}}/><span><strong style={{color:"var(--text)"}}>Mostrar publicamente</strong><br/>O evento fica marcado como publicado para futura exibição no portfólio.</span></label>
     {message&&<div className="coming" role="status" style={isError?{borderColor:"#754343",background:"#281919",color:"#ffb5b5"}:{}}>{message}</div>}
     <button className="btn btn-primary" type="submit" disabled={saving||!ownerId}><Plus size={16}/>{saving?"Salvando...":"Salvar evento"}</button>
@@ -151,12 +154,19 @@ export default function EventosPage() {
         style={{display:"inline-flex",alignItems:"center",gap:8,fontSize:12}}>
         <Users size={16}/>{openTeamEventId===event.id?"Fechar painel":"Equipe, convites e financeiro"}
        </button>
+       <button className={openFlyerEventId===event.id?"btn btn-primary":"btn btn-quiet"}
+        type="button" aria-expanded={openFlyerEventId===event.id}
+        onClick={()=>setOpenFlyerEventId(current=>current===event.id?null:event.id)}
+        style={{display:"inline-flex",alignItems:"center",gap:8,fontSize:12}}>
+        <ImagePlus size={16}/>{openFlyerEventId===event.id?"Fechar flyer":"Flyer para Instagram/WhatsApp"}
+       </button>
        {event.id===spotlightEventId&&<span style={{fontSize:11,color:"var(--muted)"}}>
         Organize músicos e confira os cachês sem publicar este show.
        </span>}
       </div>
       {openTeamEventId===event.id&&<EventTeamInvites
        eventId={event.id} eventTitle={event.title} eventStatus={event.status}/>}
+      {openFlyerEventId===event.id&&<ShowFlyerManager eventId={event.id} title={event.title}/>}
      </div><button className="btn btn-quiet" aria-label={"Excluir "+event.title} title="Excluir evento" onClick={()=>void deleteEvent(event.id)} style={{padding:9}}><Trash2 size={15}/></button></article>)}</div>}
   </section>
   <section className="section" style={{paddingTop:6}}>
