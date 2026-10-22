@@ -404,3 +404,6 @@ $$;
 -- IMPORTANTE: custom_subdomain_enabled NÃO ativa domínios DNS.
 -- /pro/USUARIO funciona na Vercel. Subdomínios requerem DNS, wildcard
 -- e configuração de host confiável, em uma etapa independente.
+
+-- Solicita atualização do cache de funções do PostgREST após instalar.
+notify pgrst, 'reload schema';
