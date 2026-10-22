@@ -1,0 +1,54 @@
+.venue-program-page{min-height:100vh}
+.venue-program-hero{padding:40px 0 20px}
+.venue-program-hero h1{font:800 clamp(28px,4.5vw,44px)/1.17 Manrope,sans-serif;letter-spacing:-1.5px;margin:16px 0 12px}
+.venue-program-hero .lead{font-size:15px;max-width:780px}
+.venue-program-tabs{display:flex;flex-wrap:wrap;gap:7px;margin:10px 0 18px}
+.venue-program-tabs button{display:flex;gap:9px;align-items:center;padding:11px 16px;background:var(--panel);border:1px solid var(--line);color:var(--muted);border-radius:12px;font-weight:700;cursor:pointer}
+.venue-program-tabs button.active{background:#382450;border-color:#8266c0;color:#fff}
+.venue-program-tabs button span{font-size:11px;background:#2a2240;padding:3px 6px;border-radius:8px;color:#d3c4ff}
+.venue-program-layout{display:grid;grid-template-columns:minmax(290px,.88fr) minmax(0,1.12fr);align-items:start;gap:18px;padding-bottom:70px}
+.venue-program-panel{border:1px solid var(--line);border-radius:20px;background:var(--panel);padding:20px;min-width:0}
+.venue-program-heading{display:flex;align-items:center;justify-content:space-between;gap:12px;margin-bottom:18px}
+.venue-program-heading h2{font:800 20px Manrope,sans-serif;letter-spacing:-.5px;margin:0}
+.venue-program-heading .btn{font-size:12px;padding:10px 12px}
+.venue-program-list{margin-top:24px}
+.venue-program-list h3{font:700 15px Manrope,sans-serif}
+.venue-program-list h3 small{color:var(--muted)}
+.venue-program-show{display:flex;align-items:center;gap:13px;width:100%;text-align:left;background:var(--panel2);border:1px solid var(--line);border-radius:13px;padding:10px;margin:0 0 9px;color:var(--text);cursor:pointer}
+.venue-program-show:hover,.venue-program-show.selected{border-color:#987ae0}
+.venue-program-show img,.venue-program-show-fallback{height:70px;width:55px;flex-shrink:0;object-fit:cover;border-radius:8px;background:#2f2550}
+.venue-program-show-fallback{display:grid;place-items:center;color:var(--accent)}
+.venue-program-show>span:last-child{display:flex;min-width:0;flex-direction:column;gap:5px}
+.venue-program-show strong{font-size:13px}
+.venue-program-show small{font-size:11px;color:var(--muted)}
+.venue-program-panel textarea{width:100%;min-height:90px;background:var(--panel2);border:1px solid var(--line);border-radius:11px;padding:12px;color:var(--text);font:inherit;resize:vertical}
+.venue-program-time-fields{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px}
+.venue-program-panel .field input,.venue-program-panel .field select{background:var(--panel2)}
+.venue-program-buttons{display:flex;align-items:center;flex-wrap:wrap;gap:9px}
+.venue-program-flyer{border-top:1px solid var(--line);padding-top:22px;margin-top:25px}
+.venue-program-flyer h3{display:flex;align-items:center;gap:7px;font:700 16px Manrope,sans-serif}
+.venue-program-flyer>img{display:block;max-width:245px;max-height:335px;object-fit:contain;border-radius:13px;border:1px solid var(--line);margin:16px 0}
+.venue-program-flyer .fine{margin:10px 0}
+.venue-program-page .is-disabled{opacity:.5;pointer-events:none}
+.venue-program-alert,.venue-program-success{border-radius:12px;padding:12px 16px;margin:0 0 18px;font-size:13px}
+.venue-program-alert{background:#361d2c;border:1px solid #805365;color:#ffd4dc}
+.venue-program-success{background:#1b372c;border:1px solid #467b60;color:#c1f2d8}
+.venue-program-gallery-panel{margin-bottom:60px}
+.venue-program-upload{display:flex;align-items:flex-end;gap:15px;flex-wrap:wrap;margin:20px 0}
+.venue-program-upload .field{flex:1;min-width:240px;margin:0}
+.venue-program-upload label.btn{white-space:nowrap;margin-bottom:0}
+.venue-program-gallery-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(170px,1fr));gap:12px;margin-top:20px}
+.venue-program-gallery-item{overflow:hidden;border:1px solid var(--line);border-radius:14px;background:var(--panel2)}
+.venue-program-gallery-item img{display:block;height:175px;width:100%;object-fit:cover}
+.venue-program-gallery-item>div{display:flex;justify-content:space-between;align-items:center;gap:9px;padding:9px}
+.venue-program-gallery-item span{font-size:12px;color:var(--muted);line-height:1.4;overflow:hidden}
+.venue-program-gallery-item button{border:0;background:none;color:#edb5c1;padding:7px;cursor:pointer}
+.venue-program-suggestions{display:grid;gap:11px}
+.venue-program-suggestion{padding:16px;border:1px solid var(--line);background:var(--panel2);border-radius:13px}
+.venue-program-suggestion>div{display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:8px}
+.venue-program-suggestion strong{font-size:15px}
+.venue-program-suggestion small{font-size:11px;color:var(--muted)}
+.venue-program-suggestion p{font-size:13px;color:var(--text);margin:13px 0;white-space:pre-wrap;line-height:1.6}
+.venue-program-empty{font-size:13px;color:var(--muted);background:var(--panel2);padding:20px;border-radius:12px}
+@media(max-width:850px){.venue-program-layout{grid-template-columns:1fr}.venue-program-hero{padding-top:28px}}
+@media(max-width:500px){.venue-program-panel{padding:14px}.venue-program-time-fields{grid-template-columns:1fr}.venue-program-tabs button{flex:1;justify-content:center;font-size:12px;padding:10px 8px}.venue-program-tabs button span{display:none}}
