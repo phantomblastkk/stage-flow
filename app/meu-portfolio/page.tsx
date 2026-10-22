@@ -6,7 +6,7 @@ import { useRouter } from "next/navigation";
 import {
   ArrowLeft, Check, CheckCircle2, Copy, ExternalLink, Eye, EyeOff,
   ImagePlus, LoaderCircle, Palette, Save, Share2, SlidersHorizontal, Sparkles, Upload,
-  BriefcaseBusiness, Clock3, Instagram, Youtube, Headphones, ListChecks
+  BriefcaseBusiness, Clock3, Instagram, Youtube, Headphones, ListChecks, ChartNoAxesCombined, ArrowRight
 } from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
 import MusicianPortfolioView, {
@@ -334,6 +334,17 @@ export default function MeuPortfolioDeMusico() {
       {!error && <CheckCircle2 size={17} style={{ display: "inline", verticalAlign: "middle", marginRight: 6 }}/>}
       {status}
     </div>}
+
+    <section className="mp-reach-link" aria-label="Painel de desempenho do músico">
+      <div>
+        <span className="mp-reach-eyebrow"><ChartNoAxesCombined size={16}/> SEU ALCANCE</span>
+        <h2>Veja quem seu trabalho está alcançando.</h2>
+        <p>Confira visitas ao portfólio, aparições no futuro marketplace e convites recebidos. Estatísticas privadas, gratuitas e sem expor visitantes.</p>
+      </div>
+      <Link href="/meu-desempenho" className="mp-reach-button">
+        Ver meu desempenho <ArrowRight size={16}/>
+      </Link>
+    </section>
 
     <MarketplaceMusicianSettings portfolioPublished={portfolio.is_published}/>
 
