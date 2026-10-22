@@ -5,6 +5,7 @@ import Link from "next/link";
 import { ArrowLeft, Copy, LoaderCircle } from "lucide-react";
 import { useParams } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
+import { trackPublicPortfolioView } from "@/lib/musician-metrics";
 import MusicianPortfolioView, { MusicianPortfolio } from "@/components/musician-portfolio-view";
 
 export default function PortfolioMusicoPublico() {
@@ -29,7 +30,11 @@ export default function PortfolioMusicoPublico() {
       if (requestError) {
         setError("Não foi possível carregar este portfólio. O banco pode precisar da migração de aparência.");
       } else {
-        setPortfolio((data as MusicianPortfolio | null) ?? null);
+        const published = (data as MusicianPortfolio | null) ?? null;
+        setPortfolio(published);
+        // Apenas página pública realmente carregada, não o editor nem a prévia.
+        // Contagens são aproximadas e deduplicadas por navegador/dia.
+        if (published?.slug) void trackPublicPortfolioView(published.slug);
       }
       setLoading(false);
     }
