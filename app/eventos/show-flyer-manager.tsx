@@ -303,7 +303,7 @@ export default function ShowFlyerManager({
         </button>
         <button className="btn btn-quiet" type="button" disabled={busy}
           onClick={()=>void shareCurrentFormat()}>
-          <Share2 size={16}/> Compartilhar ${format==="feed"?"Feed":"Story / Status"} (ou baixar)
+          <Share2 size={16}/> {format==="feed"?"Compartilhar Feed":"Compartilhar Story / Status"} (ou baixar)
         </button>
         <div className="show-flyer-downloads">
           <button className="btn btn-quiet" type="button" disabled={busy}
