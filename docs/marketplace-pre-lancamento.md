@@ -81,3 +81,33 @@ select launched from public.stage_marketplace_control where id=true;
 ## Lançamento público (SOMENTE quando o fundador mandar)
 
 Checklist de segurança, moderação, anti-spam, revisão do produto, políticas de privacidade e testes em dispositivo móvel. Somente após aprovação explícita, planejar o uso do catálogo na rota pública, remover mensagens "Em breve" e ativar o lançamento no Supabase. O código atual **não faz nenhuma dessas ações automaticamente**.
+
+
+## Vitrine "Músicos em destaque" — mais avaliados (outubro/2026)
+
+No **catálogo de prévia** (rota \`/marketplace/preview\`), após o cabeçalho e antes dos filtros, existe agora uma faixa de **até seis músicos em destaque**. É uma vitrine **orgânica**, sem patrocinadores ou posições compradas. O ranking vem da função \`stage_marketplace_featured()\`, e não de itens hardcoded.
+
+**Critério transparente de ordenação:**
+1. Maior **quantidade de avaliações verificadas** recebidas.
+2. Em caso de empate, melhor **nota média** (de 1 a 5).
+3. Se continuar empatado, nome e ID para resultado estável.
+
+Participam apenas músicos com portfólio **publicado**, opção **participar do marketplace** ligada, estado de disponibilidade diferente de "indisponível" e **ao menos uma avaliação verificada**. Avaliações aceitas vêm somente da tabela privada de avaliações já vinculada a shows concluídos com convite aceito. A função fornece somente campos já publicáveis do portfólio, nota e contagem; não divulga contato privado, cachês negociados ou detalhes de eventos.
+
+**Layout:** até 3 cartões por vez no desktop, até 2 no tablet e 1 cartão completo com parte do próximo no celular (scroll horizontal por toque). Há setas no desktop e acesso com teclado ao carrossel. Cada cartão apresenta capa ou foto, avatar, nome, especialidade, cidade, instrumento, nota média, quantidade de avaliações e links "Ver portfólio" / "Convidar" (modal de convites já existente).
+
+**Sem avaliações válidas:** nenhum ranking é inventado. A seção mostra um estado vazio informativo, sem músicos fictícios ou avaliações falsas.
+
+### Ativação — sem publicar ao público
+
+Depois de executar \`supabase/marketplace_private_launch_migration.sql\`, execute também:
+
+\`supabase/marketplace_featured_musicians_migration.sql\`
+
+Isso **não altera** \`stage_marketplace_control.launched\`, nem substitui o aviso "Em breve" da rota \`/marketplace\`.
+
+Teste no laboratório \`/marketplace/preview\` com sua conta previamente autorizada. Com avaliações válidas, verifique a ordem por contagem, a nota e os links. Faça o teste no celular para confirmar o cartão seguinte aparecendo na lateral. Se ainda não houver avaliações, verifique a mensagem de estado vazio — ela é o comportamento esperado.
+
+Confirme ainda que uma conta não autorizada não consegue consultar \`stage_marketplace_featured()\`; deve retornar \`{"status":"not_released","items":[]}\`. A página pública \`/marketplace\` deve continuar "Em breve".
+
+**Evolução futura:** monetização/anúncios destacados poderá existir como produto distinto, mas não deve ser confundida com a classificação orgânica e não foi implementada nesta etapa.
