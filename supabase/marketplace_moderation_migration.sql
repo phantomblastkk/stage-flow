@@ -108,7 +108,9 @@ declare
 begin
   if auth.uid() is null then return 'login_required'; end if;
   if not public.stage_marketplace_gate() then return 'not_released'; end if;
-  if p_target_id is null or p_type not in ('musician','review')
+  if p_target_id is null or p_type is null
+    or p_type not in ('musician','review')
+    or p_reason is null
     or p_reason not in ('spam','impersonation','inappropriate','misleading','other')
     or char_length(v_details)>900
   then return 'invalid'; end if;
@@ -186,7 +188,7 @@ declare v_list jsonb;v_total bigint;
 begin
   if not public.stage_marketplace_is_moderator()
     then return jsonb_build_object('status','forbidden','items','[]'::jsonb,'total',0);end if;
-  if p_filter not in ('open','all','dismissed','resolved')
+  if p_filter is null or p_filter not in ('open','all','dismissed','resolved')
     or p_limit is null or p_limit<1 or p_limit>100
     or p_offset is null or p_offset<0 or p_offset>10000
   then return jsonb_build_object('status','invalid','items','[]'::jsonb,'total',0);end if;
@@ -248,7 +250,8 @@ declare
   v_target uuid;
 begin
   if not public.stage_marketplace_is_moderator() then return 'forbidden';end if;
-  if p_report_id is null or p_action not in ('hide','restore','dismiss')
+  if p_report_id is null or p_action is null
+    or p_action not in ('hide','restore','dismiss')
     or char_length(v_note)>500 or char_length(v_note)<5
   then return 'invalid';end if;
 
