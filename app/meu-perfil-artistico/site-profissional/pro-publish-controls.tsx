@@ -35,17 +35,27 @@ export default function ProSitePublicationControls({
   const [copied,setCopied]=useState(false);
 
   async function load(){
-    const {data,error:loadError}=await createClient().rpc(
-      "stage_my_pro_site_publication"
-    );
-    if(loadError||!data){
+    setLoading(true);
+    setMessage("");
+    try {
+      const {data,error:loadError}=await createClient().rpc(
+        "stage_my_pro_site_publication"
+      );
+      if(loadError||!data){
+        setInfo(null);
+        const missing=loadError?.code==="PGRST202"||loadError?.code==="42883";
+        setError(missing
+          ? "A função de publicação Pro não foi encontrada. A versão anterior do SQL tinha um erro de sintaxe que podia interromper a instalação. Execute o arquivo pro_artist_publication_migration.sql atualizado e depois clique em Verificar novamente."
+          : loadError
+            ? "Erro do Supabase ("+loadError.code+"): "+loadError.message
+            : "A sessão atual não retornou um perfil de cantor. Entre novamente na conta de artista.");
+      }else{
+        setInfo(data as Publication);
+        setError("");
+      }
+    }catch(err){
       setInfo(null);
-      setError(loadError?.code==="PGRST202"||loadError?.code==="42883"
-        ?"Execute pro_artist_publication_migration.sql no Supabase para ativar a publicação."
-        :"Não foi possível verificar sua autorização Pro.");
-    }else{
-      setInfo(data as Publication);
-      setError("");
+      setError("Erro ao consultar o Supabase: "+(err instanceof Error?err.message:"falha inesperada"));
     }
     setLoading(false);
   }
@@ -119,9 +129,13 @@ export default function ProSitePublicationControls({
 
     {loading?<p className="pro-publish-loading">
       <LoaderCircle size={16}/> Verificando disponibilidade da publicação...
-    </p>:!info?<p className="pro-publish-warning">
-      {error||"A publicação ainda não foi configurada no Supabase."}
-    </p>:<div className="pro-publish-grid">
+    </p>:!info?<div className="pro-publish-setup-error" role="alert">
+      <p className="pro-publish-warning">
+        {error||"A publicação ainda não foi configurada no Supabase."}
+      </p>
+      <button type="button" className="pro-publish-verify-button"
+        onClick={()=>void load()}><RefreshCw size={15}/> Verificar novamente</button>
+    </div>:<div className="pro-publish-grid">
       <div className="pro-publish-info">
         <div className="pro-publish-checklist">
           <div><span>{info.entitled?<CheckCircle2 size={16}/>:<LockKeyhole size={16}/>}</span>
