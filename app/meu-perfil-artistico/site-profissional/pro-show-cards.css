@@ -204,3 +204,65 @@
 @media(prefers-reduced-motion:reduce){
   .pro-show-card-actions button,.pro-show-card-actions a{transition:none}
 }
+
+
+/* Flyer original como miniatura responsiva; sem recortar letras do original. */
+.pro-show-card-flyer{
+  display:flex;
+  flex-direction:column;
+  position:relative;
+  align-items:center;
+  justify-content:center;
+  overflow:hidden;
+  flex:0 0 98px;
+  width:98px;
+  height:132px;
+  border-radius:9px;
+  border:1px solid #566089;
+  background:#0a1123;
+  color:#d6c4f5;
+}
+.pro-show-card-flyer img{
+  display:block;
+  width:100%;
+  height:100%;
+  object-fit:contain;
+}
+.pro-show-card-flyer>span{
+  position:absolute;
+  left:0;right:0;bottom:0;
+  padding:5px 7px 4px;
+  background:linear-gradient(0deg,#070c19e8,#070c19a0);
+  color:#f3ebff;
+  font:900 9px "Manrope",sans-serif;
+  text-align:center;
+  letter-spacing:.08em;
+}
+.pro-show-card-flyer.is-loading{
+  gap:4px;
+  border-style:dashed;
+}
+.pro-show-card-flyer.is-loading small{font-size:10px}
+@media(max-width:700px){
+  .pro-show-card-flyer{
+    flex-basis:64px;
+    width:64px;
+    height:90px;
+  }
+  .pro-show-card-flyer>span{font-size:8px}
+}
+@media(max-width:440px){
+  .pro-show-card{
+    flex-wrap:wrap;
+  }
+  .pro-show-card-flyer{
+    margin-left:auto;
+  }
+  .pro-show-card-content{
+    flex-basis:100%;
+  }
+  .pro-show-card-actions button,
+  .pro-show-card-actions a{
+    flex:1 1 auto;
+  }
+}
