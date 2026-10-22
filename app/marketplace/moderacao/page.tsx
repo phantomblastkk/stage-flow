@@ -116,7 +116,7 @@ export default function MarketplaceModeration() {
   }
   function setDraft(report:Report,patch:Partial<Draft>){
     setDrafts(prev=>{
-      const current=prev[report.id] ?? {
+      const current:Draft=prev[report.id] ?? {
         action:report.target_type==="review"
           ? (report.review_hidden?"restore":"hide")
           : (report.musician_hidden?"restore":"hide"),
