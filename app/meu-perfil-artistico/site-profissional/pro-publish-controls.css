@@ -122,3 +122,16 @@
   .pro-publish-status{width:100%;justify-content:center}
   .pro-publish-main-button,.pro-publish-unpublish{width:100%}
 }
+
+.pro-publish-setup-error{
+  display:flex;align-items:flex-start;flex-direction:column;gap:13px;
+  padding:4px 0;
+}
+.pro-publish-setup-error .pro-publish-warning{margin:0}
+.pro-publish-verify-button{
+  display:inline-flex;align-items:center;justify-content:center;gap:8px;
+  color:#eef0fd;background:#29324b;border:1px solid #6a6688;
+  border-radius:9px;padding:11px 14px;font:800 11px "Manrope",sans-serif;
+  cursor:pointer;
+}
+.pro-publish-verify-button:hover{border-color:#c0b8df}
