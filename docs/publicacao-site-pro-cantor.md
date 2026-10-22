@@ -207,3 +207,30 @@ Em caso de erros vindos do Supabase, verifique se o SQL atualizado foi executado
 5. Em conta anterior com mais de 3 fotos/vídeos, verificar que as mídias excedentes ainda estão no editor, mas a página pública mostra só 3 + 3. Não apagar automaticamente nenhum item legado.
 6. Abrir a página Pro em desktop e celular; confirmar a galeria com até 3 fotos e o player com até 3 vídeos, sem alterar a assinatura do cantor.
 7. Confirmar que \`/marketplace\` ainda está em **Em breve**.
+
+
+## Evolução: agenda pública de shows com cards compartilháveis
+
+A prévia privada e o site Pro público agora apresentam os shows **já marcados como públicos e publicados** com cards responsivos, exibindo somente título, data e horário de início, local e cidade quando cadastrados. O calendário mensal com ícone de microfone, a filtragem por dia e as configurações de visibilidade da seção continuam funcionando.
+
+**No site Pro publicado**, cada evento recebe:
+
+- **Compartilhar show**: abre o compartilhamento nativo do dispositivo, quando disponível, ou copia um URL direto como \`/pro/usuario#show-UUID\`.
+- **Ver link**: leva ao card correspondente na página. Um URL compartilhado abre a página e expande a lista até localizar o show, mesmo quando ele não está entre os seis primeiros.
+- **Adicionar ao calendário**: baixa um arquivo \`.ics\` com horário de início no formato UTC (o calendário do visitante interpreta a localização). O banco não armazena horário de término; por isso o arquivo **não inventa uma duração**. O texto do evento informa que o usuário pode ajustar o término dentro do aplicativo de calendário.
+- **Ver todos os shows**: lista inicialmente seis eventos, com botão para expandir até o limite de 40 eventos já fornecido pelo RPC público; a seleção de datas no calendário também continua funcionando.
+
+A prévia privada mostra os mesmos cards e permite baixar o evento para o calendário, mas não anuncia URLs de compartilhamento de um site que pode ainda não estar publicado.
+
+O produto **não inventa fotografias de casas de show**, preços, ingressos, venda de bilhetes, duração, classificação de show ou localização mais precisa do que o artista cadastrou. Para adicionar cartazes/fotos próprios por evento, seria necessária uma etapa de upload e consentimento separada.
+
+**Sem SQL novo.** A implementação reaproveita somente \`id\`, \`title\`, \`venue\`, \`city\` e \`starts_at\` dos shows públicos já publicados. Também não altera dados privados, permissões, planos, cobranças, o layout da assinatura, o limite de três fotos/vídeos ou o marketplace em *Em breve*.
+
+### Verificação sugerida
+
+1. Cadastrar dois shows futuros e marcar ambos como públicos e publicados.
+2. Na prévia Pro, confirmar os cards e testar o download do calendário (ajustar duração se quiser).
+3. No site Pro público, clicar **Compartilhar show**, abrir o link obtido em uma janela anônima e confirmar o destaque do evento correto.
+4. Testar com mais de seis shows para validar **Ver todos** e os links diretos.
+5. Selecionar uma data específica no calendário e confirmar que aparecem somente os shows daquela data.
+6. Conferir telas estreitas (320–390 px) e desktop; fotos, vídeos e assinatura não devem mudar.
