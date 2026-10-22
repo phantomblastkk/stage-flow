@@ -47,3 +47,36 @@
 @media(prefers-reduced-motion:reduce){
   .mp-editor-progress-bar span{transition:none}
 }
+
+
+/* Atalho discreto para as estatísticas privadas do músico */
+.mp-reach-link{
+  display:flex;align-items:center;justify-content:space-between;
+  flex-wrap:wrap;gap:17px;padding:21px 23px;margin:19px 0;
+  border:1px solid #4b596e;border-radius:15px;
+  background:linear-gradient(110deg,#243344,#22253a);
+}
+.mp-reach-link>div{min-width:0;flex:1;max-width:680px}
+.mp-reach-eyebrow{
+  display:inline-flex;align-items:center;gap:8px;
+  font:900 10px "Manrope",sans-serif;
+  letter-spacing:.1em;color:#c9e6b4;
+}
+.mp-reach-link h2{
+  font:800 clamp(16px,2.4vw,22px)/1.4 "Manrope",sans-serif;
+  letter-spacing:-.035em;margin:10px 0;
+}
+.mp-reach-link p{
+  font-size:11px;line-height:1.75;color:#b6c7d8;margin:0;
+}
+.mp-reach-button{
+  display:inline-flex;align-items:center;justify-content:center;gap:9px;
+  padding:12px 15px;text-decoration:none;
+  color:#1c281e;background:#c6e69f;border:1px solid #c6e69f;
+  border-radius:10px;font:800 11px "Manrope",sans-serif;
+}
+.mp-reach-button:hover{background:#d9f3bb}
+@media(max-width:650px){
+  .mp-reach-link{padding:17px 14px}
+  .mp-reach-button{width:100%}
+}
