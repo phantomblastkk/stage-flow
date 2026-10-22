@@ -153,3 +153,28 @@ A segurança acompanha essa separação: quando Fotos está oculta, a função d
 4. Inverta: mostre Fotos e oculte Vídeos. Salve/republique e confira que novas solicitações de download das fotos publicadas funcionam, enquanto a seção Vídeos não aparece.
 5. Verifique que novas fotos e vídeos do rascunho não vão para o site público sem republicar, e que o perfil gratuito continua ativo.
 6. Confira que \`/marketplace\` permanece **Em breve**.
+
+
+## Evolução: player de vídeos integrado ao próprio site Pro
+
+A seção **Vídeos** agora apresenta um player cinematográfico responsivo de proporção **16:9**, com miniatura e botão **Reproduzir neste site**. O músico continua cadastrando links normais do YouTube no editor; não precisa reenviar nenhum vídeo.
+
+- A primeira apresentação cadastrada/destacada aparece selecionada, mas o vídeo **não inicia automaticamente** ao abrir a página.
+- O visitante clica **Reproduzir neste site**, ou escolhe qualquer cartão da lista; o conteúdo é carregado dentro da própria página usando **youtube-nocookie.com**.
+- Selecionar outro vídeo troca a reprodução em andamento. **Fechar player** interrompe a reprodução e volta à miniatura.
+- Há um link **Abrir no YouTube**, útil caso o criador bloqueie a incorporação ou o navegador impeça a reprodução.
+- No celular, os cartões formam uma coluna e a escolha de vídeo desloca o visitante até o player.
+- Fotos seguem com galeria e ampliação independentes. Ordem, títulos e visibilidade de seções continuam sob controle do cantor.
+- O componente é o mesmo na prévia privada e no site Pro publicado, com o visual existente preservado.
+- Para privacidade e desempenho, a miniatura pode ser carregada do YouTube, mas o **iframe do player só é criado após ação explícita do visitante**; isso não equivale a anonimato completo em relação ao YouTube.
+- O recurso não altera Supabase, permissões, preços, lançamento do marketplace nem a lógica de publicar/republicar.
+
+### Checklist rápido de teste
+
+1. Como cantor, abra o editor Pro, inclua dois vídeos YouTube no rascunho e confira a prévia.
+2. Clique **Reproduzir neste site**: o vídeo deve abrir dentro do player 16:9 sem redirecionar o navegador.
+3. Clique no segundo cartão: o novo vídeo deve substituir o anterior.
+4. Clique **Fechar player**: a reprodução deve parar e a miniatura voltar.
+5. Teste em celular e em desktop. Confira o botão **Abrir no YouTube** para um vídeo que bloqueie incorporação.
+6. Se o site Pro já estiver publicado, **republicar só é necessário quando houver alterações no conteúdo do rascunho**; a melhoria do player é visual/funcional e se aplica ao conteúdo publicado existente.
+7. Confirme que fotos e vídeos continuam separados e que \`/marketplace\` permanece **Em breve**.
