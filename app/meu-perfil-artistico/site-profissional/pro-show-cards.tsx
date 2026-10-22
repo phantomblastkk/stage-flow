@@ -3,9 +3,14 @@
 import { useEffect, useState } from "react";
 import {
   CalendarPlus, Check, ChevronDown, ChevronUp, Clock3, Copy,
-  ExternalLink, MapPin, Share2, Ticket
+  Download, ExternalLink, Image as ImageIcon, MapPin, Share2, Ticket
 } from "lucide-react";
 import "./pro-show-cards.css";
+import { createClient } from "@/lib/supabase/client";
+import {
+  downloadFlyer, flyerFileName, loadFlyerImage,
+  makeFlyerBlob, safeFlyerSettings, type FlyerFormat
+} from "./show-flyer-render";
 
 export type ProPublicShow = {
   id: string;
@@ -13,6 +18,8 @@ export type ProPublicShow = {
   venue: string | null;
   city: string | null;
   starts_at: string;
+  flyer_path?: string | null;
+  flyer_settings?: unknown;
 };
 
 type Props = {
@@ -72,10 +79,32 @@ function eventLink(id: string): string {
   return window.location.origin + window.location.pathname + "#show-" + encodeURIComponent(id);
 }
 
+
+/** Signed URL is only requested for the cards currently mounted/visible. */
+function ShowFlyerThumb({path,title}:{path:string;title:string}){
+  const [url,setUrl]=useState("");
+  useEffect(()=>{
+    let active=true;
+    void createClient().storage.from("stage-show-flyers")
+      .createSignedUrl(path,3600).then(({data,error})=>{
+        if(active && !error && data?.signedUrl)setUrl(data.signedUrl);
+      });
+    return()=>{active=false};
+  },[path]);
+  if(!url)return <div className="pro-show-card-flyer is-loading">
+    <ImageIcon size={23}/><small>FLYER</small>
+  </div>;
+  return <div className="pro-show-card-flyer">
+    <img src={url} alt={"Cartaz do show "+title} loading="lazy"/>
+    <span>FLYER</span>
+  </div>;
+}
+
 export default function ProShowCards({ shows, artistName, preview = false }: Props) {
   const [expanded, setExpanded] = useState(false);
   const [copiedId, setCopiedId] = useState<string | null>(null);
   const [message, setMessage] = useState("");
+  const [downloading,setDownloading] = useState<string|null>(null);
 
   // Links individuais continuam funcionando quando a lista foi recolhida,
   // inclusive após o carregamento assíncrono do site Pro publicado.
@@ -134,6 +163,31 @@ export default function ProShowCards({ shows, artistName, preview = false }: Pro
     window.setTimeout(() => URL.revokeObjectURL(file), 30000);
   }
 
+  async function exportFlyer(show:ProPublicShow,format:FlyerFormat){
+    if(!show.flyer_path||downloading)return;
+    setDownloading(show.id+format);
+    setMessage("");
+    const {data:blob,error}=await createClient().storage
+      .from("stage-show-flyers").download(show.flyer_path);
+    if(error||!blob){
+      setMessage("Não foi possível baixar o flyer. Confira se o site está publicado e o arquivo ainda existe.");
+      setDownloading(null);
+      return;
+    }
+    const url=URL.createObjectURL(blob);
+    try{
+      const image=await loadFlyerImage(url);
+      const settings=safeFlyerSettings(show.flyer_settings);
+      const output=await makeFlyerBlob(image,format,settings[format]);
+      downloadFlyer(output,flyerFileName(show.title,format));
+    }catch{
+      setMessage("Não foi possível gerar o flyer. Confira a imagem original.");
+    }finally{
+      URL.revokeObjectURL(url);
+      setDownloading(null);
+    }
+  }
+
   const visible = expanded ? shows : shows.slice(0, 6);
   return <div className="pro-show-cards">
     {visible.map(show => {
@@ -152,6 +206,7 @@ export default function ProShowCards({ shows, artistName, preview = false }: Pro
           <strong>{day}</strong>
           <span>{month}</span>
         </div>
+        {show.flyer_path && <ShowFlyerThumb path={show.flyer_path} title={show.title}/>}
         <div className="pro-show-card-content">
           <span className="pro-show-card-eyebrow"><Ticket size={12}/> SHOW PUBLICADO NA AGENDA</span>
           <h4>{show.title}</h4>
@@ -162,6 +217,18 @@ export default function ProShowCards({ shows, artistName, preview = false }: Pro
             <span><MapPin size={15}/>{location || "Local a confirmar"}</span>
           </div>
           <div className="pro-show-card-actions">
+            {show.flyer_path&&<>
+              <button type="button" disabled={Boolean(downloading)}
+                onClick={()=>void exportFlyer(show,"feed")}
+                title="Baixar arte em 1080 × 1350 px">
+                <Download size={15}/> {downloading===show.id+"feed"?"Gerando...":"Baixar Feed"}
+              </button>
+              <button type="button" disabled={Boolean(downloading)}
+                onClick={()=>void exportFlyer(show,"story")}
+                title="Baixar arte em 1080 × 1920 px">
+                <Download size={15}/> {downloading===show.id+"story"?"Gerando...":"Baixar Story"}
+              </button>
+            </>}
             <button type="button" onClick={() => saveCalendar(show)}
               disabled={!validDate} title="Baixar evento .ics (horário de término não informado)">
               <CalendarPlus size={15}/> Adicionar ao calendário
