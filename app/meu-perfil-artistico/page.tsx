@@ -401,13 +401,13 @@ export default function MeuPerfilArtistico() {
           </section>
           <section className="feature">
           <div className="eyebrow"><span className="dot"/> RECURSO PROFISSIONAL</div>
-          <h2 style={{ fontSize: 22, marginTop: 19 }}>Site próprio e subdomínio</h2>
-          <p>O site profissional completo, com visual como o de um grande artista, galeria, vídeos, agenda avançada e endereço do tipo <strong style={{ color: "var(--text)" }}>{config.username || "seuusuario"}.stageflow.com</strong>, será uma contratação adicional.</p>
+          <h2 style={{ fontSize: 22, marginTop: 19 }}>Site profissional Pro</h2>
+          <p>Seu site profissional com tema exclusivo, galeria de fotos e vídeos, agenda e pedidos de contratação já pode ser publicado no endereço <strong style={{ color: "var(--text)" }}>/pro/{config.username || "seuusuario"}</strong>, quando o acesso Pro for habilitado para sua conta. O subdomínio personalizado será configurado em uma etapa separada.</p>
           <Link href="/meu-perfil-artistico/site-profissional" className="btn btn-primary" style={{ marginTop: 16, width: "100%", justifyContent: "center" }}>
-            <Globe2 size={17}/> Ver prévia do site profissional <ArrowUpRight size={15}/>
+            <Globe2 size={17}/> Configurar e publicar meu site Pro <ArrowUpRight size={15}/>
           </Link>
           <p style={{ color: "var(--muted)", fontSize: 12, lineHeight: 1.6, marginTop: 10 }}>
-            Prévia privada e gratuita usando seus dados. Não ativa subdomínio ou assinatura.
+            Editor privado. A publicação é manual e exige acesso Pro autorizado. Não há cobrança automática.
           </p>
           <div className="artist-free-premium-note">
             <LockKeyhole size={18}/>
