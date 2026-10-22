@@ -9,7 +9,7 @@ import { createClient } from "@/lib/supabase/client";
 import "./premium-media-gallery.css";
 
 const BUCKET = "stage-premium-drafts";
-const MAX_ITEMS = 20;
+const MAX_PER_TYPE = 3;
 const PHOTO_SIZE_LIMIT = 5 * 1024 * 1024;
 
 export type PremiumMediaItem = {
@@ -86,7 +86,9 @@ export function usePremiumGallery(enabled: boolean) {
     const { data, error: rpcError } = await createClient().rpc(name, params);
     if (rpcError || data !== "saved") {
       const reasons: Record<string, string> = {
-        limit_reached: "Você atingiu o limite de 20 trabalhos no rascunho.",
+        limit_reached: "Você atingiu o limite de mídias.",
+        limit_photos: "Você atingiu o limite de 3 fotos. Remova uma foto para adicionar outra.",
+        limit_videos: "Você atingiu o limite de 3 vídeos. Remova um vídeo para adicionar outro.",
         invalid_title: "O título deve ter de 1 a 90 caracteres.",
         invalid_video: "Esse vídeo do YouTube não tem um identificador válido.",
         invalid_order: "A ordem dos trabalhos mudou. Recarregue a galeria e tente novamente.",
@@ -113,8 +115,8 @@ export function usePremiumGallery(enabled: boolean) {
       setError("Envie JPG, PNG ou WebP de até 5 MB.");
       return;
     }
-    if (items.length >= MAX_ITEMS) {
-      setError("Limite de 20 trabalhos. Remova um item antes de enviar outro.");
+    if (items.filter(item => item.media_kind === "photo").length >= MAX_PER_TYPE) {
+      setError("Limite de 3 fotos atingido. Remova uma foto antes de enviar outra.");
       return;
     }
     const name = title.trim() || file.name.replace(/\.[^.]+$/, "");
@@ -146,7 +148,9 @@ export function usePremiumGallery(enabled: boolean) {
     if (insertError || data !== "saved") {
       await supabase.storage.from(BUCKET).remove([path]);
       setError(insertError?.message ||
-        (data === "limit_reached" ? "Limite de 20 trabalhos atingido." : "Não foi possível cadastrar a foto."));
+        (data === "limit_photos" || data === "limit_reached"
+          ? "Limite de 3 fotos atingido. Remova uma foto antes de enviar outra."
+          : "Não foi possível cadastrar a foto."));
       setBusy(false);
       return;
     }
@@ -156,6 +160,10 @@ export function usePremiumGallery(enabled: boolean) {
   }
 
   async function addVideo(title: string, url: string) {
+    if (items.filter(item => item.media_kind === "youtube").length >= MAX_PER_TYPE) {
+      setError("Limite de 3 vídeos atingido. Remova um vídeo antes de adicionar outro.");
+      return false;
+    }
     const id = parseYouTubeId(url);
     if (!id) {
       setError("Cole um link HTTPS válido de vídeo, Shorts ou live do YouTube.");
@@ -226,6 +234,10 @@ export function PremiumGalleryEditor({ gallery }: { gallery: PremiumGallery }) {
   const [editingId, setEditingId] = useState<string | null>(null);
   const [editingTitle, setEditingTitle] = useState("");
   const [deleteId, setDeleteId] = useState<string | null>(null);
+  const photoCount = gallery.items.filter(item => item.media_kind === "photo").length;
+  const videoCount = gallery.items.filter(item => item.media_kind === "youtube").length;
+  const photoFull = photoCount >= MAX_PER_TYPE;
+  const videoFull = videoCount >= MAX_PER_TYPE;
 
   async function upload(event: ChangeEvent<HTMLInputElement>) {
     const file = event.target.files?.[0];
@@ -251,31 +263,40 @@ export function PremiumGalleryEditor({ gallery }: { gallery: PremiumGallery }) {
       <div>
         <span className="premium-design-eyebrow"><ImagePlus size={15}/> GALERIA DO SITE PROFISSIONAL</span>
         <h2>Fotos e vídeos, cada um no seu espaço.</h2>
-        <p>Organize fotografias em uma galeria e vídeos em uma seção própria do site Pro. Até {MAX_ITEMS} mídias no total.</p>
+        <p>O site Pro permite até 3 fotos e 3 vídeos, com espaços separados para cada tipo de mídia.</p>
       </div>
-      <span className="premium-media-count">{gallery.items.length}/{MAX_ITEMS} trabalhos</span>
+      <div className="premium-media-limit-counts" aria-label="Limites da galeria">
+        <span className={photoFull ? "is-full" : ""}>Fotos: {photoCount}/{MAX_PER_TYPE}</span>
+        <span className={videoFull ? "is-full" : ""}>Vídeos: {videoCount}/{MAX_PER_TYPE}</span>
+      </div>
     </div>
 
     <div className="premium-media-inputs">
       <div className="premium-media-add-box">
         <h3><ImagePlus size={17}/> Adicionar foto de show</h3>
+        {photoFull && <p className="premium-media-cap-notice">
+          Limite de 3 fotos atingido. Remova uma foto antes de enviar outra.
+        </p>}
         <label htmlFor="premium-photo-title">Nome da foto (opcional)</label>
         <input id="premium-photo-title" value={photoTitle} maxLength={90}
           onChange={event => setPhotoTitle(event.target.value)}
           placeholder="Ex.: Show no Rio de Janeiro"/>
-        <label className={"premium-media-upload" + (gallery.busy || gallery.items.length >= MAX_ITEMS ? " is-disabled" : "")}
+        <label className={"premium-media-upload" + (gallery.busy || photoFull ? " is-disabled" : "")}
           htmlFor="premium-photo-file">
           {gallery.busy ? <LoaderCircle size={16}/> : <ImagePlus size={16}/>}
           {gallery.busy ? "Aguarde..." : "Escolher foto (até 5 MB)"}
         </label>
         <input id="premium-photo-file" className="premium-media-file" type="file"
           accept="image/jpeg,image/png,image/webp"
-          disabled={gallery.busy || gallery.items.length >= MAX_ITEMS}
+          disabled={gallery.busy || photoFull}
           onChange={event => void upload(event)}/>
         <small>Foto salva em área privada. Use apenas imagens que você tem autorização para divulgar.</small>
       </div>
       <form className="premium-media-add-box" onSubmit={event => void addVideo(event)}>
         <h3><Youtube size={17}/> Adicionar vídeo do YouTube</h3>
+        {videoFull && <p className="premium-media-cap-notice">
+          Limite de 3 vídeos atingido. Remova um vídeo antes de adicionar outro.
+        </p>}
         <label htmlFor="premium-video-title">Título do vídeo</label>
         <input id="premium-video-title" required maxLength={90}
           value={videoTitle} onChange={event => setVideoTitle(event.target.value)}
@@ -285,7 +306,7 @@ export function PremiumGalleryEditor({ gallery }: { gallery: PremiumGallery }) {
           value={videoUrl} onChange={event => setVideoUrl(event.target.value)}
           placeholder="https://www.youtube.com/watch?v=..."/>
         <button type="submit" className="premium-media-upload"
-          disabled={gallery.busy || gallery.items.length >= MAX_ITEMS}>
+          disabled={gallery.busy || videoFull}>
           <PlayCircle size={16}/> Adicionar vídeo
         </button>
         <small>O vídeo será reproduzido dentro do site Pro. Também haverá um link direto para o YouTube.</small>
@@ -294,6 +315,13 @@ export function PremiumGalleryEditor({ gallery }: { gallery: PremiumGallery }) {
 
     {gallery.error && <p className="premium-media-feedback is-error" role="alert">{gallery.error}</p>}
     {gallery.message && <p className="premium-media-feedback" role="status">{gallery.message}</p>}
+    {(photoCount > MAX_PER_TYPE || videoCount > MAX_PER_TYPE) &&
+      <p className="premium-media-cap-notice" role="status">
+        Você possui mídias cadastradas antes do novo limite. Nenhum arquivo foi apagado;
+        somente as 3 primeiras fotos e os 3 primeiros vídeos (priorizando o destaque)
+        aparecerão na prévia e no site Pro. Os demais continuam no seu rascunho
+        para você organizar ou remover.
+      </p>}
     {gallery.loading ? <p className="premium-media-loading"><LoaderCircle size={16}/> Carregando trabalhos...</p> :
       gallery.items.length === 0
         ? <div className="premium-media-empty">Sua galeria está vazia. Comece com fotos de shows ou vídeos do YouTube.</div>
@@ -384,13 +412,13 @@ export function PremiumGalleryShowcase({
   const photos = section === "videos" ? [] : items.filter(item => item.media_kind === "photo");
   const videos = section === "photos" ? [] : items.filter(item => item.media_kind === "youtube");
   const featuredPhoto = photos.find(item => item.featured);
-  const orderedPhotos = featuredPhoto
+  const orderedPhotos = (featuredPhoto
     ? [featuredPhoto, ...photos.filter(item => item.id !== featuredPhoto.id)]
-    : photos;
+    : photos).slice(0, MAX_PER_TYPE);
   const featuredVideo = videos.find(item => item.featured);
-  const orderedVideos = featuredVideo
+  const orderedVideos = (featuredVideo
     ? [featuredVideo, ...videos.filter(item => item.id !== featuredVideo.id)]
-    : videos;
+    : videos).slice(0, MAX_PER_TYPE);
   const [activePhoto, setActivePhoto] = useState<number | null>(null);
   const [selectedVideoId, setSelectedVideoId] = useState<string | null>(null);
   const [videoPlaying, setVideoPlaying] = useState(false);
