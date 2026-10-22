@@ -467,7 +467,7 @@ export default function SiteProfissionalPreview() {
             <span className="premium-site-section-icon"><Instagram size={25}/></span>
           </div>
           <PremiumGalleryShowcase
-            items={gallery.items} section="photos" showEmpty
+            items={gallery.items} section="photos" showEmpty showHeading={false}
           />
         </section>}
 
@@ -485,7 +485,7 @@ export default function SiteProfissionalPreview() {
             <span className="premium-site-section-icon"><PlayCircle size={25}/></span>
           </div>
           <PremiumGalleryShowcase
-            items={gallery.items} section="videos" showEmpty
+            items={gallery.items} section="videos" showEmpty showHeading={false}
             youtubeUrl={artist.youtube_url} spotifyUrl={artist.spotify_url}
           />
         </section>}
