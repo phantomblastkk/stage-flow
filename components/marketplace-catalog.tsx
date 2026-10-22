@@ -1,13 +1,13 @@
 "use client";
 
-import { FormEvent, useCallback, useEffect, useMemo, useState } from "react";
+import { FormEvent, useEffect, useMemo, useRef, useState } from "react";
 import Link from "next/link";
 import {
   ArrowLeft, ArrowRight, ArrowUpRight, CalendarDays, Check,
   ChevronLeft, ChevronRight, CircleHelp, Clock3, ExternalLink,
   Filter, Guitar, Heart, LoaderCircle, MapPin, MessageCircle,
   Music2, Search, Send, ShieldCheck, SlidersHorizontal, Sparkles,
-  Star, Users, X
+  Star, Trophy, Users, X
 } from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
 import "./marketplace-catalog.css";
@@ -116,6 +116,10 @@ export default function MarketplaceCatalog({preview=false}:Props) {
   const [page,setPage] = useState(0);
   const [items,setItems] = useState<MarketMusician[]>([]);
   const [total,setTotal] = useState(0);
+  const [featured,setFeatured] = useState<MarketMusician[]>([]);
+  const [featuredLoading,setFeaturedLoading] = useState(true);
+  const [featuredError,setFeaturedError] = useState("");
+  const featuredRail=useRef<HTMLDivElement|null>(null);
   const [loading,setLoading] = useState(true);
   const [gate,setGate] = useState<"loading"|"allowed"|"denied">("loading");
   const [notice,setNotice] = useState("");
@@ -198,6 +202,37 @@ export default function MarketplaceCatalog({preview=false}:Props) {
     return()=>{active=false;};
   },[gate,applied,page,refreshNonce]);
 
+  // Destaques são globais: independem dos filtros e da paginação do catálogo.
+  // A RPC usa a mesma trava de lançamento / allowlist das outras consultas.
+  useEffect(()=>{
+    if(gate!=="allowed")return;
+    let active=true;
+    async function fetchFeatured(){
+      setFeaturedLoading(true);
+      setFeaturedError("");
+      const {data,error:rpcError}=await createClient().rpc("stage_marketplace_featured");
+      if(!active)return;
+      const result=data as {status?:string;items?:MarketMusician[]}|null;
+      if(rpcError || result?.status!=="ok"){
+        setFeatured([]);
+        setFeaturedError(
+          rpcError?.code==="PGRST202" || rpcError?.code==="42883"
+            ? "Os destaques estão em preparação. Execute marketplace_featured_musicians_migration.sql no Supabase."
+            : rpcError?.message
+              ? "Não foi possível carregar os destaques. Tente atualizar a página."
+              : result?.status==="not_released"
+                ? "Os destaques só estão disponíveis na prévia autorizada."
+                : "Não foi possível carregar os músicos em destaque."
+        );
+      }else{
+        setFeatured(Array.isArray(result?.items)?result.items.slice(0,6):[]);
+      }
+      setFeaturedLoading(false);
+    }
+    void fetchFeatured();
+    return()=>{active=false;};
+  },[gate,refreshNonce]);
+
   useEffect(()=>{
     if(gate!=="allowed" || !authUser)return;
     let active=true;
@@ -256,11 +291,20 @@ export default function MarketplaceCatalog({preview=false}:Props) {
     }else{
       setItems(old=>old.map(x=>x.musician_id===m.musician_id
         ? {...x,is_favorite:!m.is_favorite}:x));
+      setFeatured(old=>old.map(x=>x.musician_id===m.musician_id
+        ? {...x,is_favorite:!m.is_favorite}:x));
       if(selected?.musician_id===m.musician_id)
         setSelected({...m,is_favorite:!m.is_favorite});
       if(applied.favorites)setRefreshNonce(n=>n+1);
     }
     setFavoriteBusy(null);
+  }
+  function scrollFeatured(direction:-1|1){
+    const rail=featuredRail.current;
+    if(!rail)return;
+    const firstCard=rail.querySelector<HTMLElement>(".market-featured-card");
+    const offset=(firstCard?.getBoundingClientRect().width||270)+14;
+    rail.scrollBy({left:direction*offset,behavior:"smooth"});
   }
   function openMusician(m:MarketMusician){
     setSelected(m);setSelectedEvent("");setInviteMessage("");setError("");setNotice("");
@@ -366,6 +410,86 @@ export default function MarketplaceCatalog({preview=false}:Props) {
         <span><strong>Ambiente de testes restrito.</strong> O marketplace público continua em “Em breve”.
           Nenhuma ativação comercial foi realizada.</span>
       </div>}
+
+      <section className="market-featured" aria-labelledby="market-featured-title">
+        <div className="market-featured-heading">
+          <div>
+            <div className="market-featured-eyebrow">
+              <Trophy size={15}/> SELEÇÃO POR AVALIAÇÕES VERIFICADAS
+            </div>
+            <h2 id="market-featured-title">Músicos <span>em destaque.</span></h2>
+            <p>Profissionais com mais avaliações de shows realizados no Stage Flow.
+              Empates são decididos pela nota média. Nenhuma posição é comprada.</p>
+          </div>
+          {featured.length>3 && <div className="market-featured-arrows" role="group" aria-label="Navegar pelos músicos em destaque">
+            <button type="button" onClick={()=>scrollFeatured(-1)}
+              aria-label="Voltar nos destaques"><ChevronLeft size={19}/></button>
+            <button type="button" onClick={()=>scrollFeatured(1)}
+              aria-label="Avançar nos destaques"><ChevronRight size={19}/></button>
+          </div>}
+        </div>
+        {featuredLoading
+          ? <div className="market-featured-rail" role="status" aria-label="Carregando músicos em destaque">
+              {[0,1,2].map(index=><div key={index} className="market-featured-skeleton"/>)}
+            </div>
+          : featuredError
+            ? <p className="market-featured-empty" role="status">
+                <CircleHelp size={16}/>{featuredError}
+              </p>
+            : featured.length===0
+              ? <p className="market-featured-empty">
+                  <Star size={17}/> Os primeiros destaques aparecerão aqui quando os músicos
+                  começarem a receber avaliações verificadas.
+                </p>
+              : <>
+                <div className="market-featured-rail" ref={featuredRail}
+                  role="region" aria-label="Carrossel dos músicos mais avaliados" tabIndex={0}>
+                  {featured.map((m,index)=><article className="market-featured-card" key={m.musician_id}>
+                    <div className="market-featured-photo">
+                      {m.cover_url||m.avatar_url
+                        ? <img src={m.cover_url||m.avatar_url||""} loading="lazy"
+                            alt={"Foto de "+m.name}/>
+                        : <div className="market-featured-photo-fallback"><Music2 size={51}/></div>}
+                      <span className="market-featured-rank"><Trophy size={12}/>
+                        TOP {String(index+1).padStart(2,"0")}
+                      </span>
+                    </div>
+                    <div className="market-featured-card-content">
+                      <div className="market-featured-person">
+                        <div className="market-featured-avatar">
+                          {m.avatar_url
+                            ? <img src={m.avatar_url} loading="lazy" alt=""/>
+                            : <span>{initials(m.name)}</span>}
+                        </div>
+                        <div>
+                          <h3>{m.name}</h3>
+                          <span>{m.headline||m.instruments?.[0]||"Músico profissional"}</span>
+                        </div>
+                      </div>
+                      <div className="market-featured-info">
+                        <span><MapPin size={13}/>{m.city||"Região não informada"}</span>
+                        <span><Music2 size={13}/>{m.instruments?.[0]||"Música ao vivo"}</span>
+                      </div>
+                      <div className="market-featured-proof">
+                        <span className="market-featured-stars"><Star size={17} fill="currentColor"/>
+                          <strong>{Number(m.rating_avg).toLocaleString("pt-BR",{minimumFractionDigits:1,maximumFractionDigits:1})}</strong><small>/ 5</small>
+                        </span>
+                        <span>{m.rating_count} {m.rating_count===1?"avaliação verificada":"avaliações verificadas"}</span>
+                      </div>
+                      <div className="market-featured-actions">
+                        <Link href={"/musico/"+encodeURIComponent(m.slug)} target="_blank"
+                          rel="noopener noreferrer">Ver portfólio <ArrowUpRight size={14}/></Link>
+                        <button type="button" onClick={()=>openMusician(m)}>
+                          Convidar <ArrowRight size={15}/></button>
+                      </div>
+                    </div>
+                  </article>)}
+                </div>
+                <p className="market-featured-swipe"><ArrowRight size={14}/>
+                  Deslize para conhecer mais músicos em destaque.
+                </p>
+              </>}
+      </section>
 
       <div className="market-content">
         <aside className={"market-sidebar"+(mobileFilters?" is-open":"")}>
