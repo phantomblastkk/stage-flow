@@ -239,3 +239,12 @@
   .premium-photo-tile>img,.premium-video-tile{transition:none}
   .premium-video-tile:hover{transform:none}
 }
+
+
+/* Fotos e vídeos podem ser posicionados separadamente no editor Pro v2. */
+.premium-separated-media.only-videos .premium-video-gallery{
+  border-top:0;
+  padding-top:0;
+}
+.premium-separated-media.only-photos,
+.premium-separated-media.only-videos{gap:0}
