@@ -159,3 +159,19 @@ Execute `supabase/musician_portfolio_complete_migration.sql` no Supabase SQL Edi
 5. Teste no celular. Confira os três temas, as cores, o layout Minimalista, os cartões e os vídeos.
 6. Desmarque Publicar, salve e confirme que o endereço público deixa de mostrar o portfólio.
 7. Confirme que não foi criado site Premium, assinatura nem subdomínio.
+
+
+## Atualização — publicação pública do site Pro de cantor (21/10/2026)
+
+**Substitui as observações históricas acima de que o site profissional existe somente como prévia:** agora a funcionalidade de publicação pública foi implementada, com direito Pro validado no servidor, publicação manual, snapshot de tema/ordem/seções/galeria e retirada do ar.
+
+- **Endereço público disponível:** \`/pro/[username]\` na Vercel, por exemplo \`https://stage-flow-lemon.vercel.app/pro/cantorsousa\`.
+- O artista continua com perfil gratuito \`/[username]\`; este perfil exibe o atalho Pro somente quando o site Pro está de fato publicado e autorizado.
+- O editor privado continua em \`/meu-perfil-artistico/site-profissional\`, agora com controles de Publicar, Republicar, Copiar link e Retirar do ar.
+- A migração \`supabase/pro_artist_publication_migration.sql\` **não libera automaticamente nenhum cantor** e não cobra nenhum pagamento. Direito Pro é verificado pela tabela administrativa de concessões ou por plano protegido e assinatura ativa; publicação depende de um clique explícito do dono.
+- A galeria privada de fotos recebe autorização de leitura seletiva somente para os arquivos incluídos no snapshot publicado e com a seção de portfólio habilitada. Não converte o bucket de rascunhos em público.
+- A agenda contém somente eventos públicos publicados e futuros. O formulário de pedidos de show só aparece quando o opt-in do cantor estiver habilitado no perfil gratuito.
+- **Subdomínio próprio ainda não é publicado:** \`cantorsousa.stageflow.com\` continua uma oferta futura dependente de DNS, SSL e roteamento seguro. Não há checkout/renovação automáticos nesta implementação.
+- O marketplace não foi lançado e segue em **Em breve**.
+
+Ver [docs/publicacao-site-pro-cantor.md](./publicacao-site-pro-cantor.md) para instalação, regras, liberação administrativa e checklist de testes.
