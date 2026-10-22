@@ -89,22 +89,21 @@
 .premium-site-small-label{display:flex;align-items:center;gap:10px;color:var(--pro-accent-soft);font:800 10px "Manrope",sans-serif;letter-spacing:.14em}
 .premium-site-small-label span{width:7px;height:7px;border-radius:50%;background:var(--pro-accent);box-shadow:0 0 14px var(--pro-accent)}
 .premium-site-identity h1{font:900 clamp(33px,4vw,54px)/1.08 "Manrope",sans-serif;letter-spacing:-.064em;margin:18px 0 10px;overflow-wrap:anywhere}
-/* Nome sempre legível: assinatura encostada à direita, mas NÃO sobre as letras.
-   Flex mede o texto real; em nomes longos a assinatura desce naturalmente. */
+/* Nome do cantor com assinatura reta, discreta e imediatamente abaixo.
+   Mantém a legibilidade em desktop e no celular, mesmo com nomes longos. */
 .premium-site-name-row{
   display:flex;
-  flex-wrap:wrap;
-  align-items:center;
+  flex-direction:column;
+  align-items:flex-start;
   align-self:flex-start;
-  column-gap:clamp(7px,1.3vw,14px);
-  row-gap:0;
-  width:max-content;
+  gap:2px;
+  width:100%;
   max-width:100%;
   min-width:0;
-  margin:18px 0 5px;
+  margin:18px 0 8px;
 }
 .premium-site-identity .premium-site-name-row h1{
-  flex:0 1 auto;
+  display:block;
   min-width:0;
   max-width:100%;
   margin:0;
@@ -113,22 +112,20 @@
 .premium-site-name-row .premium-site-signature{
   position:static;
   display:block;
-  flex:0 1 auto;
-  width:max-content;
-  max-width:min(100%,210px);
-  padding:12px 8px;
+  width:auto;
+  max-width:100%;
   margin:0;
-  text-align:center;
+  padding:0;
+  text-align:left;
   font-family:"Great Vibes","Brush Script MT",cursive;
-  font-size:clamp(23px,2.7vw,34px);
+  font-size:clamp(24px,2.7vw,34px);
   font-weight:400;
-  line-height:1.13;
+  line-height:1.25;
   letter-spacing:.01em;
   color:var(--pro-accent-soft);
   overflow-wrap:anywhere;
   text-wrap:balance;
-  transform:rotate(6deg);
-  transform-origin:center;
+  transform:none;
   text-shadow:0 4px 14px #0008;
   pointer-events:none;
 }
@@ -281,31 +278,31 @@
 }
 @media(prefers-reduced-motion:reduce){.premium-site *{transition:none!important;animation:none!important}}
 
-/* Celular: pertinho do nome, inclinada no sentido horário, sem sobreposição.
-   Se o nome ocupar toda a largura, o flex move a assinatura para a linha
-   seguinte em vez de esconder as últimas letras. */
+/* No celular, a frase segue reta e logo abaixo do nome. */
 @media(max-width:700px){
   .premium-site-name-row{
-    column-gap:5px;
-    row-gap:0;
-    margin:17px 0 7px;
+    gap:1px;
+    margin:17px 0 8px;
   }
   .premium-site-identity .premium-site-name-row h1{
     font-size:clamp(30px,8.1vw,49px);
     line-height:1.12;
   }
   .premium-site-name-row .premium-site-signature{
-    max-width:min(100%,155px);
-    padding:12px 10px 11px;
-    font-size:clamp(20px,5.4vw,27px);
-    line-height:1.14;
-    transform:rotate(10deg);
+    width:auto;
+    max-width:100%;
+    margin:0;
+    padding:0;
+    text-align:left;
+    font-size:clamp(23px,5.5vw,29px);
+    line-height:1.2;
+    transform:none;
   }
 }
 @media(max-width:380px){
   .premium-site-name-row .premium-site-signature{
-    max-width:min(100%,140px);
-    font-size:clamp(19px,5.3vw,24px);
+    max-width:100%;
+    font-size:clamp(21px,5.4vw,26px);
   }
 }
 
