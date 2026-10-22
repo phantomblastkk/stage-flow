@@ -31,6 +31,7 @@ type Venue = {
 };
 type ListResponse = { status: string; items?: Venue[] };
 type SaveResponse = { status: string; id?: string };
+type AssignedManager = { profile_id: string; email: string; display_name: string; granted_at: string };
 
 const blank = (): Venue => ({
   id: null, name: "", city_id: null, address: "", slug: "",
@@ -68,6 +69,11 @@ export default function AdminCasasPage() {
   const [uploading, setUploading] = useState<"logo" | "cover" | null>(null);
   const [notice, setNotice] = useState("");
   const [error, setError] = useState("");
+  const [managers, setManagers] = useState<AssignedManager[]>([]);
+  const [managerEmail, setManagerEmail] = useState("");
+  const [managerBusy, setManagerBusy] = useState(false);
+  const [managerError, setManagerError] = useState("");
+  const [managerNotice, setManagerNotice] = useState("");
 
   const refresh = useCallback(async (selectId?: string) => {
     const supabase = createClient();
@@ -120,6 +126,51 @@ export default function AdminCasasPage() {
     void check();
     return () => { active = false; };
   }, [router, refresh]);
+
+  const loadManagers = useCallback(async (venueId: string) => {
+    const { data, error } = await createClient().rpc("stage_venue_admin_managers",{p_venue_id:venueId});
+    if (error) throw error;
+    const payload = data as {status:string;items?:AssignedManager[]};
+    if (payload.status!=="ok") throw new Error("Não foi possível consultar os responsáveis cadastrados.");
+    return payload.items||[];
+  }, []);
+
+  useEffect(() => {
+    if (!authorized || !form.id) {setManagers([]);setManagerError("");return;}
+    const id = form.id;
+    let active = true;
+    void loadManagers(id).then(items => {
+      if (active) {setManagers(items);setManagerError("");}
+    }).catch(err => {
+      if (active) setManagerError(err instanceof Error?err.message:"Falha ao carregar os responsáveis.");
+    });
+    return () => {active=false;};
+  },[authorized,form.id,loadManagers]);
+
+  async function setManager(email: string, enabled: boolean) {
+    if (!form.id || managerBusy) return;
+    setManagerBusy(true);setManagerError("");setManagerNotice("");
+    try {
+      const { data,error } = await createClient().rpc("stage_venue_admin_set_manager",{
+        p_venue_id:form.id,p_email:email.trim(),p_enabled:enabled
+      });
+      if (error) throw error;
+      const result=String(data);
+      if (result!=="granted" && result!=="revoked") {
+        const messages:Record<string,string>={
+          forbidden:"Sua conta não tem permissão para vincular responsáveis.",
+          venue_not_partner:"Marque a casa como oficial, parceira e ativa. Salve antes de conceder o acesso.",
+          account_not_found:"Não encontramos uma conta Stage Flow cadastrada com esse e-mail.",
+          not_found:"A casa não foi encontrada.",invalid:"Informe um e-mail válido."
+        };
+        throw new Error(messages[result]||"Não foi possível alterar a permissão.");
+      }
+      setManagers(await loadManagers(form.id));setManagerEmail("");
+      setManagerNotice(enabled?"Acesso do responsável concedido.":"Acesso do responsável revogado.");
+    } catch(err) {
+      setManagerError(err instanceof Error?err.message:"Erro ao gerenciar responsável.");
+    } finally {setManagerBusy(false);}
+  }
 
   const filtered = useMemo(() => venues.filter((item) =>
     [item.name, item.city_name, item.slug].join(" ").toLocaleLowerCase("pt-BR")
@@ -262,7 +313,7 @@ export default function AdminCasasPage() {
               <div className="venue-admin-fields">
                 <div className="field"><label htmlFor="venue-admin-name">Nome da casa *</label>
                   <input id="venue-admin-name" required maxLength={120} value={form.name}
-                    onChange={(e) => setField("name", e.target.value)} placeholder="Nome do estabelecimento"/></div>
+                    onChange={(e) => setField("name", e.target.value)} placeholder="Ex.: Deck Espeto Bar"/></div>
                 <div className="field"><label htmlFor="venue-admin-city">Cidade *</label>
                   <select id="venue-admin-city" required value={form.city_id || ""}
                     onChange={(e) => setField("city_id", e.target.value ? Number(e.target.value) : null)}>
@@ -341,6 +392,33 @@ export default function AdminCasasPage() {
               <Link className="btn btn-primary" href={"/admin/casas/" + form.id + "/programacao"}>
                 <CalendarDays size={17}/> Gerenciar programação, flyers e fotos
               </Link>
+            </div>}
+            {form.id && <div className="venue-admin-media venue-admin-manager-panel">
+              <h3><ShieldCheck size={20}/> Responsáveis pela casa</h3>
+              <p className="fine">Conceda acesso a uma conta Stage Flow já cadastrada. O responsável poderá editar só shows, flyers, galeria e visualizar sugestões desta casa. Apenas a administração geral controla parceiros, logo, capa e permissões.</p>
+              {!form.is_partner && <p className="venue-admin-manager-tip">Para liberar o portal, marque a casa como oficial e parceira, mantenha ativa e salve as alterações.</p>}
+              {managerError && <p className="venue-admin-review-error" role="alert">{managerError}</p>}
+              {managerNotice && <p className="venue-admin-manager-ok" role="status">{managerNotice}</p>}
+              <div className="venue-admin-manager-invite">
+                <label htmlFor="venue-manager-email">E-mail de cadastro do responsável</label>
+                <div>
+                  <input id="venue-manager-email" type="email" maxLength={254} value={managerEmail}
+                    onChange={e=>setManagerEmail(e.target.value)}
+                    placeholder="responsavel@exemplo.com" autoComplete="off"/>
+                  <button type="button" className="btn btn-primary" disabled={managerBusy || !managerEmail.includes("@") || !form.active || !form.is_official || !form.is_partner}
+                    onClick={()=>void setManager(managerEmail,true)}>
+                    <Plus size={15}/>{managerBusy?"Salvando...":"Conceder acesso"}
+                  </button>
+                </div>
+              </div>
+              <div className="venue-admin-manager-list">
+                {managers.map(manager=><div className="venue-admin-manager-row" key={manager.profile_id}>
+                  <div><strong>{manager.display_name}</strong><small>{manager.email}</small></div>
+                  <button type="button" className="btn btn-quiet" disabled={managerBusy}
+                    onClick={()=>void setManager(manager.email,false)}>Revogar</button>
+                </div>)}
+                {!managers.length && <p className="fine">Nenhum responsável com acesso a esta casa.</p>}
+              </div>
             </div>}
           </section>
         </div>
