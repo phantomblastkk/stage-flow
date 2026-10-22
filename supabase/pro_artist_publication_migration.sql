@@ -373,6 +373,26 @@ revoke all on function public.stage_remove_premium_site_media(uuid)
 grant execute on function public.stage_remove_premium_site_media(uuid)
   to authenticated;
 
+-- Reserva o prefixo /pro para não colidir com @ do perfil gratuito.
+-- Preserva as demais palavras reservadas existentes.
+create or replace function public.stage_protect_reserved_artist_usernames()
+returns trigger language plpgsql set search_path=''
+as $
+begin
+  if new.username is not null and lower(new.username) = any(array[
+    'admin','api','auth','artista','artistas','cadastro','configuracoes',
+    'convite','convites','dashboard','entrar','equipes','eventos',
+    'login','logout','marketplace','meu-perfil','meu-perfil-artistico',
+    'meu-portfolio','meu-desempenho','meus-convites','musico','musicos',
+    'painel','planos','privacidade','pro','publico','sobre','suporte',
+    'termos','www'
+  ]) then
+    raise exception 'Este nome de usuário está reservado para o Stage Flow.';
+  end if;
+  return new;
+end;
+$;
+
 -- Autorização de teste/manual, aplicada SOMENTE pelo administrador:
 -- insert into public.stage_pro_site_access(owner_id)
 -- select id from auth.users where lower(email)=lower('SEU_EMAIL')
