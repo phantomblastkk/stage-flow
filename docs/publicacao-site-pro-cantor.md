@@ -316,3 +316,68 @@ permanece disponível; a opção Flyer exibe aviso explicando o que falta.
 bordas. O modo automático da V1 é recorte central convencional, não
 reconhecimento inteligente de conteúdo. O cantor deve conferir e ajustar
 o enquadramento antes de divulgar.
+
+
+## SEO e previews sociais dos sites Pro publicados
+
+### Funcionalidade implementada
+
+- As páginas \`/pro/usuario\` usam título, descrição, URL canônica,
+  Open Graph e Twitter/X Cards específicos do cantor. Tags são geradas
+  **no servidor**, não apenas após a hidratação do navegador.
+- Ao compartilhar o endereço, \`/pro/usuario/opengraph-image\` gera um PNG
+  de **1200×630 px** com identidade roxa Stage Flow, nome do cantor,
+  texto público e foto de capa/retrato do bucket público
+  \`stage-artist-public\`. Sem foto válida: fallback elegante com iniciais.
+- Foto/metadata são solicitados somente depois que
+  \`stage_public_pro_artist_site(username)\` comprovar que o artista e
+  o site Pro estão publicados e autorizados.
+- Publicações desativadas, contas não públicas ou usuários sem Pro
+  válido retornam 404 e/ou \`noindex\`. Nunca ler o rascunho,
+  o storage privado de flyers, convites ou financeiro.
+- URL canônica usa \`NEXT_PUBLIC_SITE_URL\` (HTTPS), quando presente,
+  senão \`VERCEL_PROJECT_PRODUCTION_URL\`, senão
+  \`https://stage-flow-lemon.vercel.app\`. Configurar
+  \`NEXT_PUBLIC_SITE_URL=https://SEU-DOMINIO\` na produção ao usar
+  domínio próprio, para evitar URLs canônicas divergentes.
+- \`/robots.txt\` permite páginas públicas e bloqueia de rastreadores
+  as rotas internas, incluindo o marketplace ainda marcado como
+  **Em breve**. O bloqueio não substitui autenticação/RLS.
+- \`/sitemap.xml\` inclui a página principal. Os sites Pro são
+  incluídos **somente** após a função pública de listagem estar
+  instalada, e apenas enquanto a publicação/visibilidade e
+  elegibilidade permanecerem válidas.
+
+### Migração do sitemap (obrigatória para listagem de cantores)
+
+Execute no **Supabase SQL Editor**, depois das migrações de
+publicação Pro:
+
+\`\`\`
+supabase/pro_artist_seo_sitemap_migration.sql
+\`\`\`
+
+Ela cria a RPC de leitura \`stage_public_pro_site_sitemap()\`, retorna
+somente usuários com site Pro publicado, perfil público e direito ativo,
+sem dados privados. Sem a migração, o sitemap mantém só a homepage
+para evitar listar perfis inexistentes ou não autorizados.
+
+### Testes
+
+1. Com um cantor publicado e elegível, abrir
+   \`https://stage-flow-lemon.vercel.app/pro/USUARIO\` e inspecionar
+   o código HTML: \`title\`, \`meta name="description"\`,
+   \`og:title\`, \`og:description\`, \`og:image\`,
+   \`twitter:card\` e \`link rel="canonical"\`.
+2. Abrir \`/pro/USUARIO/opengraph-image\`: deve exibir uma imagem PNG
+   de 1200×630 com nome, foto pública (se presente) e texto do artista.
+3. Testar uma conta publicada sem foto: fallback com iniciais.
+4. Despublicar o site e verificar que a rota e imagem param de
+   servir dados, e o usuário deixa de ser listado pelo sitemap.
+5. Abrir \`/robots.txt\` e \`/sitemap.xml\`, conferindo somente
+   as páginas autorizadas.
+6. Enviar link Pro pelo WhatsApp e conferir o cartão. Serviços sociais
+   podem guardar versões anteriores em cache; não há promessa de
+   atualização imediata dos previews.
+7. Validar deploy na Vercel (limites do plano podem impedir novos
+   builds até que sejam liberados).
