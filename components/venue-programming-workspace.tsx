@@ -1,0 +1,379 @@
+"use client";
+
+import { FormEvent, useCallback, useEffect, useMemo, useState } from "react";
+import Link from "next/link";
+import { useParams, useRouter } from "next/navigation";
+import {
+  ArrowLeft, CalendarDays, ImagePlus, LoaderCircle, MessageCircle, Plus,
+  Save, Trash2, UploadCloud, Images, Music2, ShieldCheck, ExternalLink
+} from "lucide-react";
+import { createClient } from "@/lib/supabase/client";
+import VenueMonthCalendar, {
+  venueDayOfMonth, venueDayKey, venueMonthKey, venueMonthStart
+} from "@/components/venue-month-calendar";
+import "@/app/admin/casas/[id]/programacao/programacao.css";
+
+type AdminShow = {
+  id: string; title: string; description: string; starts_at: string; ends_at: string | null;
+  status: "draft" | "published" | "cancelled"; flyer_path: string | null;
+};
+type GalleryPhoto = { id: string; media_path: string; caption: string; sort_order: number };
+type Suggestion = { id: string; artist_name: string; visitor_name: string; message: string; created_at: string };
+type FormShow = {
+  id: string | null; venue_id: string; title: string; description: string;
+  start: string; end: string; status: "draft" | "published" | "cancelled";
+};
+type Tab = "agenda" | "galeria" | "sugestoes";
+
+function inputTime(iso: string | null): string {
+  if (!iso) return "";
+  const formatter = new Intl.DateTimeFormat("sv-SE", {
+    timeZone: "America/Sao_Paulo",year:"numeric",month:"2-digit",day:"2-digit",
+    hour:"2-digit",minute:"2-digit",hourCycle:"h23"
+  });
+  return formatter.format(new Date(iso)).replace(" ", "T");
+}
+function toIso(local: string): string | null {
+  if (!local) return null;
+  const parsed = new Date(local+":00-03:00");
+  return Number.isNaN(parsed.valueOf()) ? null : parsed.toISOString();
+}
+function blank(venueId: string): FormShow {
+  return { id:null, venue_id:venueId, title:"", description:"", start:"", end:"", status:"draft" };
+}
+function picture(path: string) {
+  return createClient().storage.from("stage-venue-media").getPublicUrl(path).data.publicUrl;
+}
+function friendly(status: string) {
+  const map: Record<string,string> = {
+    invalid:"Revise os campos antes de salvar.",
+    invalid_media:"A imagem não foi encontrada ou não pertence a esta casa.",
+    forbidden:"Sua conta não tem autorização para esta ação.",
+    not_found:"O registro não foi encontrado.",
+    limit_reached:"O limite de 36 fotos foi atingido.",
+    duplicate:"Esta imagem já foi cadastrada.",
+    invalid_venue:"O show pertence a outra casa."
+  };
+  return map[status] || "Não foi possível concluir: "+status;
+}
+async function uploadVenueFile(venueId: string, kind: "gallery" | "flyer", file: File) {
+  const extension: Record<string,string> = {
+    "image/jpeg":"jpg","image/png":"png","image/webp":"webp"
+  };
+  if (!extension[file.type] || file.size > 5*1024*1024 || file.size===0) {
+    throw new Error("Envie JPG, PNG ou WebP de até 5 MB.");
+  }
+  const path = venueId+"/"+kind+"/"+crypto.randomUUID()+"."+extension[file.type];
+  const { error } = await createClient().storage.from("stage-venue-media")
+    .upload(path,file,{contentType:file.type,upsert:false});
+  if (error) throw error;
+  return path;
+}
+
+export default function VenueProgrammingWorkspace({mode}: {mode: "admin" | "partner"}) {
+  const params = useParams<{id:string}>();
+  const id = params.id;
+  const router = useRouter();
+  const [name,setName] = useState("");
+  const [publicSlug,setPublicSlug] = useState<string|null>(null);
+  const [ready,setReady] = useState(false);
+  const [authorized,setAuthorized] = useState(false);
+  const [tab,setTab] = useState<Tab>("agenda");
+  const [shows,setShows] = useState<AdminShow[]>([]);
+  const [photos,setPhotos] = useState<GalleryPhoto[]>([]);
+  const [suggestions,setSuggestions] = useState<Suggestion[]>([]);
+  const [month,setMonth] = useState(venueMonthStart);
+  const [selectedDay,setSelectedDay] = useState<number|null>(null);
+  const [showForm,setShowForm] = useState<FormShow>(()=>blank(id));
+  const [caption,setCaption] = useState("");
+  const [busy,setBusy] = useState("");
+  const [error,setError] = useState("");
+  const [success,setSuccess] = useState("");
+
+  const refresh = useCallback(async () => {
+    const { data, error: resultError } = await createClient()
+      .rpc("stage_venue_calendar_admin_list",{p_venue_id:id});
+    if (resultError) throw resultError;
+    const payload = data as {status:string;events?:AdminShow[];gallery?:GalleryPhoto[];suggestions?:Suggestion[]};
+    if (payload.status!=="ok") throw new Error(friendly(payload.status));
+    setShows(payload.events || []);
+    setPhotos(payload.gallery || []);
+    setSuggestions(payload.suggestions || []);
+  },[id]);
+
+  useEffect(()=>{
+    let active=true;
+    async function load(){
+      try{
+        if (!/^[0-9a-f-]{36}$/i.test(id)) {setError("Identificador de casa inválido.");return;}
+        const db=createClient();
+        const {data:{user}}=await db.auth.getUser();
+        if(!user){router.replace("/login");return;}
+        const {data,error:authError}=await db.rpc(mode==="admin"
+          ? "stage_venue_admin_list" : "stage_venue_partner_access");
+        if(authError) throw authError;
+        const payload=data as {status:string;items?:Array<{id:string;name:string;slug:string|null;is_official:boolean;active:boolean}>};
+        if(payload.status!=="ok") throw new Error(friendly(payload.status));
+        const house=payload.items?.find(x=>x.id===id);
+        if(!house)throw new Error("Casa não encontrada neste catálogo.");
+        if(!active)return;
+        setName(house.name);
+        setPublicSlug(mode==="partner" ? house.slug : (house.is_official&&house.active?house.slug:null));
+        setAuthorized(true);
+        await refresh();
+      }catch(e){if(active)setError(e instanceof Error?e.message:"Erro ao carregar a página.");}
+      finally{if(active)setReady(true);}
+    }
+    void load();
+    return ()=>{active=false};
+  },[id,router,refresh,mode]);
+
+  const monthShows=useMemo(()=>shows.filter(x=>venueDayKey(x.starts_at).slice(0,7)===venueMonthKey(month)),
+    [shows,month]);
+  const visibleShows=useMemo(()=>monthShows.filter(x=>
+    selectedDay===null || venueDayOfMonth(x.starts_at)===selectedDay
+  ).sort((a,b)=>a.starts_at.localeCompare(b.starts_at)),[monthShows,selectedDay]);
+
+  function editShow(item: AdminShow){
+    setShowForm({id:item.id,venue_id:id,title:item.title,description:item.description,
+      start:inputTime(item.starts_at),end:inputTime(item.ends_at),status:item.status});
+    setMonth(new Date(Date.UTC(Number(venueDayKey(item.starts_at).slice(0,4)),
+      Number(venueDayKey(item.starts_at).slice(5,7))-1,1)));
+    setSelectedDay(null);
+    setError("");setSuccess("");
+  }
+  function newShow() {setShowForm(blank(id));setError("");setSuccess("");}
+  function fill<K extends keyof FormShow>(key:K,value:FormShow[K]) {
+    setShowForm(prev=>({...prev,[key]:value}));
+  }
+  async function saveShow(e:FormEvent<HTMLFormElement>){
+    e.preventDefault();setBusy("save");setError("");setSuccess("");
+    try{
+      const starts=toIso(showForm.start);
+      if(!starts)throw new Error("Informe uma data e um horário válidos.");
+      const {data,error:saveError}=await createClient().rpc("stage_venue_calendar_admin_save",{
+        p_event:{id:showForm.id,venue_id:id,title:showForm.title,description:showForm.description,
+          starts_at:starts,ends_at:toIso(showForm.end),status:showForm.status}
+      });
+      if(saveError)throw saveError;
+      const result=data as {status:string;id?:string};
+      if(result.status!=="ok"||!result.id)throw new Error(friendly(result.status));
+      await refresh();
+      setShowForm(prev=>({...prev,id:result.id||prev.id}));
+      setSuccess("Show salvo no calendário da casa."+(
+        showForm.status==="published"?" Já pode aparecer na agenda pública.":" Está como rascunho ou cancelado."
+      ));
+    }catch(e){setError(e instanceof Error?e.message:"Erro ao salvar o show.");}
+    finally{setBusy("");}
+  }
+  async function uploadFlyer(file?:File){
+    if(!file||!showForm.id)return;
+    setBusy("flyer");setError("");setSuccess("");
+    try{
+      const path=await uploadVenueFile(id,"flyer",file);
+      const {data,error:rpcError}=await createClient().rpc("stage_venue_calendar_admin_flyer",{
+        p_id:showForm.id,p_path:path
+      });
+      if(rpcError)throw rpcError;
+      if(data!=="ok")throw new Error(friendly(String(data)));
+      await refresh();setSuccess("Flyer atualizado e associado à data do show.");
+    }catch(e){setError(e instanceof Error?e.message:"Não foi possível salvar o flyer.");}
+    finally{setBusy("");}
+  }
+  async function removeFlyer(){
+    if(!showForm.id)return;
+    setBusy("flyer");setError("");setSuccess("");
+    try{
+      const {data,error:rpcError}=await createClient().rpc("stage_venue_calendar_admin_flyer",{
+        p_id:showForm.id,p_path:null
+      });
+      if(rpcError)throw rpcError;
+      if(data!=="ok")throw new Error(friendly(String(data)));
+      await refresh();setSuccess("Flyer removido do catálogo.");
+    }catch(e){setError(e instanceof Error?e.message:"Erro ao retirar flyer.");}
+    finally{setBusy("");}
+  }
+  async function deleteShow(){
+    if(!showForm.id||!window.confirm("Excluir este show do calendário da casa?"))return;
+    setBusy("delete");setError("");setSuccess("");
+    try{
+      const {data,error:rpcError}=await createClient().rpc("stage_venue_calendar_admin_delete",{
+        p_id:showForm.id
+      });
+      if(rpcError)throw rpcError;
+      if(data!=="ok")throw new Error(friendly(String(data)));
+      newShow();await refresh();setSuccess("Show excluído do calendário.");
+    }catch(e){setError(e instanceof Error?e.message:"Não foi possível excluir.");}
+    finally{setBusy("");}
+  }
+  async function addPhoto(file?:File){
+    if(!file)return;
+    setBusy("gallery");setError("");setSuccess("");
+    try{
+      if(photos.length>=36)throw new Error("A galeria comporta até 36 fotos.");
+      const path=await uploadVenueFile(id,"gallery",file);
+      const {data,error:rpcError}=await createClient().rpc("stage_venue_gallery_admin_add",{
+        p_venue_id:id,p_path:path,p_caption:caption.trim()
+      });
+      if(rpcError)throw rpcError;
+      if(data!=="ok")throw new Error(friendly(String(data)));
+      setCaption("");await refresh();setSuccess("Foto adicionada à galeria.");
+    }catch(e){setError(e instanceof Error?e.message:"Não foi possível adicionar a foto.");}
+    finally{setBusy("");}
+  }
+  async function removePhoto(photo:GalleryPhoto){
+    if(!window.confirm("Remover esta foto da galeria pública?"))return;
+    setBusy(photo.id);setError("");setSuccess("");
+    try{
+      const {data,error:rpcError}=await createClient().rpc("stage_venue_gallery_admin_remove",{
+        p_id:photo.id
+      });
+      if(rpcError)throw rpcError;
+      if(data!=="ok")throw new Error(friendly(String(data)));
+      await refresh();setSuccess("Foto retirada da galeria.");
+    }catch(e){setError(e instanceof Error?e.message:"Não foi possível remover.");}
+    finally{setBusy("");}
+  }
+  const currentFlyer=shows.find(x=>x.id===showForm.id)?.flyer_path;
+  return <main className="venue-program-page"><div className="container">
+    <nav className="nav">
+      <Link className="brand" href="/"><span className="brand-mark">S</span> stage flow</Link>
+      <Link className="btn btn-quiet" href={mode==="partner"?"/parceiros":"/admin/casas"}>
+        <ArrowLeft size={16}/>{mode==="partner"?"Minhas casas":"Todas as casas"}
+      </Link>
+    </nav>
+    <section className="venue-program-hero">
+      <div className="eyebrow"><ShieldCheck size={14}/> {mode==="partner"?"PAINEL DA CASA PARCEIRA":"ADMINISTRAÇÃO DA CASA"}</div>
+      <h1>{name||"Programação da casa"}</h1>
+      <p className="lead">Calendário próprio, catálogo de flyers e fotos do estabelecimento. Nada é importado da agenda dos músicos.</p>
+      {authorized&&publicSlug&&<Link className="btn btn-quiet venue-program-public-link"
+        href={"/casa/"+publicSlug} target="_blank" rel="noopener noreferrer">
+        <ExternalLink size={15}/> Abrir página pública da casa
+      </Link>}
+    </section>
+    {!ready?<div className="feature"><LoaderCircle size={17}/> Carregando programação...</div>:
+      !authorized?<div className="feature"><p role="alert">{error}</p></div>:<>
+        <div className="venue-program-tabs" role="group" aria-label="Seções da casa">
+          <button type="button" className={tab==="agenda"?"active":""} onClick={()=>setTab("agenda")}>
+            <CalendarDays size={17}/> Calendário <span>{shows.length}</span></button>
+          <button type="button" className={tab==="galeria"?"active":""} onClick={()=>setTab("galeria")}>
+            <Images size={17}/> Fotos <span>{photos.length}</span></button>
+          <button type="button" className={tab==="sugestoes"?"active":""} onClick={()=>setTab("sugestoes")}>
+            <MessageCircle size={17}/> Sugestões <span>{suggestions.length}</span></button>
+        </div>
+        {error&&<div className="venue-program-alert" role="alert">{error}</div>}
+        {success&&<div className="venue-program-success" role="status">{success}</div>}
+        {tab==="agenda"&&<div className="venue-program-overview">
+          <span><strong>{shows.filter(x=>x.status==="published").length}</strong> shows publicados</span>
+          <span><strong>{shows.filter(x=>x.status==="draft").length}</strong> rascunhos</span>
+          <span><strong>{shows.filter(x=>!!x.flyer_path).length}</strong> flyers catalogados</span>
+        </div>}
+        {tab==="agenda"&&<div className="venue-program-layout">
+          <section className="venue-program-panel">
+            <div className="venue-program-heading"><h2>Agenda da casa</h2>
+              <button className="btn btn-quiet" type="button" onClick={newShow}><Plus size={15}/> Novo show</button>
+            </div>
+            <VenueMonthCalendar month={month} events={shows} selectedDay={selectedDay}
+              onDayChange={setSelectedDay} onMonthChange={setMonth}/>
+            <div className="venue-program-list">
+              <h3>{selectedDay?"Shows do dia "+selectedDay:"Shows do mês"} <small>({visibleShows.length})</small></h3>
+              {visibleShows.map(show=><button type="button" key={show.id}
+                className={"venue-program-show"+(showForm.id===show.id?" selected":"")}
+                onClick={()=>editShow(show)}>
+                {show.flyer_path?<img src={picture(show.flyer_path)} alt="Flyer do evento"/>:
+                  <span className="venue-program-show-fallback"><Music2 size={22}/></span>}
+                <span><strong>{show.title}</strong>
+                  <small>{new Date(show.starts_at).toLocaleString("pt-BR",{timeZone:"America/Sao_Paulo",dateStyle:"short",timeStyle:"short"})}</small>
+                  <small className={"venue-program-badge "+show.status}>{show.status==="published"?"Publicado":show.status==="draft"?"Rascunho":"Cancelado"}</small></span>
+              </button>)}
+              {!visibleShows.length&&<p className="fine">Nenhum show neste período. Use “Novo show” para cadastrar.</p>}
+            </div>
+          </section>
+          <section className="venue-program-panel">
+            <div className="venue-program-heading"><h2>{showForm.id?"Editar apresentação":"Cadastrar apresentação"}</h2></div>
+            <form onSubmit={saveShow}>
+              <div className="field"><label htmlFor="vp-title">Nome do show *</label>
+                <input id="vp-title" required maxLength={120} value={showForm.title}
+                  onChange={e=>fill("title",e.target.value)} placeholder="Ex.: Pagode no Deck 2"/></div>
+              <div className="venue-program-time-fields">
+                <div className="field"><label htmlFor="vp-start">Data e hora *</label>
+                  <input id="vp-start" type="datetime-local" required value={showForm.start}
+                    onChange={e=>fill("start",e.target.value)}/></div>
+                <div className="field"><label htmlFor="vp-end">Término (opcional)</label>
+                  <input id="vp-end" type="datetime-local" value={showForm.end}
+                    onChange={e=>fill("end",e.target.value)}/></div>
+              </div>
+              <div className="field"><label htmlFor="vp-description">Descrição da apresentação</label>
+                <textarea id="vp-description" rows={4} maxLength={1200}
+                  value={showForm.description} onChange={e=>fill("description",e.target.value)}
+                  placeholder="Informações para quem vai ao show..."/></div>
+              <div className="field"><label htmlFor="vp-status">Visibilidade</label>
+                <select id="vp-status" value={showForm.status}
+                  onChange={e=>fill("status",e.target.value as FormShow["status"])}>
+                  <option value="draft">Rascunho — não aparece no site</option>
+                  <option value="published">Publicado — aparece no calendário</option>
+                  <option value="cancelled">Cancelado — oculto do site</option>
+                </select></div>
+              <div className="venue-program-buttons">
+                <button className="btn btn-primary" type="submit" disabled={!!busy}>
+                  <Save size={16}/>{busy==="save"?"Salvando...":"Salvar show"}</button>
+                {showForm.id&&<button type="button" className="btn btn-quiet" onClick={()=>void deleteShow()}
+                  disabled={!!busy}><Trash2 size={15}/> Excluir</button>}
+              </div>
+            </form>
+            <div className="venue-program-flyer">
+              <h3><ImagePlus size={18}/> Flyer desta apresentação</h3>
+              <p className="fine">O flyer fica vinculado ao show e aparece no calendário e no catálogo do mês.</p>
+              {currentFlyer&&<img src={picture(currentFlyer)} alt={"Flyer de "+showForm.title}/>}
+              <div className="venue-program-buttons">
+                <label className={"btn btn-quiet"+(!showForm.id||!!busy?" is-disabled":"")}>
+                  <UploadCloud size={15}/> {busy==="flyer"?"Enviando...":"Adicionar / trocar flyer"}
+                  <input hidden type="file" accept="image/jpeg,image/png,image/webp"
+                    disabled={!showForm.id||!!busy} onChange={e=>{
+                      const file=e.target.files?.[0];void uploadFlyer(file);
+                      e.target.value="";
+                    }}/>
+                </label>
+                {currentFlyer&&<button type="button" className="btn btn-quiet"
+                  disabled={!!busy} onClick={()=>void removeFlyer()}>Retirar flyer</button>}
+              </div>
+              {!showForm.id&&<p className="fine">Salve o show primeiro para habilitar o envio do flyer.</p>}
+            </div>
+          </section>
+        </div>}
+        {tab==="galeria"&&<section className="venue-program-panel venue-program-gallery-panel">
+          <div className="venue-program-heading"><h2>Galeria da casa</h2><span className="fine">{photos.length}/36 fotos</span></div>
+          <p className="fine">Fotos do ambiente, palco, estrutura e momentos especiais. Independente das fotos dos músicos.</p>
+          <div className="venue-program-upload">
+            <div className="field"><label htmlFor="vp-caption">Legenda (opcional)</label>
+              <input id="vp-caption" value={caption} maxLength={180} onChange={e=>setCaption(e.target.value)}
+                placeholder="Ex.: Nosso espaço durante o samba de domingo"/></div>
+            <label className={"btn btn-primary"+(!!busy||photos.length>=36?" is-disabled":"")}>
+              <UploadCloud size={16}/>{busy==="gallery"?"Enviando...":"Adicionar foto"}
+              <input type="file" hidden accept="image/jpeg,image/png,image/webp" disabled={!!busy||photos.length>=36}
+                onChange={e=>{void addPhoto(e.target.files?.[0]);e.target.value="";}}/>
+            </label>
+          </div>
+          {photos.length?<div className="venue-program-gallery-grid">{photos.map(photo=>
+            <article key={photo.id} className="venue-program-gallery-item">
+              <img src={picture(photo.media_path)} alt={photo.caption||"Foto da casa"}/>
+              <div><span>{photo.caption||"Foto da casa"}</span><button type="button"
+                title="Remover foto" aria-label="Remover foto"
+                onClick={()=>void removePhoto(photo)} disabled={!!busy}><Trash2 size={16}/></button></div>
+            </article>)}</div>:<p className="venue-program-empty">A galeria está vazia. Adicione a primeira foto da casa.</p>}
+        </section>}
+        {tab==="sugestoes"&&<section className="venue-program-panel venue-program-gallery-panel">
+          <div className="venue-program-heading"><h2>Sugestões de atrações</h2><span className="fine">100 mensagens mais recentes</span></div>
+          <p className="fine">Mensagens recebidas pelo botão “Sugerir atração” na página pública. Ninguém vê as sugestões de outras pessoas.</p>
+          <div className="venue-program-suggestions">
+            {suggestions.map(s=><article key={s.id} className="venue-program-suggestion">
+              <div><strong>{s.artist_name}</strong><small>{new Date(s.created_at).toLocaleString("pt-BR",{dateStyle:"medium",timeStyle:"short"})}</small></div>
+              {s.message&&<p>{s.message}</p>}
+              {s.visitor_name&&<small>Sugerido por {s.visitor_name}</small>}
+            </article>)}
+            {!suggestions.length&&<p className="venue-program-empty">Nenhuma sugestão recebida por enquanto.</p>}
+          </div>
+        </section>}
+      </>}
+  </div></main>;
+}
