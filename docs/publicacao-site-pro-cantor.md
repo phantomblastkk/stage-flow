@@ -234,3 +234,85 @@ O produto **não inventa fotografias de casas de show**, preços, ingressos, ven
 4. Testar com mais de seis shows para validar **Ver todos** e os links diretos.
 5. Selecionar uma data específica no calendário e confirmar que aparecem somente os shows daquela data.
 6. Conferir telas estreitas (320–390 px) e desktop; fotos, vídeos e assinatura não devem mudar.
+
+
+## Etapa: flyer por show (Instagram Feed + Story / WhatsApp Status)
+
+### Nova migração obrigatória
+
+Depois das migrações Pro já instaladas (publicação, galerias separadas,
+limite independente de 3 fotos + 3 vídeos), execute **uma vez** no Supabase
+SQL Editor:
+
+\`\`\`
+supabase/pro_artist_show_flyers_migration.sql
+\`\`\`
+
+A migração é incremental e segura para dados já existentes:
+
+- adiciona as colunas \`events.flyer_path\` e \`events.flyer_settings\`;
+- cria o bucket **privado** \`stage-show-flyers\` com arquivos JPG/PNG/WebP de até 8 MB;
+- limita upload, leitura privada e exclusão ao usuário proprietário do evento;
+- permite a leitura pública do flyer **somente** para show futuro marcado como
+  publicado e público, pertencente a artista com perfil e site Pro publicados,
+  com seção Agenda visível e direito vigente de uso do Pro;
+- cria a RPC de proprietário \`stage_set_show_flyer\`, que confirma dono,
+  identificador do show, arquivo enviado e preferências de enquadramento;
+- acrescenta \`flyer_path\` e \`flyer_settings\` à seção \`events\` da RPC pública
+  \`stage_public_pro_artist_site\`, mantendo a regra de no máximo 3 fotos
+  e 3 vídeos do portfólio, sem mostrar rascunhos privados.
+
+**O SQL ainda exige execução manual no Supabase:** salvar no GitHub não
+modifica a base de dados ativa. Antes da migração, o cadastro normal de eventos
+permanece disponível; a opção Flyer exibe aviso explicando o que falta.
+
+### Uso pelo cantor
+
+1. Entre em **Eventos**, crie um show próprio e salve.
+2. No card do evento, abra **Flyer para Instagram/WhatsApp**.
+3. Selecione um JPG, PNG ou WebP até 8 MB. A imagem original fica em
+   armazenamento privado.
+4. Alterne entre **Feed 4:5** e **Story/Status 9:16** e escolha o enquadramento:
+   - **Preencher / recorte automático**: cobre toda a área e recorta a imagem
+     centralmente. Padrão rápido, sem detecção automática de rosto ou texto.
+   - **Sem cortar / fundo desfocado**: mostra a arte completa, com uma
+     versão ampliada e desfocada ao fundo.
+   - **Manual**: arraste o flyer ou ajuste horizontal/vertical/zoom.
+5. Clique **Salvar flyer e enquadramento** para enviar a arte e salvar
+   ajustes **independentes por formato**.
+6. Use **Baixar Feed (1080×1350)** ou **Baixar Story (1080×1920)**;
+   ambos geram JPG com resolução exata no próprio navegador.
+7. **Compartilhar** usa a função nativa de compartilhamento de arquivo
+   quando o navegador oferece suporte; caso contrário baixa o JPG
+   para envio manual pelo Instagram ou WhatsApp.
+
+### Site Pro publicado
+
+- A agenda pública permanece baseada em shows com
+  \`show_publicly=true\`, \`status='published'\`, com data futura.
+- Cada show com flyer apresenta miniatura da **arte original inteira**,
+  link de compartilhamento do evento, download Feed e download Story.
+- Os downloads aplicam o enquadramento salvo pelo cantor.
+- A imagem original não é incluída na galeria privada de 3 fotos,
+  nem afeta o limite de 3 vídeos.
+- Nenhuma republicação do site Pro é necessária para atualizar o flyer
+  de um show público depois que a migração estiver aplicada:
+  a agenda lê os eventos ativos em tempo real.
+
+### Verificações importantes
+
+- Testar upload, troca, exclusão, recorte central, arraste, zoom e fundo
+  desfocado em desktop e celular.
+- Conferir dimensões **1080×1350** e **1080×1920** dos JPGs exportados.
+- Conferir no site Pro publicado com visitante anônimo que apenas
+  flyers de shows públicos futuros são acessíveis.
+- Conferir que flyers de eventos privados continuam inacessíveis e
+  que mudar um evento de público para privado revoga a leitura.
+- Testar abertura em navegador móvel para compartilhar a imagem.
+- Confirmar a assinatura abaixo do nome, a galeria 3 + 3 e
+  \`/marketplace\` em **Em breve**.
+
+**Observação:** imagens enviadas podem conter textos importantes perto das
+bordas. O modo automático da V1 é recorte central convencional, não
+reconhecimento inteligente de conteúdo. O cantor deve conferir e ajustar
+o enquadramento antes de divulgar.
