@@ -124,6 +124,7 @@ as $$
     where m.media_kind='photo'
       and m.storage_path=p_path
       and s.published=true
+      and 'portfolio'=any(s.visible_sections)
       and p.is_artist=true and p.is_public=true and p.username is not null
       and public.stage_pro_site_is_entitled(p.id)
   );
@@ -192,6 +193,7 @@ begin
       ) order by m.display_order,m.draft_media_id)
       from public.stage_pro_site_public_media m
       where m.owner_id=p.id
+        and 'portfolio'=any(s.visible_sections)
     ),'[]'::jsonb),
     'events',coalesce((
       select jsonb_agg(jsonb_build_object(
