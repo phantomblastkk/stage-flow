@@ -5,7 +5,7 @@ import Link from "next/link";
 import { useParams, useRouter } from "next/navigation";
 import {
   ArrowLeft, CalendarDays, ImagePlus, LoaderCircle, MessageCircle, Plus,
-  Save, Trash2, UploadCloud, Images, Music2, ShieldCheck
+  Save, Trash2, UploadCloud, Images, Music2, ShieldCheck, ExternalLink
 } from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
 import VenueMonthCalendar, {
@@ -75,6 +75,7 @@ export default function ProgramacaoDaCasa() {
   const id = params.id;
   const router = useRouter();
   const [name,setName] = useState("");
+  const [publicSlug,setPublicSlug] = useState<string|null>(null);
   const [ready,setReady] = useState(false);
   const [authorized,setAuthorized] = useState(false);
   const [tab,setTab] = useState<Tab>("agenda");
@@ -110,12 +111,13 @@ export default function ProgramacaoDaCasa() {
         if(!user){router.replace("/login");return;}
         const {data,error:authError}=await db.rpc("stage_venue_admin_list");
         if(authError) throw authError;
-        const payload=data as {status:string;items?:Array<{id:string;name:string}>};
+        const payload=data as {status:string;items?:Array<{id:string;name:string;slug:string|null;is_official:boolean;active:boolean}>};
         if(payload.status!=="ok") throw new Error(friendly(payload.status));
         const house=payload.items?.find(x=>x.id===id);
         if(!house)throw new Error("Casa não encontrada neste catálogo.");
         if(!active)return;
         setName(house.name);
+        setPublicSlug(house.is_official&&house.active?house.slug:null);
         setAuthorized(true);
         await refresh();
       }catch(e){if(active)setError(e instanceof Error?e.message:"Erro ao carregar a página.");}
@@ -241,6 +243,10 @@ export default function ProgramacaoDaCasa() {
       <div className="eyebrow"><ShieldCheck size={14}/> ADMINISTRAÇÃO DA CASA</div>
       <h1>{name||"Programação da casa"}</h1>
       <p className="lead">Calendário próprio, catálogo de flyers e fotos do estabelecimento. Nada é importado da agenda dos músicos.</p>
+      {authorized&&publicSlug&&<Link className="btn btn-quiet venue-program-public-link"
+        href={"/casa/"+publicSlug} target="_blank" rel="noopener noreferrer">
+        <ExternalLink size={15}/> Abrir página pública da casa
+      </Link>}
     </section>
     {!ready?<div className="feature"><LoaderCircle size={17}/> Carregando programação...</div>:
       !authorized?<div className="feature"><p role="alert">{error}</p></div>:<>
@@ -254,6 +260,11 @@ export default function ProgramacaoDaCasa() {
         </div>
         {error&&<div className="venue-program-alert" role="alert">{error}</div>}
         {success&&<div className="venue-program-success" role="status">{success}</div>}
+        {tab==="agenda"&&<div className="venue-program-overview">
+          <span><strong>{shows.filter(x=>x.status==="published").length}</strong> shows publicados</span>
+          <span><strong>{shows.filter(x=>x.status==="draft").length}</strong> rascunhos</span>
+          <span><strong>{shows.filter(x=>!!x.flyer_path).length}</strong> flyers catalogados</span>
+        </div>}
         {tab==="agenda"&&<div className="venue-program-layout">
           <section className="venue-program-panel">
             <div className="venue-program-heading"><h2>Agenda da casa</h2>
@@ -270,7 +281,7 @@ export default function ProgramacaoDaCasa() {
                   <span className="venue-program-show-fallback"><Music2 size={22}/></span>}
                 <span><strong>{show.title}</strong>
                   <small>{new Date(show.starts_at).toLocaleString("pt-BR",{timeZone:"America/Sao_Paulo",dateStyle:"short",timeStyle:"short"})}</small>
-                  <small>{show.status==="published"?"Publicado":show.status==="draft"?"Rascunho":"Cancelado"}</small></span>
+                  <small className={"venue-program-badge "+show.status}>{show.status==="published"?"Publicado":show.status==="draft"?"Rascunho":"Cancelado"}</small></span>
               </button>)}
               {!visibleShows.length&&<p className="fine">Nenhum show neste período. Use “Novo show” para cadastrar.</p>}
             </div>
