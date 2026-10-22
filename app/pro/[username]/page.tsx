@@ -290,7 +290,7 @@ export default function PublicProArtistPage(){
               </div>
               <span className="premium-site-section-icon"><Instagram size={25}/></span>
             </div>
-            <PremiumGalleryShowcase items={media} section="photos" showEmpty/>
+            <PremiumGalleryShowcase items={media} section="photos" showEmpty showHeading={false}/>
           </section>}
 
         {design.visible_sections.includes("videos")&&
@@ -306,7 +306,7 @@ export default function PublicProArtistPage(){
               </div>
               <span className="premium-site-section-icon"><PlayCircle size={25}/></span>
             </div>
-            <PremiumGalleryShowcase items={media} section="videos" showEmpty
+            <PremiumGalleryShowcase items={media} section="videos" showEmpty showHeading={false}
               youtubeUrl={artist.youtube_url} spotifyUrl={artist.spotify_url}/>
           </section>}
 
