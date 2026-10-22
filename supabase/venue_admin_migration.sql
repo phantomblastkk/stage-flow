@@ -40,6 +40,14 @@ alter table public.venues
   add column if not exists is_partner boolean not null default false,
   add column if not exists updated_at timestamptz not null default now();
 
+-- Cada show pode apontar para a casa oficial selecionada na agenda.
+-- O nome textual antigo e preservado para eventos legados.
+alter table public.events
+  add column if not exists venue_id uuid references public.venues(id) on delete set null;
+create index if not exists stage_events_venue_public_idx
+  on public.events(venue_id,starts_at)
+  where show_publicly=true and status='published';
+
 create unique index if not exists stage_venue_slug_unique
   on public.venues (slug) where slug is not null;
 create index if not exists stage_venue_official_idx
@@ -201,7 +209,19 @@ as $$
     'id',v.id,'name',v.name,'slug',v.slug,'description',v.description,
     'address',v.address,'city',c.name,'state',c.state_code,
     'instagram_url',v.instagram_url,'whatsapp',v.whatsapp,
-    'logo_path',v.logo_path,'cover_path',v.cover_path,'is_partner',v.is_partner
+    'logo_path',v.logo_path,'cover_path',v.cover_path,'is_partner',v.is_partner,
+    'events',coalesce((
+      select jsonb_agg(jsonb_build_object(
+        'id',e.id,'title',e.title,'starts_at',e.starts_at
+      ) order by e.starts_at)
+      from (
+        select id,title,starts_at
+        from public.events
+        where venue_id=v.id and show_publicly=true
+          and status='published' and starts_at>=now()
+        order by starts_at asc limit 40
+      ) e
+    ),'[]'::jsonb)
   )
   from public.venues v
   left join public.cities c on c.id=v.city_id
