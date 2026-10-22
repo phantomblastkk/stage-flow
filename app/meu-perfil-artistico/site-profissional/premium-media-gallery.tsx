@@ -1,9 +1,9 @@
 "use client";
 
-import { ChangeEvent, FormEvent, useCallback, useEffect, useState } from "react";
+import { ChangeEvent, FormEvent, useCallback, useEffect, useRef, useState } from "react";
 import {
   ArrowDown, ArrowUp, Check, Edit3, ExternalLink,
-  ImagePlus, LoaderCircle, PlayCircle, Star, Trash2, X, Youtube
+  ChevronLeft, ChevronRight, Images, ImagePlus, LoaderCircle, PlayCircle, Star, Trash2, X, Youtube
 } from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
 import "./premium-media-gallery.css";
@@ -182,12 +182,19 @@ export function usePremiumGallery(enabled: boolean) {
   }
 
   async function reorder(id: string, delta: -1 | 1) {
-    const index = items.findIndex(item => item.id === id);
-    const target = index + delta;
-    if (index < 0 || target < 0 || target >= items.length) return;
+    // Fotos e vídeos têm listas independentes no editor, mas a RPC mantém
+    // uma ordem global; trocamos apenas itens do MESMO tipo.
+    const current = items.find(item => item.id === id);
+    if (!current) return;
+    const sameKind = items.filter(item => item.media_kind === current.media_kind);
+    const index = sameKind.findIndex(item => item.id === id);
+    const neighbor = sameKind[index + delta];
+    if (!neighbor) return;
     const ordered = items.map(item => item.id);
-    [ordered[index], ordered[target]] = [ordered[target], ordered[index]];
-    await call("stage_reorder_premium_site_media", { p_ids: ordered }, "Ordem atualizada.");
+    const indexA = ordered.indexOf(id);
+    const indexB = ordered.indexOf(neighbor.id);
+    [ordered[indexA], ordered[indexB]] = [ordered[indexB], ordered[indexA]];
+    await call("stage_reorder_premium_site_media", { p_ids: ordered }, "Ordem atualizada na seção.");
   }
 
   return {
@@ -243,8 +250,8 @@ export function PremiumGalleryEditor({ gallery }: { gallery: PremiumGallery }) {
     <div className="premium-media-editor-heading">
       <div>
         <span className="premium-design-eyebrow"><ImagePlus size={15}/> GALERIA DO SITE PROFISSIONAL</span>
-        <h2>Seus melhores momentos.</h2>
-        <p>Fotos de shows e vídeos do YouTube organizados na prévia. Até {MAX_ITEMS} trabalhos.</p>
+        <h2>Fotos e vídeos, cada um no seu espaço.</h2>
+        <p>Organize fotografias em uma galeria e vídeos em uma seção própria do site Pro. Até {MAX_ITEMS} mídias no total.</p>
       </div>
       <span className="premium-media-count">{gallery.items.length}/{MAX_ITEMS} trabalhos</span>
     </div>
@@ -289,9 +296,22 @@ export function PremiumGalleryEditor({ gallery }: { gallery: PremiumGallery }) {
     {gallery.message && <p className="premium-media-feedback" role="status">{gallery.message}</p>}
     {gallery.loading ? <p className="premium-media-loading"><LoaderCircle size={16}/> Carregando trabalhos...</p> :
       gallery.items.length === 0
-        ? <div className="premium-media-empty">Sua galeria está vazia. Comece com a foto de um show ou um vídeo.</div>
-        : <div className="premium-media-list">
-          {gallery.items.map((item, index) =>
+        ? <div className="premium-media-empty">Sua galeria está vazia. Comece com fotos de shows ou vídeos do YouTube.</div>
+        : <div className="premium-media-groups">
+          {(["photo", "youtube"] as const).map(kind => {
+            const grouped = gallery.items.filter(item => item.media_kind === kind);
+            if (!grouped.length) return null;
+            return <section className="premium-media-group" key={kind}
+              aria-label={kind === "photo" ? "Fotos cadastradas" : "Vídeos cadastrados"}>
+              <div className="premium-media-group-heading">
+                {kind === "photo" ? <Images size={19}/> : <Youtube size={19}/>}
+                <div><h3>{kind === "photo" ? "Galeria de fotos" : "Vídeos do YouTube"}</h3>
+                  <p>{kind === "photo" ? "Escolha a ordem das imagens no álbum." : "Organize seus vídeos de apresentações."}</p>
+                </div>
+                <span>{grouped.length} {kind === "photo" ? "foto(s)" : "vídeo(s)"}</span>
+              </div>
+              <div className="premium-media-list">
+              {grouped.map((item, index) =>
             <article className="premium-media-list-item" key={item.id}>
               <div className="premium-media-list-photo"><MediaThumbnail item={item}/></div>
               <div className="premium-media-item-info">
@@ -319,7 +339,7 @@ export function PremiumGalleryEditor({ gallery }: { gallery: PremiumGallery }) {
                     onClick={() => void gallery.reorder(item.id, -1)} aria-label={"Subir " + item.title}>
                     <ArrowUp size={14}/> Subir
                   </button>
-                  <button type="button" disabled={gallery.busy || index === gallery.items.length - 1}
+                  <button type="button" disabled={gallery.busy || index === grouped.length - 1}
                     onClick={() => void gallery.reorder(item.id, 1)} aria-label={"Descer " + item.title}>
                     <ArrowDown size={14}/> Descer
                   </button>
@@ -334,7 +354,10 @@ export function PremiumGalleryEditor({ gallery }: { gallery: PremiumGallery }) {
                 </div>
               </div>
             </article>
-          )}
+              )}
+              </div>
+            </section>;
+          })}
         </div>
     }
     <p className="premium-media-privacy">
@@ -346,26 +369,154 @@ export function PremiumGalleryEditor({ gallery }: { gallery: PremiumGallery }) {
   </section>;
 }
 
-export function PremiumGalleryShowcase({ items }: { items: PremiumMediaItem[] }) {
-  if (items.length === 0) return null;
-  const featured = items.find(item => item.featured);
-  const ordered = featured ? [featured, ...items.filter(item => item.id !== featured.id)] : items;
-  return <div className="premium-media-showcase">
-    {ordered.map((item, index) => {
-      const href = item.youtube_id ? "https://www.youtube.com/watch?v=" + item.youtube_id : "";
-      const visual = <div className="premium-media-showcase-photo">
-        <MediaThumbnail item={item}/>
-        {item.media_kind === "youtube" && <span className="premium-media-play"><PlayCircle size={32}/></span>}
-      </div>;
-      return <article className={"premium-media-showcase-card" + (index === 0 ? " is-featured" : "")} key={item.id}>
-        {href ? <a href={href} target="_blank" rel="noopener noreferrer"
-          aria-label={"Assistir no YouTube: " + item.title}>{visual}</a> : visual}
-        <div className="premium-media-showcase-details">
-          <span>{item.featured ? "EM DESTAQUE" : item.media_kind === "youtube" ? "VÍDEO" : "FOTO"}</span>
-          <h3>{item.title}</h3>
-          {href && <a href={href} target="_blank" rel="noopener noreferrer">Assistir no YouTube <ExternalLink size={13}/></a>}
+export function PremiumGalleryShowcase({
+  items, showEmpty = false, youtubeUrl, spotifyUrl
+}: {
+  items: PremiumMediaItem[];
+  showEmpty?: boolean;
+  youtubeUrl?: string | null;
+  spotifyUrl?: string | null;
+}) {
+  const photos = items.filter(item => item.media_kind === "photo");
+  const videos = items.filter(item => item.media_kind === "youtube");
+  const featuredPhoto = photos.find(item => item.featured);
+  const orderedPhotos = featuredPhoto
+    ? [featuredPhoto, ...photos.filter(item => item.id !== featuredPhoto.id)]
+    : photos;
+  const featuredVideo = videos.find(item => item.featured);
+  const orderedVideos = featuredVideo
+    ? [featuredVideo, ...videos.filter(item => item.id !== featuredVideo.id)]
+    : videos;
+  const [activePhoto, setActivePhoto] = useState<number | null>(null);
+  const closeRef = useRef<HTMLButtonElement | null>(null);
+
+  useEffect(() => {
+    if (activePhoto === null) return;
+    closeRef.current?.focus();
+    function onKeyDown(event: KeyboardEvent) {
+      if (event.key === "Escape") setActivePhoto(null);
+      if (event.key === "ArrowRight") {
+        setActivePhoto(i => i === null ? null : (i + 1) % orderedPhotos.length);
+      }
+      if (event.key === "ArrowLeft") {
+        setActivePhoto(i => i === null ? null :
+          (i - 1 + orderedPhotos.length) % orderedPhotos.length);
+      }
+    }
+    window.addEventListener("keydown", onKeyDown);
+    return () => window.removeEventListener("keydown", onKeyDown);
+  }, [activePhoto, orderedPhotos.length]);
+
+  if (!items.length && !showEmpty) return null;
+
+  const selected = activePhoto === null ? null : orderedPhotos[activePhoto] ?? null;
+  return <div className="premium-separated-media">
+    <section className="premium-photo-gallery" id="premium-fotos" aria-labelledby="premium-photo-title">
+      <div className="premium-media-section-heading">
+        <div>
+          <span className="premium-media-section-label"><Images size={15}/> IMAGENS E BASTIDORES</span>
+          <h3 id="premium-photo-title">Galeria de <em>fotos.</em></h3>
+          <p>Momentos do palco, registros de shows e bastidores.</p>
         </div>
-      </article>;
-    })}
+        {orderedPhotos.length > 0 && <span className="premium-media-section-count">
+          {orderedPhotos.length} {orderedPhotos.length === 1 ? "foto" : "fotos"}
+        </span>}
+      </div>
+      {orderedPhotos.length > 0
+        ? <div className="premium-photo-grid">
+          {orderedPhotos.map((item, index) =>
+            <button key={item.id} type="button"
+              disabled={!item.preview_url}
+              className={"premium-photo-tile" + (index === 0 && orderedPhotos.length >= 3 ? " is-featured" : "")}
+              onClick={() => setActivePhoto(index)}
+              aria-label={"Abrir foto " + (index + 1) + " de " + orderedPhotos.length + ": " + item.title}>
+              <MediaThumbnail item={item}/>
+              <span className="premium-photo-caption">
+                <span>{item.title}</span>
+                <ImagePlus size={16}/>
+              </span>
+              {item.featured && <span className="premium-photo-featured"><Star size={13} fill="currentColor"/> DESTAQUE</span>}
+            </button>)}
+        </div>
+        : <div className="premium-media-blank">
+            <Images size={24}/>
+            <p>As fotos dos shows e bastidores aparecerão aqui.</p>
+          </div>}
+    </section>
+
+    <section className="premium-video-gallery" id="premium-videos" aria-labelledby="premium-video-title">
+      <div className="premium-media-section-heading">
+        <div>
+          <span className="premium-media-section-label"><Youtube size={15}/> SHOWS E APRESENTAÇÕES</span>
+          <h3 id="premium-video-title">Meus <em>vídeos.</em></h3>
+          <p>Assista aos melhores momentos e apresentações no YouTube.</p>
+        </div>
+        {orderedVideos.length > 0 && <span className="premium-media-section-count">
+          {orderedVideos.length} {orderedVideos.length === 1 ? "vídeo" : "vídeos"}
+        </span>}
+      </div>
+      {orderedVideos.length > 0 ?
+        <div className="premium-video-grid">
+          {orderedVideos.map(item => {
+            const url = "https://www.youtube.com/watch?v=" + item.youtube_id;
+            return <a key={item.id} className="premium-video-tile" href={url}
+              target="_blank" rel="noopener noreferrer"
+              aria-label={"Assistir no YouTube: " + item.title}>
+              <div className="premium-video-thumbnail">
+                <MediaThumbnail item={item}/>
+                <span className="premium-video-play"><PlayCircle size={33}/></span>
+              </div>
+              <div className="premium-video-copy">
+                <div>
+                  {item.featured && <small><Star size={12} fill="currentColor"/> EM DESTAQUE</small>}
+                  <h4>{item.title}</h4>
+                  <span>Assistir no YouTube</span>
+                </div>
+                <ExternalLink size={18}/>
+              </div>
+            </a>;
+          })}
+        </div>
+        : <div className="premium-media-blank">
+            <PlayCircle size={24}/>
+            <p>Os vídeos e apresentações aparecerão aqui.</p>
+            {youtubeUrl && <a href={youtubeUrl} target="_blank" rel="noopener noreferrer">
+              Ver canal no YouTube <ExternalLink size={14}/>
+            </a>}
+          </div>}
+      {spotifyUrl && <a className="premium-video-music-link" href={spotifyUrl}
+        target="_blank" rel="noopener noreferrer">
+        Ouvir minhas músicas no Spotify <ExternalLink size={14}/>
+      </a>}
+    </section>
+
+    {selected?.preview_url && <div className="premium-photo-lightbox"
+      role="presentation" onClick={() => setActivePhoto(null)}>
+      <div className="premium-photo-lightbox-panel" role="dialog"
+        aria-modal="true" aria-label={"Foto ampliada: " + selected.title}
+        onClick={event => event.stopPropagation()}>
+        <div className="premium-photo-lightbox-toolbar">
+          <span>{(activePhoto ?? 0) + 1} / {orderedPhotos.length}</span>
+          <button ref={closeRef} type="button" onClick={() => setActivePhoto(null)}
+            aria-label="Fechar galeria"><X size={21}/></button>
+        </div>
+        <img src={selected.preview_url} alt={selected.title}/>
+        <div className="premium-photo-lightbox-bottom">
+          <strong>{selected.title}</strong>
+          {orderedPhotos.length > 1 && <div>
+            <button type="button" aria-label="Foto anterior"
+              onClick={() => setActivePhoto(i => i === null ? null :
+                (i - 1 + orderedPhotos.length) % orderedPhotos.length)}>
+              <ChevronLeft size={21}/>
+            </button>
+            <button type="button" aria-label="Próxima foto"
+              onClick={() => setActivePhoto(i => i === null ? null :
+                (i + 1) % orderedPhotos.length)}>
+              <ChevronRight size={21}/>
+            </button>
+          </div>}
+        </div>
+      </div>
+    </div>}
   </div>;
 }
