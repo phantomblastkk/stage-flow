@@ -178,3 +178,32 @@ A seção **Vídeos** agora apresenta um player cinematográfico responsivo de p
 5. Teste em celular e em desktop. Confira o botão **Abrir no YouTube** para um vídeo que bloqueie incorporação.
 6. Se o site Pro já estiver publicado, **republicar só é necessário quando houver alterações no conteúdo do rascunho**; a melhoria do player é visual/funcional e se aplica ao conteúdo publicado existente.
 7. Confirme que fotos e vídeos continuam separados e que \`/marketplace\` permanece **Em breve**.
+
+
+## Regra atual: no máximo 3 fotos + 3 vídeos no site Pro
+
+O editor do cantor aceita até **3 fotos** e **3 vídeos do YouTube**, em cotas separadas e independentes (6 itens no máximo). A tela mostra contadores \`Fotos: 0/3\` e \`Vídeos: 0/3\`, bloqueia somente o tipo que atingiu 3 e explica como liberar espaço. A prévia e a página pública exibem no máximo três de cada tipo, com o item destacado priorizado.
+
+### Instalação obrigatória no Supabase
+
+Execute somente a migração incremental abaixo, depois das migrações de galeria privada, publicação Pro e separação de fotos e vídeos:
+
+\`\`\`
+supabase/pro_artist_media_six_items_limit_migration.sql
+\`\`\`
+
+Ela atualiza quatro funções existentes: adicionar mídia, publicar o snapshot, ler as mídias públicas e autorizar download de fotos. O limite é validado no **servidor**, com lock transacional por artista para proteger contra duas adições simultâneas. Novas publicações armazenam até três mídias de cada tipo.
+
+**Compatibilidade:** nenhuma foto nem vídeo já existente é excluído. Se um cantor tinha mais de 3 itens de um tipo, o excedente permanece visível para gerenciamento no editor privado, mas somente os três prioritários aparecem na prévia, na RPC pública e no download público permitido para fotos. Para definir quais ficam, o cantor pode alterar o destaque e a ordem no editor e, se quiser atualizar um site já publicado, clicar **Republicar alterações**. A migração não modifica plano, domínio, assinatura, rascunho nem publicação ativa.
+
+Em caso de erros vindos do Supabase, verifique se o SQL atualizado foi executado no projeto correto. A interface pode limitar a quantidade exibida antes do SQL, mas o limite **não fica protegido contra chamadas diretas ao servidor** até que a migração seja aplicada.
+
+### Verificação
+
+1. Cadastrar 3 fotos e 3 vídeos; os respectivos contadores devem mostrar \`3/3\`, ambos bloqueados para novos envios.
+2. Verificar que atingir \`3/3\` em Fotos não impede adicionar vídeos se ainda há espaço nessa categoria.
+3. Remover uma mídia do rascunho (quando não for uma foto protegida por publicação ativa): a categoria correspondente volta a permitir upload ou cadastro.
+4. Chamar \`stage_add_premium_site_media\` diretamente já com 3 itens de um tipo: o servidor retorna \`limit_photos\` ou \`limit_videos\`.
+5. Em conta anterior com mais de 3 fotos/vídeos, verificar que as mídias excedentes ainda estão no editor, mas a página pública mostra só 3 + 3. Não apagar automaticamente nenhum item legado.
+6. Abrir a página Pro em desktop e celular; confirmar a galeria com até 3 fotos e o player com até 3 vídeos, sem alterar a assinatura do cantor.
+7. Confirmar que \`/marketplace\` ainda está em **Em breve**.
