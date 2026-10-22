@@ -7,10 +7,11 @@ import {
   ChevronLeft, ChevronRight, CircleHelp, Clock3, ExternalLink,
   Filter, Guitar, Heart, LoaderCircle, MapPin, MessageCircle,
   Music2, Search, Send, ShieldCheck, SlidersHorizontal, Sparkles,
-  Star, Trophy, Users, X
+  Star, Trophy, Users, Flag, X
 } from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
 import "./marketplace-catalog.css";
+import MarketplaceReportDialog, { type ReportTarget } from "./marketplace-report-dialog";
 
 type MarketMusician = {
   musician_id: string;
@@ -126,6 +127,8 @@ export default function MarketplaceCatalog({preview=false}:Props) {
   const [error,setError] = useState("");
   const [mobileFilters,setMobileFilters] = useState(false);
   const [authUser,setAuthUser] = useState(false);
+  const [canModerate,setCanModerate] = useState(false);
+  const [reportTarget,setReportTarget] = useState<ReportTarget|null>(null);
   const [selected,setSelected] = useState<MarketMusician|null>(null);
   const [events,setEvents] = useState<EventOption[]>([]);
   const [loadingEvents,setLoadingEvents] = useState(false);
@@ -154,6 +157,10 @@ export default function MarketplaceCatalog({preview=false}:Props) {
         const {data,error:rpcError}=await client.rpc("stage_marketplace_preview_status");
         if(!active)return;
         setGate(!rpcError && data?.allowed===true ? "allowed" : "denied");
+        if (!rpcError && data?.allowed === true) {
+          const {data:moderator} = await client.rpc("stage_marketplace_moderator_status");
+          if(active) setCanModerate(moderator === true);
+        }
       } else {
         // Esta tela so sera usada publicamente apos liberacao deliberada.
         setGate("allowed");
@@ -408,7 +415,11 @@ export default function MarketplaceCatalog({preview=false}:Props) {
       {preview&&<div className="market-preview-ribbon">
         <ShieldCheck size={17}/>
         <span><strong>Ambiente de testes restrito.</strong> O marketplace público continua em “Em breve”.
-          Nenhuma ativação comercial foi realizada.</span>
+          Nenhuma ativação comercial foi realizada.
+          {canModerate&&<>{" "}<Link href="/marketplace/moderacao"
+            style={{color:"#d9c6f5",fontWeight:900,textDecoration:"underline"}}>
+            <Flag size={13} style={{display:"inline",verticalAlign:"middle"}}/> Central de moderação
+          </Link></>}</span>
       </div>}
 
       <section className="market-featured" aria-labelledby="market-featured-title">
@@ -482,6 +493,10 @@ export default function MarketplaceCatalog({preview=false}:Props) {
                         <button type="button" onClick={()=>openMusician(m)}>
                           Convidar <ArrowRight size={15}/></button>
                       </div>
+                      <button type="button" className="market-report-link"
+                        onClick={()=>setReportTarget({
+                          type:"musician",id:m.musician_id,label:m.name
+                        })}><Flag size={12}/> Denunciar perfil</button>
                     </div>
                   </article>)}
                 </div>
@@ -634,6 +649,10 @@ export default function MarketplaceCatalog({preview=false}:Props) {
                       Convidar <ArrowRight size={15}/>
                     </button>
                   </div>
+                  <button type="button" className="market-report-link"
+                    onClick={()=>setReportTarget({
+                      type:"musician",id:m.musician_id,label:m.name
+                    })}><Flag size={12}/> Denunciar perfil</button>
                 </div>
               </article>)}
             </div>}
@@ -674,6 +693,10 @@ export default function MarketplaceCatalog({preview=false}:Props) {
             <Rating musician={selected}/>
           </div>
           <Availability musician={selected} date={applied.date}/>
+          <button type="button" className="market-report-link"
+            onClick={()=>setReportTarget({
+              type:"musician",id:selected.musician_id,label:selected.name
+            })}><Flag size={13}/> Denunciar este perfil</button>
           <div className="market-modal-block">
             <h3><Send size={17}/> Convite para show</h3>
             <p>O músico recebe um convite individual. Você acompanha a resposta e negocia o cachê em particular.</p>
@@ -711,6 +734,12 @@ export default function MarketplaceCatalog({preview=false}:Props) {
                   <span>{Array.from({length:r.rating},(_,i)=><Star key={i} size={12} fill="currentColor"/>)}</span></div>
                 {r.comment&&<p>{r.comment}</p>}
                 <small>{dateBR(r.created_at)} · Show concluído no Stage Flow</small>
+                <div className="market-modal-review-report">
+                  <button type="button" className="market-report-link"
+                    onClick={()=>setReportTarget({
+                      type:"review",id:r.id,label:"avaliação sobre "+selected.name
+                    })}><Flag size={12}/> Denunciar avaliação</button>
+                </div>
               </article>)}</div>}
             {selectedReviewable.length>0&&<form className="market-review-form"
               onSubmit={e=>void submitReview(e)}>
@@ -742,5 +771,9 @@ export default function MarketplaceCatalog({preview=false}:Props) {
         </div>
       </section>
     </div>}
+    {reportTarget&&<MarketplaceReportDialog
+      key={reportTarget.type+":"+reportTarget.id}
+      target={reportTarget} signedIn={authUser}
+      onClose={()=>setReportTarget(null)}/>}
   </main>;
 }
