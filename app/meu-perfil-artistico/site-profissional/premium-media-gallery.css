@@ -428,3 +428,52 @@
   .premium-video-stage-poster>img{transition:none}
   .premium-video-stage-poster:hover>img{transform:none}
 }
+
+
+/* Stage Flow Pro | Limite independente: 3 fotos e 3 vídeos. */
+.premium-media-limit-counts{
+  display:flex;
+  align-items:center;
+  justify-content:flex-end;
+  flex-wrap:wrap;
+  gap:8px;
+  flex:none;
+}
+.premium-media-limit-counts span{
+  border:1px solid #585075;
+  background:#302943;
+  color:#d8c6ee;
+  border-radius:99px;
+  padding:9px 12px;
+  font-size:11px;
+  font-weight:800;
+  white-space:nowrap;
+}
+.premium-media-limit-counts span.is-full{
+  border-color:#7d6542;
+  background:#3b302e;
+  color:#f0ceaa;
+}
+.premium-media-cap-notice{
+  color:#e5cba8;
+  background:#3d312e;
+  border:1px solid #886846;
+  border-radius:9px;
+  padding:10px 12px;
+  font-size:11px;
+  line-height:1.75;
+  margin:0;
+}
+.premium-media-editor>.premium-media-cap-notice{
+  margin-top:16px;
+}
+@media(max-width:720px){
+  .premium-media-editor-heading{
+    flex-direction:column;
+    align-items:flex-start;
+  }
+  .premium-media-limit-counts{
+    width:100%;
+    justify-content:flex-start;
+  }
+}
