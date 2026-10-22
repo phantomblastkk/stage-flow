@@ -114,8 +114,16 @@ export default function MarketplaceModeration() {
       note:""
     };
   }
-  function setDraft(id:string,patch:Partial<Draft>){
-    setDrafts(prev=>({...prev,[id]:{...prev[id],...patch}}));
+  function setDraft(report:Report,patch:Partial<Draft>){
+    setDrafts(prev=>{
+      const current=prev[report.id] ?? {
+        action:report.target_type==="review"
+          ? (report.review_hidden?"restore":"hide")
+          : (report.musician_hidden?"restore":"hide"),
+        note:""
+      };
+      return {...prev,[report.id]:{...current,...patch}};
+    });
   }
   async function applyAction(e:FormEvent<HTMLFormElement>,report:Report){
     e.preventDefault();
@@ -242,7 +250,7 @@ export default function MarketplaceModeration() {
                 <label htmlFor={"market-mod-action-"+report.id}>Decisão do moderador</label>
                 <select id={"market-mod-action-"+report.id} value={draft.action}
                   disabled={busy===report.id}
-                  onChange={e=>setDraft(report.id,{action:e.target.value as Action})}>
+                  onChange={e=>setDraft(report,{action:e.target.value as Action})}>
                   <option value="hide">{labels.hide}</option>
                   <option value="restore">{labels.restore}</option>
                   <option value="dismiss">{labels.dismiss}</option>
@@ -250,7 +258,7 @@ export default function MarketplaceModeration() {
                 <label htmlFor={"market-mod-note-"+report.id}>Justificativa interna obrigatória</label>
                 <textarea id={"market-mod-note-"+report.id}
                   value={draft.note} maxLength={500} rows={2}
-                  onChange={e=>setDraft(report.id,{note:e.target.value})}
+                  onChange={e=>setDraft(report,{note:e.target.value})}
                   placeholder="Ex.: avaliação contém ataques pessoais; ocultada após revisão."
                   disabled={busy===report.id} required minLength={5}/>
                 <button type="submit" disabled={Boolean(busy)||draft.note.trim().length<5}>
