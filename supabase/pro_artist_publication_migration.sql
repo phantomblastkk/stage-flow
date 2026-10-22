@@ -34,24 +34,8 @@ create table if not exists public.stage_pro_site_publications (
     and cardinality(visible_sections) between 1 and 4
     and visible_sections <@ array['about','portfolio','agenda','contact']::text[]
     and array_position(visible_sections,null) is null
-    and cardinality(visible_sections) =
-      (select count(distinct x) from unnest(visible_sections) x)
   )
 );
--- PostgreSQL não permite subconsultas em CHECK; substituído adiante por
--- validação da RPC, removendo a restrição que tentaria usar subselect.
-alter table public.stage_pro_site_publications
-  drop constraint if exists stage_pro_public_sections_valid;
-alter table public.stage_pro_site_publications
-  add constraint stage_pro_public_sections_valid check(
-    cardinality(section_order)=4
-    and section_order @> array['about','portfolio','agenda','contact']::text[]
-    and section_order <@ array['about','portfolio','agenda','contact']::text[]
-    and array_position(section_order,null) is null
-    and cardinality(visible_sections) between 1 and 4
-    and visible_sections <@ array['about','portfolio','agenda','contact']::text[]
-    and array_position(visible_sections,null) is null
-  );
 
 create table if not exists public.stage_pro_site_public_media (
   draft_media_id uuid primary key,
@@ -272,6 +256,10 @@ begin
   then return 'pro_access_required';end if;
   if v_profile.username is null or v_profile.is_public=false
   then return 'publish_free_profile_first';end if;
+
+  -- Usa o mesmo lock das rotinas privadas da galeria.
+  perform pg_catalog.pg_advisory_xact_lock(
+    pg_catalog.hashtextextended(v_owner::text,253912));
 
   select * into v_draft from public.stage_premium_site_drafts
     where owner_id=v_owner;
