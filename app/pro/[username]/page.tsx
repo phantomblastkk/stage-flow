@@ -16,7 +16,7 @@ import {
 import "@/app/meu-perfil-artistico/site-profissional/premium-preview.css";
 import "./pro-public.css";
 
-type SectionId="about"|"portfolio"|"agenda"|"contact";
+type SectionId="about"|"photos"|"videos"|"agenda"|"contact";
 type Theme="midnight"|"concert"|"ivory";
 type Accent="violet"|"lime"|"cyan"|"gold"|"coral";
 
@@ -40,9 +40,19 @@ type PublicPro={
 };
 
 const sectionLabels:Record<SectionId,string>={
-  about:"Sobre",portfolio:"Portfólio",agenda:"Agenda",contact:"Contato"
+  about:"Sobre",photos:"Fotos",videos:"Vídeos",agenda:"Agenda",contact:"Contato"
 };
-const sectionIds:SectionId[]=["about","portfolio","agenda","contact"];
+const sectionIds:SectionId[]=["about","photos","videos","agenda","contact"];
+const sectionAnchors:Record<SectionId,string>={
+  about:"#premium-sobre",photos:"#premium-fotos",
+  videos:"#premium-videos",agenda:"#premium-agenda",contact:"#premium-contato"
+};
+function upgradeSections(raw:unknown):SectionId[]{
+  if(!Array.isArray(raw))return [...sectionIds];
+  return [...new Set(raw.flatMap((id:string)=>
+    id==="portfolio"?["photos","videos"]:[id]
+  ).filter((id:string)=>sectionIds.includes(id as SectionId)))] as SectionId[];
+}
 const palette:Accent[]=["violet","lime","cyan","gold","coral"];
 const themes:Theme[]=["midnight","concert","ivory"];
 const fullDate=(s:string)=>new Intl.DateTimeFormat("pt-BR",{
@@ -64,21 +74,21 @@ function monthCells(d:Date): (Date|null)[]{
     ...Array.from({length:days},(_,i)=>new Date(year,month,i+1))];
 }
 function safeDesign(source:ProDesign):ProDesign{
-  const order=Array.isArray(source?.section_order)&&source.section_order.length===4
-    && sectionIds.every(id=>source.section_order.includes(id))
-    ? source.section_order:sectionIds;
-  const visible=Array.isArray(source?.visible_sections)&&
-    source.visible_sections.length>0
-    ? source.visible_sections.filter(id=>sectionIds.includes(id)):sectionIds;
+  // Compatibilidade de sites Pro publicados antes da divisão Fotos/Vídeos.
+  const convertedOrder=upgradeSections(source?.section_order);
+  const convertedVisible=upgradeSections(source?.visible_sections);
+  const order=convertedOrder.length===sectionIds.length &&
+    sectionIds.every(id=>convertedOrder.includes(id))
+    ? convertedOrder:sectionIds;
+  const visible=convertedVisible.length>0
+    ?convertedVisible:sectionIds;
   return{
     theme:themes.includes(source?.theme)?source.theme:"midnight",
     accent:palette.includes(source?.accent)?source.accent:"violet",
     section_order:order,visible_sections:visible.length?visible:sectionIds
   };
 }
-function anchor(id:SectionId){
-  return "#premium-"+(id==="about"?"sobre":id==="contact"?"contato":id);
-}
+function anchor(id:SectionId){return sectionAnchors[id];}
 
 export default function PublicProArtistPage(){
   const {username}=useParams<{username:string}>();
@@ -267,33 +277,37 @@ export default function PublicProArtistPage(){
             </div>
           </section>}
 
-        {design.visible_sections.includes("portfolio")&&
-          <section className="premium-site-work" id="premium-portfolio"
-            style={{order:design.section_order.indexOf("portfolio")}}>
+        {design.visible_sections.includes("photos")&&
+          <section className="premium-site-work premium-site-media-section" id="premium-fotos"
+            style={{order:design.section_order.indexOf("photos")}}>
             <div className="premium-site-section-head">
               <div>
                 <span className="premium-site-section-overline">
-                  {String(design.section_order.indexOf("portfolio")+1).padStart(2,"0")} / MEU TRABALHO
+                  {String(design.section_order.indexOf("photos")+1).padStart(2,"0")} / ÁLBUM DE SHOWS
                 </span>
-                <h2>Portfólio <em>& vídeos.</em></h2>
+                <h2>Galeria de <em>fotos.</em></h2>
+                <p>Momentos do palco, ensaios e bastidores do artista.</p>
+              </div>
+              <span className="premium-site-section-icon"><Instagram size={25}/></span>
+            </div>
+            <PremiumGalleryShowcase items={media} section="photos" showEmpty/>
+          </section>}
+
+        {design.visible_sections.includes("videos")&&
+          <section className="premium-site-work premium-site-media-section" id="premium-videos"
+            style={{order:design.section_order.indexOf("videos")}}>
+            <div className="premium-site-section-head">
+              <div>
+                <span className="premium-site-section-overline">
+                  {String(design.section_order.indexOf("videos")+1).padStart(2,"0")} / SHOWS E APRESENTAÇÕES
+                </span>
+                <h2>Vídeos <em>& apresentações.</em></h2>
+                <p>Assista aos principais registros do artista.</p>
               </div>
               <span className="premium-site-section-icon"><PlayCircle size={25}/></span>
             </div>
-            {media.length>0?<PremiumGalleryShowcase items={media}/>:
-              <div className="pro-public-media-empty">
-                <PlayCircle size={24}/>
-                <p>Novos registros de shows e apresentações serão publicados em breve.</p>
-                <div>
-                  {artist.youtube_url&&<a href={artist.youtube_url}
-                    target="_blank" rel="noopener noreferrer">
-                    Assistir no YouTube <ArrowUpRight size={14}/>
-                  </a>}
-                  {artist.spotify_url&&<a href={artist.spotify_url}
-                    target="_blank" rel="noopener noreferrer">
-                    Ouvir no Spotify <ArrowUpRight size={14}/>
-                  </a>}
-                </div>
-              </div>}
+            <PremiumGalleryShowcase items={media} section="videos" showEmpty
+              youtubeUrl={artist.youtube_url} spotifyUrl={artist.spotify_url}/>
           </section>}
 
         {design.visible_sections.includes("agenda")&&
