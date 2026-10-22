@@ -10,6 +10,7 @@ import {
   Star, Trophy, Users, Flag, X
 } from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
+import { trackMarketplaceExposure } from "@/lib/musician-metrics";
 import "./marketplace-catalog.css";
 import MarketplaceReportDialog, { type ReportTarget } from "./marketplace-report-dialog";
 
@@ -200,8 +201,13 @@ export default function MarketplaceCatalog({preview=false}:Props) {
               ? "Entre na sua conta para consultar os favoritos."
               : "Não foi possível consultar os músicos. Confira a migração do Supabase."));
       } else {
-        setItems(Array.isArray(response.items)?response.items:[]);
+        const results=Array.isArray(response.items)?response.items:[];
+        setItems(results);
         setTotal(response.total||0);
+        // Contabiliza cartões retornados pela busca, sem dados pessoais do visitante.
+        if(results.length>0)void trackMarketplaceExposure(
+          results.map(m=>m.musician_id),"search"
+        );
       }
       setLoading(false);
     }
@@ -232,7 +238,12 @@ export default function MarketplaceCatalog({preview=false}:Props) {
                 : "Não foi possível carregar os músicos em destaque."
         );
       }else{
-        setFeatured(Array.isArray(result?.items)?result.items.slice(0,6):[]);
+        const shown=Array.isArray(result?.items)?result.items.slice(0,6):[];
+        setFeatured(shown);
+        // Vitrine de destaques é contada separadamente da busca.
+        if(shown.length>0)void trackMarketplaceExposure(
+          shown.map(m=>m.musician_id),"featured"
+        );
       }
       setFeaturedLoading(false);
     }
@@ -489,7 +500,9 @@ export default function MarketplaceCatalog({preview=false}:Props) {
                       </div>
                       <div className="market-featured-actions">
                         <Link href={"/musico/"+encodeURIComponent(m.slug)} target="_blank"
-                          rel="noopener noreferrer">Ver portfólio <ArrowUpRight size={14}/></Link>
+                          rel="noopener noreferrer"
+                          onClick={()=>void trackMarketplaceExposure([m.musician_id],"profile_open")}>
+                          Ver portfólio <ArrowUpRight size={14}/></Link>
                         <button type="button" onClick={()=>openMusician(m)}>
                           Convidar <ArrowRight size={15}/></button>
                       </div>
@@ -644,7 +657,9 @@ export default function MarketplaceCatalog({preview=false}:Props) {
                   </div>
                   <div className="market-card-actions">
                     <Link href={"/musico/"+encodeURIComponent(m.slug)} target="_blank"
-                      rel="noopener noreferrer">Ver portfólio <ExternalLink size={14}/></Link>
+                      rel="noopener noreferrer"
+                      onClick={()=>void trackMarketplaceExposure([m.musician_id],"profile_open")}>
+                      Ver portfólio <ExternalLink size={14}/></Link>
                     <button type="button" onClick={()=>openMusician(m)}>
                       Convidar <ArrowRight size={15}/>
                     </button>
@@ -688,7 +703,9 @@ export default function MarketplaceCatalog({preview=false}:Props) {
         </header>
         <div className="market-modal-content">
           <div className="market-modal-tabs">
-            <Link href={"/musico/"+encodeURIComponent(selected.slug)} target="_blank" rel="noopener noreferrer">
+            <Link href={"/musico/"+encodeURIComponent(selected.slug)} target="_blank"
+              rel="noopener noreferrer"
+              onClick={()=>void trackMarketplaceExposure([selected.musician_id],"profile_open")}>
               Ver portfólio completo <ArrowUpRight size={14}/></Link>
             <Rating musician={selected}/>
           </div>
