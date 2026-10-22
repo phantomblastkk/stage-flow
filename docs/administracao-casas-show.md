@@ -1,46 +1,48 @@
-# Stage Flow — administração de casas de show (fase 1)
+# Stage Flow — Casas de show: catálogo, programação, fotos e sugestões
 
-## Objetivo
-Aproveitar o catálogo colaborativo de estabelecimentos existente, sem duplicar casas, e permitir que somente a equipe do Stage Flow confirme páginas oficiais e casas parceiras.
+## Arquitetura (branch develop, sem deploy)
 
-## Nesta entrega (branch develop)
-- Painel protegido em /admin/casas para listar locais cadastrados, pesquisar, editar e cadastrar novas casas.
-- Dados: nome, cidade, endereço, descrição, WhatsApp, Instagram, slug, ativo, oficial e parceiro.
-- Logotipo e capa (JPG/PNG/WebP de até 5 MB), carregados em bucket específico.
-- Página pública em /casa/[slug] **somente** para locais ativos marcados como oficiais.
-- Exibe agenda somente de eventos futuros com status published, show_publicly=true, vinculados por events.venue_id **e aprovados pelo administrador**.
-- Autocomplete da criação de eventos registra venue_id ao selecionar uma casa cadastrada; digitação livre continua suportada.
-- Tela de revisão, no painel da casa, para aprovar/remover shows associados. Alterações no show invalidam a aprovação anterior.
-- Arquivos e mudanças aplicados somente na branch develop. Nenhum deploy necessário durante o desenvolvimento.
+### Painel do Stage Flow
+- /admin/casas: cadastro e edição de locais, selo oficial/parceiro, logo/capa, endereço e links.
+- /admin/casas/[id]/programacao: calendário próprio da casa, novo show, alteração, exclusão, status, flyer individual, galeria de fotos (até 36) e caixa de sugestões recebidas.
+- A conta administradora é autorizada somente por UUID na tabela privada stage_venue_admins. Todos os writes do painel usam RPC com checagem no banco.
 
-## Antes de usar no ambiente Supabase
-**Não rodar automaticamente em produção sem revisar e planejar a implantação da migração.**
-1. Confirmar que as migrações do catálogo foram aplicadas: venues_catalog_migration.sql, venues_catalog_contributions.sql e venues_deduplication_migration.sql.
-2. Executar supabase/venue_admin_migration.sql no SQL Editor do projeto Supabase correto.
-3. Obter o UUID da sua conta em Supabase > Authentication > Users. Deve haver um registro correspondente em public.profiles.
-4. Autorizar **apenas** sua conta, executando no SQL Editor (substitua pelo UUID real; não colocar no GitHub):
+### Página pública
+- /casa/[slug]: identidade visual, calendário mensal (meses anteriores e próximos), filtro por dia, lista de shows, catálogo de flyers daquele mês, galeria de fotos e link do Instagram/WhatsApp.
+- Visitantes podem sugerir um artista ou grupo sem criar conta. Campo obrigatório: nome da atração. Nome do visitante e justificativa são opcionais. Sugestões são privadas; não há votos, rankings nem confirmação automática de contratação.
+- Apenas eventos de **public.stage_venue_calendar_events** com status='published' aparecem na agenda pública, inclusive históricos de meses anteriores.
+- Eventos de músicos em **public.events** não são importados nem exibidos nas páginas das casas. O catálogo das casas é independente da agenda pessoal do músico. O autocomplete da agenda de músico continua funcionando, mas não abastece o calendário público da casa.
+- Flyer pertence a um registro de show da casa; imagens publicadas usam stage-venue-media, nunca o bucket privado de flyers de artistas.
+- As fotos da casa são independentes de logo, capa e portfólios de músicos.
 
-   insert into public.stage_venue_admins (profile_id)
-   values ('SEU-UUID-REAL')
+## Ordem obrigatória de implantação no Supabase (quando for publicar)
+1. Confirmar que as migrações base foram aplicadas no projeto correto: venues_catalog_migration.sql, venues_catalog_contributions.sql, venues_deduplication_migration.sql.
+2. Executar **supabase/venue_admin_migration.sql**. Esse arquivo cria o controle dos administradores e as páginas oficiais.
+3. Executar **supabase/venue_calendar_gallery_suggestions_migration.sql**. Cria a agenda própria da casa e substitui o RPC stage_public_venue para usar a programação independente, em vez de eventos de músicos.
+4. Em Supabase > Authentication > Users, localizar o UUID da conta principal. Ela deve possuir um registro em public.profiles.
+5. Autorizar somente o administrador real, no SQL Editor (não salvar UUID no repositório):
+   ```sql
+   insert into public.stage_venue_admins(profile_id)
+   values ('UUID-REAL-DA-CONTA')
    on conflict (profile_id) do nothing;
+   ```
+6. Acessar /admin/casas autenticado, configurar uma casa como oficial com slug, salvar e abrir a programação. Cadastrar um show, publicar e adicionar flyer.
+7. Conferir /casa/slug, navegar para um mês anterior e voltar, enviar uma sugestão de teste, checar se ela chegou ao painel.
 
-5. Acessar /admin/casas enquanto estiver autenticado.
-6. Cadastrar uma casa ou selecionar uma já cadastrada, marcar "Perfil oficial", informar slug e salvar. Somente então a página /casa/slug passa a existir.
-7. Para adicionar imagem, salvar a casa primeiro e usar os campos Logotipo ou Capa. A mídia pública não deve conter informações privadas.
+**ATENÇÃO:** a migração não foi aplicada automaticamente no Supabase e não houve novo deploy. Durante a fase de desenvolvimento, mantenha essas alterações somente em develop. Antes do futuro merge para main/deploy, executar as migrações e validar ambiente de teste.
 
-**Atenção:** o código da branch develop usa a coluna events.venue_id e os RPCs desta migração. **Antes do merge/deploy em produção, rodar a migração e conferir as permissões** ou os eventos criados pela interface nova poderão falhar.
+## Privacidade e limitações
+- As tabelas de agenda, fotos e sugestões possuem RLS e tabelas não são acessíveis diretamente por clientes; as funções SQL expõem somente os dados pertinentes.
+- Campos privados de músicos, cachês, convites e quaisquer eventos de músicos não entram nas consultas das casas.
+- Fotos/flyers são conteúdo público por URL após upload. Não subir arquivos pessoais ou internos da casa.
+- A sugestão é enviada sem login e não aparece publicamente. Há validação de tamanho, honeypot, limite agregado de 100 sugestões/dia/casa e deduplicação curta. **Antes de divulgação em grande escala, adicionar proteção anti-spam mais forte (ex.: CAPTCHA/Turnstile e rate limit por origem num endpoint server-side)**.
+- Remover foto, show ou flyer desassocia da interface mas não apaga o objeto antigo do Storage automaticamente; planejar limpeza segura de órfãos.
+- Calendário público consulta até 250 shows por mês; painel retorna até 750 shows e 100 sugestões mais recentes por casa. Para volumes maiores, implementar paginação.
+- Visibilidade de eventos da casa é definida pela administração. O cadastro em /locais por músico segue sendo apenas catálogo colaborativo.
+- Subdomínios como deckspetobar.stageflow.com dependerão de domínio personalizado, wildcard DNS e Vercel; por enquanto usa /casa/deckspetobar.
+- Votações e acesso delegado a gestores de casas **não foram implementados** porque ainda não fazem parte desta etapa.
 
-## Segurança e privacidade
-- Permissão administrativa concedida explicitamente por UUID dentro de stage_venue_admins.
-- A checagem é feita também no Postgres por RPCs security definer, não apenas escondendo botões na interface.
-- Inserções colaborativas de locais só permitem as colunas nome/endereço/cidade/submitted_by; isso bloqueia criação arbitrária de parceiros oficiais.
-- Não exibir dados privados de músicos: a listagem pública inclui apenas ID, título e horário de shows publicados, públicos **e aprovados** pelo administrador.
-- Fotos públicas ficam num bucket diferente de flyers privados. A política de acesso dos flyers dos artistas **não foi alterada**.
-- Cadastro oficial de casa não dá à casa direito de editar eventos de terceiros.
-- Os vínculos de shows não são prova de contratação: dependem de confirmação explícita no painel administrativo para aparecer no site.
-
-## Limitações e próximos passos
-- Shows antigos gravados apenas com o nome do local ainda não aparecem automaticamente na página oficial. Será necessário vinculá-los com revisão para evitar atribuições erradas.
-- Biblioteca de fotos da casa, arquivo de flyers, enquetes semanais, sugestões de atrações e acesso de gerente parceiro ainda não estão implementados.
-- Subdomínios como deckspetobar.stageflow.com dependem de domínio próprio, configuração de DNS wildcard, Vercel e regras de roteamento; a primeira versão usa /casa/[slug].
-- Verificar visualmente os formulários e executar uma compilação/validação quando houver ambiente de teste. Não foi realizado deployment.
+## Validação pendente
+- Instalar as dependências e rodar npm run build e testes de interface num ambiente controlado antes de publicar.
+- Confirmar as migrations SQL no banco de teste, especialmente a nova policy de Storage que autoriza os diretórios /flyer e /gallery.
+- Testar em mobile: filtros por data, uploads (limite 5 MB), mensagens de erro, formulário público, modo de flyers e confirmação de que eventos pessoais não aparecem na casa.
