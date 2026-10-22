@@ -39,8 +39,8 @@
 - Remover foto, show ou flyer desassocia da interface mas não apaga o objeto antigo do Storage automaticamente; planejar limpeza segura de órfãos.
 - Calendário público consulta até 250 shows por mês; painel retorna até 750 shows e 100 sugestões mais recentes por casa. Para volumes maiores, implementar paginação.
 - Visibilidade de eventos da casa é definida pela administração. O cadastro em /locais por músico segue sendo apenas catálogo colaborativo.
-- Subdomínios como deckspetobar.stageflow.com dependerão de domínio personalizado, wildcard DNS e Vercel; por enquanto usa /casa/deckspetobar.
-- Votações e acesso delegado a gestores de casas **não foram implementados** porque ainda não fazem parte desta etapa.
+- O estabelecimento de referência é **Deck Espeto Bar** (não Deck's Petobar). Um slug possível para cadastro é **deckespetobar**, resultando em /casa/deckespetobar. O subdomínio deckespetobar.stageflow.com ainda depende de domínio, wildcard DNS e Vercel. Nenhum estabelecimento foi cadastrado automaticamente.
+- Votações continuam fora de escopo. O acesso delegado às casas parceiras foi implementado somente em código, sem migração aplicada e sem publicação.
 
 ## Etapa visual concluída na develop
 - Novo conjunto reutilizável de componentes em components/venue-show-visuals.tsx + CSS.
@@ -49,6 +49,27 @@
 - Galeria pública navegável com botões anterior/próxima e fechamento por Escape.
 - No painel, contadores de programação e miniaturas de flyer sem cortes.
 - Nenhum show falso ou imagem ilustrativa cadastrada no banco.
+
+## Gestores de casas parceiras (etapa seguinte, develop)
+- **supabase/venue_partner_management_migration.sql** deve ser executada **depois** das duas migrações do módulo de casas, **quando formos publicar**.
+- **/admin/casas**: administração geral pode cadastrar e revogar responsáveis por e-mail, apenas se a casa estiver ativa, oficial e marcada como parceira. O e-mail precisa pertencer a uma conta Stage Flow já cadastrada em \`auth.users\` e \`public.profiles\`.
+- **/parceiros**: cada responsável autenticado vê **somente suas casas autorizadas**; o botão abre **/parceiros/[id]/programacao**.
+- O calendário, flyers, galeria e sugestões usam um componente visual comum para admin e gerente, mas as autorizações são **validadas novamente dentro de cada RPC SQL**.
+- Um gerente **não pode** alterar o cadastro da casa, marca, logo/capa, parceria, outros estabelecimentos, administradores globais ou o acesso de outros responsáveis.
+- O upload no Storage permite ao gerente apenas \`/gallery/\` e \`/flyer/\` no prefixo da casa à qual pertence. Administradores globais mantêm permissão de logo/capa.
+- Desmarcar uma casa como parceira, oficial ou ativa desabilita imediatamente o acesso do gerente mesmo que a linha de autorização ainda exista; revogar o e-mail remove a autorização.
+- O painel principal **/painel** mostra o atalho "Minhas casas parceiras" somente quando há vínculo.
+- Não existe um fluxo de e-mail convite nesta etapa: o administrador vincula uma **conta já cadastrada** pelo e-mail.
+- O projeto **Deck Espeto Bar** é referência nominal do catálogo Stage Flow; não reutilizar repositórios, serviços ou infraestrutura de outros projetos separados.
+
+## Casos de teste de isolamento antes de publicação
+1. Admin A autoriza o e-mail do gerente B para uma casa X marcada oficial/parceira.
+2. Gerente B entra em /parceiros e vê somente X, não as demais casas.
+3. B cria/edita/exclui show e upload de flyer/foto de X; acompanha sugestões recebidas de X.
+4. B tenta mudar via requisição direta os dados de outra casa Y, baixar sugestões de Y, cadastrar um show em Y, usar arquivo de Y ou alterar logo/capa; tudo deve ser recusado pelo banco/Storage.
+5. B tenta chamar \`stage_venue_admin_list\`, \`stage_venue_admin_save\`, \`stage_venue_admin_set_manager\`; todas devem negar acesso.
+6. Admin revoga B ou retira a parceria de X; B perde acesso sem precisar de novo deployment.
+7. Admin geral mantém acesso completo a X e Y após todos esses testes.
 
 ## Validação pendente
 - Instalar as dependências e rodar npm run build e testes de interface num ambiente controlado antes de publicar.
