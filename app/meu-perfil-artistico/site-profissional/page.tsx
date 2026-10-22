@@ -173,9 +173,14 @@ export default function SiteProfissionalPreview() {
         };
         setDraft(next);
         setSavedDraft(next);
-        // A RPC pode devolver o padrão sem registro persistido.
-        // Só um design efetivamente salvo pode ser publicado.
-        setDraftReady(Boolean((savedDesign as {updated_at?:string|null}).updated_at));
+        const legacySections = Array.isArray(saved.section_order) &&
+          saved.section_order.includes("portfolio" as SectionId);
+        if (legacySections) {
+          setDraftError("Para organizar Fotos e Vídeos separadamente, execute a nova migração pro_artist_independent_media_sections_migration.sql no Supabase. Seus dados continuam preservados.");
+        }
+        // Um design antigo ainda exige migracao antes da publicacao com 5 secoes.
+        setDraftReady(Boolean((savedDesign as {updated_at?:string|null}).updated_at) &&
+          !legacySections);
       } else {
         setDraftError("Não foi possível carregar o rascunho profissional. Confira a configuração do Supabase.");
       }
