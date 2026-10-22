@@ -1,0 +1,206 @@
+
+/* Stage Flow Pro | cards de eventos públicos com calendário e compartilhamento */
+.pro-show-cards{
+  display:flex;
+  flex-direction:column;
+  gap:12px;
+  padding:0 12px 15px;
+  min-width:0;
+}
+.pro-show-card{
+  position:relative;
+  display:flex;
+  align-items:stretch;
+  gap:14px;
+  border:1px solid #374c6e;
+  border-radius:14px;
+  background:linear-gradient(135deg,#162641,#111c33 65%,#171b31);
+  padding:14px;
+  min-width:0;
+  scroll-margin-top:22px;
+  overflow:hidden;
+}
+.pro-show-card:target{
+  border-color:var(--pro-accent,#af89ea);
+  box-shadow:0 0 0 2px color-mix(in srgb,var(--pro-accent,#af89ea),transparent 50%);
+}
+.pro-show-card::before{
+  position:absolute;
+  content:"";
+  width:3px;
+  height:100%;
+  top:0;
+  left:0;
+  background:var(--pro-accent,#b598e8);
+  opacity:.85;
+}
+.pro-show-card-date{
+  width:70px;
+  min-width:70px;
+  min-height:88px;
+  align-self:flex-start;
+  display:flex;
+  flex-direction:column;
+  align-items:center;
+  justify-content:center;
+  border-radius:12px;
+  border:1px solid #4c5383;
+  background:linear-gradient(150deg,#30274d,#1c294a);
+}
+.pro-show-card-date strong{
+  display:block;
+  font:900 31px/1.1 "Manrope",sans-serif;
+  color:#fcf9ff;
+  font-variant-numeric:tabular-nums;
+}
+.pro-show-card-date span{
+  margin-top:3px;
+  color:#d6bafa;
+  font-size:12px;
+  font-weight:900;
+  letter-spacing:.14em;
+}
+.pro-show-card-content{
+  display:flex;
+  flex-direction:column;
+  flex:1;
+  min-width:0;
+}
+.pro-show-card-eyebrow{
+  display:flex;
+  align-items:center;
+  gap:6px;
+  color:#c6aedf;
+  font-size:9px;
+  font-weight:900;
+  letter-spacing:.07em;
+}
+.pro-show-card-eyebrow svg{flex:none;color:var(--pro-accent,#b598e8)}
+.pro-show-card-content h4{
+  font:900 clamp(14px,2vw,18px)/1.3 "Manrope",sans-serif;
+  overflow-wrap:anywhere;
+  letter-spacing:-.025em;
+  margin:8px 0 11px;
+  color:#f3effc;
+}
+.pro-show-card-facts{display:flex;flex-direction:column;gap:7px}
+.pro-show-card-facts span{
+  display:flex;
+  align-items:flex-start;
+  gap:7px;
+  color:#acbcd4;
+  font-size:11px;
+  line-height:1.5;
+  overflow-wrap:anywhere;
+  text-transform:none;
+}
+.pro-show-card-facts svg{
+  flex:none;
+  margin-top:1px;
+  color:var(--pro-accent,#b598e8);
+}
+.pro-show-card-actions{
+  display:flex;
+  align-items:center;
+  flex-wrap:wrap;
+  gap:8px;
+  margin-top:16px;
+}
+.pro-show-card-actions button,
+.pro-show-card-actions a{
+  display:inline-flex;
+  align-items:center;
+  justify-content:center;
+  gap:7px;
+  flex:0 1 auto;
+  min-height:34px;
+  border:1px solid #556584;
+  border-radius:8px;
+  padding:9px 10px;
+  text-decoration:none;
+  font:800 10px/1.3 "Manrope",sans-serif;
+  background:#24334f;
+  color:#e3e5f5;
+  cursor:pointer;
+}
+.pro-show-card-actions button:first-child{
+  color:#1b142d;
+  border-color:transparent;
+  background:var(--pro-accent,#b598e8);
+}
+.pro-show-card-actions button:hover,
+.pro-show-card-actions a:hover{
+  border-color:#d9c1ff;
+  filter:brightness(1.08);
+}
+.pro-show-card-actions button:disabled{
+  cursor:not-allowed;
+  opacity:.5;
+}
+.pro-show-card-actions button:focus-visible,
+.pro-show-card-actions a:focus-visible,
+.pro-show-cards-more:focus-visible{
+  outline:2px solid var(--pro-accent,#c9a7ee);
+  outline-offset:3px;
+}
+.pro-show-cards-more{
+  display:inline-flex;
+  align-self:stretch;
+  align-items:center;
+  justify-content:center;
+  gap:8px;
+  min-height:42px;
+  color:#e4d3f4;
+  background:#202742;
+  border:1px solid #596080;
+  border-radius:9px;
+  font:800 11px "Manrope",sans-serif;
+  cursor:pointer;
+}
+.pro-show-cards-more:hover{border-color:var(--pro-accent,#b598e8)}
+.pro-show-cards-hint{
+  color:#abb7ce;
+  font-size:10px;
+  padding:0 4px;
+  line-height:1.6;
+  margin:0;
+}
+.pro-show-cards-message{
+  display:flex;
+  align-items:flex-start;
+  gap:7px;
+  margin:0;
+  padding:10px 12px;
+  border-radius:8px;
+  background:#302735;
+  border:1px solid #795369;
+  color:#ffcada;
+  font-size:11px;
+  line-height:1.5;
+}
+@media(max-width:700px){
+  .pro-show-cards{gap:10px;padding:0 10px 14px}
+  .pro-show-card{gap:11px;padding:11px}
+  .pro-show-card-date{width:59px;min-width:59px;min-height:70px}
+  .pro-show-card-date strong{font-size:27px}
+  .pro-show-card-date span{font-size:10px}
+  .pro-show-card-content h4{font-size:14px}
+  .pro-show-card-actions{gap:6px}
+  .pro-show-card-actions button,.pro-show-card-actions a{
+    min-height:37px;
+    padding:9px;
+    font-size:10px;
+  }
+}
+@media(max-width:380px){
+  .pro-show-card{gap:8px}
+  .pro-show-card-date{width:49px;min-width:49px}
+  .pro-show-card-date strong{font-size:24px}
+  .pro-show-card-content h4{font-size:13px}
+  .pro-show-card-actions button,.pro-show-card-actions a{
+    flex:1 1 100%;
+  }
+}
+@media(prefers-reduced-motion:reduce){
+  .pro-show-card-actions button,.pro-show-card-actions a{transition:none}
+}
