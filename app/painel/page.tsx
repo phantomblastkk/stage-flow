@@ -4,7 +4,7 @@ import { useEffect, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import {
-  ArrowLeft, ArrowRight, Bell, CalendarDays, Check, Guitar,
+  ArrowLeft, ArrowRight, Bell, CalendarDays, Check, Guitar, Building2,
   LoaderCircle, LogOut, Mic2, Music2, Settings2,
   UserRound, Users, Inbox, Search, ChartNoAxesCombined, Globe2
 } from "lucide-react";
@@ -41,6 +41,7 @@ export default function Dashboard() {
   const [messageError, setMessageError] = useState(false);
   const [signingOut, setSigningOut] = useState(false);
   const [changingKind, setChangingKind] = useState(false);
+  const [partnerHouseCount, setPartnerHouseCount] = useState(0);
 
   useEffect(() => {
     let active = true;
@@ -86,6 +87,11 @@ export default function Dashboard() {
           }
         }
         setProfile({ ...data, artist_kind: kind } as Profile);
+        // O portal de parceiros e opcional e nao interfere no painel atual.
+        const {data: partnerData}=await supabase.rpc("stage_venue_partner_access");
+        if (!active) return;
+        const available=partnerData as {status?:string;items?:unknown[]} | null;
+        if (available?.status==="ok") setPartnerHouseCount(available.items?.length||0);
       }
       setLoading(false);
     }
@@ -205,6 +211,11 @@ export default function Dashboard() {
     ];
   }
 
+  if (partnerHouseCount > 0) primary.unshift({
+    href: "/parceiros", title: "Minhas casas parceiras", icon: Building2,
+    description: "Gerencie shows, flyers, fotos e sugestões das casas autorizadas para você.",
+    label: "ACESSO DA CASA"
+  });
   const secondary: Shortcut[] = [];
   if (isSupport) {
     secondary.push(
