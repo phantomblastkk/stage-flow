@@ -214,7 +214,7 @@ export default function SiteProfissionalPreview() {
           .limit(40);
         if(!active)return;
         const flyerMap=new Map(
-          (flyerError?[]:(flyers||[])).map(item=>[item.id,item])
+          (flyerError?[]:(flyers||[])).map(item=>[item.id,item] as const)
         );
         setEvents((ownerEvents||[]).map(item=>({
           ...item,...(flyerMap.get(item.id)||{})
