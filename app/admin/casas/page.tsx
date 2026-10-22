@@ -4,7 +4,7 @@ import { FormEvent, useCallback, useEffect, useMemo, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import {
-  ArrowLeft, Building2, CheckCircle2, ExternalLink, ImagePlus, LoaderCircle,
+  ArrowLeft, Building2, CalendarDays, CheckCircle2, ExternalLink, ImagePlus, LoaderCircle,
   MapPin, Plus, RefreshCw, Save, Search, ShieldCheck, Star, UploadCloud
 } from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
@@ -31,6 +31,7 @@ type Venue = {
 };
 type ListResponse = { status: string; items?: Venue[] };
 type SaveResponse = { status: string; id?: string };
+type VenueShow = { id: string; title: string; starts_at: string; approved: boolean };
 
 const blank = (): Venue => ({
   id: null, name: "", city_id: null, address: "", slug: "",
@@ -66,6 +67,9 @@ export default function AdminCasasPage() {
   const [query, setQuery] = useState("");
   const [saving, setSaving] = useState(false);
   const [uploading, setUploading] = useState<"logo" | "cover" | null>(null);
+  const [shows, setShows] = useState<VenueShow[]>([]);
+  const [showBusy, setShowBusy] = useState<string | null>(null);
+  const [showsError, setShowsError] = useState("");
   const [notice, setNotice] = useState("");
   const [error, setError] = useState("");
 
@@ -91,6 +95,28 @@ export default function AdminCasasPage() {
         logo_path: selected.logo_path || "", cover_path: selected.cover_path || "" });
     }
   }, []);
+
+  const loadShows = useCallback(async (venueId: string) => {
+    const { data, error: rpcError } = await createClient().rpc("stage_venue_admin_shows", {
+      p_venue_id: venueId
+    });
+    if (rpcError) throw rpcError;
+    const payload = data as { status: string; items?: VenueShow[] };
+    if (payload.status !== "ok") throw new Error(statusMessage(payload.status));
+    return payload.items || [];
+  }, []);
+
+  useEffect(() => {
+    const venueId = form.id;
+    if (!authorized || !venueId) { setShows([]); setShowsError(""); return; }
+    let cancelled = false;
+    void loadShows(venueId).then((items) => {
+      if (!cancelled) { setShows(items); setShowsError(""); }
+    }).catch((err) => {
+      if (!cancelled) setShowsError(err instanceof Error ? err.message : "Erro ao carregar shows.");
+    });
+    return () => { cancelled = true; };
+  }, [authorized, form.id, loadShows]);
 
   useEffect(() => {
     let active = true;
@@ -155,6 +181,22 @@ export default function AdminCasasPage() {
     } finally {
       setSaving(false);
     }
+  }
+
+  async function setShowApproval(show: VenueShow) {
+    if (!form.id) return;
+    setShowBusy(show.id); setShowsError(""); setNotice("");
+    try {
+      const { data, error: rpcError } = await createClient().rpc("stage_venue_admin_set_show", {
+        p_event_id: show.id, p_approved: !show.approved
+      });
+      if (rpcError) throw rpcError;
+      if (data !== "ok") throw new Error(statusMessage(String(data)));
+      setShows(await loadShows(form.id));
+      setNotice(show.approved ? "Show retirado da agenda oficial." : "Show aprovado para a agenda oficial.");
+    } catch (err) {
+      setShowsError(err instanceof Error ? err.message : "Erro ao atualizar a agenda.");
+    } finally { setShowBusy(null); }
   }
 
   async function upload(kind: "logo" | "cover", file?: File) {
@@ -335,6 +377,19 @@ export default function AdminCasasPage() {
                 })}
               </div>
             </div>
+            {form.id && <div className="venue-admin-media venue-admin-show-review">
+              <h3><CalendarDays size={19}/> Shows associados à casa</h3>
+              <p className="fine">Um show só aparece na agenda oficial após aprovação. Alterações no evento retiram a aprovação automaticamente.</p>
+              {showsError && <p className="venue-admin-review-error" role="alert">{showsError}</p>}
+              {shows.length ? shows.map((show) => <article className="venue-admin-show" key={show.id}>
+                <div><strong>{show.title}</strong><small>{new Date(show.starts_at).toLocaleString("pt-BR", {dateStyle:"medium",timeStyle:"short"})}</small>
+                  <small>{show.approved ? "Aprovado para o site" : "Aguardando aprovação"}</small></div>
+                <button type="button" className="btn btn-quiet" disabled={!!showBusy}
+                  onClick={() => void setShowApproval(show)}>
+                  {showBusy===show.id ? "Salvando..." : show.approved ? "Retirar" : "Aprovar"}
+                </button>
+              </article>) : <p className="fine">Ainda não há shows futuros vinculados a esta casa.</p>}
+            </div>}
           </section>
         </div>
         <p className="fine venue-admin-footnote"><MapPin size={14}/> Os locais enviados pelos músicos continuam no catálogo. Torná-los oficiais exige aprovação nesta área administrativa.</p>
