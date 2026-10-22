@@ -230,7 +230,7 @@ grant execute on function public.stage_public_pro_artist_site(text)
 -- O perfil gratuito pode exibir o atalho para Pro sem ler dados do rascunho.
 create or replace function public.stage_public_pro_site_available(p_username text)
 returns boolean language sql stable security definer set search_path=''
-as $
+as $$
   select exists(
     select 1 from public.profiles p
     join public.stage_pro_site_publications s
@@ -240,7 +240,7 @@ as $
       and p.is_artist=true and p.is_public=true
       and public.stage_pro_site_is_entitled(p.id)
   );
-$;
+$$;
 revoke all on function public.stage_public_pro_site_available(text)
   from public,anon,authenticated;
 grant execute on function public.stage_public_pro_site_available(text)
@@ -379,7 +379,7 @@ grant execute on function public.stage_remove_premium_site_media(uuid)
 -- Preserva as demais palavras reservadas existentes.
 create or replace function public.stage_protect_reserved_artist_usernames()
 returns trigger language plpgsql set search_path=''
-as $
+as $$
 begin
   if new.username is not null and lower(new.username) = any(array[
     'admin','api','auth','artista','artistas','cadastro','configuracoes',
@@ -393,7 +393,7 @@ begin
   end if;
   return new;
 end;
-$;
+$$;
 
 -- Autorização de teste/manual, aplicada SOMENTE pelo administrador:
 -- insert into public.stage_pro_site_access(owner_id)
