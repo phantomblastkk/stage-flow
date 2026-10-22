@@ -225,6 +225,25 @@ revoke all on function public.stage_public_pro_artist_site(text)
 grant execute on function public.stage_public_pro_artist_site(text)
   to anon,authenticated;
 
+-- O perfil gratuito pode exibir o atalho para Pro sem ler dados do rascunho.
+create or replace function public.stage_public_pro_site_available(p_username text)
+returns boolean language sql stable security definer set search_path=''
+as $
+  select exists(
+    select 1 from public.profiles p
+    join public.stage_pro_site_publications s
+      on s.owner_id=p.id and s.published=true
+    where p_username is not null
+      and p.username=lower(btrim(p_username))
+      and p.is_artist=true and p.is_public=true
+      and public.stage_pro_site_is_entitled(p.id)
+  );
+$;
+revoke all on function public.stage_public_pro_site_available(text)
+  from public,anon,authenticated;
+grant execute on function public.stage_public_pro_site_available(text)
+  to anon,authenticated;
+
 -- Publicar é escolha explícita do cantor com acesso Pro. Um rascunho
 -- precisa estar SALVO para virar snapshot, jamais lemos a prévia no cliente
 -- para confiar em permissões ou ativar plano.
