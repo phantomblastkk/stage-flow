@@ -2,7 +2,7 @@ import Link from "next/link";
 import {
   ArrowRight, ArrowUpRight, BadgeCheck, CalendarDays, Check,
   CirclePlay, Guitar, Music2, Palette,
-  ShieldCheck, Sparkles, Users, Wallet
+  ShieldCheck, Sparkles, Users, Wallet, Search
 } from "lucide-react";
 
 export default function Home() {
@@ -108,6 +108,13 @@ export default function Home() {
             <h3>Seu trabalho merece aparecer.</h3>
             <p>Crie uma página gratuita com instrumentos, trabalhos e o estilo visual que combina com você.</p>
           </article>
+          <Link href="/marketplace" className="home-resource-card"
+            style={{ textDecoration: "none", color: "inherit", display: "block" }}>
+            <span className="home-resource-icon"><Search size={21}/></span>
+            <span className="home-resource-index">05 / MARKETPLACE · EM BREVE</span>
+            <h3>O próximo palco começa aqui.</h3>
+            <p>Uma novidade para encontrar músicos, descobrir talentos e conectar oportunidades. Ainda em preparação.</p>
+          </Link>
         </div>
       </section>
 
