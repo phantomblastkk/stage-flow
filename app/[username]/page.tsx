@@ -4,7 +4,7 @@ import { useEffect, useState } from "react";
 import type { CSSProperties } from "react";
 import Link from "next/link";
 import { useParams } from "next/navigation";
-import { ArrowLeft, ArrowUpRight, CalendarDays, Instagram, LoaderCircle, MapPin, Music2, Play, Share2, Send } from "lucide-react";
+import { ArrowLeft, ArrowUpRight, CalendarDays, Instagram, LoaderCircle, MapPin, Music2, Play, Share2, Send, ExternalLink } from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
 import ArtistBookingForm from "@/components/artist-booking-form";
 
@@ -34,6 +34,7 @@ export default function FreeArtistPage() {
   const [artist, setArtist] = useState<PublicArtist | null>(null);
   const [events, setEvents] = useState<PublicEvent[]>([]);
   const [bookingEnabled, setBookingEnabled] = useState(false);
+  const [proPublished, setProPublished] = useState(false);
   const [loading, setLoading] = useState(true);
   const [problem, setProblem] = useState("");
   const [copied, setCopied] = useState(false);
@@ -51,13 +52,15 @@ export default function FreeArtistPage() {
         setProblem("A página não está disponível agora. Confira se a migração de perfis gratuitos foi executada.");
       } else if (data) {
         setArtist(data as PublicArtist);
-        const [showsResult, bookingResult] = await Promise.all([
+        const [showsResult, bookingResult, proResult] = await Promise.all([
           supabase.rpc("stage_public_artist_events", { p_username: username }),
-          supabase.rpc("stage_public_artist_accepts_bookings", { p_username: username })
+          supabase.rpc("stage_public_artist_accepts_bookings", { p_username: username }),
+          supabase.rpc("stage_public_pro_site_available", { p_username: username })
         ]);
         if (!active) return;
         setEvents((showsResult.data ?? []) as PublicEvent[]);
         setBookingEnabled(bookingResult.error === null && bookingResult.data === true);
+        setProPublished(proResult.error === null && proResult.data === true);
       }
       setLoading(false);
     }
@@ -115,6 +118,10 @@ export default function FreeArtistPage() {
               <p className="artist-free-tagline"><Music2 size={17}/> {artist.headline || "Música ao vivo"}{artist.city && <> <span>·</span> <MapPin size={16}/>{artist.city}</>}</p>
             </div>
             <div className="artist-free-hero-actions">
+              {proPublished && <Link href={"/pro/" + encodeURIComponent(artist.username)}
+                className="btn btn-primary">
+                <ExternalLink size={16}/> Visitar site Pro
+              </Link>}
               {bookingEnabled && <a href="#contratar" className="btn btn-primary">
                 <Send size={16}/> Solicitar show
               </a>}
