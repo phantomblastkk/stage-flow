@@ -1,0 +1,39 @@
+.sf-house-poster{display:grid;place-items:center;flex:none;overflow:hidden;background:radial-gradient(circle at 45% 28%,#49366b,#161226 72%);border-radius:12px;border:1px solid #54436c}
+.sf-house-poster>img{width:100%;height:100%;display:block;object-fit:contain}
+.sf-house-poster-empty{display:flex;flex-direction:column;justify-content:center;align-items:center;gap:12px;color:#cbb8ed;width:100%;height:100%;background-image:linear-gradient(140deg,transparent,#44306450)}
+.sf-house-poster-empty small{font-size:9px;letter-spacing:1.2px;font-weight:800}
+.sf-house-show-card{display:flex;align-items:stretch;width:100%;gap:13px;background:linear-gradient(118deg,#211c35,#1b1830);border:1px solid #3b3152;border-radius:16px;padding:12px;text-align:left;color:var(--text);cursor:pointer;min-width:0;transition:border-color .16s,transform .16s,box-shadow .16s}
+.sf-house-show-card:hover,.sf-house-show-card:focus-visible{border-color:#a77de8;box-shadow:0 12px 32px #0705124a;transform:translateY(-2px);outline:0}
+.sf-house-show-card>.sf-house-poster{width:96px;aspect-ratio:4/5}
+.sf-house-show-date{width:48px;min-width:48px;align-self:center;text-align:center;display:flex;flex-direction:column;gap:3px;color:#f6eefe;border-right:1px solid #4b3b63;padding-right:8px}
+.sf-house-show-date strong{font:800 25px/.95 Manrope,sans-serif}
+.sf-house-show-date small{font:700 10px Manrope,sans-serif;letter-spacing:.5px}
+.sf-house-show-body{flex:1;min-width:0;display:flex;flex-direction:column;justify-content:center;gap:7px}
+.sf-house-show-kicker{display:flex;align-items:center;flex-wrap:wrap;gap:6px;color:#c9aedf;font-size:11px;font-weight:700}
+.sf-house-tag-past{padding:3px 6px;color:#c8bfcd;background:#332c3a;border-radius:5px;font-size:10px}
+.sf-house-show-title{font:800 clamp(14px,1.5vw,18px)/1.3 Manrope,sans-serif;overflow-wrap:anywhere}
+.sf-house-show-description{font-size:12px;line-height:1.5;color:#aaa1c0;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
+.sf-house-show-action{display:inline-flex;align-items:center;gap:5px;color:#dfcbff;font-size:11px;font-weight:700;margin-top:3px}
+.sf-house-featured{display:grid;grid-template-columns:minmax(0,1.2fr) minmax(180px,.7fr);min-height:315px;margin:0 0 23px;border:1px solid #65518e;border-radius:21px;background:radial-gradient(circle at 98% 0%,#463070,#261839 58%,#17162b);overflow:hidden}
+.sf-house-featured-content{display:flex;flex-direction:column;align-items:flex-start;justify-content:center;gap:13px;padding:clamp(19px,3vw,32px);min-width:0}
+.sf-house-featured-kicker{display:flex;align-items:center;gap:9px;color:#d7b9ff;font-size:11px;letter-spacing:1px;font-weight:800}
+.sf-house-featured-live{height:8px;width:8px;border-radius:50%;background:#ad7bfa;box-shadow:0 0 0 4px #a87deb2c}
+.sf-house-featured h2{font:800 clamp(23px,3.6vw,34px)/1.15 Manrope,sans-serif;letter-spacing:-1px;margin:2px 0 0;overflow-wrap:anywhere}
+.sf-house-featured-meta{display:flex;align-items:center;gap:9px;font-size:15px;font-weight:800;color:#d8c6f4;margin:0}
+.sf-house-featured-place{font-size:13px;color:#aaa2c1;margin:0}
+.sf-house-featured-description{font-size:13px;color:#d6ccdf;line-height:1.5;margin:0;display:-webkit-box;-webkit-line-clamp:3;-webkit-box-orient:vertical;overflow:hidden}
+.sf-house-featured-actions{display:flex;flex-wrap:wrap;gap:9px;margin-top:10px}
+.sf-house-featured-actions .btn{font-size:12px;padding:10px 12px}
+.sf-house-featured>.sf-house-poster{width:100%;height:100%;min-height:295px;border-radius:0;border:0;border-left:1px solid #634886}
+.sf-house-featured>.sf-house-poster>img{object-fit:contain;padding:11px}
+.sf-house-flyer-card{display:flex;flex-direction:column;min-width:0;border:1px solid #514168;border-radius:13px;overflow:hidden;background:#201930;color:#f5efff;text-align:left;cursor:pointer}
+.sf-house-flyer-card:hover,.sf-house-flyer-card:focus-visible{border-color:#a687ea;outline:0;box-shadow:0 10px 30px #03020d55}
+.sf-house-flyer-card>.sf-house-poster{border:0;border-radius:0;width:100%;aspect-ratio:4/5}
+.sf-house-flyer-card>.sf-house-poster>img{padding:5px}
+.sf-house-flyer-caption{display:flex;flex-direction:column;gap:7px;padding:12px}
+.sf-house-flyer-tag{display:flex;gap:5px;align-items:center;color:#d6bffa;font-size:10px;font-weight:700}
+.sf-house-flyer-caption strong{font-size:12px;line-height:1.4}
+.sf-house-flyer-caption small{font-size:11px;color:#a99fbe}
+@media(max-width:740px){.sf-house-featured{grid-template-columns:minmax(0,1fr) 33%}.sf-house-featured-content{padding:19px}.sf-house-featured-actions .btn{font-size:11px}.sf-house-featured>.sf-house-poster{min-height:295px}}
+@media(max-width:520px){.sf-house-featured{grid-template-columns:1fr}.sf-house-featured>.sf-house-poster{grid-row:1;width:100%;height:240px;min-height:0;border-left:0;border-bottom:1px solid #634886}.sf-house-featured-content{grid-row:2}.sf-house-show-card{gap:9px;padding:9px}.sf-house-show-card>.sf-house-poster{width:76px}.sf-house-show-date{width:38px;min-width:38px;padding-right:6px}.sf-house-show-date strong{font-size:19px}.sf-house-show-date small{font-size:9px}.sf-house-show-kicker{font-size:10px}.sf-house-show-description{display:none}.sf-house-show-title{font-size:13px}.sf-house-flyer-caption{padding:9px}}
+@media(prefers-reduced-motion:reduce){.sf-house-show-card{transition:none}}
