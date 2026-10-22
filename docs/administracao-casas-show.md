@@ -8,8 +8,9 @@ Aproveitar o catálogo colaborativo de estabelecimentos existente, sem duplicar 
 - Dados: nome, cidade, endereço, descrição, WhatsApp, Instagram, slug, ativo, oficial e parceiro.
 - Logotipo e capa (JPG/PNG/WebP de até 5 MB), carregados em bucket específico.
 - Página pública em /casa/[slug] **somente** para locais ativos marcados como oficiais.
-- Exibe agenda somente de eventos futuros com status published e show_publicly=true vinculados à casa pelo novo campo events.venue_id.
+- Exibe agenda somente de eventos futuros com status published, show_publicly=true, vinculados por events.venue_id **e aprovados pelo administrador**.
 - Autocomplete da criação de eventos registra venue_id ao selecionar uma casa cadastrada; digitação livre continua suportada.
+- Tela de revisão, no painel da casa, para aprovar/remover shows associados. Alterações no show invalidam a aprovação anterior.
 - Arquivos e mudanças aplicados somente na branch develop. Nenhum deploy necessário durante o desenvolvimento.
 
 ## Antes de usar no ambiente Supabase
@@ -33,9 +34,10 @@ Aproveitar o catálogo colaborativo de estabelecimentos existente, sem duplicar 
 - Permissão administrativa concedida explicitamente por UUID dentro de stage_venue_admins.
 - A checagem é feita também no Postgres por RPCs security definer, não apenas escondendo botões na interface.
 - Inserções colaborativas de locais só permitem as colunas nome/endereço/cidade/submitted_by; isso bloqueia criação arbitrária de parceiros oficiais.
-- Não exibir dados privados de músicos: a listagem pública de shows inclui apenas ID, título e horário de eventos publicados e marcados como públicos.
+- Não exibir dados privados de músicos: a listagem pública inclui apenas ID, título e horário de shows publicados, públicos **e aprovados** pelo administrador.
 - Fotos públicas ficam num bucket diferente de flyers privados. A política de acesso dos flyers dos artistas **não foi alterada**.
 - Cadastro oficial de casa não dá à casa direito de editar eventos de terceiros.
+- Os vínculos de shows não são prova de contratação: dependem de confirmação explícita no painel administrativo para aparecer no site.
 
 ## Limitações e próximos passos
 - Shows antigos gravados apenas com o nome do local ainda não aparecem automaticamente na página oficial. Será necessário vinculá-los com revisão para evitar atribuições erradas.
