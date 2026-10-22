@@ -288,7 +288,7 @@ export function PremiumGalleryEditor({ gallery }: { gallery: PremiumGallery }) {
           disabled={gallery.busy || gallery.items.length >= MAX_ITEMS}>
           <PlayCircle size={16}/> Adicionar vídeo
         </button>
-        <small>A prévia exibe a miniatura e abre o vídeo no YouTube.</small>
+        <small>O vídeo será reproduzido dentro do site Pro. Também haverá um link direto para o YouTube.</small>
       </form>
     </div>
 
@@ -364,7 +364,8 @@ export function PremiumGalleryEditor({ gallery }: { gallery: PremiumGallery }) {
       <strong>Galeria do rascunho:</strong> os arquivos permanecem privados no Supabase.
       Só as fotos que você escolher publicar com o botão <strong>Publicar site Pro</strong>
       poderão ser baixadas por visitantes, enquanto o site estiver no ar.
-      As demais fotos e os dados dos convites continuam privados. Vídeos abrem no YouTube.
+      As demais fotos e os dados dos convites continuam privados.
+      O player do YouTube só é carregado quando alguém pede para reproduzir.
     </p>
   </section>;
 }
@@ -391,7 +392,22 @@ export function PremiumGalleryShowcase({
     ? [featuredVideo, ...videos.filter(item => item.id !== featuredVideo.id)]
     : videos;
   const [activePhoto, setActivePhoto] = useState<number | null>(null);
+  const [selectedVideoId, setSelectedVideoId] = useState<string | null>(null);
+  const [videoPlaying, setVideoPlaying] = useState(false);
+  const playerRef = useRef<HTMLDivElement | null>(null);
   const closeRef = useRef<HTMLButtonElement | null>(null);
+  const currentVideo = orderedVideos.find(item => item.id === selectedVideoId)
+    ?? orderedVideos[0] ?? null;
+
+  function playVideo(id: string) {
+    setSelectedVideoId(id);
+    setVideoPlaying(true);
+    // No celular, traz o player à vista após o clique na miniatura.
+    // Não há redirecionamento externo.
+    if (typeof window !== "undefined" && window.innerWidth <= 760) {
+      playerRef.current?.scrollIntoView({ behavior: "smooth", block: "center" });
+    }
+  }
 
   useEffect(() => {
     if (activePhoto === null) return;
@@ -464,26 +480,76 @@ export function PremiumGalleryShowcase({
         </span>}
       </div>}
       {orderedVideos.length > 0 ?
-        <div className="premium-video-grid">
-          {orderedVideos.map(item => {
-            const url = "https://www.youtube.com/watch?v=" + item.youtube_id;
-            return <a key={item.id} className="premium-video-tile" href={url}
-              target="_blank" rel="noopener noreferrer"
-              aria-label={"Assistir no YouTube: " + item.title}>
-              <div className="premium-video-thumbnail">
-                <MediaThumbnail item={item}/>
-                <span className="premium-video-play"><PlayCircle size={33}/></span>
+        <div className="premium-video-player-layout">
+          {currentVideo && <div className="premium-video-theater" ref={playerRef}>
+            <div className="premium-video-screen">
+              {videoPlaying ? <iframe key={currentVideo.youtube_id}
+                src={"https://www.youtube-nocookie.com/embed/" + currentVideo.youtube_id +
+                  "?autoplay=1&playsinline=1&rel=0"}
+                title={"Reproduzindo: " + currentVideo.title}
+                loading="lazy"
+                referrerPolicy="strict-origin-when-cross-origin"
+                allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
+                allowFullScreen/> :
+                <button type="button" className="premium-video-stage-poster"
+                  onClick={() => playVideo(currentVideo.id)}
+                  aria-label={"Reproduzir na página: " + currentVideo.title}>
+                  <img
+                    src={"https://i.ytimg.com/vi/" + currentVideo.youtube_id + "/hqdefault.jpg"}
+                    alt={"Miniatura de " + currentVideo.title} loading="lazy"/>
+                  <span className="premium-video-stage-play"><PlayCircle size={43}/></span>
+                  <span className="premium-video-stage-start">Reproduzir neste site</span>
+                </button>}
+            </div>
+            <div className="premium-video-stage-details">
+              <div>
+                <span>APRESENTAÇÃO SELECIONADA</span>
+                <h4>{currentVideo.title}</h4>
               </div>
-              <div className="premium-video-copy">
-                <div>
-                  {item.featured && <small><Star size={12} fill="currentColor"/> EM DESTAQUE</small>}
-                  <h4>{item.title}</h4>
-                  <span>Assistir no YouTube</span>
+              <div className="premium-video-stage-actions">
+                {videoPlaying && <button type="button"
+                  onClick={() => setVideoPlaying(false)}>
+                  <X size={15}/> Fechar player
+                </button>}
+                <a href={"https://www.youtube.com/watch?v=" + currentVideo.youtube_id}
+                  target="_blank" rel="noopener noreferrer"
+                  aria-label={"Abrir " + currentVideo.title + " no YouTube"}>
+                  <ExternalLink size={15}/> Abrir no YouTube
+                </a>
+              </div>
+            </div>
+          </div>}
+          {orderedVideos.length > 1 && <div className="premium-video-choices-heading">
+            <strong>Outras apresentações</strong>
+            <span>Selecione uma miniatura para assistir aqui mesmo</span>
+          </div>}
+          <div className="premium-video-grid" aria-label="Escolha um vídeo para assistir">
+            {orderedVideos.map(item => {
+              const active = item.id === currentVideo?.id;
+              return <button type="button" key={item.id}
+                className={"premium-video-tile" + (active ? " is-selected" : "")}
+                onClick={() => playVideo(item.id)}
+                aria-pressed={active}
+                aria-label={"Assistir na página: " + item.title}>
+                <div className="premium-video-thumbnail">
+                  <MediaThumbnail item={item}/>
+                  <span className="premium-video-play"><PlayCircle size={33}/></span>
                 </div>
-                <ExternalLink size={18}/>
-              </div>
-            </a>;
-          })}
+                <div className="premium-video-copy">
+                  <div>
+                    {item.featured && <small><Star size={12} fill="currentColor"/> EM DESTAQUE</small>}
+                    <h4>{item.title}</h4>
+                    <span>{active && videoPlaying ? "Reproduzindo aqui" : "Assistir neste site"}</span>
+                  </div>
+                  <PlayCircle size={18}/>
+                </div>
+              </button>;
+            })}
+          </div>
+          <p className="premium-video-privacy-note">
+            O player do YouTube é carregado somente quando você clica em reproduzir.
+            Se o vídeo não permitir reprodução incorporada, use “Abrir no YouTube”.
+          </p>
         </div>
         : <div className="premium-media-blank">
             <PlayCircle size={24}/>
