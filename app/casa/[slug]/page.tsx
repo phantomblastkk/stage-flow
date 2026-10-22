@@ -117,6 +117,29 @@ export default function CasaPublicaPage() {
   const visible=useMemo(()=>events.filter(e=>day===null||venueDayOfMonth(e.starts_at)===day),
     [events,day]);
   const flyers=useMemo(()=>visible.filter(e=>!!e.flyer_path),[visible]);
+  useEffect(()=>{
+    if(!focusedShow&&!focusedPhoto)return;
+    const previous=document.body.style.overflow;
+    document.body.style.overflow="hidden";
+    function onKey(event:KeyboardEvent){
+      if(event.key==="Escape"){
+        setFocusedShow(null);setFocusedPhoto(null);
+      }
+    }
+    window.addEventListener("keydown",onKey);
+    return ()=>{
+      document.body.style.overflow=previous;
+      window.removeEventListener("keydown",onKey);
+    };
+  },[focusedShow,focusedPhoto]);
+
+  const photoIndex=focusedPhoto?venue?.gallery?.findIndex(p=>p.id===focusedPhoto.id)??-1:-1;
+  function switchPhoto(direction:number){
+    if(!venue?.gallery?.length || photoIndex<0)return;
+    const next=(photoIndex+direction+venue.gallery.length)%venue.gallery.length;
+    setFocusedPhoto(venue.gallery[next]);
+  }
+
   const featured=highlights[0] || null;
   function goToShow(event:HouseShow){
     const key=venueDayKey(event.starts_at);
@@ -295,6 +318,11 @@ export default function CasaPublicaPage() {
         </>:focusedPhoto&&<>
           <img src={mediaUrl(focusedPhoto.media_path)} alt={focusedPhoto.caption||"Foto ampliada"}/>
           {focusedPhoto.caption&&<p>{focusedPhoto.caption}</p>}
+          {venue&&venue.gallery.length>1&&<div className="venue-public-photo-controls">
+            <button type="button" onClick={()=>switchPhoto(-1)} aria-label="Foto anterior"><ChevronLeft size={19}/> Anterior</button>
+            <span>{photoIndex+1} / {venue.gallery.length}</span>
+            <button type="button" onClick={()=>switchPhoto(1)} aria-label="Próxima foto">Próxima <ChevronRight size={19}/></button>
+          </div>}
         </>}
       </div>
     </div>}
