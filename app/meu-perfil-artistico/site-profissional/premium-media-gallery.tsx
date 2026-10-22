@@ -370,15 +370,16 @@ export function PremiumGalleryEditor({ gallery }: { gallery: PremiumGallery }) {
 }
 
 export function PremiumGalleryShowcase({
-  items, showEmpty = false, youtubeUrl, spotifyUrl
+  items, showEmpty = false, youtubeUrl, spotifyUrl, section = "both"
 }: {
   items: PremiumMediaItem[];
   showEmpty?: boolean;
   youtubeUrl?: string | null;
   spotifyUrl?: string | null;
+  section?: "photos" | "videos" | "both";
 }) {
-  const photos = items.filter(item => item.media_kind === "photo");
-  const videos = items.filter(item => item.media_kind === "youtube");
+  const photos = section === "videos" ? [] : items.filter(item => item.media_kind === "photo");
+  const videos = section === "photos" ? [] : items.filter(item => item.media_kind === "youtube");
   const featuredPhoto = photos.find(item => item.featured);
   const orderedPhotos = featuredPhoto
     ? [featuredPhoto, ...photos.filter(item => item.id !== featuredPhoto.id)]
@@ -411,7 +412,7 @@ export function PremiumGalleryShowcase({
 
   const selected = activePhoto === null ? null : orderedPhotos[activePhoto] ?? null;
   return <div className="premium-separated-media">
-    <section className="premium-photo-gallery" id="premium-fotos" aria-labelledby="premium-photo-title">
+    {section !== "videos" && <section className="premium-photo-gallery" id="premium-fotos" aria-labelledby="premium-photo-title">
       <div className="premium-media-section-heading">
         <div>
           <span className="premium-media-section-label"><Images size={15}/> IMAGENS E BASTIDORES</span>
@@ -442,9 +443,9 @@ export function PremiumGalleryShowcase({
             <Images size={24}/>
             <p>As fotos dos shows e bastidores aparecerão aqui.</p>
           </div>}
-    </section>
+    </section>}
 
-    <section className="premium-video-gallery" id="premium-videos" aria-labelledby="premium-video-title">
+    {section !== "photos" && <section className="premium-video-gallery" id="premium-videos" aria-labelledby="premium-video-title">
       <div className="premium-media-section-heading">
         <div>
           <span className="premium-media-section-label"><Youtube size={15}/> SHOWS E APRESENTAÇÕES</span>
@@ -488,7 +489,7 @@ export function PremiumGalleryShowcase({
         target="_blank" rel="noopener noreferrer">
         Ouvir minhas músicas no Spotify <ExternalLink size={14}/>
       </a>}
-    </section>
+    </section>}
 
     {selected?.preview_url && <div className="premium-photo-lightbox"
       role="presentation" onClick={() => setActivePhoto(null)}>
