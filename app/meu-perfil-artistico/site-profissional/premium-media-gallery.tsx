@@ -370,13 +370,15 @@ export function PremiumGalleryEditor({ gallery }: { gallery: PremiumGallery }) {
 }
 
 export function PremiumGalleryShowcase({
-  items, showEmpty = false, youtubeUrl, spotifyUrl, section = "both"
+  items, showEmpty = false, youtubeUrl, spotifyUrl,
+  section = "both", showHeading = true
 }: {
   items: PremiumMediaItem[];
   showEmpty?: boolean;
   youtubeUrl?: string | null;
   spotifyUrl?: string | null;
   section?: "photos" | "videos" | "both";
+  showHeading?: boolean;
 }) {
   const photos = section === "videos" ? [] : items.filter(item => item.media_kind === "photo");
   const videos = section === "photos" ? [] : items.filter(item => item.media_kind === "youtube");
@@ -411,9 +413,12 @@ export function PremiumGalleryShowcase({
   if (!items.length && !showEmpty) return null;
 
   const selected = activePhoto === null ? null : orderedPhotos[activePhoto] ?? null;
-  return <div className="premium-separated-media">
-    {section !== "videos" && <section className="premium-photo-gallery" id="premium-fotos" aria-labelledby="premium-photo-title">
-      <div className="premium-media-section-heading">
+  return <div className={"premium-separated-media" +
+    (section === "photos" ? " only-photos" : section === "videos" ? " only-videos" : "")}>
+    {section !== "videos" && <section className="premium-photo-gallery"
+      id={section === "both" ? "premium-fotos" : undefined}
+      aria-labelledby={showHeading ? "premium-photo-title" : undefined}>
+      {showHeading && <div className="premium-media-section-heading">
         <div>
           <span className="premium-media-section-label"><Images size={15}/> IMAGENS E BASTIDORES</span>
           <h3 id="premium-photo-title">Galeria de <em>fotos.</em></h3>
@@ -422,7 +427,7 @@ export function PremiumGalleryShowcase({
         {orderedPhotos.length > 0 && <span className="premium-media-section-count">
           {orderedPhotos.length} {orderedPhotos.length === 1 ? "foto" : "fotos"}
         </span>}
-      </div>
+      </div>}
       {orderedPhotos.length > 0
         ? <div className="premium-photo-grid">
           {orderedPhotos.map((item, index) =>
@@ -445,8 +450,10 @@ export function PremiumGalleryShowcase({
           </div>}
     </section>}
 
-    {section !== "photos" && <section className="premium-video-gallery" id="premium-videos" aria-labelledby="premium-video-title">
-      <div className="premium-media-section-heading">
+    {section !== "photos" && <section className="premium-video-gallery"
+      id={section === "both" ? "premium-videos" : undefined}
+      aria-labelledby={showHeading ? "premium-video-title" : undefined}>
+      {showHeading && <div className="premium-media-section-heading">
         <div>
           <span className="premium-media-section-label"><Youtube size={15}/> SHOWS E APRESENTAÇÕES</span>
           <h3 id="premium-video-title">Meus <em>vídeos.</em></h3>
@@ -455,7 +462,7 @@ export function PremiumGalleryShowcase({
         {orderedVideos.length > 0 && <span className="premium-media-section-count">
           {orderedVideos.length} {orderedVideos.length === 1 ? "vídeo" : "vídeos"}
         </span>}
-      </div>
+      </div>}
       {orderedVideos.length > 0 ?
         <div className="premium-video-grid">
           {orderedVideos.map(item => {
