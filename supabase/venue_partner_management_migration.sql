@@ -230,7 +230,7 @@ grant execute on function public.stage_venue_calendar_admin_flyer(uuid,text) to 
 
 create or replace function public.stage_venue_calendar_admin_delete(p_id uuid)
 returns text language plpgsql security definer set search_path=''
-as $
+as $$
 declare v_venue uuid;
 begin
   select venue_id into v_venue from public.stage_venue_calendar_events where id=p_id for update;
@@ -274,7 +274,7 @@ grant execute on function public.stage_venue_gallery_admin_add(uuid,text,text) t
 
 create or replace function public.stage_venue_gallery_admin_remove(p_id uuid)
 returns text language plpgsql security definer set search_path=''
-as $
+as $$
 declare v_venue uuid;
 begin
   select venue_id into v_venue from public.stage_venue_gallery where id=p_id for update;
