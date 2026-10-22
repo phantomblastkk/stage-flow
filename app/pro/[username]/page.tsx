@@ -9,6 +9,7 @@ import {
   MapPin, Mic2, Music2, PlayCircle, Share2, Youtube
 } from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
+import ProShowCards from "@/app/meu-perfil-artistico/site-profissional/pro-show-cards";
 import ArtistBookingForm from "@/components/artist-booking-form";
 import {
   PremiumGalleryShowcase, type PremiumMediaItem
@@ -55,9 +56,6 @@ function upgradeSections(raw:unknown):SectionId[]{
 }
 const palette:Accent[]=["violet","lime","cyan","gold","coral"];
 const themes:Theme[]=["midnight","concert","ivory"];
-const fullDate=(s:string)=>new Intl.DateTimeFormat("pt-BR",{
-  dateStyle:"long",timeStyle:"short"
-}).format(new Date(s));
 const dayCode=(d:Date)=>[
   d.getFullYear(),String(d.getMonth()+1).padStart(2,"0"),
   String(d.getDate()).padStart(2,"0")
@@ -380,23 +378,8 @@ export default function PublicProArtistPage(){
                     Ver todos <ArrowRight size={14}/>
                   </button>}
                 </div>
-                {currentShows.length>0?
-                  currentShows.slice(0,6).map(ev=><div className="premium-site-show" key={ev.id}>
-                    <div className="premium-site-showdate">
-                      <strong>{new Date(ev.starts_at).toLocaleDateString("pt-BR",{day:"2-digit"})}</strong>
-                      <small>{new Date(ev.starts_at).toLocaleDateString("pt-BR",{
-                        month:"short"
-                      }).replace(".","").toUpperCase()}</small>
-                    </div>
-                    <div className="premium-site-showinfo">
-                      <strong>{ev.title}</strong>
-                      <span><MapPin size={13}/>
-                        {[ev.venue,ev.city].filter(Boolean).join(" · ")||"Local a confirmar"}
-                      </span>
-                      <span><CalendarDays size={13}/>{fullDate(ev.starts_at)}</span>
-                    </div>
-                    <span className="premium-site-showpill">Publicado</span>
-                  </div>):
+                {currentShows.length>0 ?
+                  <ProShowCards shows={currentShows} artistName={artist.name}/> :
                   <div className="premium-site-no-shows">
                     <CalendarDays size={24}/>
                     <strong>{selectedDay?"Nenhuma apresentação nesse dia.":"Novas datas em breve."}</strong>
