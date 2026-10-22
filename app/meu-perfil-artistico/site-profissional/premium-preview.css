@@ -89,40 +89,49 @@
 .premium-site-small-label{display:flex;align-items:center;gap:10px;color:var(--pro-accent-soft);font:800 10px "Manrope",sans-serif;letter-spacing:.14em}
 .premium-site-small-label span{width:7px;height:7px;border-radius:50%;background:var(--pro-accent);box-shadow:0 0 14px var(--pro-accent)}
 .premium-site-identity h1{font:900 clamp(33px,4vw,54px)/1.08 "Manrope",sans-serif;letter-spacing:-.064em;margin:18px 0 10px;overflow-wrap:anywhere}
-/* O nome e a frase-assinatura dividem a mesma linha no hero.
-   Grid reserva espaço próprio para evitar sobreposição em nomes longos. */
+/* Frase manuscrita quase assinada SOBRE a extremidade do nome.
+   A caixa acompanha a largura real do nome, não ocupa coluna separada.
+   Um pequeno respiro abaixo protege cidade, bio e botões. */
 .premium-site-name-row{
-  display:grid;
-  grid-template-columns:minmax(0,1fr) minmax(125px,37%);
-  align-items:center;
-  gap:clamp(12px,2vw,23px);
-  width:100%;
+  position:relative;
+  display:block;
+  align-self:flex-start;
+  width:max-content;
+  max-width:100%;
   min-width:0;
-  margin:18px 0 10px;
+  margin:18px 0 3px;
+  padding:0 10px 43px 0;
+  isolation:isolate;
 }
 .premium-site-identity .premium-site-name-row h1{
+  display:block;
+  width:max-content;
+  max-width:100%;
   min-width:0;
   margin:0;
   overflow-wrap:anywhere;
 }
 .premium-site-name-row .premium-site-signature{
+  position:absolute;
+  z-index:1;
+  right:-8px;
+  bottom:1px;
   display:block;
-  width:100%;
-  max-width:100%;
+  width:max-content;
+  max-width:min(80%,270px);
   margin:0;
-  padding:10px 7px 10px 0;
-  text-align:center;
+  text-align:right;
   font-family:"Great Vibes","Brush Script MT",cursive;
-  font-size:clamp(21px,2.6vw,36px);
+  font-size:clamp(24px,3vw,38px);
   font-weight:400;
-  line-height:1.2;
+  line-height:1.07;
   letter-spacing:.01em;
   color:var(--pro-accent-soft);
   overflow-wrap:anywhere;
   text-wrap:balance;
-  transform:rotate(-4deg);
-  transform-origin:center;
-  text-shadow:0 5px 20px #0006;
+  transform:rotate(7deg);
+  transform-origin:right center;
+  text-shadow:0 3px 9px #070a18cc,0 5px 20px #0006;
   pointer-events:none;
 }
 .premium-site-city{display:flex;align-items:center;gap:7px;font-size:12px;color:#a8b9df;margin-top:11px!important}
@@ -274,34 +283,39 @@
 }
 @media(prefers-reduced-motion:reduce){.premium-site *{transition:none!important;animation:none!important}}
 
-/* No celular, assinatura à direita do nome, diagonal HORÁRIA (+12°).
-   Os blocos não ficam absolutamente posicionados: nomes e frases
-   maiores aumentam a altura da linha sem cobrir o restante do site. */
+/* No celular a assinatura invade levemente as últimas letras do nome:
+   sobreposição deliberada, inclinação no sentido horário (+12°).
+   Ancorada ao nome para continuar próxima em telas estreitas. */
 @media(max-width:700px){
   .premium-site-name-row{
-    grid-template-columns:minmax(0,1fr) minmax(100px,37%);
-    gap:9px;
-    margin:18px 0 14px;
+    align-self:flex-start;
+    width:max-content;
+    max-width:100%;
+    margin:17px 0 4px;
+    padding:0 4px 43px 0;
   }
   .premium-site-identity .premium-site-name-row h1{
-    font-size:clamp(27px,7.8vw,47px);
+    font-size:clamp(30px,8.1vw,49px);
     line-height:1.12;
   }
   .premium-site-name-row .premium-site-signature{
-    padding:13px 12px 13px 0;
-    font-size:clamp(19px,5.6vw,28px);
-    line-height:1.24;
+    right:-5px;
+    bottom:1px;
+    max-width:min(81%,230px);
+    font-size:clamp(22px,6.1vw,32px);
+    line-height:1.07;
     transform:rotate(12deg);
+    transform-origin:right center;
   }
 }
 @media(max-width:380px){
   .premium-site-name-row{
-    grid-template-columns:minmax(0,1fr) minmax(92px,39%);
-    gap:6px;
+    padding-bottom:42px;
   }
   .premium-site-name-row .premium-site-signature{
-    font-size:clamp(18px,5.5vw,22px);
-    padding-right:10px;
+    right:0;
+    max-width:82%;
+    font-size:clamp(20px,5.8vw,25px);
   }
 }
 
