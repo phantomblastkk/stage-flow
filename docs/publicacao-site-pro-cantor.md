@@ -127,3 +127,29 @@ O snapshot permanece armazenado, mas não volta a ficar disponível sem direito 
 - Domínio oficial e wildcard \`*.stageflow.com\` configurados com DNS, SSL e atribuição de hostname segura ao dono.
 - Integração real com um provedor de cobrança, renovação e cancelamento, com webhooks verificados.
 - Gestão avançada de SEO, domínio próprio e estatísticas, com controle de cache para revogações.
+
+
+## Evolução Pro v2 — seções de Fotos e Vídeos independentes (outubro de 2026)
+
+Na próxima evolução do editor \`/meu-perfil-artistico/site-profissional\`, a antiga seção única **Portfólio** passa a ser **Galeria de fotos** e **Vídeos**, ambas com **controles próprios de posição e visibilidade**. Agora o cantor pode colocar a galeria em uma parte do site e os vídeos em outra, e esconder somente uma delas. Os links da navegação acompanham a ordem escolhida. Ambas mantêm os layouts responsivos e a galeria de fotos ampliável.
+
+**Migração nova e obrigatória para salvar as cinco seções:**
+
+\`\`\`
+supabase/pro_artist_independent_media_sections_migration.sql
+\`\`\`
+
+Execute no SQL Editor **após instalar a versão corrigida** de \`supabase/pro_artist_publication_migration.sql\`. O script transforma automaticamente \`portfolio\` em \`photos\` + \`videos\` no mesmo lugar em rascunhos e publicações existentes. Se Portfólio estava oculto, os dois ficam ocultos; se estava visível, ambos continuam visíveis. **Fotos, vídeos, capa, bio, cores, temas, conta Pro e URL são preservados.** O SQL pode ser executado novamente e não publica nenhum rascunho sozinho.
+
+Os controles do editor passam a mostrar **5 seções**: Sobre, Galeria de fotos, Vídeos, Agenda e Contato. Pelo menos uma delas permanece visível. Alterações só entram na versão pública com **Salvar rascunho** e depois **Republicar alterações**.
+
+A segurança acompanha essa separação: quando Fotos está oculta, a função de leitura pública não retorna objetos de foto e a permissão de download do bucket privado deixa de liberar novas leituras dessas imagens. Vídeos permanecem no YouTube e somente aparecem se a seção Vídeos estiver visível. O servidor continua servindo somente snapshots de publicações válidas, sem rascunhos.
+
+### Teste recomendado
+
+1. Execute a migração e carregue o editor Pro: deve haver cinco seções, incluindo Fotos e Vídeos separadas, na ordem em que Portfólio aparecia.
+2. Mova Vídeos para cima da Agenda e Fotos para o fim. Salve, feche e reabra o editor: a ordem deve persistir.
+3. Desmarque Fotos, deixando Vídeos visível. Publique ou republique e abra \`/pro/usuario\` em janela anônima: a galeria deve desaparecer, mas os vídeos devem permanecer.
+4. Inverta: mostre Fotos e oculte Vídeos. Salve/republique e confira que novas solicitações de download das fotos publicadas funcionam, enquanto a seção Vídeos não aparece.
+5. Verifique que novas fotos e vídeos do rascunho não vão para o site público sem republicar, e que o perfil gratuito continua ativo.
+6. Confira que \`/marketplace\` permanece **Em breve**.
