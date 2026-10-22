@@ -6,7 +6,7 @@ import { useRouter } from "next/navigation";
 import {
   ArrowLeft, ArrowRight, Bell, CalendarDays, Check, Guitar,
   LoaderCircle, LogOut, Mic2, Music2, Settings2,
-  UserRound, Users, Inbox, Search, ChartNoAxesCombined
+  UserRound, Users, Inbox, Search, ChartNoAxesCombined, Globe2
 } from "lucide-react";
 import type { LucideIcon } from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
@@ -172,6 +172,10 @@ export default function Dashboard() {
         description: "Divulgue sua carreira no endereço gratuito com seu @ artístico."
       },
       {
+        href: "/meu-perfil-artistico/site-profissional", title: "Meu site Pro", icon: Globe2,
+        description: "Personalize a galeria e a agenda e publique seu site Pro se sua conta estiver habilitada."
+      },
+      {
         href: "/meu-perfil-artistico/solicitacoes", title: "Pedidos de contratação", icon: Inbox,
         description: "Leia as solicitações recebidas pela página pública e responda aos interessados."
       },
@@ -214,7 +218,7 @@ export default function Dashboard() {
       { href: "/meus-convites", title: "Convites para tocar", description: "Cantores também podem participar de outros shows.", icon: Bell },
       { href: "/meu-portfolio", title: "Portfólio simples de músico", description: "Use também sua vitrine de instrumentista.", icon: Guitar },
       { href: "/meu-desempenho", title: "Desempenho do portfólio de músico", description: "Visitas e oportunidades do seu perfil gratuito de instrumentista.", icon: ChartNoAxesCombined },
-      { href: "/meu-perfil-artistico/site-profissional", title: "Prévia do site profissional", description: "Veja como poderá ficar seu futuro site premium, sem contratar agora.", icon: Mic2 }
+      { href: "/meu-perfil-artistico/site-profissional", title: "Editor e publicação Pro", description: "Prepare a versão profissional; publicar exige direito Pro habilitado.", icon: Globe2 }
     );
   }
   secondary.push({
