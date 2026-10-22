@@ -125,7 +125,16 @@ export default function PublicProArtistPage(){
       // A imagem original permanece no bucket privado. Um visitante recebe
       // somente fotos explicitamente selecionadas para a versão publicada.
       // A storage policy valida publicação, titularidade e acesso Pro.
-      const snapshots=Array.isArray(result.media)?result.media:[];
+      // Antes mesmo de instalar o SQL, nunca baixe nem exiba mais de
+      // 3 fotos e 3 vídeos publicados. Destaque vem primeiro.
+      const allMedia=Array.isArray(result.media)?result.media:[];
+      const choose=(kind:"photo"|"youtube")=>allMedia
+        .filter(item=>item.media_kind===kind)
+        .sort((a,b)=>Number(b.featured)-Number(a.featured)
+          ||a.display_order-b.display_order||a.id.localeCompare(b.id))
+        .slice(0,3);
+      const snapshots=[...choose("photo"),...choose("youtube")]
+        .sort((a,b)=>a.display_order-b.display_order||a.id.localeCompare(b.id));
       const resolved=await Promise.all(snapshots.map(async item=>{
         if(item.media_kind!=="photo"||!item.storage_path)return item;
         try{
