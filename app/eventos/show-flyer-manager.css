@@ -1,0 +1,138 @@
+
+.show-flyer-manager{
+  margin-top:16px;
+  padding:18px;
+  border:1px solid var(--line,#39405f);
+  border-radius:14px;
+  background:linear-gradient(140deg,#1b2239,#151e30);
+  color:#e9e7f6;
+  width:100%;
+  min-width:0;
+}
+.show-flyer-manager header>div>span{
+  display:flex;align-items:center;gap:7px;
+  color:#c6a8ff;font-size:10px;font-weight:900;letter-spacing:.11em;
+}
+.show-flyer-manager header h3{
+  color:#f5efff;font:900 clamp(16px,2vw,21px)/1.3 "Manrope",sans-serif;
+  margin:9px 0 6px;
+}
+.show-flyer-manager header p,
+.show-flyer-upload small{
+  color:#aabbd4;font-size:11px;line-height:1.7;margin:0;
+}
+.show-flyer-upload{
+  display:flex;align-items:center;flex-wrap:wrap;gap:10px;
+  margin-top:14px;
+}
+.show-flyer-upload label{
+  display:inline-flex;align-items:center;gap:8px;
+  cursor:pointer;
+  margin:0;
+}
+.show-flyer-upload label.is-disabled{opacity:.5;cursor:not-allowed}
+.show-flyer-upload small{flex:1 1 180px}
+.show-flyer-error,.show-flyer-success{
+  font-size:12px;line-height:1.6;padding:12px;
+  border:1px solid #845269;border-radius:8px;
+  background:#3d2936;color:#ffd2e0;margin:11px 0;
+}
+.show-flyer-success{
+  border-color:#4d765f;background:#223c31;color:#d4f4d7;
+}
+.show-flyer-workspace{
+  display:grid;grid-template-columns:minmax(0,.9fr) minmax(0,1.1fr);
+  align-items:start;gap:20px;margin-top:18px;
+}
+.show-flyer-canvas-wrap{
+  display:flex;flex-direction:column;gap:10px;min-width:0;
+}
+.show-flyer-format-tabs{
+  display:flex;flex-wrap:wrap;gap:6px;
+}
+.show-flyer-format-tabs button,
+.show-flyer-modes button{
+  background:#1d2a42;color:#d7d7e8;border:1px solid #45516e;
+  border-radius:9px;padding:10px 12px;cursor:pointer;
+  font:800 11px/1.45 "Manrope",sans-serif;
+}
+.show-flyer-format-tabs button.is-active,
+.show-flyer-modes button.is-active{
+  border-color:#bfa4fd;background:#31294e;color:#f5e6ff;
+}
+.show-flyer-canvas{
+  display:block;width:100%;height:auto;max-width:380px;
+  border:1px solid #58537c;border-radius:10px;
+  background:#090c18;
+  touch-action:none;
+  cursor:grab;
+  box-shadow:0 15px 30px #0006;
+}
+.show-flyer-canvas:active{cursor:grabbing}
+.show-flyer-drag-hint{
+  display:flex;align-items:center;gap:7px;
+  color:#aeb9d2;font-size:10px;
+}
+.show-flyer-controls{
+  display:flex;flex-direction:column;gap:13px;min-width:0;
+}
+.show-flyer-controls>strong{
+  color:#f0eaf9;font:850 13px "Manrope",sans-serif;
+}
+.show-flyer-modes{
+  display:grid;grid-template-columns:1fr;gap:7px;
+}
+.show-flyer-modes button{
+  display:flex;align-items:center;justify-content:flex-start;gap:9px;
+  text-align:left;
+}
+.show-flyer-controls label{
+  display:flex;flex-direction:column;gap:6px;
+  color:#c8d4e4;font-size:11px;line-height:1.5;
+}
+.show-flyer-controls label span{
+  display:flex;justify-content:space-between;gap:10px;
+}
+.show-flyer-controls label b{color:#e8d0ff}
+.show-flyer-controls input[type=range]{
+  display:block;width:100%;min-width:0;
+  accent-color:#bba1f6;
+  cursor:pointer;
+}
+.show-flyer-reset,
+.show-flyer-remove{
+  display:inline-flex;gap:8px;align-items:center;align-self:flex-start;
+  background:none;border:0;padding:7px 0;
+  font:800 11px "Manrope",sans-serif;
+  color:#ccb6f2;cursor:pointer;text-decoration:underline;
+}
+.show-flyer-remove{color:#f0a5ae}
+.show-flyer-downloads{
+  display:grid;grid-template-columns:1fr;gap:8px;
+}
+.show-flyer-downloads button{
+  display:inline-flex;align-items:center;justify-content:center;
+  min-height:42px;gap:8px;text-align:center;
+}
+.show-flyer-footnote{
+  display:flex;align-items:flex-start;gap:7px;
+  color:#aabbd4;font-size:10px;line-height:1.7;margin:0;
+}
+.show-flyer-footnote svg{color:#b3e59c;flex:none}
+.show-flyer-pending{
+  margin:0;border:1px solid #9b7a3a;background:#393123;
+  border-radius:8px;padding:10px;color:#ead6ab;
+  font-size:11px;line-height:1.6;
+}
+.show-flyer-empty{
+  border:1px dashed #525a75;border-radius:10px;
+  padding:16px;text-align:center;color:#a9b7ce;
+  font-size:12px;line-height:1.65;margin-top:16px;
+}
+@media(max-width:760px){
+  .show-flyer-manager{padding:14px 12px}
+  .show-flyer-workspace{grid-template-columns:minmax(0,1fr);gap:16px}
+  .show-flyer-canvas{max-width:340px;margin:0 auto}
+  .show-flyer-format-tabs{justify-content:center}
+  .show-flyer-drag-hint{justify-content:center}
+}
