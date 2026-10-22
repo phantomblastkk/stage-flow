@@ -51,7 +51,7 @@ export default function Home() {
             <div className="home-stage-events">
               <div className="home-stage-event">
                 <span className="home-stage-date"><strong>18</strong><small>OUT</small></span>
-                <span className="home-stage-event-info"><strong>Pagode na Praça</strong><small>São Paulo · 20h</small></span>
+                <span className="home-stage-event-info"><strong>Pagode no Deck 2</strong><small>São Paulo · 20h</small></span>
                 <span className="home-stage-status"><Check size={13}/> Confirmado</span>
               </div>
               <div className="home-stage-event">
