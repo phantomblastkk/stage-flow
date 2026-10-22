@@ -1,0 +1,122 @@
+/* Painel privado de desempenho do músico — responsivo e sem upsell Premium */
+.reach-page{
+  min-height:100vh;padding-bottom:85px;color:#eaf0f9;
+  background:#0f1722;
+  background-image:radial-gradient(ellipse 72% 35% at 78% -5%,#45376d4d,transparent 74%);
+}
+.reach-container{width:min(1180px,calc(100% - 34px));margin:0 auto}
+.reach-nav{display:flex;align-items:center;justify-content:space-between;gap:12px;height:86px;border-bottom:1px solid #303d50}
+.reach-back{display:inline-flex;align-items:center;gap:8px;color:#c1cede;text-decoration:none;font-size:12px;font-weight:800}
+.reach-back:hover{color:#e5f2d8}
+.reach-header{padding:55px 0 25px}
+.reach-eyebrow{display:inline-flex;gap:8px;align-items:center;color:#c3b1ea;font:800 10px "Manrope",sans-serif;letter-spacing:.12em}
+.reach-heading{display:flex;align-items:end;justify-content:space-between;flex-wrap:wrap;gap:20px}
+.reach-heading>div{max-width:720px;min-width:0}
+.reach-heading h1{font:900 clamp(34px,5.7vw,58px)/1.15 "Manrope",sans-serif;letter-spacing:-.06em;margin:14px 0}
+.reach-heading h1 em{color:#c8eb9f;font-style:normal}
+.reach-heading p{max-width:610px;color:#b1c1d4;font-size:13px;line-height:1.85;margin:0}
+.reach-refresh{display:inline-flex;align-items:center;gap:8px;border-radius:10px;padding:12px 15px;background:#25374e;border:1px solid #526079;color:#e0e8f4;font:800 11px "Manrope",sans-serif;cursor:pointer}
+.reach-refresh:disabled{opacity:.5;cursor:not-allowed}
+.reach-private{display:flex;align-items:start;gap:10px;border-radius:11px;border:1px solid #4a5e4f;background:#1e302b;color:#cde8d4;font-size:11px;line-height:1.8;padding:12px 15px;margin:8px 0 29px}
+.reach-private svg{flex:none;color:#c4e9a0;margin-top:1px}
+.reach-private strong{color:#e8f6e8}
+.reach-range-header{display:flex;align-items:end;justify-content:space-between;gap:14px;flex-wrap:wrap;margin-bottom:16px}
+.reach-range-header>div:first-child{display:flex;flex-direction:column;gap:5px}
+.reach-range-header strong{font:800 15px "Manrope",sans-serif}
+.reach-range-header small{color:#a7b7cb;font-size:11px}
+.reach-range-actions{display:flex;gap:7px;padding:5px;background:#202d40;border:1px solid #384b60;border-radius:10px}
+.reach-range-actions button{border:0;border-radius:8px;padding:9px 14px;background:transparent;color:#bbc9dc;font-size:11px;font-weight:800;cursor:pointer}
+.reach-range-actions button[aria-pressed=true]{background:#c6e4a8;color:#1b291e}
+.reach-range-actions button:disabled{opacity:.6;cursor:not-allowed}
+.reach-loading{min-height:70vh;display:flex;align-items:center;justify-content:center;flex-direction:column;gap:12px;background:#101722;color:#d7e5f2}
+.reach-loading svg{color:#b6d8a0}
+.reach-loading p{font-size:12px}
+.reach-empty{display:flex;align-items:center;justify-content:center;flex-direction:column;min-height:320px;gap:13px;background:#1b2737;border:1px dashed #46566c;border-radius:14px;color:#b2c7db}
+.reach-empty h2{font:800 17px "Manrope",sans-serif}
+.reach-error{display:flex;align-items:start;gap:12px;border:1px solid #804e59;background:#37252e;border-radius:12px;padding:19px;color:#ffd0d7}
+.reach-error svg{flex:none}
+.reach-error strong{font:800 15px "Manrope",sans-serif}
+.reach-error p{font-size:12px;line-height:1.8;margin:8px 0 0}
+.reach-stats{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:12px}
+.reach-stat{
+  position:relative;display:flex;flex-direction:column;gap:8px;min-width:0;
+  background:linear-gradient(145deg,#202d3f,#192435);
+  border:1px solid #394c61;border-radius:15px;padding:20px;
+}
+.reach-stat-icon{height:39px;width:39px;display:grid;place-items:center;border-radius:11px;background:#33445b;color:#d4c5fa;margin-bottom:12px}
+.reach-stat.is-portfolio .reach-stat-icon{background:#304a39;color:#bce5a5}
+.reach-stat.is-featured .reach-stat-icon{background:#4b4131;color:#efd294}
+.reach-stat.is-invites .reach-stat-icon{background:#353959;color:#bbc6ff}
+.reach-stat>span{color:#c6d4e2;font-size:11px;font-weight:800;line-height:1.6}
+.reach-stat>strong{font:900 clamp(26px,3.5vw,36px)/1.2 "Manrope",sans-serif;letter-spacing:-.045em;color:#eef6fb;overflow-wrap:anywhere}
+.reach-stat>small{color:#9cacc2;font-size:10px;line-height:1.7}
+.reach-content{display:grid;grid-template-columns:minmax(0,1.65fr) minmax(280px,1fr);gap:15px;margin-top:17px;align-items:start}
+.reach-chart,.reach-opportunities,.reach-marketplace-status{border:1px solid #39485e;background:#192536;border-radius:16px;padding:23px;min-width:0}
+.reach-chart-header h2,.reach-opportunities h2,.reach-marketplace-status h2{font:800 clamp(17px,2.5vw,21px)/1.4 "Manrope",sans-serif;letter-spacing:-.02em;margin:11px 0}
+.reach-chart-header p,.reach-opportunities>p,.reach-marketplace-status>p{font-size:11px;line-height:1.8;color:#aabbce;margin:0}
+.reach-small-kicker{display:inline-flex;gap:7px;align-items:center;color:#a6e1e7;font-size:10px;font-weight:900;letter-spacing:.095em}
+.reach-metric-tabs{display:flex;flex-wrap:wrap;gap:7px;margin:21px 0 23px}
+.reach-metric-tabs button{background:#27364b;border:1px solid #3f5269;border-radius:99px;color:#c8d5e4;padding:9px 11px;font-size:10px;font-weight:800;cursor:pointer}
+.reach-metric-tabs button[aria-pressed=true]{background:#bfe4a0;border-color:#bfe4a0;color:#1d271d}
+.reach-chart-focus{display:flex;justify-content:space-between;align-items:end;gap:14px;flex-wrap:wrap}
+.reach-chart-focus>div{display:flex;flex-direction:column;gap:6px}
+.reach-chart-focus strong{font:900 clamp(29px,4vw,40px)/1.2 "Manrope",sans-serif;letter-spacing:-.05em}
+.reach-chart-focus span{font-size:11px;color:#a8c1cc}
+.reach-chart-focus p{max-width:255px;color:#9bacbe;font-size:10px;line-height:1.7;margin:0}
+.reach-bars{display:flex;align-items:stretch;gap:7px;min-height:210px;border-bottom:1px solid #3d4c61;margin-top:20px;padding:0 0 3px}
+.reach-bar-column{display:flex;align-items:center;flex-direction:column;gap:6px;flex:1;min-width:0;min-height:207px}
+.reach-bar-value{display:block;min-height:16px;color:#b5c9d5;font-size:9px;line-height:1.6}
+.reach-bar-track{width:min(100%,33px);flex:1;display:flex;align-items:end;border-radius:8px 8px 4px 4px;overflow:hidden;background:#2634497a}
+.reach-bar-track span{display:block;width:100%;min-height:0;background:linear-gradient(to top,#789b70,#b9df98);border-radius:7px 7px 0 0;transition:height .2s}
+.reach-bar-track span.is-zero{height:2px!important;opacity:.38}
+.reach-bar-column>small{height:20px;color:#9baabd;font-size:9px;white-space:nowrap}
+.reach-analytics-note{display:flex;gap:10px;align-items:start;background:#222f40;border:1px solid #3d5069;border-radius:10px;color:#9fb1c5;padding:12px;font-size:10px;line-height:1.8;margin:20px 0 0}
+.reach-analytics-note svg{flex:none;margin-top:2px;color:#bddca6}
+.reach-aside{display:grid;gap:15px}
+.reach-invites-total{display:flex;align-items:baseline;gap:10px;margin:17px 0}
+.reach-invites-total strong{font:900 34px "Manrope",sans-serif;letter-spacing:-.045em}
+.reach-invites-total span{font-size:11px;color:#a7bad0}
+.reach-invite-state{display:flex;flex-direction:column;gap:12px;border-top:1px solid #39485c;border-bottom:1px solid #39485c;padding:15px 0}
+.reach-invite-state>div{display:flex;align-items:center;justify-content:space-between;gap:10px}
+.reach-invite-state span{display:inline-flex;align-items:center;gap:7px;color:#adbece;font-size:11px}
+.reach-invite-state span svg{color:#b8dfa1}
+.reach-invite-state strong{font:800 14px "Manrope",sans-serif}
+.reach-acceptance{margin:16px 0}
+.reach-acceptance>div:first-child{display:flex;justify-content:space-between;align-items:center;gap:8px;color:#bdd0dc;font-size:11px}
+.reach-acceptance strong{color:#d7efba;font-size:15px}
+.reach-acceptance-track{background:#344259;height:7px;overflow:hidden;border-radius:99px;margin-top:8px}
+.reach-acceptance-track span{display:block;height:100%;background:#b0dc8f;border-radius:99px}
+.reach-aside-action{display:flex;justify-content:space-between;align-items:center;gap:8px;padding:12px 14px;border-radius:10px;border:1px solid #9ec684;background:#c4e69f;text-decoration:none;color:#1c2a1f;font-size:11px;font-weight:900}
+.reach-marketplace-status{background:linear-gradient(135deg,#242941,#1a2737)}
+.reach-marketplace-status h2{margin-bottom:17px}
+.reach-status-row{display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:8px;font-size:11px;color:#c2d0e0;border-bottom:1px solid #3c4862;padding:12px 0}
+.reach-status-row strong{font-size:10px;border-radius:99px;padding:6px 9px;background:#493d38;color:#f1d6c7}
+.reach-status-row strong.is-yes{background:#2d4a3b;color:#cfedc5}
+.reach-marketplace-status>p{margin:16px 0}
+.reach-portfolio-link{display:flex;align-items:center;justify-content:space-between;gap:8px;color:#d1e3f3;padding:9px 0;text-decoration:none;font-weight:800;font-size:11px}
+.reach-portfolio-link:hover{color:#cfeaaa}
+.reach-footnote{display:flex;align-items:start;gap:12px;margin-top:18px;padding:19px;border-radius:13px;border:1px solid #3c4b5d;background:#202c3b;color:#a7bcd2}
+.reach-footnote>svg{flex:none;color:#bfdca9}
+.reach-footnote strong{font-size:12px;color:#e0e9f1}
+.reach-footnote p{margin:7px 0 0;font-size:11px;line-height:1.8}
+@media(max-width:960px){.reach-stats{grid-template-columns:repeat(2,minmax(0,1fr))}.reach-content{grid-template-columns:1fr}.reach-aside{grid-template-columns:repeat(2,minmax(0,1fr))}}
+@media(max-width:650px){
+ .reach-container{width:calc(100% - 24px)}
+ .reach-nav{height:73px}
+ .reach-header{padding:38px 0 20px}
+ .reach-heading h1{font-size:clamp(31px,9vw,44px)}
+ .reach-heading p{font-size:12px}
+ .reach-refresh{padding:10px}
+ .reach-stats{gap:9px}
+ .reach-stat{padding:15px}
+ .reach-stat>strong{font-size:29px}
+ .reach-aside{grid-template-columns:1fr}
+ .reach-chart,.reach-opportunities,.reach-marketplace-status{padding:18px 14px}
+ .reach-bars{gap:3px}
+ .reach-bar-column>small{font-size:8px;letter-spacing:-.02em}
+ .reach-range-actions{width:100%;justify-content:space-between}
+ .reach-range-actions button{flex:1}
+ .reach-chart-focus>p{max-width:none}
+}
+@media(max-width:390px){.reach-stat>strong{font-size:25px}.reach-stat>span{font-size:10px}.reach-stat>small{font-size:9px}}
+@media(prefers-reduced-motion:reduce){.reach-bar-track span{transition:none}}
