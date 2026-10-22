@@ -12,6 +12,7 @@ import {
   Sparkles, Youtube, Palette, Save, Eye, EyeOff, RotateCcw, ArrowUp, ArrowDown
 } from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
+import ProShowCards from "./pro-show-cards";
 import { PremiumGalleryEditor, PremiumGalleryShowcase, usePremiumGallery } from "./premium-media-gallery";
 import ProSitePublicationControls from "./pro-publish-controls";
 
@@ -540,15 +541,9 @@ export default function SiteProfissionalPreview() {
                 <h3>{selectedDate ? "Shows do dia" : "Próximos shows"}</h3>
                 {selectedDate && <button type="button" onClick={() => setSelectedDate(null)}>Ver todos <ArrowRight size={14}/></button>}
               </div>
-              {selectedShows.length > 0 ? selectedShows.slice(0, 6).map(event => <div className="premium-site-show" key={event.id}>
-                <div className="premium-site-showdate"><strong>{new Date(event.starts_at).toLocaleDateString("pt-BR", { day: "2-digit" })}</strong><small>{new Date(event.starts_at).toLocaleDateString("pt-BR", { month: "short" }).replace(".", "").toUpperCase()}</small></div>
-                <div className="premium-site-showinfo">
-                  <strong>{event.title}</strong>
-                  <span><MapPin size={13}/> {[event.venue, event.city].filter(Boolean).join(" · ") || "Local a confirmar"}</span>
-                  <span><CalendarDays size={13}/> {fullDate(event.starts_at)}</span>
-                </div>
-                <span className="premium-site-showpill">Publicado</span>
-              </div>) : <div className="premium-site-no-shows">
+              {selectedShows.length > 0 ?
+                <ProShowCards shows={selectedShows} artistName={firstName} preview/> :
+                <div className="premium-site-no-shows">
                 <CalendarDays size={25}/>
                 <strong>{selectedDate ? "Nenhum show público nesse dia." : "Nenhum show público futuro."}</strong>
                 <span>Você pode cadastrar uma apresentação e marcá-la como pública.</span>
