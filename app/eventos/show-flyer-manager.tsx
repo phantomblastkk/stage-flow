@@ -3,7 +3,7 @@
 import { ChangeEvent, PointerEvent, useEffect, useRef, useState } from "react";
 import {
   ArrowLeftRight, Check, Download, ImagePlus, LoaderCircle, Move,
-  RotateCcw, Save, Trash2, WandSparkles
+  RotateCcw, Save, Share2, Trash2, WandSparkles
 } from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
 import {
@@ -208,6 +208,24 @@ export default function ShowFlyerManager({
     }finally{setBusy(false)}
   }
 
+  async function shareCurrentFormat(){
+    if(!image||busy)return;
+    setBusy(true);setError("");
+    try{
+      const blob=await makeFlyerBlob(image,format,crop);
+      const file=new File([blob],flyerFileName(title,format),{type:"image/jpeg"});
+      if(navigator.share && navigator.canShare?.({files:[file]})){
+        await navigator.share({files:[file],title:"Flyer do show "+title});
+      }else{
+        downloadFlyer(blob,file.name);
+        setMessage("Seu navegador não oferece compartilhamento direto de imagens. O flyer foi baixado; envie o arquivo pelo WhatsApp ou Instagram.");
+      }
+    }catch(error){
+      if(!(error instanceof Error && error.name==="AbortError"))
+        setError("Não foi possível compartilhar a imagem. Use os botões de download.");
+    }finally{setBusy(false)}
+  }
+
   return <section className="show-flyer-manager" aria-label={"Flyer do show "+title}>
     <header>
       <div>
@@ -282,6 +300,10 @@ export default function ShowFlyerManager({
           onClick={()=>void save()} disabled={!ready||busy}>
           {busy?<LoaderCircle size={16}/>:<Save size={16}/>}
           {busy?"Processando...":"Salvar flyer e enquadramento"}
+        </button>
+        <button className="btn btn-quiet" type="button" disabled={busy}
+          onClick={()=>void shareCurrentFormat()}>
+          <Share2 size={16}/> Compartilhar ${format==="feed"?"Feed":"Story / Status"} (ou baixar)
         </button>
         <div className="show-flyer-downloads">
           <button className="btn btn-quiet" type="button" disabled={busy}
