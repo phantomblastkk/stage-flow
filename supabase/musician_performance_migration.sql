@@ -123,6 +123,8 @@ begin
       case when p_surface='featured' then 1 else 0 end,
       case when p_surface='profile_open' then 1 else 0 end
     from eligible
+    -- WHERE evita ambiguidade do parser entre JOIN ... ON e ON CONFLICT.
+    where true
     on conflict(musician_id,day)do update set
       search_impressions=public.stage_musician_metrics_daily.search_impressions
         +excluded.search_impressions,
