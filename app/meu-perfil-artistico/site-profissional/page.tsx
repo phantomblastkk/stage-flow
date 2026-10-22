@@ -159,7 +159,9 @@ export default function SiteProfissionalPreview() {
         };
         setDraft(next);
         setSavedDraft(next);
-        setDraftReady(true);
+        // A RPC pode devolver o padrão sem registro persistido.
+        // Só um design efetivamente salvo pode ser publicado.
+        setDraftReady(Boolean((savedDesign as {updated_at?:string|null}).updated_at));
       } else {
         setDraftError("Não foi possível carregar o rascunho profissional. Confira a configuração do Supabase.");
       }
