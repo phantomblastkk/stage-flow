@@ -52,3 +52,16 @@
 .venue-program-empty{font-size:13px;color:var(--muted);background:var(--panel2);padding:20px;border-radius:12px}
 @media(max-width:850px){.venue-program-layout{grid-template-columns:1fr}.venue-program-hero{padding-top:28px}}
 @media(max-width:500px){.venue-program-panel{padding:14px}.venue-program-time-fields{grid-template-columns:1fr}.venue-program-tabs button{flex:1;justify-content:center;font-size:12px;padding:10px 8px}.venue-program-tabs button span{display:none}}
+
+/* Cards editoriais para gerenciar a programação oficial */
+.venue-program-public-link{margin-top:8px;font-size:12px}
+.venue-program-overview{display:flex;flex-wrap:wrap;gap:9px;margin:0 0 19px}
+.venue-program-overview span{border:1px solid var(--line);background:#1c182f;border-radius:12px;padding:11px 15px;color:var(--muted);font-size:12px}
+.venue-program-overview strong{font:800 19px Manrope,sans-serif;color:#ebd9ff;margin-right:7px}
+.venue-program-show img{object-fit:contain;border:1px solid #52466e;background:radial-gradient(circle at center,#403050,#1c142b)}
+.venue-program-badge{width:max-content;padding:4px 7px;border-radius:7px;font-size:10px!important;font-weight:700}
+.venue-program-badge.published{background:#203d31;color:#b4f9d4}
+.venue-program-badge.draft{background:#332746;color:#d8c4ff}
+.venue-program-badge.cancelled{background:#3b2833;color:#efbdd0}
+.venue-program-flyer>img{width:100%;max-width:275px;object-fit:contain;padding:8px;background:#1b1530;border:1px solid #605078;border-radius:13px}
+.venue-program-show:focus-visible,.venue-program-gallery-item button:focus-visible{outline:2px solid #bc9aff;outline-offset:2px}
