@@ -13,6 +13,7 @@ import {
 } from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
 import { PremiumGalleryEditor, PremiumGalleryShowcase, usePremiumGallery } from "./premium-media-gallery";
+import ProSitePublicationControls from "./pro-publish-controls";
 
 type ArtistPreview = {
   name: string;
@@ -257,7 +258,7 @@ export default function SiteProfissionalPreview() {
   return <main className="premium-preview-app">
     <div className="premium-preview-toolbar">
       <Link href="/meu-perfil-artistico" className="premium-preview-back"><ArrowLeft size={17}/> Voltar à minha página</Link>
-      <span className="premium-preview-label"><LockKeyhole size={15}/> PRÉVIA PRIVADA · NÃO PUBLICADA</span>
+      <span className="premium-preview-label"><LockKeyhole size={15}/> EDITOR PRIVADO · VISUAL DO RASCUNHO</span>
       <Link href="/painel" className="premium-preview-back">Meu painel <ArrowUpRight size={15}/></Link>
     </div>
 
@@ -274,7 +275,7 @@ export default function SiteProfissionalPreview() {
           <div>
             <span className="premium-design-eyebrow"><Palette size={15}/> PERSONALIZAÇÃO DO SITE PROFISSIONAL</span>
             <h2>Seu estilo, seu palco.</h2>
-            <p>Experimente temas, cores e seções. Salve seu rascunho sem contratar ou publicar nada.</p>
+            <p>Escolha temas, cores e seções. Salve o visual para publicar ou atualizar seu site Pro quando ele estiver habilitado.</p>
           </div>
           <button type="button" className="premium-design-collapse"
             onClick={() => setEditorOpen(current => !current)}
@@ -353,6 +354,10 @@ export default function SiteProfissionalPreview() {
         {draftMessage && <p className="premium-design-feedback" role="status">{draftMessage}</p>}
       </section>
       <PremiumGalleryEditor gallery={gallery}/>
+      <ProSitePublicationControls
+        unsaved={unsaved} draftReady={draftReady}
+        galleryBusy={gallery.busy} galleryLoading={gallery.loading}
+      />
       <div className={"premium-site premium-theme-" + draft.theme + " premium-site-" + draft.accent}>
         <header className="premium-site-nav">
           <Link href="/" className="premium-site-brand"><span className="premium-site-signal"><Music2 size={20}/></span> STAGE FLOW</Link>
@@ -363,7 +368,7 @@ export default function SiteProfissionalPreview() {
               </a>
             )}
           </nav>
-          <span className="premium-site-example"><Sparkles size={13}/> CONCEITO PREMIUM</span>
+          <span className="premium-site-example"><Sparkles size={13}/> PRÉVIA DO SEU SITE PRO</span>
         </header>
 
         <section className="premium-site-hero">
@@ -527,7 +532,7 @@ export default function SiteProfissionalPreview() {
           <div className="premium-site-contact-icon"><Mic2 size={27}/></div>
           <div>
             <h2>Leve {firstName} para seu evento.</h2>
-            <p>Os pedidos de show já podem chegar pelo perfil gratuito do cantor. Este layout profissional continua sendo apenas uma prévia privada.</p>
+            <p>Na publicação Pro, o pedido de contratação aparece aqui quando você o habilita na sua página gratuita.</p>
           </div>
           {artist.username && artist.is_public
             ? <Link href={"/" + artist.username + "#contratar"} target="_blank" className="premium-site-main-action">
@@ -541,7 +546,7 @@ export default function SiteProfissionalPreview() {
 
         <footer className="premium-site-footer">
           <span><Music2 size={18}/> STAGE FLOW <small>Conectando artistas, músicos e produtores</small></span>
-          <span>Prévia ilustrativa · nenhum site premium foi publicado</span>
+          <span>Prévia privada do editor · para publicar, use os controles acima</span>
         </footer>
       </div>
 
@@ -549,9 +554,9 @@ export default function SiteProfissionalPreview() {
         <div className="premium-preview-upgrade-icon"><Crown size={22}/></div>
         <div>
           <span>UM PASSO ALÉM DO PERFIL GRATUITO</span>
-          <h2>Seu site profissional, quando você quiser.</h2>
-          <p>Esta é uma prévia privada usando informações da sua conta. A experiência completa — com galeria avançada, agenda pública, contratação e subdomínio do tipo <strong>{artist.username || "seuusuario"}.stageflow.com</strong> — será oferecida como adicional pago em uma etapa futura.</p>
-          <p className="premium-preview-protection"><LockKeyhole size={16}/> Prévia gratuita. Sem cobrança, sem ativação de plano e sem publicação de subdomínio.</p>
+          <h2>Seu site Pro já pode ser publicado.</h2>
+          <p>O site profissional agora pode funcionar publicamente no endereço <strong>/pro/{artist.username || "seuusuario"}</strong>, quando o artista tiver acesso Pro autorizado e clicar em Publicar. Tema, galeria, agenda e contratação usam somente os dados divulgados.</p>
+          <p className="premium-preview-protection"><LockKeyhole size={16}/> Não há cobrança automática ou subdomínio ativo nesta fase. Seu perfil gratuito continua independente.</p>
           <p>Os contatos enviados pela página gratuita ficam na sua <Link href="/meu-perfil-artistico/solicitacoes" style={{ color: "#d8c0ff", textDecoration: "underline" }}>caixa privada de pedidos de contratação</Link>.</p>
         </div>
         <Link href="/meu-perfil-artistico" className="btn btn-quiet">Editar meus dados <ArrowUpRight size={15}/></Link>
