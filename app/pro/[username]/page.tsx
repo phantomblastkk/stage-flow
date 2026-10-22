@@ -219,7 +219,10 @@ export default function PublicProArtistPage(){
         </div>
         <div className="premium-site-identity">
           <div className="premium-site-small-label"><span/> ARTISTA / SITE PROFISSIONAL</div>
-          <h1>{artist.name}</h1>
+          <div className="premium-site-name-row">
+            <h1>{artist.name}</h1>
+            {artist.headline&&<p className="premium-site-signature">{artist.headline}</p>}
+          </div>
           {artist.city&&<p className="premium-site-city"><MapPin size={16}/>{artist.city}</p>}
           <p className="premium-site-intro">{artist.bio?.trim()
             ?artist.bio.length>320?artist.bio.slice(0,317)+"…":artist.bio
@@ -246,9 +249,7 @@ export default function PublicProArtistPage(){
             <span><CheckCircle2 size={15}/> Site profissional publicado</span>
             <span>{events.length} {events.length===1?"show público futuro":"shows públicos futuros"}</span>
           </div>
-          {artist.headline&&<div className="premium-site-signature-area">
-            <p className="premium-site-signature">{artist.headline}</p>
-          </div>}
+
         </div>
       </section>
 
