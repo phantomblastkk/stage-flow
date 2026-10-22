@@ -201,6 +201,100 @@ $$;
 revoke all on function public.stage_venue_admin_save(jsonb) from public,anon,authenticated;
 grant execute on function public.stage_venue_admin_save(jsonb) to authenticated;
 
+
+-- Uma casa oficial nunca anuncia automaticamente um show de terceiros.
+-- Somente um administrador pode aprovar a inclusao de um evento publicado.
+create table if not exists public.stage_venue_show_approvals (
+  event_id uuid primary key references public.events(id) on delete cascade,
+  venue_id uuid not null references public.venues(id) on delete cascade,
+  approved_by uuid not null references public.profiles(id),
+  approved_at timestamptz not null default now()
+);
+create index if not exists stage_venue_show_approvals_venue_idx
+  on public.stage_venue_show_approvals (venue_id);
+alter table public.stage_venue_show_approvals enable row level security;
+revoke all on public.stage_venue_show_approvals from public,anon,authenticated;
+
+-- Ao alterar local, titulo, horario ou publicidade, retira automaticamente
+-- a aprovacao anterior, obrigando nova revisao humana.
+create or replace function public.stage_venue_invalidate_show_approval()
+returns trigger language plpgsql security definer set search_path=''
+as $
+begin
+  if old.venue_id is distinct from new.venue_id
+    or old.title is distinct from new.title
+    or old.starts_at is distinct from new.starts_at
+    or old.status is distinct from new.status
+    or old.show_publicly is distinct from new.show_publicly
+  then
+    delete from public.stage_venue_show_approvals where event_id=new.id;
+  end if;
+  return new;
+end;
+$;
+revoke all on function public.stage_venue_invalidate_show_approval() from public,anon,authenticated;
+drop trigger if exists stage_venue_invalidate_show_approval on public.events;
+create trigger stage_venue_invalidate_show_approval
+after update of venue_id,title,starts_at,status,show_publicly on public.events
+for each row execute function public.stage_venue_invalidate_show_approval();
+
+create or replace function public.stage_venue_admin_shows(p_venue_id uuid)
+returns jsonb language plpgsql stable security definer set search_path=''
+as $
+declare v_items jsonb;
+begin
+  if not public.stage_venue_is_admin() then
+    return jsonb_build_object('status','forbidden','items','[]'::jsonb);
+  end if;
+  if not exists(select 1 from public.venues where id=p_venue_id) then
+    return jsonb_build_object('status','not_found','items','[]'::jsonb);
+  end if;
+  select coalesce(jsonb_agg(jsonb_build_object(
+    'id',e.id,'title',e.title,'starts_at',e.starts_at,
+    'approved',(a.event_id is not null)
+  ) order by e.starts_at,e.id),'[]'::jsonb)
+  into v_items
+  from public.events e
+  left join public.stage_venue_show_approvals a
+    on a.event_id=e.id and a.venue_id=e.venue_id
+  where e.venue_id=p_venue_id and e.status='published'
+    and e.show_publicly and e.starts_at>=now()
+    and e.starts_at<now()+interval '1 year';
+  return jsonb_build_object('status','ok','items',v_items);
+end;
+$;
+revoke all on function public.stage_venue_admin_shows(uuid) from public,anon,authenticated;
+grant execute on function public.stage_venue_admin_shows(uuid) to authenticated;
+
+create or replace function public.stage_venue_admin_set_show(
+  p_event_id uuid,p_approved boolean
+)
+returns text language plpgsql security definer set search_path=''
+as $
+declare v_venue_id uuid;
+begin
+  if not public.stage_venue_is_admin() then return 'forbidden';end if;
+  if p_event_id is null or p_approved is null then return 'invalid';end if;
+  select e.venue_id into v_venue_id from public.events e
+  where e.id=p_event_id and e.status='published'
+    and e.show_publicly and e.starts_at>=now()
+  for update;
+  if v_venue_id is null then return 'not_found';end if;
+  if p_approved then
+    insert into public.stage_venue_show_approvals
+      (event_id,venue_id,approved_by)
+    values(p_event_id,v_venue_id,auth.uid())
+    on conflict(event_id) do update set
+      venue_id=excluded.venue_id,approved_by=excluded.approved_by,approved_at=now();
+  else
+    delete from public.stage_venue_show_approvals where event_id=p_event_id;
+  end if;
+  return 'ok';
+end;
+$;
+revoke all on function public.stage_venue_admin_set_show(uuid,boolean) from public,anon,authenticated;
+grant execute on function public.stage_venue_admin_set_show(uuid,boolean) to authenticated;
+
 -- Perfil publico, sem dados sobre quem cadastrou ou quaisquer eventos privados.
 create or replace function public.stage_public_venue(p_slug text)
 returns jsonb language sql stable security definer set search_path=''
@@ -215,11 +309,13 @@ as $$
         'id',e.id,'title',e.title,'starts_at',e.starts_at
       ) order by e.starts_at)
       from (
-        select id,title,starts_at
-        from public.events
-        where venue_id=v.id and show_publicly=true
-          and status='published' and starts_at>=now()
-        order by starts_at asc limit 40
+        select ev.id,ev.title,ev.starts_at
+        from public.events ev
+        join public.stage_venue_show_approvals a
+          on a.event_id=ev.id and a.venue_id=v.id
+        where ev.venue_id=v.id and ev.show_publicly=true
+          and ev.status='published' and ev.starts_at>=now()
+        order by ev.starts_at asc limit 40
       ) e
     ),'[]'::jsonb)
   )
