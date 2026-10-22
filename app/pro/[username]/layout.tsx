@@ -1,73 +1,73 @@
 import type { Metadata } from "next";
 import { notFound } from "next/navigation";
-import { createClient } from "@supabase/supabase-js";
+import {
+  getPublishedProSite,
+  getStageFlowOrigin,
+  publicArtistDescription,
+  publicProUrl
+} from "@/lib/pro-site-public";
 
-// Publicação de páginas Pro é resolvida novamente a cada requisição;
-// retirar do ar ou revogar acesso bloqueia imediatamente a rota.
-export const dynamic = "force-dynamic";
+// O crawler recebe dados do snapshot público real, no servidor.
+// Despublicar o site ou revogar o Pro remove as tags e bloqueia a rota.
+export const dynamic="force-dynamic";
 
-type PublicSite = {
-  artist?: {
-    name?:string;username?:string;bio?:string;
-    headline?:string;cover_path?:string|null;avatar_path?:string|null;
-  };
-};
 type Props={
   children:React.ReactNode;
   params:Promise<{username:string}>;
 };
 
-async function getPublishedSite(username:string):Promise<PublicSite|null>{
-  const url=process.env.NEXT_PUBLIC_SUPABASE_URL;
-  const anon=process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
-  if(!url||!anon||!/^[a-z0-9-]{3,30}$/.test(username))return null;
-  try {
-    const client=createClient(url,anon,{
-      auth:{persistSession:false,autoRefreshToken:false}
-    });
-    const {data,error}=await client.rpc("stage_public_pro_artist_site",{
-      p_username:username
-    });
-    return error||!data?null:data as PublicSite;
-  }catch{return null;}
-}
-
 export async function generateMetadata({params}:Omit<Props,"children">):Promise<Metadata>{
   const {username}=await params;
-  const site=await getPublishedSite(username);
+  const site=await getPublishedProSite(username);
+  const origin=getStageFlowOrigin();
+
   if(!site?.artist){
     return{
+      metadataBase:new URL(origin),
       title:"Site profissional indisponível | Stage Flow",
-      robots:{index:false,follow:false}
+      robots:{index:false,follow:false,noarchive:true}
     };
   }
-  const artist=site.artist;
-  const title=(artist.name||"Artista")+" | Site profissional Stage Flow";
-  const description=(artist.headline||artist.bio||
-    "Conheça meus shows, músicas e trabalhos no Stage Flow.").slice(0,155);
-  const url="https://stage-flow-lemon.vercel.app/pro/"+username;
-  const base=process.env.NEXT_PUBLIC_SUPABASE_URL;
-  const imagePath=artist.cover_path||artist.avatar_path;
-  const image=base&&imagePath
-    ?base.replace(/\/$/,"")+"/storage/v1/object/public/stage-artist-public/"+
-      imagePath.split("/").map(encodeURIComponent).join("/")
-    :undefined;
+
+  const name=(site.artist.name||"Artista").replace(/\s+/g," ").trim().slice(0,90);
+  const title=name+" | Site profissional — Stage Flow";
+  const description=publicArtistDescription(site);
+  const canonical=publicProUrl(username);
+  const poster=canonical+"/opengraph-image";
+
   return{
-    title,description,
-    alternates:{canonical:url},
+    metadataBase:new URL(origin),
+    title,
+    description,
+    applicationName:"Stage Flow",
+    alternates:{canonical},
     robots:{index:true,follow:true},
     openGraph:{
-      type:"profile",locale:"pt_BR",url,
-      title,description,siteName:"Stage Flow",
-      ...(image?{images:[{url:image,alt:"Foto de "+(artist.name||"artista")}]}:{})
+      type:"profile",
+      locale:"pt_BR",
+      siteName:"Stage Flow",
+      url:canonical,
+      title,
+      description,
+      images:[{
+        url:poster,
+        width:1200,
+        height:630,
+        alt:"Site profissional de "+name+" no Stage Flow"
+      }]
     },
-    twitter:{card:image?"summary_large_image":"summary",title,description}
+    twitter:{
+      card:"summary_large_image",
+      title,
+      description,
+      images:[poster]
+    }
   };
 }
 
 export default async function ProArtistLayout({children,params}:Props){
   const {username}=await params;
-  const site=await getPublishedSite(username);
+  const site=await getPublishedProSite(username);
   if(!site?.artist)notFound();
   return children;
 }
