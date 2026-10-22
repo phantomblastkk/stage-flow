@@ -91,7 +91,8 @@ export function usePremiumGallery(enabled: boolean) {
         invalid_video: "Esse vídeo do YouTube não tem um identificador válido.",
         invalid_order: "A ordem dos trabalhos mudou. Recarregue a galeria e tente novamente.",
         not_found: "Este trabalho não foi encontrado na sua conta.",
-        duplicate: "Esta foto já está na galeria."
+        duplicate: "Esta foto já está na galeria.",
+        published_media_in_use: "Esta foto está no site Pro publicado. Retire o site Pro do ar antes de excluí-la da galeria; depois publique novamente."
       };
       setError(rpcError?.message || reasons[String(data)] || "Não foi possível concluir a operação.");
       setBusy(false);
@@ -337,8 +338,10 @@ export function PremiumGalleryEditor({ gallery }: { gallery: PremiumGallery }) {
         </div>
     }
     <p className="premium-media-privacy">
-      <strong>Rascunho privado:</strong> as imagens ficam protegidas no Supabase e são mostradas aqui com links temporários.
-      Links e miniaturas do YouTube são públicos no YouTube. Esta galeria não publica um site pago nem altera seu perfil gratuito.
+      <strong>Galeria do rascunho:</strong> os arquivos permanecem privados no Supabase.
+      Só as fotos que você escolher publicar com o botão <strong>Publicar site Pro</strong>
+      poderão ser baixadas por visitantes, enquanto o site estiver no ar.
+      As demais fotos e os dados dos convites continuam privados. Vídeos abrem no YouTube.
     </p>
   </section>;
 }
