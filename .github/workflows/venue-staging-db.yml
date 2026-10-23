@@ -62,6 +62,7 @@ jobs:
             supabase/venue_admin_migration.sql \
             supabase/venue_calendar_gallery_suggestions_migration.sql \
             supabase/venue_partner_management_migration.sql \
+            tests/homologation/enable-fixtures-on-qa.sql \
             tests/homologation/seed-venues.sql \
             tests/homologation/fake-accounts.sql; do
             echo "Checking $sql"
