@@ -7,6 +7,13 @@ create role service_role nologin;
 create schema auth;
 create schema storage;
 
+-- Marcador exclusivo deste Postgres descartavel.
+create table public.stage_flow_qa_marker (
+  acknowledgment text primary key
+);
+insert into public.stage_flow_qa_marker(acknowledgment)
+values ('ISOLATED_STAGE_FLOW_HOMOLOGATION_ONLY');
+
 create table auth.users (
   id uuid primary key,
   email text unique,
