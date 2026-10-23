@@ -53,7 +53,7 @@ begin
     values (
       v_deck,'Show de teste — Sexta no Deck',
       'Apresentação fictícia cadastrada pela casa, não pela agenda de um músico.',
-      (current_date + interval '5 days' + time '20:00') at time zone 'America/Sao_Paulo',
+      ((current_date + 5) + time '20:00') at time zone 'America/Sao_Paulo',
       'published'
     );
   end if;
@@ -67,7 +67,7 @@ begin
       (venue_id,title,starts_at,status)
     values (
       v_deck,'Show de teste — Rascunho privado',
-      (current_date + interval '6 days' + time '21:00') at time zone 'America/Sao_Paulo',
+      ((current_date + 6) + time '21:00') at time zone 'America/Sao_Paulo',
       'draft'
     );
   end if;
@@ -81,7 +81,7 @@ begin
       (venue_id,title,starts_at,status)
     values (
       v_other,'Show de teste — Casa B',
-      (current_date + interval '7 days' + time '19:30') at time zone 'America/Sao_Paulo',
+      ((current_date + 7) + time '19:30') at time zone 'America/Sao_Paulo',
       'published'
     );
   end if;
