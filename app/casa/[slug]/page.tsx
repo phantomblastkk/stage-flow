@@ -79,12 +79,13 @@ export default function CasaPublicaPage() {
 
   useEffect(()=>{
     if(!venue)return;
+    const venueSlug=venue.slug;
     let active=true;
     async function loadMonth(){
       setMonthLoading(true);setMonthError("");
       try{
         const {data,error:queryError}=await createClient().rpc("stage_venue_public_month",{
-          p_slug:venue.slug,p_month:venueMonthKey(month)+"-01"
+          p_slug:venueSlug,p_month:venueMonthKey(month)+"-01"
         });
         if(!active)return;
         if(queryError)throw queryError;
