@@ -10,6 +10,16 @@ declare
   v_deck uuid;
   v_other uuid;
 begin
+  -- Impede aplicar fixtures acidentalmente em qualquer projeto sem habilitacao explicita.
+  if to_regclass('public.stage_flow_qa_marker') is null then
+    raise exception 'ABORTADO: este banco nao foi habilitado para fixtures de homologacao.';
+  end if;
+  if not exists (
+    select 1 from public.stage_flow_qa_marker
+    where acknowledgment='ISOLATED_STAGE_FLOW_HOMOLOGATION_ONLY'
+  ) then
+    raise exception 'ABORTADO: marcador de homologacao invalido.';
+  end if;
   select id into v_city from public.cities
     where name='São Paulo' and state_code='SP' and active
     order by id limit 1;
