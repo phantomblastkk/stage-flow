@@ -14,7 +14,14 @@ export const metadata: Metadata = {
 export default function RootLayout({ children }: Readonly<{ children: React.ReactNode }>) {
   return (
     <html lang="pt-BR">
-      <body>{children}</body>
+      <body>
+        {process.env.NEXT_PUBLIC_STAGE_FLOW_ENV === "homologation" && (
+          <div role="status" style={{ background:"#34234f",color:"#f3eaff",borderBottom:"1px solid #8464b4",padding:"9px 16px",textAlign:"center",fontSize:12,fontWeight:800,letterSpacing:".06em" }}>
+            AMBIENTE DE HOMOLOGAÇÃO — DADOS DE TESTE, NÃO É O SITE OFICIAL
+          </div>
+        )}
+        {children}
+      </body>
     </html>
   );
 }
