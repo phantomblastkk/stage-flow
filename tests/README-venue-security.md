@@ -13,6 +13,18 @@ O comando executa `tests/venue-partner-security.test.mjs` com o test runner nati
 
 Também há workflow opcional `.github/workflows/venue-security.yml` apenas para verificações. Não publica nem chama a Vercel. Confirmar que as GitHub Actions estão habilitadas no repositório.
 
+## Fluxo guiado do gerente (branch `develop`)
+
+Na homologação, abra `/admin/casas`, selecione uma casa **ativa, oficial e parceira** e vá a **Responsáveis pela casa**:
+
+1. Informe o e-mail do gerente. Se a conta não existir, a tela fornece uma mensagem de cadastro para copiar ou compartilhar por WhatsApp. **Isso NÃO concede acesso antecipado.** Após cadastro e confirmação de e-mail, clique em **Conceder acesso** novamente.
+2. Se a conta já existir, `stage_venue_admin_set_manager` salva o vínculo exclusivo daquela casa. O painel mostra o responsável, com opções **Copiar acesso** / **WhatsApp** para enviar o endereço do portal `/parceiros`.
+3. Para revogar, clique **Revogar** e confirme a ação. A revogação atua no banco; um link de WhatsApp antigo não dá permissão.
+4. Faça o gerente entrar na homologação em uma sessão separada (preferencialmente navegador anônimo). O portal `/parceiros` deverá listar apenas as casas concedidas. Em `/parceiros/<id>/programacao`, ele poderá editar agenda, flyers e galeria, mas não logos, capa ou vinculação de outros gerentes.
+5. **Testar isolamento exige uma segunda conta Auth real de homologação.** Usar apenas a conta de administrador geral não comprova restrição por casa. Não criar usuários falsos por SQL no Auth real, nem copiar contas de produção.
+
+O site oficial não precisa ser alterado; para visualizar essas mudanças na homologação, publicar a versão recente da branch `develop` em seu projeto Vercel de testes (deploy automático da branch continua desativado).
+
 ## 2) Banco de testes (NÃO usar produção)
 Depois de criar um projeto de teste Supabase com o schema base:
 1. Rodar, nesta ordem: `supabase/venue_admin_migration.sql`, `supabase/venue_calendar_gallery_suggestions_migration.sql` e `supabase/venue_partner_management_migration.sql`.
