@@ -38,8 +38,8 @@ function toIso(local: string): string | null {
   const parsed = new Date(local+":00-03:00");
   return Number.isNaN(parsed.valueOf()) ? null : parsed.toISOString();
 }
-function blank(venueId: string): FormShow {
-  return { id:null, venue_id:venueId, title:"", description:"", start:"", end:"", status:"draft" };
+function blank(venueId: string, date: string): FormShow {
+  return { id:null, venue_id:venueId, title:"", description:"", start:date+"T18:00", end:"", status:"draft" };
 }
 function picture(path: string) {
   return createClient().storage.from("stage-venue-media").getPublicUrl(path).data.publicUrl;
@@ -84,7 +84,7 @@ export default function VenueProgrammingWorkspace({mode}: {mode: "admin" | "part
   const [suggestions,setSuggestions] = useState<Suggestion[]>([]);
   const [month,setMonth] = useState(venueMonthStart);
   const [selectedDay,setSelectedDay] = useState<number|null>(null);
-  const [showForm,setShowForm] = useState<FormShow>(()=>blank(id));
+  const [showForm,setShowForm] = useState<FormShow>(()=>blank(id,venueDayKey(new Date().toISOString())));
   const [caption,setCaption] = useState("");
   const [busy,setBusy] = useState("");
   const [error,setError] = useState("");
@@ -139,10 +139,21 @@ export default function VenueProgrammingWorkspace({mode}: {mode: "admin" | "part
       start:inputTime(item.starts_at),end:inputTime(item.ends_at),status:item.status});
     setMonth(new Date(Date.UTC(Number(venueDayKey(item.starts_at).slice(0,4)),
       Number(venueDayKey(item.starts_at).slice(5,7))-1,1)));
-    setSelectedDay(null);
+    setSelectedDay(Number(venueDayKey(item.starts_at).slice(-2)));
     setError("");setSuccess("");
   }
-  function newShow() {setShowForm(blank(id));setError("");setSuccess("");}
+  function selectedDate() {
+    return venueMonthKey(month)+"-"+String(selectedDay??Number(venueDayKey(new Date().toISOString()).slice(-2))).padStart(2,"0");
+  }
+  function newShow() {setShowForm(blank(id,selectedDate()));setError("");setSuccess("");}
+  function chooseDay(day:number|null) {
+    setSelectedDay(day);
+    if(day!==null) {
+      const date=venueMonthKey(month)+"-"+String(day).padStart(2,"0");
+      setShowForm(blank(id,date));
+      setError("");setSuccess("");
+    }
+  }
   function fill<K extends keyof FormShow>(key:K,value:FormShow[K]) {
     setShowForm(prev=>({...prev,[key]:value}));
   }
@@ -274,7 +285,7 @@ export default function VenueProgrammingWorkspace({mode}: {mode: "admin" | "part
               <button className="btn btn-quiet" type="button" onClick={newShow}><Plus size={15}/> Novo show</button>
             </div>
             <VenueMonthCalendar month={month} events={shows} selectedDay={selectedDay}
-              onDayChange={setSelectedDay} onMonthChange={setMonth}/>
+              onDayChange={chooseDay} onMonthChange={next=>{setMonth(next);setSelectedDay(null);setShowForm(blank(id,venueMonthKey(next)+"-01"));}}/>
             <div className="venue-program-list">
               <h3>{selectedDay?"Shows do dia "+selectedDay:"Shows do mês"} <small>({visibleShows.length})</small></h3>
               {visibleShows.map(show=><button type="button" key={show.id}
@@ -296,15 +307,19 @@ export default function VenueProgrammingWorkspace({mode}: {mode: "admin" | "part
                 <input id="vp-title" required maxLength={120} value={showForm.title}
                   onChange={e=>fill("title",e.target.value)} placeholder="Ex.: Pagode no Deck 2"/></div>
               <div className="venue-program-time-fields">
-                <div className="field"><label htmlFor="vp-start">Data e hora *</label>
-                  <input id="vp-start" type="datetime-local" required value={showForm.start}
-                    onChange={e=>fill("start",e.target.value)}/></div>
-                <div className="field"><label htmlFor="vp-end">Término (opcional)</label>
-                  <input id="vp-end" type="datetime-local" value={showForm.end}
-                    onChange={e=>fill("end",e.target.value)}/></div>
+                <div className="field">
+                  <label>Dia escolhido no calendário</label>
+                  <p className="fine" style={{margin:"8px 0 0",fontWeight:700}}>{showForm.start.slice(0,10).split("-").reverse().join("/")}</p>
+                  <p className="fine">Para mudar a data, clique em outro dia no calendário.</p>
+                </div>
+                <div className="field"><label htmlFor="vp-start">Abertura da casa *</label>
+                  <input id="vp-start" type="time" required value={showForm.start.slice(11,16)}
+                    onChange={e=>fill("start",showForm.start.slice(0,10)+"T"+e.target.value)}/>
+                  <span className="fine">Sugerido: 18h. Ajuste conforme o flyer. O horário é usado para ordenar os shows.</span>
+                </div>
               </div>
               <div className="field"><label htmlFor="vp-description">Descrição da apresentação</label>
-                <textarea id="vp-description" rows={4} maxLength={1200}
+                <textarea id="vp-description" rows={2} maxLength={1200}
                   value={showForm.description} onChange={e=>fill("description",e.target.value)}
                   placeholder="Informações para quem vai ao show..."/></div>
               <div className="field"><label htmlFor="vp-status">Visibilidade</label>
