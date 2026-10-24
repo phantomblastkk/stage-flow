@@ -7,7 +7,8 @@
     "build": "next build",
     "start": "next start",
     "lint": "eslint .",
-    "test:venue-security": "node --test tests/venue-partner-security.test.mjs tests/brand-auth-navigation.test.mjs"
+    "test:venue-security": "node --test tests/venue-partner-security.test.mjs tests/brand-auth-navigation.test.mjs",
+    "test:show-history": "node --test tests/show-history-reports.test.mjs"
   },
   "dependencies": {
     "@supabase/ssr": "^0.6.1",
