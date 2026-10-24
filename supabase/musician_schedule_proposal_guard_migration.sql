@@ -158,5 +158,13 @@ begin
    'event_id',v_event,'invitation_id',v_invitation);
 end;
 $$;
+revoke all on function public.stage_hiring_proposal_send(
+ uuid,text,text,text,timestamptz,numeric,text) from public,anon,authenticated;
+grant execute on function public.stage_hiring_proposal_send(
+ uuid,text,text,text,timestamptz,numeric,text) to authenticated;
+revoke all on function public.stage_hiring_proposal_decide(uuid,boolean)
+ from public,anon,authenticated;
+grant execute on function public.stage_hiring_proposal_decide(uuid,boolean)
+ to authenticated;
 commit;
 notify pgrst,'reload schema';
