@@ -51,6 +51,8 @@ jobs:
         run: npm run test:hiring-proposals
       - name: Verify musician calendar and conflicts
         run: npm run test:musician-availability
+      - name: Verify recurring show drafts and team invitations
+        run: npm run test:recurring-shows
       - name: Check TypeScript
         run: npx tsc --noEmit
       - name: Build Next.js
