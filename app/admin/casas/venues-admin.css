@@ -87,3 +87,19 @@
 .venue-admin-manager-row small{font-size:11px;color:var(--muted);overflow-wrap:anywhere}
 .venue-admin-manager-row .btn{font-size:12px;padding:8px 10px}
 @media(max-width:480px){.venue-admin-manager-invite .btn{width:100%}}
+
+/* Integração guiada de gerentes: compartilhamento só depois da concessão. */
+.venue-admin-manager-steps{margin:16px 0;padding:17px 19px 17px 37px;border:1px solid #51416c;border-radius:13px;background:#211a35}
+.venue-admin-manager-steps li{font-size:12px;line-height:1.7;color:#ded4f4;padding-left:3px}
+.venue-admin-manager-steps li+li{margin-top:7px}
+.venue-admin-manager-share{margin:12px 0;padding:15px;border:1px solid #6e547f;border-radius:13px;background:linear-gradient(140deg,#29203d,#1b1930)}
+.venue-admin-manager-share p{font-size:12px;line-height:1.7;color:#e5daf6;margin:0 0 12px}
+.venue-admin-manager-actions{display:flex;justify-content:flex-end;align-items:center;gap:7px;flex-wrap:wrap}
+.venue-admin-manager-actions .btn{font-size:11px;line-height:1.3;padding:9px 10px;min-height:36px;white-space:normal;text-align:center}
+.venue-admin-manager-active{font-size:10px;color:#b7e6c4;font-weight:700}
+.venue-admin-manager-row>div:first-child{flex:1;min-width:150px}
+@media(max-width:690px){
+  .venue-admin-manager-row{align-items:stretch;flex-direction:column}
+  .venue-admin-manager-actions{justify-content:flex-start}
+  .venue-admin-manager-actions .btn{flex:1}
+}
