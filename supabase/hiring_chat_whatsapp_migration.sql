@@ -153,7 +153,7 @@ grant execute on function public.stage_hiring_list() to authenticated;
 
 create or replace function public.stage_hiring_messages(p_thread_id uuid)
 returns jsonb language plpgsql volatile security definer set search_path=''
-as $
+as $$
 declare v_items jsonb;
 begin
  if auth.uid() is null or not exists(select 1 from public.stage_hiring_threads t
