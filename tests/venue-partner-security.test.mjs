@@ -114,6 +114,20 @@ test("administrator can guide manager registration and safely share access",()=>
   assert.doesNotMatch(globalAdmin,/supabase\.auth\.admin\./);
 });
 
+test("house daily workflow shows upcoming priorities without bypassing scoped RPCs",()=>{
+  assert.match(editor,/const nextShows=useMemo/);
+  assert.match(editor,/upcomingWithoutFlyer/);
+  assert.match(editor,/setShowForm\(\{id:item\.id/);
+  assert.match(editor,/setPendingFlyer\(null\)/);
+  assert.match(editor,/chooseFlyerForNewShow/);
+  assert.match(editor,/file\.size>5\*1024\*1024/);
+  assert.match(editor,/savedId=result\.id/);
+  assert.match(editor,/await attachFlyer\(result\.id,pendingFlyer\)/);
+  assert.match(editor,/stage_venue_calendar_admin_save/);
+  assert.match(editor,/stage_venue_calendar_admin_flyer/);
+  assert.doesNotMatch(editor,/\.from\("stage_venue_calendar_events"\)\.(?:insert|upsert|update|delete)\(/);
+});
+
 test("no deployment is enabled for develop",()=>{
   const cfg=JSON.parse(read("vercel.json"));
   assert.equal(cfg.git?.deploymentEnabled?.develop,false);
