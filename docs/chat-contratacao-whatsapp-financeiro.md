@@ -67,6 +67,22 @@ Sem API Meta conectada não haverá alertas WhatsApp automáticos; chat e prefer
 - Clique **Editar financeiro e pagamentos** para abrir o `EventBudgetPanel` existente e registrar quanto a equipe recebeu (controle manual). Use **Atualizar** após editar receitas/despesas se os cartões estiverem com cache.
 - Shows cancelados não entram nos totais. Páginas de casas parceiras continuam com calendário, não recebem essa central financeira.
 
+## Etapa seguinte — propostas formais pelo chat
+
+Nova migração em homologação: `supabase/hiring_formal_proposals_migration.sql` (executar **depois** de `hiring_chat_whatsapp_migration.sql` e `private_fee_negotiations_migration.sql`). Já aplicada no Supabase QA. **Não executar em produção.**
+
+O módulo `components/hiring-proposals.tsx` aparece dentro de `/conversas`, por conversa:
+
+- O **contratante** cria uma proposta com show, dia, horário, local, cidade, cachê opcional e detalhes (ex.: transporte, repertório ou chegada). Com uma proposta pendente, não envia outra até retirá-la ou o músico responder. O histórico não é apagado.
+- O **músico** aceita ou recusa, sem que a resposta inicial de disponibilidade seja confundida com aceite contratual.
+- Se for aceita, a função privada `stage_hiring_proposal_decide` cria um evento **rascunho e não público** (quando a conversa ainda não estava ligada a um evento) e um convite **aceito**, tudo na mesma transação. Se o evento original já estiver cadastrado, usa aquele evento sem duplicá-lo. Impede novo convite se já houver convite ao mesmo músico para aquele evento.
+- Cachê acertado é registrado em `invitations.fee_amount` e `stage_fee_negotiations.agreed_amount`, alimentando agenda, histórico e relatórios existentes. Se o cachê ficou em branco, segue "a combinar"; o sistema não inventa preço.
+- Recusas e retiradas mantêm histórico e permitem renegociar com nova proposta. Confirmação não transfere dinheiro, não é assinatura de contrato e não confirma pagamento.
+- A função bloqueia alterações de terceiros, propostas para eventos de outra conta, envio com data passada ou fora do limite e alterações após resposta.
+- A fila privada de WhatsApp recebe o aviso genérico pelo mesmo chat, apenas quando o destinatário concedeu consentimento; **não envia nada de verdade até a API ser habilitada**.
+- Ainda **não existe verificação automática de conflitos de agenda em horários sobrepostos** ou bloqueio garantido de datas. Antes do lançamento precisaremos decidir regras para turnos, deslocamento, reservas e cancelamento de convites aceitos.
+- Testes automatizados em `npm run test:hiring-proposals` incluídos no CI. Teste real entre duas contas fica para a rodada de homologação integrada, conforme o plano.
+
 ## Checklist de publicação QA
 1. `npm run test:venue-security`, `npm run test:show-history`, `npm run test:chat-finance`, `npx tsc --noEmit`, `npm run build`.
 2. Vercel de homologação: publicar o último commit `develop` (publicação automática desativada), mantendo `NEXT_PUBLIC_STAGE_FLOW_ENV=homologation`.
