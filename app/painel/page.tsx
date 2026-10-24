@@ -216,6 +216,11 @@ export default function Dashboard() {
     description: "Converse com músicos ou contratantes, consulte disponibilidade e acompanhe propostas.",
     label: "CHAT INTERNO"
   });
+  primary.splice(2,0,{
+    href: "/financeiro", title: "Central financeira", icon: ChartNoAxesCombined,
+    description: "Receitas brutas, cachês, transporte, despesas, valores pagos e relatório por show e por mês.",
+    label: "CONTROLE OPCIONAL"
+  });
   primary.splice(1,0,{
     href: "/meus-shows", title: "Meus shows e histórico", icon: CalendarDays,
     description: "Reveja apresentações realizadas, confirme participações e acompanhe seus relatórios financeiros opcionais.",
