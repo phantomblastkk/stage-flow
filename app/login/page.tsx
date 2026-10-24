@@ -7,7 +7,18 @@ import { createClient } from "@/lib/supabase/client";
 
 export default function LoginPage() {
   const [inviteCode, setInviteCode] = useState("");
-  useEffect(() => { setInviteCode(new URLSearchParams(window.location.search).get("convite") || ""); }, []);
+  useEffect(() => {
+    const code=new URLSearchParams(window.location.search).get("convite") || "";
+    setInviteCode(code);
+    // Convites continuam sendo tratados pela tela de convite; sem convite,
+    // uma sessão já válida deve voltar ao painel, nunca pedir senha novamente.
+    if(code)return;
+    let active=true;
+    void createClient().auth.getUser().then(({data,error})=>{
+      if(active && !error && data.user) window.location.replace("/painel");
+    }).catch(()=>{});
+    return()=>{active=false};
+  }, []);
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [busy, setBusy] = useState(false);
