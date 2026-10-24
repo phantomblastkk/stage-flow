@@ -5,6 +5,7 @@ import { resolve } from "node:path";
 
 const read = (path) => readFileSync(resolve(process.cwd(),path),"utf8");
 const scoped = read("supabase/venue_partner_management_migration.sql");
+const suggestionWorkflow = read("supabase/venue_suggestions_workflow_migration.sql");
 const venueBase = read("supabase/venue_calendar_gallery_suggestions_migration.sql");
 const adminBase = read("supabase/venue_admin_migration.sql");
 const portal = read("app/parceiros/page.tsx");
@@ -126,6 +127,26 @@ test("house daily workflow shows upcoming priorities without bypassing scoped RP
   assert.match(editor,/stage_venue_calendar_admin_save/);
   assert.match(editor,/stage_venue_calendar_admin_flyer/);
   assert.doesNotMatch(editor,/\.from\("stage_venue_calendar_events"\)\.(?:insert|upsert|update|delete)\(/);
+});
+
+test("suggestion workflow preserves messages and scopes status edits by house",()=>{
+  const setter=sqlFunction(suggestionWorkflow,"stage_venue_suggestion_set_status");
+  const reader=sqlFunction(suggestionWorkflow,"stage_venue_calendar_admin_list");
+  assert.match(suggestionWorkflow,/add column if not exists review_status text not null default 'pending'/);
+  assert.match(suggestionWorkflow,/check \(review_status in \('pending','reviewing','resolved'\)\)/);
+  assert.match(suggestionWorkflow,/revoke all on public\.stage_venue_artist_suggestions from public,anon,authenticated/);
+  assert.match(suggestionWorkflow,/grant execute on function public\.stage_venue_suggestion_set_status\(uuid,text\) to authenticated/);
+  assert.match(setter,/if auth\.uid\(\) is null then return 'forbidden'/);
+  assert.match(setter,/if not public\.stage_venue_can_manage\(v_venue\) then return 'forbidden'/);
+  assert.match(setter,/where s\.id=p_id and s\.venue_id=v_venue/);
+  assert.doesNotMatch(setter,/\bdelete\b/i);
+  assert.match(reader,/'review_status',s\.review_status/);
+  assert.match(reader,/stage_venue_can_manage\(p_venue_id\)/);
+  assert.match(editor,/stage_venue_suggestion_set_status/);
+  assert.match(editor,/setSuggestionFilter/);
+  assert.match(editor,/filteredSuggestions/);
+  assert.match(editor,/suggestionCounts/);
+  assert.doesNotMatch(editor,/\.from\("stage_venue_artist_suggestions"\)/);
 });
 
 test("no deployment is enabled for develop",()=>{
