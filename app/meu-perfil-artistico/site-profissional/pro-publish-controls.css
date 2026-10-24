@@ -79,7 +79,7 @@
 }
 .pro-publish-main-button{
   display:inline-flex;align-items:center;justify-content:center;gap:9px;
-  border:1px solid #bee39c;background:#c5e6a3;color:#1e2a20;
+  border:1px solid #9170D8;background:#7142D8;color:#FFFFFF;
   border-radius:10px;padding:14px 15px;
   font:900 12px "Manrope",sans-serif;cursor:pointer
 }
