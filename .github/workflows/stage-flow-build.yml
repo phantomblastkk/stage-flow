@@ -43,6 +43,8 @@ jobs:
         run: npm install --no-audit --no-fund
       - name: Verify venue authorization contracts
         run: npm run test:venue-security
+      - name: Verify show history and finance isolation
+        run: npm run test:show-history
       - name: Check TypeScript
         run: npx tsc --noEmit
       - name: Build Next.js
