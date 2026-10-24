@@ -83,6 +83,25 @@ O módulo `components/hiring-proposals.tsx` aparece dentro de `/conversas`, por 
 - Ainda **não existe verificação automática de conflitos de agenda em horários sobrepostos** ou bloqueio garantido de datas. Antes do lançamento precisaremos decidir regras para turnos, deslocamento, reservas e cancelamento de convites aceitos.
 - Testes automatizados em `npm run test:hiring-proposals` incluídos no CI. Teste real entre duas contas fica para a rodada de homologação integrada, conforme o plano.
 
+## Agenda inteligente do músico — próxima etapa do protótipo
+
+Módulo `/minha-disponibilidade` para músicos e cantores, com atalho em `/painel`. Implantado **somente** no projeto Supabase de homologação `zycuprhymoukhnuamtit`.
+
+Migrações novas (ordem obrigatória, depois do chat e das propostas):
+1. `supabase/musician_smart_schedule_migration.sql`
+2. `supabase/musician_schedule_proposal_guard_migration.sql`
+
+- Cadastro privado de **bloqueio de dia inteiro** ou **intervalo de horas** em data única.
+- Compromissos semanais: dia da semana, horário, nome privado da banda e vigência com início e término (até 366 dias); permite modificar excluindo e cadastrando novamente.
+- Calendário exibe marcações próprias e shows do histórico de convites aceitos/eventos organizados, sem revelar títulos de bandas a outros usuários.
+- `stage_musician_schedule_check` compara compromissos manuais e semanais, convites aceitos, eventos próprios e propostas pendentes. Respostas: `free`, `busy`, `possible_conflict` (não confirmado), `invalid` e `forbidden`. Contratante só pode consultar um músico quando ambos participam de uma conversa privada, sem títulos ou detalhes de compromissos.
+- Conflitos de compromissos/bloqueios confirmados **impedem enviar ou aceitar uma nova proposta pelo chat**; possíveis conflitos apenas alertam. Ao aceitar, a operação usa lock transacional por músico e consulta novamente antes de criar convite/evento, para evitar duas propostas concorrentes aceitas na mesma janela.
+- **Limite atual importante:** sem `ends_at` no show, a consulta estima duração de 4 horas. Não há ainda janela de deslocamento, exceções semanais personalizadas, turnos que atravessam a madrugada nem bloqueio automático de todas as demais rotas antigas de aceite de convites. Horários e disponibilidade devem ser confirmados diretamente antes de formalizar.
+- O formulário da proposta agora tem botão **Verificar conflito antes de enviar** com resultados resumidos (não expõe locais, nomes de bandas nem a agenda pessoal).
+- Se o marketplace privado for instalado futuramente, a consulta também considera datas em `stage_marketplace_musician_settings.blocked_dates`. Na homologação, o marketplace não foi lançado.
+- Os testes de regras e permissões podem ser rodados em `npm run test:musician-availability` e foram ligados ao CI. Verificação SQL transacional de bloqueio manual, recorrência, remoção e isolamento também executada no QA, com `ROLLBACK`.
+- Não publicar a agenda individual como pública sem consentimento adicional e revisão de privacidade.
+
 ## Checklist de publicação QA
 1. `npm run test:venue-security`, `npm run test:show-history`, `npm run test:chat-finance`, `npx tsc --noEmit`, `npm run build`.
 2. Vercel de homologação: publicar o último commit `develop` (publicação automática desativada), mantendo `NEXT_PUBLIC_STAGE_FLOW_ENV=homologation`.
