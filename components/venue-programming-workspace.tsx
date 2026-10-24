@@ -5,7 +5,7 @@ import Link from "next/link";
 import { useParams, useRouter } from "next/navigation";
 import {
   ArrowLeft, CalendarDays, ImagePlus, LoaderCircle, MessageCircle, Plus,
-  Save, Trash2, UploadCloud, Images, Music2, ShieldCheck, ExternalLink
+  Save, Trash2, UploadCloud, Images, Music2, ShieldCheck, ExternalLink, Clock3, CheckCircle2
 } from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
 import VenueMonthCalendar, {
@@ -18,7 +18,14 @@ type AdminShow = {
   status: "draft" | "published" | "cancelled"; flyer_path: string | null;
 };
 type GalleryPhoto = { id: string; media_path: string; caption: string; sort_order: number };
-type Suggestion = { id: string; artist_name: string; visitor_name: string; message: string; created_at: string };
+type SuggestionStatus = "pending" | "reviewing" | "resolved";
+type Suggestion = {
+  id: string; artist_name: string; visitor_name: string; message: string; created_at: string;
+  review_status: SuggestionStatus; review_updated_at: string | null;
+};
+const suggestionLabels: Record<SuggestionStatus, string> = {
+  pending: "Pendente", reviewing: "Em análise", resolved: "Resolvida"
+};
 type FormShow = {
   id: string | null; venue_id: string; title: string; description: string;
   start: string; end: string; status: "draft" | "published" | "cancelled";
@@ -82,6 +89,8 @@ export default function VenueProgrammingWorkspace({mode}: {mode: "admin" | "part
   const [shows,setShows] = useState<AdminShow[]>([]);
   const [photos,setPhotos] = useState<GalleryPhoto[]>([]);
   const [suggestions,setSuggestions] = useState<Suggestion[]>([]);
+  const [suggestionFilter,setSuggestionFilter] = useState<"all"|SuggestionStatus>("pending");
+  const [suggestionBusy,setSuggestionBusy] = useState<string|null>(null);
   const [month,setMonth] = useState(venueMonthStart);
   const [selectedDay,setSelectedDay] = useState<number|null>(null);
   const [showForm,setShowForm] = useState<FormShow>(()=>blank(id,venueDayKey(new Date().toISOString())));
@@ -143,6 +152,15 @@ export default function VenueProgrammingWorkspace({mode}: {mode: "admin" | "part
     ).sort((a,b)=>a.starts_at.localeCompare(b.starts_at));
   },[shows]);
   const upcomingWithoutFlyer=nextShows.filter(x=>!x.flyer_path).length;
+  const suggestionCounts=useMemo(()=>({
+    pending:suggestions.filter(x=>x.review_status==="pending").length,
+    reviewing:suggestions.filter(x=>x.review_status==="reviewing").length,
+    resolved:suggestions.filter(x=>x.review_status==="resolved").length,
+  }),[suggestions]);
+  const filteredSuggestions=useMemo(()=>
+    suggestionFilter==="all"?suggestions:suggestions.filter(x=>x.review_status===suggestionFilter),
+    [suggestions,suggestionFilter]
+  );
 
   function editShow(item: AdminShow){
     if(busy)return;
@@ -292,6 +310,20 @@ export default function VenueProgrammingWorkspace({mode}: {mode: "admin" | "part
     }catch(e){setError(e instanceof Error?e.message:"Não foi possível remover.");}
     finally{setBusy("");}
   }
+  async function changeSuggestionStatus(item:Suggestion,status:SuggestionStatus) {
+    if(suggestionBusy || item.review_status===status)return;
+    setSuggestionBusy(item.id);setError("");setSuccess("");
+    try{
+      const {data,error:rpcError}=await createClient().rpc("stage_venue_suggestion_set_status",{
+        p_id:item.id,p_status:status
+      });
+      if(rpcError)throw rpcError;
+      if(data!=="ok")throw new Error(friendly(String(data)));
+      await refresh();
+      setSuccess("Sugestão de "+item.artist_name+" marcada como "+suggestionLabels[status].toLowerCase()+".");
+    }catch(e){setError(e instanceof Error?e.message:"Não foi possível atualizar a sugestão.");}
+    finally{setSuggestionBusy(null);}
+  }
   const currentFlyer=shows.find(x=>x.id===showForm.id)?.flyer_path;
   return <main className="venue-program-page"><div className="container">
     <nav className="nav">
@@ -317,7 +349,7 @@ export default function VenueProgrammingWorkspace({mode}: {mode: "admin" | "part
           <button type="button" className={tab==="galeria"?"active":""} onClick={()=>setTab("galeria")}>
             <Images size={17}/> Fotos <span>{photos.length}</span></button>
           <button type="button" className={tab==="sugestoes"?"active":""} onClick={()=>setTab("sugestoes")}>
-            <MessageCircle size={17}/> Sugestões <span>{suggestions.length}</span></button>
+            <MessageCircle size={17}/> Sugestões <span>{suggestionCounts.pending+suggestionCounts.reviewing}</span></button>
         </div>
         {error&&<div className="venue-program-alert" role="alert">{error}</div>}
         {success&&<div className="venue-program-success" role="status">{success}</div>}
@@ -461,17 +493,49 @@ export default function VenueProgrammingWorkspace({mode}: {mode: "admin" | "part
             </article>)}</div>:<p className="venue-program-empty">A galeria está vazia. Adicione a primeira foto da casa.</p>}
         </section>}
         {tab==="sugestoes"&&<section className="venue-program-panel venue-program-gallery-panel">
-          <div className="venue-program-heading"><h2>Sugestões de atrações</h2><span className="fine">100 mensagens mais recentes</span></div>
-          <p className="fine">Mensagens recebidas pelo botão “Sugerir atração” na página pública. Ninguém vê as sugestões de outras pessoas.</p>
+          <div className="venue-program-heading">
+            <h2>Sugestões de atrações</h2><span className="fine">100 mensagens mais recentes</span>
+          </div>
+          <p className="fine">Acompanhe as sugestões enviadas pelo público sem excluir mensagens. A triagem fica visível apenas aos responsáveis autorizados desta casa.</p>
+          <div className="venue-program-suggestion-stats" aria-label="Resumo da triagem">
+            <span><Clock3 size={15}/><strong>{suggestionCounts.pending}</strong> pendentes</span>
+            <span><MessageCircle size={15}/><strong>{suggestionCounts.reviewing}</strong> em análise</span>
+            <span><CheckCircle2 size={15}/><strong>{suggestionCounts.resolved}</strong> resolvidas</span>
+          </div>
+          <div className="venue-program-suggestion-filters" role="group" aria-label="Filtrar sugestões">
+            {([
+              ["pending","Pendentes"],["reviewing","Em análise"],["resolved","Resolvidas"],["all","Todas"]
+            ] as const).map(([value,label])=><button key={value} type="button"
+              aria-pressed={suggestionFilter===value}
+              onClick={()=>setSuggestionFilter(value)}>{label}</button>)}
+          </div>
           <div className="venue-program-suggestions">
-            {suggestions.map(s=><article key={s.id} className="venue-program-suggestion">
-              <div><strong>{s.artist_name}</strong><small>{new Date(s.created_at).toLocaleString("pt-BR",{dateStyle:"medium",timeStyle:"short"})}</small></div>
+            {filteredSuggestions.map(s=><article key={s.id} className="venue-program-suggestion">
+              <div className="venue-program-suggestion-top">
+                <div><strong>{s.artist_name}</strong><small>{new Date(s.created_at).toLocaleString("pt-BR",{dateStyle:"medium",timeStyle:"short"})}</small></div>
+                <span className={"venue-program-suggestion-status "+s.review_status}>
+                  {suggestionLabels[s.review_status]||"Pendente"}
+                </span>
+              </div>
               {s.message&&<p>{s.message}</p>}
               {s.visitor_name&&<small>Sugerido por {s.visitor_name}</small>}
+              {s.review_updated_at&&<small className="venue-program-suggestion-updated">
+                Atualizado em {new Date(s.review_updated_at).toLocaleString("pt-BR",{dateStyle:"short",timeStyle:"short"})}
+              </small>}
+              <div className="venue-program-suggestion-actions">
+                {s.review_status!=="reviewing"&&<button type="button" disabled={!!suggestionBusy}
+                  onClick={()=>void changeSuggestionStatus(s,"reviewing")}>Em análise</button>}
+                {s.review_status!=="resolved"&&<button type="button" disabled={!!suggestionBusy}
+                  onClick={()=>void changeSuggestionStatus(s,"resolved")}>Marcar resolvida</button>}
+                {s.review_status!=="pending"&&<button type="button" disabled={!!suggestionBusy}
+                  onClick={()=>void changeSuggestionStatus(s,"pending")}>Voltar a pendente</button>}
+              </div>
             </article>)}
-            {!suggestions.length&&<p className="venue-program-empty">Nenhuma sugestão recebida por enquanto.</p>}
+            {!filteredSuggestions.length&&<p className="venue-program-empty">
+              {suggestionFilter==="all"?"Nenhuma sugestão recebida por enquanto.":"Nenhuma sugestão nesta categoria."}
+            </p>}
           </div>
-        </section>}
+        </section>
       </>}
   </div></main>;
 }
