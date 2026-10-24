@@ -74,6 +74,8 @@ export default function AdminCasasPage() {
   const [managerBusy, setManagerBusy] = useState(false);
   const [managerError, setManagerError] = useState("");
   const [managerNotice, setManagerNotice] = useState("");
+  const [managerNeedsSignup, setManagerNeedsSignup] = useState(false);
+  const [managerShareNotice, setManagerShareNotice] = useState("");
 
   const refresh = useCallback(async (selectId?: string) => {
     const supabase = createClient();
@@ -136,7 +138,7 @@ export default function AdminCasasPage() {
   }, []);
 
   useEffect(() => {
-    if (!authorized || !form.id) {setManagers([]);setManagerError("");return;}
+    if (!authorized || !form.id) {setManagers([]);setManagerError("");setManagerNeedsSignup(false);return;}
     const id = form.id;
     let active = true;
     void loadManagers(id).then(items => {
@@ -149,13 +151,18 @@ export default function AdminCasasPage() {
 
   async function setManager(email: string, enabled: boolean) {
     if (!form.id || managerBusy) return;
-    setManagerBusy(true);setManagerError("");setManagerNotice("");
+    setManagerBusy(true);setManagerError("");setManagerNotice("");setManagerNeedsSignup(false);setManagerShareNotice("");
     try {
       const { data,error } = await createClient().rpc("stage_venue_admin_set_manager",{
         p_venue_id:form.id,p_email:email.trim(),p_enabled:enabled
       });
       if (error) throw error;
       const result=String(data);
+      if (result==="account_not_found") {
+        setManagerNeedsSignup(true);
+        setManagerError("Este e-mail ainda não possui uma conta no Stage Flow. Envie o link de cadastro abaixo. Depois que a pessoa criar a conta e confirmar o e-mail, volte aqui e clique em Conceder acesso.");
+        return;
+      }
       if (result!=="granted" && result!=="revoked") {
         const messages:Record<string,string>={
           forbidden:"Sua conta não tem permissão para vincular responsáveis.",
@@ -166,10 +173,42 @@ export default function AdminCasasPage() {
         throw new Error(messages[result]||"Não foi possível alterar a permissão.");
       }
       setManagers(await loadManagers(form.id));setManagerEmail("");
-      setManagerNotice(enabled?"Acesso do responsável concedido.":"Acesso do responsável revogado.");
+      setManagerNotice(enabled?"Acesso concedido! Envie o link do portal ao responsável para ele acessar a programação.":"Acesso revogado. Esta conta não poderá mais gerenciar esta casa.");
     } catch(err) {
       setManagerError(err instanceof Error?err.message:"Erro ao gerenciar responsável.");
     } finally {setManagerBusy(false);}
+  }
+
+  function managerMessage(email:string,needsSignup:boolean) {
+    const portal=window.location.origin + "/parceiros";
+    const signup=window.location.origin + "/cadastro";
+    return needsSignup
+      ? "Olá! A casa " + form.name + " vai usar o Stage Flow para organizar shows e flyers. Crie sua conta pelo link " +
+        signup + " usando o e-mail " + email +
+        ". Depois de confirmar a conta, me avise para eu liberar o acesso à casa. Este link não concede acesso automaticamente."
+      : "Olá! Seu acesso à programação da casa " + form.name + " foi liberado no Stage Flow para a conta " +
+        email + ". Entre em " + portal +
+        " para gerenciar shows, flyers, fotos e sugestões. Você terá acesso apenas às casas autorizadas.";
+  }
+
+  async function copyManagerMessage(email:string,needsSignup:boolean) {
+    try {
+      await navigator.clipboard.writeText(managerMessage(email,needsSignup));
+      setManagerShareNotice("Mensagem copiada! Agora é só enviar para o responsável.");
+    } catch {
+      setManagerShareNotice("Não foi possível copiar automaticamente. Use o botão Enviar pelo WhatsApp.");
+    }
+  }
+
+  function shareManagerWhatsapp(email:string,needsSignup:boolean) {
+    const text=encodeURIComponent(managerMessage(email,needsSignup));
+    window.open("https://wa.me/?text="+text,"_blank","noopener,noreferrer");
+  }
+
+  function revokeManager(email:string,displayName:string) {
+    if (!window.confirm("Revogar o acesso de " + displayName + " à casa " + form.name +
+      "? A pessoa perderá o acesso à programação desta casa imediatamente.")) return;
+    void setManager(email,false);
   }
 
   const filtered = useMemo(() => venues.filter((item) =>
@@ -182,7 +221,7 @@ export default function AdminCasasPage() {
       description: item.description || "", instagram_url: item.instagram_url || "",
       whatsapp: item.whatsapp || "", logo_path: item.logo_path || "",
       cover_path: item.cover_path || "" });
-    setNotice(""); setError("");
+    setNotice(""); setError("");setManagerNotice("");setManagerShareNotice("");setManagerNeedsSignup(false);
   }
   function setField<K extends keyof Venue>(field: K, value: Venue[K]) {
     setForm((previous) => ({ ...previous, [field]: value }));
@@ -275,7 +314,7 @@ export default function AdminCasasPage() {
             <div className="venue-admin-list-head">
               <h2>Estabelecimentos</h2>
               <button className="btn btn-primary" type="button" onClick={() => {
-                setForm(blank()); setError(""); setNotice("");
+                setForm(blank()); setError(""); setNotice("");setManagerNeedsSignup(false);setManagerShareNotice("");setManagerNotice("");
               }}><Plus size={15}/> Nova casa</button>
             </div>
             <div className="venue-admin-search"><Search size={17}/>
@@ -396,9 +435,15 @@ export default function AdminCasasPage() {
             {form.id && <div className="venue-admin-media venue-admin-manager-panel">
               <h3><ShieldCheck size={20}/> Responsáveis pela casa</h3>
               <p className="fine">Conceda acesso a uma conta Stage Flow já cadastrada. O responsável poderá editar só shows, flyers, galeria e visualizar sugestões desta casa. Apenas a administração geral controla parceiros, logo, capa e permissões.</p>
+              <ol className="venue-admin-manager-steps">
+                <li>Escolha uma casa ativa, oficial e parceira.</li>
+                <li>Digite o e-mail da conta do gerente e conceda o acesso. Se ele ainda não tiver conta, envie primeiro o link de cadastro.</li>
+                <li>Envie o link do portal por WhatsApp. Ele verá somente a casa autorizada.</li>
+              </ol>
               {!form.is_partner && <p className="venue-admin-manager-tip">Para liberar o portal, marque a casa como oficial e parceira, mantenha ativa e salve as alterações.</p>}
               {managerError && <p className="venue-admin-review-error" role="alert">{managerError}</p>}
               {managerNotice && <p className="venue-admin-manager-ok" role="status">{managerNotice}</p>}
+              {managerShareNotice && <p className="venue-admin-manager-ok" role="status">{managerShareNotice}</p>}
               <div className="venue-admin-manager-invite">
                 <label htmlFor="venue-manager-email">E-mail de cadastro do responsável</label>
                 <div>
@@ -411,11 +456,27 @@ export default function AdminCasasPage() {
                   </button>
                 </div>
               </div>
+              {managerNeedsSignup && managerEmail.trim() && <div className="venue-admin-manager-share">
+                <p><strong>Próximo passo: cadastro.</strong> O gerente precisa criar a conta antes de receber permissão de edição.</p>
+                <div className="venue-admin-manager-actions">
+                  <button type="button" className="btn btn-quiet" onClick={()=>void copyManagerMessage(managerEmail.trim(),true)}>Copiar convite de cadastro</button>
+                  <button type="button" className="btn btn-quiet" onClick={()=>shareManagerWhatsapp(managerEmail.trim(),true)}>Enviar pelo WhatsApp</button>
+                  <Link className="btn btn-quiet" href="/cadastro" target="_blank" rel="noopener noreferrer">Abrir cadastro <ExternalLink size={14}/></Link>
+                </div>
+              </div>}
               <div className="venue-admin-manager-list">
                 {managers.map(manager=><div className="venue-admin-manager-row" key={manager.profile_id}>
-                  <div><strong>{manager.display_name}</strong><small>{manager.email}</small></div>
-                  <button type="button" className="btn btn-quiet" disabled={managerBusy}
-                    onClick={()=>void setManager(manager.email,false)}>Revogar</button>
+                  <div>
+                    <strong>{manager.display_name}</strong>
+                    <small>{manager.email}</small>
+                    <span className="venue-admin-manager-active">Acesso ativo a esta casa</span>
+                  </div>
+                  <div className="venue-admin-manager-actions">
+                    <button type="button" className="btn btn-quiet" onClick={()=>void copyManagerMessage(manager.email,false)}>Copiar acesso</button>
+                    <button type="button" className="btn btn-quiet" onClick={()=>shareManagerWhatsapp(manager.email,false)}>WhatsApp</button>
+                    <button type="button" className="btn btn-quiet" disabled={managerBusy}
+                      onClick={()=>revokeManager(manager.email,manager.display_name)}>Revogar</button>
+                  </div>
                 </div>)}
                 {!managers.length && <p className="fine">Nenhum responsável com acesso a esta casa.</p>}
               </div>
