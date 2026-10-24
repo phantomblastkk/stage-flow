@@ -9,7 +9,8 @@
     "lint": "eslint .",
     "test:venue-security": "node --test tests/venue-partner-security.test.mjs tests/brand-auth-navigation.test.mjs",
     "test:show-history": "node --test tests/show-history-reports.test.mjs",
-    "test:chat-finance": "node --test tests/chat-finance.test.mjs"
+    "test:chat-finance": "node --test tests/chat-finance.test.mjs",
+    "test:hiring-proposals": "node --test tests/hiring-proposals.test.mjs"
   },
   "dependencies": {
     "@supabase/ssr": "^0.6.1",
