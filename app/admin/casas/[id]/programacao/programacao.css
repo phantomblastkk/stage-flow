@@ -92,3 +92,25 @@
 .venue-program-pending-flyer button{background:none;color:#eebaca;border:0;text-decoration:underline;cursor:pointer;font-size:12px}
 @media(max-width:1050px){.venue-program-next-grid{grid-template-columns:repeat(2,minmax(0,1fr))}}
 @media(max-width:620px){.venue-program-next{padding:14px}.venue-program-next-grid{grid-template-columns:1fr}}
+
+/* Triagem de sugestões: operação interna, com estados e filtros legíveis. */
+.venue-program-suggestion-stats{display:flex;gap:9px;flex-wrap:wrap;margin:20px 0 15px}
+.venue-program-suggestion-stats span{display:flex;align-items:center;gap:8px;padding:10px 13px;border:1px solid #57486c;background:#221c32;border-radius:12px;color:#ded3f4;font-size:12px}
+.venue-program-suggestion-stats strong{font:800 16px Manrope,sans-serif;color:#e4ceff}
+.venue-program-suggestion-filters{display:flex;flex-wrap:wrap;gap:8px;margin:14px 0 19px}
+.venue-program-suggestion-filters button{cursor:pointer;border:1px solid #584770;border-radius:999px;background:#251f34;color:#c4b8d8;font:700 12px Manrope,sans-serif;padding:9px 13px}
+.venue-program-suggestion-filters button[aria-pressed="true"]{background:#58378d;color:#fff;border-color:#a383de}
+.venue-program-suggestion-filters button:focus-visible,
+.venue-program-suggestion-actions button:focus-visible{outline:2px solid #c3a9ff;outline-offset:3px}
+.venue-program-suggestion-top{display:flex;align-items:flex-start;justify-content:space-between;flex-wrap:wrap;gap:10px}
+.venue-program-suggestion-top>div{display:grid;gap:5px}
+.venue-program-suggestion-status{display:inline-flex;border-radius:99px;border:1px solid #5d4f76;padding:6px 10px;font-size:11px;font-weight:800}
+.venue-program-suggestion-status.pending{color:#ffdfb3;background:#3e3026;border-color:#836340}
+.venue-program-suggestion-status.reviewing{color:#cfbaff;background:#352849;border-color:#775caa}
+.venue-program-suggestion-status.resolved{color:#bbefd0;background:#1d3a2b;border-color:#4f8063}
+.venue-program-suggestion-updated{display:block;margin-top:10px}
+.venue-program-suggestion-actions{display:flex;align-items:center;gap:7px;flex-wrap:wrap;border-top:1px solid #3c334e;margin-top:16px;padding-top:13px}
+.venue-program-suggestion-actions button{cursor:pointer;background:#322842;border:1px solid #5c497b;color:#e6d9f9;border-radius:9px;font-size:12px;font-weight:750;padding:9px 11px}
+.venue-program-suggestion-actions button:hover{background:#47315f;border-color:#9473c3}
+.venue-program-suggestion-actions button:disabled{opacity:.5;cursor:wait}
+@media(max-width:540px){.venue-program-suggestion-stats{display:grid;grid-template-columns:1fr}.venue-program-suggestion-actions button{flex:1}}
