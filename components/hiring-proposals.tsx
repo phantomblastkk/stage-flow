@@ -69,7 +69,7 @@ export default function HiringProposals({thread,onUpdate}:Props){
   void load().catch(e=>{if(alive)setError(e instanceof Error?e.message:"Não foi possível carregar as propostas.");})
    .finally(()=>{if(alive)setLoading(false);});
   if(thread.event_id&&thread.acting_as==="requester") {
-    void createClient().rpc("stage_hiring_proposal_prefill",{p_thread_id:thread.id})
+    void Promise.resolve(createClient().rpc("stage_hiring_proposal_prefill",{p_thread_id:thread.id}))
       .then(({data,error})=>{
         if(!alive||error||data?.status!=="ok"||!data.event)return;
         const saved=data.event as {title:string;venue:string|null;city:string|null;starts_at:string};
