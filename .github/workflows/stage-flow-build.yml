@@ -47,6 +47,8 @@ jobs:
         run: npm run test:show-history
       - name: Verify chat and finance contracts
         run: npm run test:chat-finance
+      - name: Verify hiring proposal permissions
+        run: npm run test:hiring-proposals
       - name: Check TypeScript
         run: npx tsc --noEmit
       - name: Build Next.js
