@@ -34,6 +34,7 @@ test("recurring shows are drafts, idempotent and do not auto-invite anyone",()=>
  assert.match(generator,/e\.producer_id=auth\.uid\(\)/);
  assert.match(generator,/insert into public\.events/);
  assert.match(generator,/'draft',false/);
+ assert.match(generator,/if v_start<=now\(\) then continue/);
  assert.match(generator,/insert into public\.stage_recurring_show_occurrences/);
  assert.doesNotMatch(generator,/insert into public\.invitations|stage_invite_team_to_event/i);
  const creator=fn("stage_recurring_show_create");
