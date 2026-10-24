@@ -99,7 +99,7 @@ export default function EventosPage() {
 
  return <main><div className="container">
   <nav className="nav"><Link className="brand" href="/"><span className="brand-mark">S</span> stage flow</Link><Link className="btn btn-quiet" href="/painel"><ArrowLeft size={15}/> Voltar ao painel</Link></nav>
-  <section style={{padding:"42px 0 24px"}}><div className="eyebrow"><span className="dot"/> AGENDA PROFISSIONAL</div><h1 style={{fontSize:"clamp(34px,5vw,46px)"}}>Seus <span className="accent">eventos.</span></h1><p className="lead">Seus próprios shows e as participações confirmadas em outras equipes, todos no mesmo calendário.</p></section>
+  <section style={{padding:"42px 0 24px"}}><div className="eyebrow"><span className="dot"/> AGENDA PROFISSIONAL</div><h1 style={{fontSize:"clamp(34px,5vw,46px)"}}>Seus <span className="accent">eventos.</span></h1><p className="lead">Seus próprios shows e as participações confirmadas em outras equipes, todos no mesmo calendário.</p><Link href="/shows-recorrentes" className="btn btn-quiet" style={{marginTop:14}}><CalendarDays size={16}/> Criar programação semanal</Link></section>
   <section className="feature" style={{marginBottom:28}}><h2 style={{fontFamily:"Manrope,sans-serif",marginTop:0}}><Plus size={19} style={{display:"inline",verticalAlign:"middle"}}/> Novo evento</h2>
    <form onSubmit={createEvent}>
     <div className="field"><label htmlFor="event-title">Nome do show / evento *</label><input id="event-title" value={title} onChange={e=>setTitle(e.target.value)} placeholder="Ex.: Pagode ao vivo" required maxLength={120}/></div>
