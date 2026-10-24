@@ -211,6 +211,11 @@ export default function Dashboard() {
     ];
   }
 
+  if (profile.is_artist) primary.splice(0,0,{
+    href: "/minha-disponibilidade", title: "Minha disponibilidade", icon: CalendarDays,
+    description: "Bloqueie datas, cadastre bandas fixas e identifique conflitos com shows aceitos.",
+    label: "AGENDA INTELIGENTE"
+  });
   primary.splice(0,0,{
     href: "/conversas", title: "Conversas e contratações", icon: Inbox,
     description: "Converse com músicos ou contratantes, consulte disponibilidade e acompanhe propostas.",
