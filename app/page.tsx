@@ -1,5 +1,6 @@
 import Link from "next/link";
 import HomePartnerVenues from "@/components/home-partner-venues";
+import HomeAuthActions from "@/components/home-auth-actions";
 import {
   ArrowRight, ArrowUpRight, BadgeCheck, CalendarDays, Check,
   CirclePlay, Guitar, Music2, Palette,
@@ -14,8 +15,7 @@ export default function Home() {
         <div className="nav-links">
           <a className="hide-mobile" href="#recursos">Funcionalidades</a>
           <a className="hide-mobile" href="#musicos">Para músicos</a>
-          <Link className="btn btn-quiet" href="/login">Entrar</Link>
-          <Link className="btn btn-primary" href="/cadastro">Criar conta <ArrowRight size={15}/></Link>
+          <HomeAuthActions placement="nav"/>
         </div>
       </nav>
 
@@ -25,7 +25,7 @@ export default function Home() {
           <h1>Mais música.<br/><span>Menos correria.</span></h1>
           <p>Shows, músicos, convites e cachês em um só lugar. O Stage Flow conecta sua agenda ao que realmente importa: fazer a música acontecer.</p>
           <div className="hero-actions">
-            <Link className="btn btn-primary" href="/cadastro">Começar gratuitamente <ArrowRight size={17}/></Link>
+            <HomeAuthActions placement="hero"/>
             <a className="btn btn-quiet" href="#recursos">Descobrir o Stage Flow <ArrowUpRight size={16}/></a>
           </div>
           <div className="home-hero-points">
@@ -131,7 +131,7 @@ export default function Home() {
             <span><Palette size={17}/> Temas, cores, capa e foto personalizados</span>
             <span><Guitar size={17}/> Instrumentos e estilos em destaque</span>
           </div>
-          <Link href="/meu-portfolio" className="btn btn-primary">Personalizar meu portfólio <ArrowUpRight size={17}/></Link>
+          <HomeAuthActions placement="portfolio"/>
           <p className="fine" style={{ marginTop: 15 }}>Página simples e gratuita, sem necessidade de subdomínio.</p>
         </div>
         <div className="home-musician-card">
@@ -157,7 +157,7 @@ export default function Home() {
           <h2>Menos burocracia. <span>Mais palco.</span></h2>
           <p>Organize seu próximo projeto musical com quem faz parte dele.</p>
         </div>
-        <Link className="btn btn-primary" href="/cadastro">Criar minha conta <ArrowRight size={16}/></Link>
+        <HomeAuthActions placement="closing"/>
       </section>
 
       <footer className="footer">
