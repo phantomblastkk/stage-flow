@@ -32,7 +32,7 @@ export async function GET(request:Request) {
  for(const item of data as Pending[]){
   let success=false;let providerId="";let reason="";
   try{
-   const version=process.env.WHATSAPP_GRAPH_API_VERSION||"v23.0";
+   const version=process.env.WHATSAPP_GRAPH_API_VERSION||"v26.0";
    if(!/^v\d+\.\d+$/.test(version))throw Error("invalid_graph_version");
    const response=await fetch(`https://graph.facebook.com/${version}/${encodeURIComponent(phoneId)}/messages`,{
     method:"POST",
