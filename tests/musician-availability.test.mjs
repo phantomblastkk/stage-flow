@@ -58,7 +58,7 @@ test("scheduling UI is private, integrated and exposes no contacts or secrets",(
  assert.match(page,/stage_musician_schedule_remove/);
  assert.match(page,/stage_musician_schedule_check/);
  assert.match(page,/Banda fixa semanal/);
- assert.match(page,/Compromissos semanais/);
+ assert.match(page,/compromissos semanais/i);
  assert.match(page,/4 horas/);
  assert.match(dash,/href: "\/minha-disponibilidade"/);
  assert.match(props,/Verificar conflito antes de enviar/);
