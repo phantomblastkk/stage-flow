@@ -85,6 +85,7 @@ export default function VenueProgrammingWorkspace({mode}: {mode: "admin" | "part
   const [month,setMonth] = useState(venueMonthStart);
   const [selectedDay,setSelectedDay] = useState<number|null>(null);
   const [showForm,setShowForm] = useState<FormShow>(()=>blank(id,venueDayKey(new Date().toISOString())));
+  const [pendingFlyer,setPendingFlyer] = useState<File|null>(null);
   const [caption,setCaption] = useState("");
   const [busy,setBusy] = useState("");
   const [error,setError] = useState("");
@@ -133,8 +134,19 @@ export default function VenueProgrammingWorkspace({mode}: {mode: "admin" | "part
   const visibleShows=useMemo(()=>monthShows.filter(x=>
     selectedDay===null || venueDayOfMonth(x.starts_at)===selectedDay
   ).sort((a,b)=>a.starts_at.localeCompare(b.starts_at)),[monthShows,selectedDay]);
+  const nextShows=useMemo(()=>{
+    const now=Date.now();
+    const limit=now+14*24*60*60*1000;
+    return shows.filter(x=>x.status!=="cancelled" &&
+      new Date(x.starts_at).getTime()>=now &&
+      new Date(x.starts_at).getTime()<limit
+    ).sort((a,b)=>a.starts_at.localeCompare(b.starts_at));
+  },[shows]);
+  const upcomingWithoutFlyer=nextShows.filter(x=>!x.flyer_path).length;
 
   function editShow(item: AdminShow){
+    setPendingFlyer(null);
+    setTab("agenda");
     setShowForm({id:item.id,venue_id:id,title:item.title,description:item.description,
       start:inputTime(item.starts_at),end:inputTime(item.ends_at),status:item.status});
     setMonth(new Date(Date.UTC(Number(venueDayKey(item.starts_at).slice(0,4)),
@@ -143,22 +155,46 @@ export default function VenueProgrammingWorkspace({mode}: {mode: "admin" | "part
     setError("");setSuccess("");
   }
   function selectedDate() {
-    return venueMonthKey(month)+"-"+String(selectedDay??Number(venueDayKey(new Date().toISOString()).slice(-2))).padStart(2,"0");
+    const today=venueDayKey(new Date().toISOString());
+    if(selectedDay!==null) return venueMonthKey(month)+"-"+String(selectedDay).padStart(2,"0");
+    return venueMonthKey(month)===today.slice(0,7)?today:venueMonthKey(month)+"-01";
   }
-  function newShow() {setShowForm(blank(id,selectedDate()));setError("");setSuccess("");}
+  function newShow() {setShowForm(blank(id,selectedDate()));setPendingFlyer(null);setError("");setSuccess("");}
   function chooseDay(day:number|null) {
     setSelectedDay(day);
     if(day!==null) {
       const date=venueMonthKey(month)+"-"+String(day).padStart(2,"0");
       setShowForm(blank(id,date));
+      setPendingFlyer(null);
       setError("");setSuccess("");
     }
   }
   function fill<K extends keyof FormShow>(key:K,value:FormShow[K]) {
     setShowForm(prev=>({...prev,[key]:value}));
   }
+  async function attachFlyer(eventId:string,file:File){
+    const path=await uploadVenueFile(id,"flyer",file);
+    const {data,error:rpcError}=await createClient().rpc("stage_venue_calendar_admin_flyer",{
+      p_id:eventId,p_path:path
+    });
+    if(rpcError)throw rpcError;
+    if(data!=="ok")throw new Error(friendly(String(data)));
+  }
+  function chooseFlyerForNewShow(file?:File) {
+    if(!file)return;
+    if(!["image/jpeg","image/png","image/webp"].includes(file.type) ||
+      file.size===0 || file.size>5*1024*1024){
+      setPendingFlyer(null);
+      setError("Envie JPG, PNG ou WebP de até 5 MB.");
+      return;
+    }
+    setPendingFlyer(file);
+    setError("");
+  }
   async function saveShow(e:FormEvent<HTMLFormElement>){
-    e.preventDefault();setBusy("save");setError("");setSuccess("");
+    e.preventDefault();if(busy)return;
+    setBusy("save");setError("");setSuccess("");
+    let savedId:string|null=null;
     try{
       const starts=toIso(showForm.start);
       if(!starts)throw new Error("Informe uma data e um horário válidos.");
@@ -169,24 +205,33 @@ export default function VenueProgrammingWorkspace({mode}: {mode: "admin" | "part
       if(saveError)throw saveError;
       const result=data as {status:string;id?:string};
       if(result.status!=="ok"||!result.id)throw new Error(friendly(result.status));
-      await refresh();
+      savedId=result.id;
+      // Salva primeiro para ter ID: a mídia não pode ficar vinculada à casa errada.
       setShowForm(prev=>({...prev,id:result.id||prev.id}));
-      setSuccess("Show salvo no calendário da casa."+(
-        showForm.status==="published"?" Já pode aparecer na agenda pública.":" Está como rascunho ou cancelado."
-      ));
-    }catch(e){setError(e instanceof Error?e.message:"Erro ao salvar o show.");}
+      if(pendingFlyer){
+        await attachFlyer(result.id,pendingFlyer);
+        setPendingFlyer(null);
+      }
+      await refresh();
+      setSuccess("Show salvo no calendário da casa."+(pendingFlyer?" Flyer incluído com sucesso.":"")+
+        (showForm.status==="published"?" Já pode aparecer na agenda pública.":" Está como rascunho ou cancelado."));
+    }catch(e){
+      if(savedId){
+        try{await refresh();}catch{}
+        setError("O show foi salvo, mas houve um problema para concluir o flyer ou atualizar a lista: "+
+          (e instanceof Error?e.message:"tente novamente.")+
+          " Você pode tentar salvar outra vez, sem criar outro show.");
+      }else{
+        setError(e instanceof Error?e.message:"Erro ao salvar o show.");
+      }
+    }
     finally{setBusy("");}
   }
   async function uploadFlyer(file?:File){
     if(!file||!showForm.id)return;
     setBusy("flyer");setError("");setSuccess("");
     try{
-      const path=await uploadVenueFile(id,"flyer",file);
-      const {data,error:rpcError}=await createClient().rpc("stage_venue_calendar_admin_flyer",{
-        p_id:showForm.id,p_path:path
-      });
-      if(rpcError)throw rpcError;
-      if(data!=="ok")throw new Error(friendly(String(data)));
+      await attachFlyer(showForm.id,file);
       await refresh();setSuccess("Flyer atualizado e associado à data do show.");
     }catch(e){setError(e instanceof Error?e.message:"Não foi possível salvar o flyer.");}
     finally{setBusy("");}
@@ -279,13 +324,39 @@ export default function VenueProgrammingWorkspace({mode}: {mode: "admin" | "part
           <span><strong>{shows.filter(x=>x.status==="draft").length}</strong> rascunhos</span>
           <span><strong>{shows.filter(x=>!!x.flyer_path).length}</strong> flyers catalogados</span>
         </div>}
+        {tab==="agenda"&&<section className="venue-program-next" aria-label="Próximas apresentações">
+          <div className="venue-program-heading">
+            <div>
+              <span className="venue-program-next-kicker">VISÃO RÁPIDA · PRÓXIMOS 14 DIAS</span>
+              <h2>Próximos shows <small>({nextShows.length})</small></h2>
+            </div>
+            {upcomingWithoutFlyer>0&&<span className="venue-program-next-missing">
+              <ImagePlus size={15}/> {upcomingWithoutFlyer} sem flyer
+            </span>}
+          </div>
+          {nextShows.length ? <div className="venue-program-next-grid">
+            {nextShows.slice(0,6).map(show=><button type="button"
+              className="venue-program-next-card" key={show.id} onClick={()=>editShow(show)}
+              aria-label={"Editar "+show.title}>
+              <span className="venue-program-next-date">
+                {new Date(show.starts_at).toLocaleDateString("pt-BR",{day:"2-digit",month:"short",timeZone:"America/Sao_Paulo"})}
+              </span>
+              <span className="venue-program-next-details">
+                <strong>{show.title}</strong>
+                <small>{new Date(show.starts_at).toLocaleTimeString("pt-BR",{hour:"2-digit",minute:"2-digit",timeZone:"America/Sao_Paulo"})} · {show.status==="published"?"Publicado":"Rascunho"}</small>
+                {!show.flyer_path&&<small className="venue-program-next-pending">Flyer pendente</small>}
+              </span>
+              <ExternalLink size={15} aria-hidden="true"/>
+            </button>)}
+          </div> : <p className="fine">Nenhum show futuro nos próximos 14 dias. Clique no calendário para cadastrar.</p>}
+        </section>}
         {tab==="agenda"&&<div className="venue-program-layout">
           <section className="venue-program-panel">
             <div className="venue-program-heading"><h2>Agenda da casa</h2>
               <button className="btn btn-quiet" type="button" onClick={newShow}><Plus size={15}/> Novo show</button>
             </div>
             <VenueMonthCalendar month={month} events={shows} selectedDay={selectedDay}
-              onDayChange={chooseDay} onMonthChange={next=>{setMonth(next);setSelectedDay(null);setShowForm(blank(id,venueMonthKey(next)+"-01"));}}/>
+              onDayChange={chooseDay} onMonthChange={next=>{setMonth(next);setSelectedDay(null);setPendingFlyer(null);setShowForm(blank(id,venueMonthKey(next)+"-01"));}}/>
             <div className="venue-program-list">
               <h3>{selectedDay?"Shows do dia "+selectedDay:"Shows do mês"} <small>({visibleShows.length})</small></h3>
               {visibleShows.map(show=><button type="button" key={show.id}
@@ -329,6 +400,16 @@ export default function VenueProgrammingWorkspace({mode}: {mode: "admin" | "part
                   <option value="published">Publicado — aparece no calendário</option>
                   <option value="cancelled">Cancelado — oculto do site</option>
                 </select></div>
+              {!showForm.id&&<div className="venue-program-new-flyer">
+                <label htmlFor="vp-new-flyer"><ImagePlus size={17}/> Flyer (opcional)</label>
+                <input id="vp-new-flyer" type="file" accept="image/jpeg,image/png,image/webp"
+                  disabled={!!busy} onChange={e=>{chooseFlyerForNewShow(e.target.files?.[0]);e.target.value="";}}/>
+                {pendingFlyer&&<div className="venue-program-pending-flyer">
+                  <span>Selecionado: <strong>{pendingFlyer.name}</strong></span>
+                  <button type="button" disabled={!!busy} onClick={()=>setPendingFlyer(null)}>Retirar</button>
+                </div>}
+                <p className="fine">Escolha o flyer antes de salvar. O show e a imagem serão cadastrados em uma única operação na tela.</p>
+              </div>}
               <div className="venue-program-buttons">
                 <button className="btn btn-primary" type="submit" disabled={!!busy}>
                   <Save size={16}/>{busy==="save"?"Salvando...":"Salvar show"}</button>
@@ -352,7 +433,7 @@ export default function VenueProgrammingWorkspace({mode}: {mode: "admin" | "part
                 {currentFlyer&&<button type="button" className="btn btn-quiet"
                   disabled={!!busy} onClick={()=>void removeFlyer()}>Retirar flyer</button>}
               </div>
-              {!showForm.id&&<p className="fine">Salve o show primeiro para habilitar o envio do flyer.</p>}
+              {!showForm.id&&<p className="fine">Você pode escolher o flyer no formulário acima e salvar tudo de uma vez.</p>}
             </div>
           </section>
         </div>}
