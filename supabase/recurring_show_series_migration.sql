@@ -116,6 +116,8 @@ begin
       extract(hour from v_series.local_start)::int,
       extract(minute from v_series.local_start)::int,0,'America/Sao_Paulo'
     );
+    -- Não criar apresentações cuja hora já passou, mesmo que o dia seja hoje.
+    if v_start<=now() then continue;end if;
     -- Não replicar evento do mesmo organizador na mesma hora (mesmo que
     -- criado por outro fluxo). O registro existente nunca é sobrescrito.
     if exists(select 1 from public.events e
