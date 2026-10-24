@@ -29,3 +29,12 @@
 .hiring-proposals-error{border-color:#8a5166;color:#ffd2df}
 .hiring-proposals-empty{font-size:11px;color:#aca0be;margin:9px 0}
 @media(max-width:550px){.hiring-proposals{padding:13px}.hiring-proposals-fields{grid-template-columns:1fr}.hiring-proposal-actions .btn{flex:1}}
+
+/* Consulta resumida de disponibilidade; nunca revela outros shows ou bandas. */
+.hiring-schedule-availability{display:flex;align-items:center;flex-wrap:wrap;gap:10px;padding:11px 0}
+.hiring-schedule-availability .btn{font-size:11px;padding:10px 12px}
+.hiring-schedule-status{font-size:11px;line-height:1.5;font-weight:750;color:#cfb2fe}
+.hiring-schedule-status.busy{color:#ffd0b1}
+.hiring-schedule-status.free{color:#b6e9cd}
+.hiring-schedule-status.possible_conflict{color:#e9d1fd}
+.hiring-schedule-status.error{color:#ffd5dd}
