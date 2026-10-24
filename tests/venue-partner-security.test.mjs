@@ -13,6 +13,7 @@ const adminRoute = read("app/admin/casas/[id]/programacao/page.tsx");
 const editor = read("components/venue-programming-workspace.tsx");
 const home = read("app/painel/page.tsx");
 const globalAdmin = read("app/admin/casas/page.tsx");
+const signup = read("app/cadastro/page.tsx");
 
 function sqlFunction(sql,name){
   const start=sql.indexOf("create or replace function public."+name+"(");
@@ -106,6 +107,10 @@ test("administrator can guide manager registration and safely share access",()=>
   assert.match(globalAdmin,/window\.confirm\(/);
   assert.match(globalAdmin,/revokeManager\(manager\.email,manager\.display_name\)/);
   assert.match(globalAdmin,/result!=="granted" && result!=="revoked"/);
+  assert.match(globalAdmin,/\/cadastro\?parceiro=1/);
+  assert.match(signup,/setPartnerOnboarding\(true\)/);
+  assert.match(signup,/setArtistKind\("none"\)/);
+  assert.match(signup,/somente ela pode liberar sua programação/);
   assert.doesNotMatch(globalAdmin,/supabase\.auth\.admin\./);
 });
 
