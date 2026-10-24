@@ -710,6 +710,15 @@ export default function MarketplaceCatalog({preview=false}:Props) {
             <Rating musician={selected}/>
           </div>
           <Availability musician={selected} date={applied.date}/>
+          {authUser&&<Link className="market-apply" style={{display:"inline-flex",alignItems:"center",gap:8,marginTop:12}}
+            href={"/conversas?musico="+encodeURIComponent(selected.musician_id)+
+              (applied.date?"&data="+encodeURIComponent(applied.date):"")+
+              (selectedEvent?"&evento="+encodeURIComponent(selectedEvent):"")}>
+            <MessageCircle size={16}/> Conversar e consultar disponibilidade
+          </Link>}
+          <p className="fine" style={{marginTop:10}}>
+            Fale no chat antes de convidar. Seu WhatsApp pessoal permanece privado.
+          </p>
           <button type="button" className="market-report-link"
             onClick={()=>setReportTarget({
               type:"musician",id:selected.musician_id,label:selected.name
