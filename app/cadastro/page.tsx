@@ -22,9 +22,15 @@ export default function CadastroPage() {
       setInviteCode(code);
       setArtistKind("support");
       setIsProducer(false);
+    } else if (new URLSearchParams(window.location.search).get("parceiro") === "1") {
+      // Facilitador visual apenas: jamais concede papel de gerente ou administrador.
+      setArtistKind("none");
+      setIsProducer(true);
+      setPartnerOnboarding(true);
     }
   }, []);
   const [isProducer, setIsProducer] = useState(false);
+  const [partnerOnboarding, setPartnerOnboarding] = useState(false);
   const isArtist = artistKind !== "none";
   const [displayName, setDisplayName] = useState("");
   const [username, setUsername] = useState("");
@@ -79,7 +85,9 @@ export default function CadastroPage() {
       }
       setMessage(inviteCode
         ? "Cadastro enviado! Confira seu e-mail para confirmar sua conta. Depois da confirmação, abra novamente o link do convite para vinculá-lo. Caso a confirmação já esteja desativada, entre com sua conta pelo link recebido."
-        : "Cadastro enviado! Se a confirmação por e-mail estiver ativada, confirme sua conta pelo e-mail recebido. Recursos premium continuam bloqueados até um upgrade.");
+        : partnerOnboarding
+          ? "Cadastro enviado! Confirme seu e-mail e avise a administração da casa para conceder seu acesso. O cadastro por si só não libera a programação."
+          : "Cadastro enviado! Se a confirmação por e-mail estiver ativada, confirme sua conta pelo e-mail recebido. Recursos premium continuam bloqueados até um upgrade.");
     } catch (err) {
       setError(true);
       setMessage(err instanceof Error ? err.message : "Não foi possível criar a conta. Confira os dados e tente novamente.");
@@ -88,7 +96,8 @@ export default function CadastroPage() {
 
   return <main className="auth-wrap">
     <aside className="auth-aside"><Link className="brand" href="/"><span className="brand-mark">S</span> stage flow</Link><div><div className="eyebrow">SEU PRÓXIMO CAPÍTULO</div><h1>Mais organização. <span className="accent">Mais palco.</span></h1><p className="tagline">Uma conta para organizar shows, receber convites e aproximar músicos e produtores.</p></div><Link href="/" className="fine"><ArrowLeft size={14} style={{display:"inline",verticalAlign:"middle"}}/> Voltar ao início</Link></aside>
-    <section className="auth-main"><div className="auth-card"><Link href="/" className="fine">← Voltar para o site</Link><h2 style={{marginTop:24}}>Crie sua conta</h2>{inviteCode && <p className="coming">Você chegou por um convite para tocar. Vamos criar uma conta gratuita de músico de apoio para receber e negociar suas participações. Não precisa de @ nem de assinatura.</p>}<p>{inviteCode ? "Informe seus dados para acessar o convite." : "Como você trabalha principalmente com música? Isso organiza seu painel; você pode mudar depois."}</p>
+    <section className="auth-main"><div className="auth-card"><Link href="/" className="fine">← Voltar para o site</Link><h2 style={{marginTop:24}}>Crie sua conta</h2>{inviteCode && <p className="coming">Você chegou por um convite para tocar. Vamos criar uma conta gratuita de músico de apoio para receber e negociar suas participações. Não precisa de @ nem de assinatura.</p>}
+      {partnerOnboarding && <p className="coming"><strong>Cadastro de responsável por uma casa parceira.</strong> A opção Produtor/contratante já foi selecionada para facilitar. Depois de confirmar o e-mail, avise a administração da casa: somente ela pode liberar sua programação. Este link não dá acesso automático.</p>}<p>{inviteCode ? "Informe seus dados para acessar o convite." : "Como você trabalha principalmente com música? Isso organiza seu painel; você pode mudar depois."}</p>
       {!inviteCode && <div className="signup-role-picker">
         <div className="signup-role-grid" role="group" aria-label="Sua atividade principal">
           <button type="button" className="signup-role-card" aria-pressed={artistKind === "lead"}
