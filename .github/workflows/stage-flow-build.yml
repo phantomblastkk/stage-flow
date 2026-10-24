@@ -49,6 +49,8 @@ jobs:
         run: npm run test:chat-finance
       - name: Verify hiring proposal permissions
         run: npm run test:hiring-proposals
+      - name: Verify musician calendar and conflicts
+        run: npm run test:musician-availability
       - name: Check TypeScript
         run: npx tsc --noEmit
       - name: Build Next.js
