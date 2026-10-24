@@ -211,6 +211,11 @@ export default function Dashboard() {
     ];
   }
 
+  primary.splice(1,0,{
+    href: "/meus-shows", title: "Meus shows e histórico", icon: CalendarDays,
+    description: "Reveja apresentações realizadas, confirme participações e acompanhe seus relatórios financeiros opcionais.",
+    label: "HISTÓRICO E FINANCEIRO"
+  });
   if (partnerHouseCount > 0) primary.unshift({
     href: "/parceiros", title: "Minhas casas parceiras", icon: Building2,
     description: "Gerencie shows, flyers, fotos e sugestões das casas autorizadas para você.",
