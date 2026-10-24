@@ -216,6 +216,11 @@ export default function Dashboard() {
     description: "Bloqueie datas, cadastre bandas fixas e identifique conflitos com shows aceitos.",
     label: "AGENDA INTELIGENTE"
   });
+  primary.splice(1,0,{
+    href: "/shows-recorrentes", title: "Shows recorrentes", icon: Music2,
+    description: "Crie temporadas semanais, gere apresentações em rascunho e reutilize equipes fixas sem refazer cada show.",
+    label: "PROGRAMAÇÃO SEMANAL"
+  });
   primary.splice(0,0,{
     href: "/conversas", title: "Conversas e contratações", icon: Inbox,
     description: "Converse com músicos ou contratantes, consulte disponibilidade e acompanhe propostas.",
