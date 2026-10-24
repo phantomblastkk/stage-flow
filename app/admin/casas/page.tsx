@@ -181,7 +181,7 @@ export default function AdminCasasPage() {
 
   function managerMessage(email:string,needsSignup:boolean) {
     const portal=window.location.origin + "/parceiros";
-    const signup=window.location.origin + "/cadastro";
+    const signup=window.location.origin + "/cadastro?parceiro=1";
     return needsSignup
       ? "Olá! A casa " + form.name + " vai usar o Stage Flow para organizar shows e flyers. Crie sua conta pelo link " +
         signup + " usando o e-mail " + email +
@@ -461,7 +461,7 @@ export default function AdminCasasPage() {
                 <div className="venue-admin-manager-actions">
                   <button type="button" className="btn btn-quiet" onClick={()=>void copyManagerMessage(managerEmail.trim(),true)}>Copiar convite de cadastro</button>
                   <button type="button" className="btn btn-quiet" onClick={()=>shareManagerWhatsapp(managerEmail.trim(),true)}>Enviar pelo WhatsApp</button>
-                  <Link className="btn btn-quiet" href="/cadastro" target="_blank" rel="noopener noreferrer">Abrir cadastro <ExternalLink size={14}/></Link>
+                  <Link className="btn btn-quiet" href="/cadastro?parceiro=1" target="_blank" rel="noopener noreferrer">Abrir cadastro <ExternalLink size={14}/></Link>
                 </div>
               </div>}
               <div className="venue-admin-manager-list">
