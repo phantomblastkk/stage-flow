@@ -44,6 +44,17 @@ A simulação SQL usa `request.jwt.claim.sub` dentro do SQL Editor. Ela **não**
 - Desmarcar X como parceiro e verificar que o acesso A é imediatamente revogado, sem login/logout.
 - Testar como administrador global: acesso a ambas as casas, concessão, revogação e restauração.
 
+## Triagem de sugestões de artistas (somente homologação)
+Aplicar `supabase/venue_suggestions_workflow_migration.sql` no banco de homologação após as migrações das casas (já aplicado no QA `zycuprhymoukhnuamtit`).
+
+- Em `/admin/casas/<id>/programacao` ou `/parceiros/<id>/programacao`, abra **Sugestões**. O filtro inicia em **Pendentes**; também há **Em análise**, **Resolvidas** e **Todas**.
+- Marque uma sugestão como Em análise ou Resolvida, e confira a data de atualização. É possível devolver para Pendente. Mensagem, artista e nome do visitante não são alterados.
+- Somente gestor da própria casa ou administrador global pode alterar o status. A função `stage_venue_suggestion_set_status` verifica `stage_venue_can_manage` no banco. Anônimos não têm permissão de EXECUTE; nenhuma tabela recebe UPDATE direto do frontend.
+- Validar com contas separadas que gestor da casa X não pode mudar status de sugestão da casa Y; uma conta administradora global não é suficiente para comprovar isolamento real.
+- A função administrativa de listagem continua limitada às 100 mensagens mais recentes por casa. Filtros refletem esse conjunto, não o total histórico de todas as mensagens.
+- Para testar sem deixar dados fictícios persistidos, usar transação SQL `BEGIN ... ROLLBACK` apenas no projeto QA.
+- Como o deploy de `develop` está desativado automaticamente, publicar manualmente na Vercel de homologação. Não aplicar a migração no Supabase de produção.
+
 ## 4) Antes de publicar
 - Executar `npm run build` e `npm run lint` no ambiente apropriado.
 - Inspecionar manualmente a tela `/parceiros` e a página de edição em desktop e mobile.
