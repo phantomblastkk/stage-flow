@@ -145,6 +145,7 @@ export default function VenueProgrammingWorkspace({mode}: {mode: "admin" | "part
   const upcomingWithoutFlyer=nextShows.filter(x=>!x.flyer_path).length;
 
   function editShow(item: AdminShow){
+    if(busy)return;
     setPendingFlyer(null);
     setTab("agenda");
     setShowForm({id:item.id,venue_id:id,title:item.title,description:item.description,
@@ -159,8 +160,9 @@ export default function VenueProgrammingWorkspace({mode}: {mode: "admin" | "part
     if(selectedDay!==null) return venueMonthKey(month)+"-"+String(selectedDay).padStart(2,"0");
     return venueMonthKey(month)===today.slice(0,7)?today:venueMonthKey(month)+"-01";
   }
-  function newShow() {setShowForm(blank(id,selectedDate()));setPendingFlyer(null);setError("");setSuccess("");}
+  function newShow() {if(busy)return;setShowForm(blank(id,selectedDate()));setPendingFlyer(null);setError("");setSuccess("");}
   function chooseDay(day:number|null) {
+    if(busy)return;
     setSelectedDay(day);
     if(day!==null) {
       const date=venueMonthKey(month)+"-"+String(day).padStart(2,"0");
@@ -228,7 +230,7 @@ export default function VenueProgrammingWorkspace({mode}: {mode: "admin" | "part
     finally{setBusy("");}
   }
   async function uploadFlyer(file?:File){
-    if(!file||!showForm.id)return;
+    if(!file||!showForm.id||busy)return;
     setBusy("flyer");setError("");setSuccess("");
     try{
       await attachFlyer(showForm.id,file);
@@ -336,7 +338,7 @@ export default function VenueProgrammingWorkspace({mode}: {mode: "admin" | "part
           </div>
           {nextShows.length ? <div className="venue-program-next-grid">
             {nextShows.slice(0,6).map(show=><button type="button"
-              className="venue-program-next-card" key={show.id} onClick={()=>editShow(show)}
+              className="venue-program-next-card" key={show.id} disabled={!!busy} onClick={()=>editShow(show)}
               aria-label={"Editar "+show.title}>
               <span className="venue-program-next-date">
                 {new Date(show.starts_at).toLocaleDateString("pt-BR",{day:"2-digit",month:"short",timeZone:"America/Sao_Paulo"})}
@@ -353,15 +355,15 @@ export default function VenueProgrammingWorkspace({mode}: {mode: "admin" | "part
         {tab==="agenda"&&<div className="venue-program-layout">
           <section className="venue-program-panel">
             <div className="venue-program-heading"><h2>Agenda da casa</h2>
-              <button className="btn btn-quiet" type="button" onClick={newShow}><Plus size={15}/> Novo show</button>
+              <button className="btn btn-quiet" type="button" disabled={!!busy} onClick={newShow}><Plus size={15}/> Novo show</button>
             </div>
             <VenueMonthCalendar month={month} events={shows} selectedDay={selectedDay}
-              onDayChange={chooseDay} onMonthChange={next=>{setMonth(next);setSelectedDay(null);setPendingFlyer(null);setShowForm(blank(id,venueMonthKey(next)+"-01"));}}/>
+              onDayChange={chooseDay} onMonthChange={next=>{if(busy)return;setMonth(next);setSelectedDay(null);setPendingFlyer(null);setShowForm(blank(id,venueMonthKey(next)+"-01"));}}/>
             <div className="venue-program-list">
               <h3>{selectedDay?"Shows do dia "+selectedDay:"Shows do mês"} <small>({visibleShows.length})</small></h3>
               {visibleShows.map(show=><button type="button" key={show.id}
                 className={"venue-program-show"+(showForm.id===show.id?" selected":"")}
-                onClick={()=>editShow(show)}>
+                onClick={()=>editShow(show)} disabled={!!busy}>
                 {show.flyer_path?<img src={picture(show.flyer_path)} alt="Flyer do evento"/>:
                   <span className="venue-program-show-fallback"><Music2 size={22}/></span>}
                 <span><strong>{show.title}</strong>
