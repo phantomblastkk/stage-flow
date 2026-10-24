@@ -51,6 +51,7 @@ test("accepting a chat proposal checks conflicts atomically under musician lock"
  assert.match(accept,/insert into public\.invitations/);
  assert.match(accept,/linked_invitation_id=v_invitation/);
  assert.match(guard,/grant execute on function public\.stage_hiring_proposal_decide/);
+ assert.match(guard,/revoke all on function public\.stage_hiring_proposal_decide/);
 });
 test("scheduling UI is private, integrated and exposes no contacts or secrets",()=>{
  assert.match(page,/stage_musician_schedule_list/);
