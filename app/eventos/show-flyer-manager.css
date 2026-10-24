@@ -118,7 +118,7 @@
   display:flex;align-items:flex-start;gap:7px;
   color:#aabbd4;font-size:10px;line-height:1.7;margin:0;
 }
-.show-flyer-footnote svg{color:#b3e59c;flex:none}
+.show-flyer-footnote svg{color:#C0A7FF;flex:none}
 .show-flyer-pending{
   margin:0;border:1px solid #9b7a3a;background:#393123;
   border-radius:8px;padding:10px;color:#ead6ab;
