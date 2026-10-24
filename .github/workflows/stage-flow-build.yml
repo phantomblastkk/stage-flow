@@ -45,6 +45,8 @@ jobs:
         run: npm run test:venue-security
       - name: Verify show history and finance isolation
         run: npm run test:show-history
+      - name: Verify chat and finance contracts
+        run: npm run test:chat-finance
       - name: Check TypeScript
         run: npx tsc --noEmit
       - name: Build Next.js
