@@ -535,7 +535,7 @@ export default function VenueProgrammingWorkspace({mode}: {mode: "admin" | "part
               {suggestionFilter==="all"?"Nenhuma sugestão recebida por enquanto.":"Nenhuma sugestão nesta categoria."}
             </p>}
           </div>
-        </section>
+        </section>}
       </>}
   </div></main>;
 }
