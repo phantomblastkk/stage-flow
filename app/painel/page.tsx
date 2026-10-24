@@ -211,6 +211,11 @@ export default function Dashboard() {
     ];
   }
 
+  primary.splice(0,0,{
+    href: "/conversas", title: "Conversas e contratações", icon: Inbox,
+    description: "Converse com músicos ou contratantes, consulte disponibilidade e acompanhe propostas.",
+    label: "CHAT INTERNO"
+  });
   primary.splice(1,0,{
     href: "/meus-shows", title: "Meus shows e histórico", icon: CalendarDays,
     description: "Reveja apresentações realizadas, confirme participações e acompanhe seus relatórios financeiros opcionais.",
