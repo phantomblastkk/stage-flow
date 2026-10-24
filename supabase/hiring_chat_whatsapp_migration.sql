@@ -134,8 +134,8 @@ as $$
      'acting_as',case when t.requester_id=auth.uid() then 'requester' else 'musician' end,
      'unread', (select count(*) from public.stage_hiring_messages m
        where m.thread_id=t.id and m.sender_id<>auth.uid() and
-         m.created_at>case when t.requester_id=auth.uid()
-           then t.requester_read_at else t.musician_read_at end),
+         m.created_at>coalesce(case when t.requester_id=auth.uid()
+           then t.requester_read_at else t.musician_read_at end, t.created_at-interval '1 second')),
      'last_message',(select left(m.body,100) from public.stage_hiring_messages m
        where m.thread_id=t.id order by m.created_at desc,m.id desc limit 1)
    ) order by t.last_message_at desc,t.id
@@ -152,8 +152,8 @@ revoke all on function public.stage_hiring_list() from public,anon,authenticated
 grant execute on function public.stage_hiring_list() to authenticated;
 
 create or replace function public.stage_hiring_messages(p_thread_id uuid)
-returns jsonb language plpgsql security definer set search_path=''
-as $$
+returns jsonb language plpgsql volatile security definer set search_path=''
+as $
 declare v_items jsonb;
 begin
  if auth.uid() is null or not exists(select 1 from public.stage_hiring_threads t
@@ -265,9 +265,14 @@ returns jsonb language plpgsql security definer set search_path=''
 as $$
 declare v_rows jsonb;
 begin
- if current_user<>'service_role' then return '[]'::jsonb;end if;
+ if current_setting('request.jwt.claim.role',true) is distinct from 'service_role'
+ then return '[]'::jsonb;end if;
  update public.stage_hiring_whatsapp_outbox o set status='expired'
  where o.status='queued' and o.expires_at<now();
+ update public.stage_hiring_whatsapp_outbox o set status=case
+   when o.attempted>=3 or o.expires_at<now() then 'failed' else 'queued' end,
+   claimed_at=null
+ where o.status='sending' and o.claimed_at<now()-interval '3 minutes';
  with claim as (
    select o.id from public.stage_hiring_whatsapp_outbox o
    join public.stage_hiring_whatsapp_preferences p
@@ -297,7 +302,8 @@ create or replace function public.stage_hiring_finish_notification(
 returns text language plpgsql security definer set search_path=''
 as $$
 begin
- if current_user<>'service_role' then return 'forbidden';end if;
+ if current_setting('request.jwt.claim.role',true) is distinct from 'service_role'
+ then return 'forbidden';end if;
  update public.stage_hiring_whatsapp_outbox
  set status=case when p_success then 'sent'
    when attempted>=3 or expires_at<now() then 'failed' else 'queued' end,
