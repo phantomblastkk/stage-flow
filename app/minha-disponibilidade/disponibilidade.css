@@ -1,0 +1,59 @@
+.smart-schedule-page{min-height:100vh;padding-bottom:50px;background:radial-gradient(ellipse at 80% 0%,#432d6152,transparent 50%),var(--bg)}
+.smart-schedule-hero{padding:36px 0 23px}
+.smart-schedule-hero h1{font:900 clamp(34px,4vw,48px)/1.14 Manrope,sans-serif;letter-spacing:-1.5px;margin:16px 0}
+.smart-schedule-hero p{max-width:750px;font-size:13px;color:var(--muted);line-height:1.75}
+.smart-schedule-layout{display:grid;grid-template-columns:minmax(0,1fr) minmax(320px,.85fr);gap:17px;align-items:start}
+.smart-schedule-calendar,.smart-schedule-editor{background:linear-gradient(135deg,#201b35,#181629);border:1px solid #594674;border-radius:18px;padding:19px;min-width:0}
+.smart-schedule-month{display:flex;justify-content:space-between;align-items:center;gap:12px;margin-bottom:17px}
+.smart-schedule-month h2{text-align:center;font:850 clamp(17px,2.5vw,23px) Manrope,sans-serif;text-transform:capitalize;margin:0}
+.smart-schedule-month button{flex:none;display:grid;place-items:center;background:#302443;border:1px solid #644a87;border-radius:10px;color:#d4beff;cursor:pointer;padding:10px}
+.smart-schedule-grid{display:grid;grid-template-columns:repeat(7,minmax(0,1fr));gap:6px}
+.smart-schedule-day-label{padding:12px 0;text-align:center;color:#b0a3c2;font-size:10px;font-weight:800}
+.smart-schedule-day,.smart-schedule-blank{position:relative;min-width:0;min-height:59px;border-radius:11px}
+.smart-schedule-day{display:flex;justify-content:center;align-items:center;flex-direction:column;gap:5px;background:#242038;border:1px solid #443854;color:#e2d8ef;cursor:pointer;font-size:13px;font-weight:750}
+.smart-schedule-day:hover{border-color:#ad8af3;background:#332747}
+.smart-schedule-day.today{outline:1px solid #ae8cf1;outline-offset:-4px}
+.smart-schedule-day.selected{background:#6d43b4;border-color:#ba97ff;color:#fff}
+.smart-schedule-day.blocked{background:#372a4a;border-color:#785598}
+.smart-schedule-day.selected.blocked{background:#6d43b4}
+.smart-schedule-dot{width:6px;height:6px;background:#c8a6ff;border-radius:999px}
+.smart-schedule-day.has-show .smart-schedule-dot{background:#8a98ff}
+.smart-schedule-legend{display:flex;gap:17px;flex-wrap:wrap;margin-top:18px}
+.smart-schedule-legend span{display:flex;align-items:center;gap:8px;color:#bcb0cc;font-size:11px}
+.smart-schedule-legend i{height:9px;width:9px;background:#c8a6ff;border-radius:100%}
+.smart-schedule-legend i.is-show{background:#8a98ff}
+.smart-schedule-note{display:flex;align-items:flex-start;gap:7px;color:#aca2c2;font-size:11px;line-height:1.75;margin:18px 0 0}
+.smart-schedule-note svg{flex:none}
+.smart-schedule-selected{display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap;margin-bottom:16px}
+.smart-schedule-selected>div>span{font-size:10px;letter-spacing:.08em;color:#ac8ee5;font-weight:850}
+.smart-schedule-selected h2{font:850 23px Manrope;margin:8px 0 0;text-transform:capitalize}
+.smart-schedule-check{border:1px solid #66538a;color:#dac3ff;background:#2b2342;border-radius:90px;padding:8px 10px;font-size:11px;font-weight:800}
+.smart-schedule-check.busy{color:#ffd2b5;border-color:#906e55;background:#3b2b2d}
+.smart-schedule-check.possible_conflict{color:#e9d0ff;border-color:#946bb0;background:#32213d}
+.smart-schedule-check.free{color:#b4eccf;border-color:#597961;background:#23382d}
+.smart-schedule-items{border-top:1px solid #514063;padding:14px 0}
+.smart-schedule-items h3{font:800 13px Manrope;margin:0 0 10px}
+.smart-schedule-item{display:flex;align-items:center;justify-content:space-between;gap:10px;background:#2a2240;border:1px solid #4e3e68;border-radius:11px;padding:11px;margin:8px 0}
+.smart-schedule-item>div{display:grid;gap:5px}
+.smart-schedule-item strong{font-size:12px}
+.smart-schedule-item small{font-size:10px;color:#b6aace}
+.smart-schedule-item>button{display:grid;place-items:center;cursor:pointer;border:1px solid #745673;border-radius:9px;padding:8px;background:#41263e;color:#f1c9e3}
+.smart-schedule-form{border-top:1px solid #55436d;padding-top:16px;display:grid;gap:13px}
+.smart-schedule-form h3{display:flex;align-items:center;gap:9px;font:850 16px Manrope;margin:0}
+.smart-schedule-form label{display:grid;gap:7px;font-size:11px;color:#d5c9e6;font-weight:750}
+.smart-schedule-form input:not([type=checkbox]),.smart-schedule-form select{width:100%;min-width:0;background:#1b162d;color:#fff;border:1px solid #6d5588;border-radius:9px;padding:11px;font-size:12px}
+.smart-schedule-switch{display:flex;gap:7px;flex-wrap:wrap}
+.smart-schedule-switch button{padding:10px 12px;cursor:pointer;border-radius:10px;border:1px solid #5b4778;background:#2b2341;color:#d0c1e3;font-size:11px;font-weight:750}
+.smart-schedule-switch button[aria-pressed=true]{background:#7546c8;border-color:#a98af2;color:#fff}
+.smart-schedule-time{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+.smart-schedule-form label.smart-schedule-checkbox{display:flex;flex-direction:row;align-items:center;gap:10px}
+.smart-schedule-checkbox input{width:16px;height:16px;accent-color:#8e65e4}
+.smart-schedule-form>.btn{justify-self:start;font-size:12px}
+.smart-schedule-form .smart-schedule-note{margin-top:0}
+.smart-schedule-feedback{padding:12px 14px;border:1px solid #7156a5;background:#2d2246;border-radius:11px;color:#e5d4ff;font-size:12px;line-height:1.6}
+.smart-schedule-feedback.is-error{border-color:#986278;color:#ffe0e9;background:#3c2636}
+.smart-schedule-loading{display:flex;align-items:center;gap:9px;color:#bdabe0;padding:20px}
+.smart-schedule-footer{font-size:11px;color:#a79db9;margin-top:20px;line-height:1.7}
+.smart-schedule-page button:focus-visible,.smart-schedule-page input:focus-visible,.smart-schedule-page a:focus-visible,.smart-schedule-page select:focus-visible{outline:2px solid #c9b1ff;outline-offset:3px}
+@media(max-width:860px){.smart-schedule-layout{grid-template-columns:1fr}.smart-schedule-calendar,.smart-schedule-editor{padding:15px}}
+@media(max-width:440px){.smart-schedule-day{min-height:47px}.smart-schedule-grid{gap:4px}.smart-schedule-time{grid-template-columns:1fr}}
