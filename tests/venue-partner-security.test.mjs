@@ -96,6 +96,19 @@ test("partner editor and global admin share UI but not data permissions",()=>{
   assert.match(home,/href: "\/parceiros"/);
 });
 
+test("administrator can guide manager registration and safely share access",()=>{
+  assert.match(globalAdmin,/stage_venue_admin_set_manager/);
+  assert.match(globalAdmin,/result==="account_not_found"/);
+  assert.match(globalAdmin,/managerNeedsSignup/);
+  assert.match(globalAdmin,/\/cadastro/);
+  assert.match(globalAdmin,/\/parceiros/);
+  assert.match(globalAdmin,/encodeURIComponent\(managerMessage\(/);
+  assert.match(globalAdmin,/window\.confirm\(/);
+  assert.match(globalAdmin,/revokeManager\(manager\.email,manager\.display_name\)/);
+  assert.match(globalAdmin,/result!=="granted" && result!=="revoked"/);
+  assert.doesNotMatch(globalAdmin,/supabase\.auth\.admin\./);
+});
+
 test("no deployment is enabled for develop",()=>{
   const cfg=JSON.parse(read("vercel.json"));
   assert.equal(cfg.git?.deploymentEnabled?.develop,false);
