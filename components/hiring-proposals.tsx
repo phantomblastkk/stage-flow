@@ -9,7 +9,7 @@ import "./hiring-proposals.css";
 type HiringThread = {
   id:string;requested_date:string|null;event_id:string|null;
   availability:"awaiting"|"available"|"unavailable"|"ask_later";
-  acting_as:"requester"|"musician";
+  acting_as:"requester"|"musician";other_id:string;
 };
 type ProposalStatus="pending"|"accepted"|"declined"|"withdrawn";
 type Proposal={
@@ -52,6 +52,7 @@ export default function HiringProposals({thread,onUpdate}:Props){
  const [starts,setStarts]=useState(()=>initialDate(thread.requested_date));
  const [fee,setFee]=useState("");
  const [details,setDetails]=useState("");
+ const [scheduleCheck,setScheduleCheck]=useState<"idle"|"checking"|"free"|"busy"|"possible_conflict"|"error">("idle");
 
  const load=useCallback(async()=>{
   const {data,error:rpcError}=await createClient().rpc("stage_hiring_proposals",{
@@ -66,6 +67,7 @@ export default function HiringProposals({thread,onUpdate}:Props){
   setLoading(true);setItems([]);setError("");setShowForm(false);
   setTitle("");setVenue("");setCity("");setDetails("");setFee("");
   setStarts(initialDate(thread.requested_date));
+  setScheduleCheck("idle");
   void load().catch(e=>{if(alive)setError(e instanceof Error?e.message:"Não foi possível carregar as propostas.");})
    .finally(()=>{if(alive)setLoading(false);});
   if(thread.event_id&&thread.acting_as==="requester") {
@@ -87,12 +89,27 @@ export default function HiringProposals({thread,onUpdate}:Props){
   return()=>{alive=false;clearInterval(timer);};
  },[load,thread.requested_date,thread.event_id,thread.acting_as]);
 
+ async function checkSchedule(){
+  if(!starts||busy)return;
+  const local=new Date(starts+"-03:00");
+  if(Number.isNaN(local.getTime())){setError("Informe a data antes de consultar.");return;}
+  setScheduleCheck("checking");setError("");
+  try{
+    const {data,error:rpcError}=await createClient().rpc("stage_musician_schedule_check",{
+      p_musician_id:thread.other_id,
+      p_start:local.toISOString(),p_end:new Date(local.getTime()+4*60*60*1000).toISOString(),
+      p_thread_id:thread.id,p_ignore_event:thread.event_id
+    });
+    if(rpcError)throw rpcError;
+    setScheduleCheck(["free","busy","possible_conflict"].includes(data)?data:"error");
+  }catch{setScheduleCheck("error");}
+ }
  async function submit(e:FormEvent<HTMLFormElement>){
   e.preventDefault();if(busy)return;
   setError("");setNotice("");
   const amount=parseFee(fee);
   if(amount===undefined){setError("Digite um cachê válido ou deixe vazio para combinar depois.");return;}
-  const timestamp=new Date(starts);
+  const timestamp=new Date(starts+"-03:00");
   if(!starts||Number.isNaN(timestamp.getTime())){
    setError("Informe a data e a hora corretas.");return;
   }
@@ -112,11 +129,15 @@ export default function HiringProposals({thread,onUpdate}:Props){
      event_mismatch:"O dia e horário precisam coincidir com o evento vinculado.",
      already_confirmed:"Esta conversa já possui uma contratação aceita.",
      daily_limit:"Limite diário de propostas atingido.",
-     invalid:"Revise data, hora, título e valores."
+     invalid:"Revise data, hora, título e valores.",
+     schedule_conflict:"O músico já tem um compromisso confirmado nesse horário. Escolha outra data ou horário.",
+     schedule_unavailable:"Não foi possível verificar a agenda agora. Tente novamente."
     };
     throw Error(reasons[data?.status]||"Não foi possível enviar a proposta.");
    }
-   setShowForm(false);setNotice("Proposta enviada. O show só entrará na agenda após o músico aceitar.");
+   setShowForm(false);setNotice(data?.availability_warning?
+    "Proposta enviada, mas há um compromisso ainda não confirmado nesta data. Verifique diretamente com o músico antes do aceite.":
+    "Proposta enviada. O show só entrará na agenda após o músico aceitar.");
    await load();onUpdate?.();
   }catch(e){setError(e instanceof Error?e.message:"Erro ao enviar proposta.");}
   finally{setBusy(false);}
@@ -139,7 +160,9 @@ export default function HiringProposals({thread,onUpdate}:Props){
       unavailable:"A disponibilidade está marcada como indisponível.",
       expired:"A data e hora do show passaram. Solicite uma nova proposta.",
       closed:"Essa proposta já foi respondida.",
-      event_unavailable:"O evento original não está mais disponível."
+      event_unavailable:"O evento original não está mais disponível.",
+      schedule_conflict:"Há outro compromisso confirmado nesse horário. Confira Minha disponibilidade.",
+      schedule_unavailable:"Não foi possível verificar a agenda agora; tente novamente."
     };
     throw Error(reasons[data?.status]||"Não foi possível responder à proposta.");
    }
@@ -189,7 +212,7 @@ export default function HiringProposals({thread,onUpdate}:Props){
     </label>
     <div className="hiring-proposals-fields">
      <label>Data e horário *
-      <input required type="datetime-local" value={starts} onChange={e=>setStarts(e.target.value)}/>
+      <input required type="datetime-local" value={starts} onChange={e=>{setStarts(e.target.value);setScheduleCheck("idle");}}/>
      </label>
      <label>Cachê combinado (R$, opcional)
       <input value={fee} inputMode="decimal" placeholder="Ex.: 250,00" onChange={e=>setFee(e.target.value)}/>
@@ -200,6 +223,19 @@ export default function HiringProposals({thread,onUpdate}:Props){
      <label>Cidade
       <input value={city} maxLength={80} onChange={e=>setCity(e.target.value)} placeholder="Cidade"/>
      </label>
+    </div>
+    <div className="hiring-schedule-availability">
+     <button type="button" className="btn btn-quiet" onClick={()=>void checkSchedule()}
+      disabled={busy||scheduleCheck==="checking"||!starts}>
+      <CalendarClock size={15}/> {scheduleCheck==="checking"?"Consultando agenda...":"Verificar conflito antes de enviar"}
+     </button>
+     {scheduleCheck!=="idle"&&scheduleCheck!=="checking"&&
+      <span className={"hiring-schedule-status "+scheduleCheck}>
+       {scheduleCheck==="busy"?"Ocupado: existe um compromisso confirmado":
+        scheduleCheck==="possible_conflict"?"Possível conflito: compromisso ainda não confirmado":
+        scheduleCheck==="free"?"Sem conflito registrado — confirme com o músico":
+        "Não foi possível consultar a agenda"}
+      </span>}
     </div>
     <label>Observações (opcional)
      <textarea rows={2} maxLength={800} value={details}
