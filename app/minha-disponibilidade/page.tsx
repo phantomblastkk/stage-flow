@@ -86,9 +86,9 @@ export default function AvailabilityCalendar(){
   const db=createClient();
   const s=new Date(selected+"T00:00:00-03:00").toISOString();
   const e=new Date(plusDays(selected,1)+"T00:00:00-03:00").toISOString();
-  void db.rpc("stage_musician_schedule_check",{
+  void Promise.resolve(db.rpc("stage_musician_schedule_check",{
    p_musician_id:userId,p_start:s,p_end:e,p_thread_id:null,p_ignore_event:null
-  }).then(({data,error})=>{
+  })).then(({data,error})=>{
     if(alive)setCheck(error?"error":data==="busy"?"busy":
       data==="possible_conflict"?"possible_conflict":data==="free"?"free":"error");
   }).catch(()=>{if(alive)setCheck("error");});
