@@ -5,6 +5,7 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { ArrowLeft, Bell, CalendarDays, CheckCircle2, Clock3, LoaderCircle, MessageCircle, RefreshCw, Send, ShieldCheck, UserRound } from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
+import HiringProposals from "@/components/hiring-proposals";
 import "./conversas.css";
 
 type Thread = {
@@ -151,7 +152,7 @@ export default function HiringConversations(){
   <header className="hiring-heading">
     <span className="eyebrow"><ShieldCheck size={14}/> NEGOCIAÇÃO PRIVADA</span>
     <h1>Conversas de <span className="accent">contratação.</span></h1>
-    <p>Consulte datas, converse com músicos e combine os detalhes antes do convite. Seu WhatsApp pessoal não é divulgado aqui.</p>
+    <p>Consulte datas, converse com músicos e formalize uma proposta de apresentação. Seu WhatsApp pessoal não é divulgado aqui.</p>
     <button className="btn btn-quiet" type="button" aria-expanded={showSettings}
       onClick={()=>setShowSettings(v=>!v)}><Bell size={15}/> Avisos por WhatsApp (opcional)</button>
   </header>
@@ -197,6 +198,9 @@ export default function HiringConversations(){
        <button type="button" disabled={busy} onClick={()=>void setAvailability("unavailable")}>Indisponível</button>
        <button type="button" disabled={busy} onClick={()=>void setAvailability("ask_later")}>A combinar</button>
       </div>}
+      <HiringProposals key={active.id} thread={active} onUpdate={()=>{
+        void loadThreads();void loadMessages(active.id);
+       }}/>
       <div className="hiring-messages">
        {!messages.length&&<p className="hiring-empty">Conversa privada. Pergunte sobre disponibilidade, repertório e cachê. A contratação só acontece após os dois confirmarem os detalhes.</p>}
        {messages.map(message=><article key={message.id}
@@ -211,7 +215,7 @@ export default function HiringConversations(){
         disabled={busy} required/>
         <button type="submit" className="btn btn-primary" disabled={busy||!text.trim()}>
          <Send size={16}/> Enviar</button></div>
-       <small>O chat não envia seu telefone. Convite, cachê acordado e pagamento continuam etapas separadas.</small>
+       <small>O chat não compartilha seu telefone. Use uma proposta formal para confirmar o show; o financeiro continua privado.</small>
       </form></>:<div className="hiring-start-prompt">
        <MessageCircle size={30}/>
        <h2>Selecione uma conversa</h2><p>Escolha uma conversa à esquerda para ver as mensagens e responder.</p>
