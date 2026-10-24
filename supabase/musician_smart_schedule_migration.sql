@@ -59,7 +59,7 @@ begin
   or p_end<=p_start or p_end>1440
   or (p_kind='day' and (p_date is null or p_weekday is not null
      or p_from is not null or p_until is not null))
-  or (p_kind='weekly' and (p_date is not null or p_weekday not between 1 and 7
+  or (p_kind='weekly' and (p_date is not null or (p_weekday is null or p_weekday not between 1 and 7)
      or p_from is null or p_until is null or p_until<p_from))
  then return jsonb_build_object('status','invalid');end if;
  if p_kind='day' and (p_date<current_date-interval '1 day'
@@ -120,7 +120,7 @@ declare
 begin
  if auth.uid() is null then return 'forbidden';end if;
  if p_musician_id is null or p_start is null or p_end is null
-   or p_start>=p_end or p_end>p_start+interval '16 hours'
+   or p_start>=p_end or p_end>p_start+interval '26 hours'
    or p_start>now()+interval '366 days'
  then return 'invalid';end if;
  if auth.uid()<>p_musician_id and
@@ -135,11 +135,10 @@ begin
      extract(hour from p_start at time zone 'America/Sao_Paulo')::integer*60+
      extract(minute from p_start at time zone 'America/Sao_Paulo')::integer else 0 end;
    v_end_minute:=case when v_day=v_end_day then
-     extract(hour from p_end at time zone 'America/Sao_Paulo')::integer*60+
-     extract(minute from p_end at time zone 'America/Sao_Paulo')::integer
+     case when (p_end at time zone 'America/Sao_Paulo')::date>v_day then 1440
+       else extract(hour from p_end at time zone 'America/Sao_Paulo')::integer*60+
+         extract(minute from p_end at time zone 'America/Sao_Paulo')::integer end
      else 1440 end;
-   if v_day=v_end_day and v_end_minute=0 and v_end_day>v_start_day then
-     v_end_minute:=1440;end if;
    if exists(select 1 from public.stage_musician_availability_rules r
       where r.musician_id=p_musician_id
         and ((r.kind='day' and r.block_date=v_day)
@@ -174,9 +173,10 @@ begin
  -- Compatibilidade com bloqueios do marketplace quando a tabela já existir.
  if to_regclass('public.stage_marketplace_musician_settings') is not null then
    execute 'select exists(select 1 from public.stage_marketplace_musician_settings
-      where musician_id=$1 and ($2=any(blocked_dates) or
+      where musician_id=$1 and (exists(select 1 from unnest(blocked_dates) d
+         where d between $2 and $3) or
         availability_mode=''unavailable''))'
-     into v_legacy_blocked using p_musician_id,v_start_day;
+     into v_legacy_blocked using p_musician_id,v_start_day,v_end_day;
    if v_legacy_blocked then return 'busy';end if;
  end if;
  if v_pending then return 'possible_conflict';end if;
