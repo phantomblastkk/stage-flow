@@ -73,7 +73,7 @@ Nova migração em homologação: `supabase/hiring_formal_proposals_migration.sq
 
 O módulo `components/hiring-proposals.tsx` aparece dentro de `/conversas`, por conversa:
 
-- O **contratante** cria uma proposta com show, dia, horário, local, cidade, cachê opcional e detalhes (ex.: transporte, repertório ou chegada). Com uma proposta pendente, não envia outra até retirá-la ou o músico responder. O histórico não é apagado.
+- O **contratante** cria uma proposta com show, dia, horário, local, cidade, cachê opcional e detalhes (ex.: transporte, repertório ou chegada). Se a conversa tem um show vinculado, o formulário preenche automaticamente nome, data, horário, cidade e local via `stage_hiring_proposal_prefill`. Aplicar também `supabase/hiring_formal_proposals_prefill_migration.sql` após a migração de propostas. Com uma proposta pendente, não envia outra até retirá-la ou o músico responder. O histórico não é apagado.
 - O **músico** aceita ou recusa, sem que a resposta inicial de disponibilidade seja confundida com aceite contratual.
 - Se for aceita, a função privada `stage_hiring_proposal_decide` cria um evento **rascunho e não público** (quando a conversa ainda não estava ligada a um evento) e um convite **aceito**, tudo na mesma transação. Se o evento original já estiver cadastrado, usa aquele evento sem duplicá-lo. Impede novo convite se já houver convite ao mesmo músico para aquele evento.
 - Cachê acertado é registrado em `invitations.fee_amount` e `stage_fee_negotiations.agreed_amount`, alimentando agenda, histórico e relatórios existentes. Se o cachê ficou em branco, segue "a combinar"; o sistema não inventa preço.
