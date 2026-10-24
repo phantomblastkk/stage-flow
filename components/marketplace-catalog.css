@@ -34,7 +34,7 @@
 .market-hero-stats{display:flex;align-items:center;gap:14px 25px;flex-wrap:wrap;margin-top:29px;color:#b8c6d5;font-size:11px}
 .market-hero-stats span{display:inline-flex;align-items:center;gap:8px}
 .market-hero-stats strong{font:900 20px Manrope,sans-serif;color:#E5D8FF}
-.market-hero-stats svg{color:#a5d381}
+.market-hero-stats svg{color:#C0A7FF}
 .market-hero-visual{
   min-height:246px;display:flex;align-items:center;justify-content:center;gap:4px;
   flex-direction:column;position:relative;border-radius:40px 180px 40px 180px;
@@ -79,7 +79,7 @@
 .market-input-icon>svg{position:absolute;left:11px;color:#91a7b7;pointer-events:none}
 .market-input-icon input{padding-left:34px;color-scheme:dark}
 .market-check{display:flex;align-items:center;gap:9px;font-size:11px;color:#cbd9e5;line-height:1.5;cursor:pointer;margin-top:5px}
-.market-check input{accent-color:#afd786;width:16px;height:16px;flex:none}
+.market-check input{accent-color:#9975E8;width:16px;height:16px;flex:none}
 .market-check span{display:inline-flex;align-items:center;gap:6px}
 .market-check svg{color:#C0A7FF}
 .market-apply{
@@ -163,7 +163,7 @@
 .market-card-identity h3{font:800 15px/1.35 Manrope,sans-serif;overflow-wrap:anywhere}
 .market-card-identity p{font-size:10px;color:#a7b7c9;line-height:1.45;margin-top:5px}
 .market-card-location{display:flex;align-items:center;gap:6px;color:#aabbce;font-size:11px;margin:14px 0 11px}
-.market-card-location svg{color:#a9d794;flex:none}
+.market-card-location svg{color:#BDA5F2;flex:none}
 .market-card-tags{display:flex;flex-wrap:wrap;gap:5px;margin-bottom:12px}
 .market-card-tags span{
   padding:6px 8px;background:#2d374d;border:1px solid #404e65;border-radius:99px;
@@ -223,7 +223,7 @@
   border:1px dashed #415169;border-radius:15px;
   background:#1a23308f;text-align:center;color:#abbcce
 }
-.market-empty>svg{color:#a4c995}
+.market-empty>svg{color:#BDA5F2}
 .market-empty h3{font:800 21px Manrope,sans-serif;color:#dce5ee;margin:0}
 .market-empty p{max-width:440px;font-size:12px;line-height:1.8;margin:0}
 .market-modal-backdrop{
