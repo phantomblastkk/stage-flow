@@ -68,9 +68,24 @@ export default function HiringProposals({thread,onUpdate}:Props){
   setStarts(initialDate(thread.requested_date));
   void load().catch(e=>{if(alive)setError(e instanceof Error?e.message:"Não foi possível carregar as propostas.");})
    .finally(()=>{if(alive)setLoading(false);});
+  if(thread.event_id&&thread.acting_as==="requester") {
+    void createClient().rpc("stage_hiring_proposal_prefill",{p_thread_id:thread.id})
+      .then(({data,error})=>{
+        if(!alive||error||data?.status!=="ok"||!data.event)return;
+        const saved=data.event as {title:string;venue:string|null;city:string|null;starts_at:string};
+        setTitle(saved.title||"");
+        setVenue(saved.venue||"");
+        setCity(saved.city||"");
+        const local=new Intl.DateTimeFormat("sv-SE",{
+          timeZone:"America/Sao_Paulo",year:"numeric",month:"2-digit",
+          day:"2-digit",hour:"2-digit",minute:"2-digit",hour12:false
+        }).format(new Date(saved.starts_at)).replace(" ","T");
+        setStarts(local);
+      }).catch(()=>{});
+  }
   const timer=setInterval(()=>{if(alive)void load().catch(()=>{});},16000);
   return()=>{alive=false;clearInterval(timer);};
- },[load,thread.requested_date]);
+ },[load,thread.requested_date,thread.event_id,thread.acting_as]);
 
  async function submit(e:FormEvent<HTMLFormElement>){
   e.preventDefault();if(busy)return;
