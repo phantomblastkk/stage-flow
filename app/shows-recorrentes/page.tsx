@@ -5,7 +5,7 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import {
   ArrowLeft, CalendarDays, CalendarPlus2, ChevronDown, ChevronUp,
-  CircleAlert, Clock3, CopyCheck, LoaderCircle, PauseCircle,
+  CircleAlert, Clock3, LoaderCircle, PauseCircle,
   PlayCircle, RefreshCw, Repeat2, Send, Users
 } from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
@@ -34,6 +34,7 @@ function dayKey(d:Date){
    year:"numeric",month:"2-digit",day:"2-digit"}).format(d);
 }
 function inDays(base:string,count:number){
+ if(!/^\d{4}-\d{2}-\d{2}$/.test(base))return "";
  const d=new Date(base+"T12:00:00Z");
  d.setUTCDate(d.getUTCDate()+count);
  return d.toISOString().slice(0,10);
