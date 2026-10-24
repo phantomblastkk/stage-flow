@@ -5,7 +5,7 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import {
   ArrowLeft, ArrowRight, CalendarDays, CheckCircle2, Clock3,
-  Coins, FileBarChart3, Guitar, LoaderCircle, MapPin, Mic2,
+  Coins, FileBarChart, Guitar, LoaderCircle, MapPin, Mic2,
   PencilLine, RefreshCw, Save, ShieldCheck, Wallet
 } from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
@@ -235,7 +235,7 @@ export default function MyShowsPage(){
     </header>
     <div className="show-history-tabs" role="group" aria-label="Áreas de meus shows">
       <button type="button" aria-pressed={pane==="history"} onClick={()=>setPane("history")}><CalendarDays size={17}/> Histórico de shows</button>
-      <button type="button" aria-pressed={pane==="finance"} onClick={()=>setPane("finance")}><FileBarChart3 size={17}/> Relatórios financeiros (opcional)</button>
+      <button type="button" aria-pressed={pane==="finance"} onClick={()=>setPane("finance")}><FileBarChart size={17}/> Relatórios financeiros (opcional)</button>
     </div>
     {error&&<p className="show-history-error" role="alert">{error}</p>}
     {notice&&<p className="show-history-success" role="status">{notice}</p>}
