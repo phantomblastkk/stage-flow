@@ -24,7 +24,7 @@
   margin:10px 0 9px;
   display:flex;align-items:center;gap:8px;
 }
-.event-financial-heading h4 svg{color:#c1e5ac}
+.event-financial-heading h4 svg{color:#C0A7FF}
 .event-financial-heading p{
   color:#b2bfd4;font-size:11px;line-height:1.7;margin:0;
 }
@@ -84,7 +84,7 @@
   color:#c9d6e7;font-size:11px;font-weight:800;
   line-height:1.6;
 }
-.event-financial-stats span svg{color:#b0d891;flex:none}
+.event-financial-stats span svg{color:#BDA5F2;flex:none}
 .event-financial-stats strong {
   font:800 clamp(16px,2.2vw,22px)/1.3 "Manrope",sans-serif;
   letter-spacing:-.04em;overflow-wrap:anywhere;
@@ -146,7 +146,7 @@
   border-radius:10px;color:#d1efb9;padding:12px 13px;
   font-size:11px;font-weight:800;text-decoration:none;line-height:1.65;
 }
-.event-financial-negotiate:hover{border-color:#a6d67c;background:#2c4a38}
+.event-financial-negotiate:hover{border-color:#9975E8;background:#2c4a38}
 .event-financial-negotiate svg{flex:none}
 .event-financial-footer{
   margin:15px 0 0;font-size:10px;line-height:1.8;
