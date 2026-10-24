@@ -1,4 +1,5 @@
 import Link from "next/link";
+import HomePartnerVenues from "@/components/home-partner-venues";
 import {
   ArrowRight, ArrowUpRight, BadgeCheck, CalendarDays, Check,
   CirclePlay, Guitar, Music2, Palette,
@@ -76,6 +77,8 @@ export default function Home() {
           </div>
         </div>
       </section>
+
+      <HomePartnerVenues/>
 
       <section id="recursos" className="home-resource-section">
         <div className="home-section-heading">
