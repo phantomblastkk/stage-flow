@@ -5,7 +5,7 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import {
   ArrowLeft, CheckCircle2, Clock3, LoaderCircle, Music2,
-  Pencil, Plus, RefreshCw, Send, Trash2, UserPlus, Users, ArrowRight
+  Pencil, Plus, RefreshCw, Send, Trash2, UserPlus, Users, ArrowRight, CalendarDays
 } from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
 
