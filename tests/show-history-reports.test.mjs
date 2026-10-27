@@ -58,7 +58,7 @@ test("history, optional financial breakdown and all roles are connected",()=>{
   assert.match(page,/kind==="organized"/);
   assert.match(page,/kind==="participation"/);
   assert.match(page,/href=\{"\/eventos\?evento="/);
-  assert.match(dashboard,/href: "\/meus-shows"/);
+  assert.match(read("src/domains/navigation/workspace-navigation.ts"),/\/meus-shows/);
   assert.doesNotMatch(page,/\.from\("stage_show_participation_finance"\)/);
   assert.match(read("app/meus-shows/meus-shows.css"),/show-history-list/);
 });
