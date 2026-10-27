@@ -9,6 +9,7 @@ import {
 } from "lucide-react";
 import {createClient} from "@/lib/supabase/client";
 import {Button,Card,EmptyState,LoadingState,StatCard,StatusChip} from "@/src/components/ui";
+import WorkspaceNextStep from "./workspace-next-step";
 
 type Show={id:string;title:string;starts_at:string;venue:string|null;city:string|null;kind:"organized"|"participation"};
 type Activity={id:string;type:string;title:string;summary:string;created_at:string;read:boolean;href:string};
@@ -111,7 +112,15 @@ export default function WorkspaceOverview({isMusician,isSinger,isProducer}:{
    className="sf-workspace-contact-alert"><Inbox size={18}/>Você tem
    <strong>{safeCount(metrics.pending_contacts)} pedido(s) de contratação</strong>
    aguardando resposta. <ArrowUpRight size={15}/></Link>}
-  <div className="sf-workspace-columns">
+  {metrics&&<WorkspaceNextStep
+   metrics={{
+    shows_week:safeCount(metrics.shows_week),
+    pending_invites:safeCount(metrics.pending_invites),
+    unread_conversations:safeCount(metrics.unread_conversations),
+    pending_contacts:safeCount(metrics.pending_contacts)
+   }}
+   isMusician={isMusician} isSinger={isSinger} isProducer={isProducer}/>}
+  {data&&<div className="sf-workspace-columns">
    <Card>
     <div className="sf-workspace-pane-head">
      <div><h2>Próximas atividades</h2><p>Seus próximos compromissos confirmados e organizados.</p></div>
@@ -156,8 +165,8 @@ export default function WorkspaceOverview({isMusician,isSinger,isProducer}:{
      title="Tudo em dia"
      description="Novas propostas, avisos e pedidos reais aparecerão aqui automaticamente."/>}
    </Card>
-  </div>
-  <Card className="sf-workspace-action-card">
+  </div>}
+  {data&&<Card className="sf-workspace-action-card">
    <div className="sf-workspace-pane-head">
     <div><h2>Acessos rápidos</h2><p>Suas ações mais comuns, sem passar por vários menus.</p></div>
    </div>
@@ -169,7 +178,7 @@ export default function WorkspaceOverview({isMusician,isSinger,isProducer}:{
     {isProducer&&<Link href="/convites"><MessageCircle size={16}/>Convidar músicos</Link>}
     <Link href="/financeiro"><CircleDollarSign size={16}/>Ver financeiro</Link>
    </div>
-  </Card>
+  </Card>}
   {data&&<p className="sf-workspace-asof">Resumo de dados reais, atualizado {timeAgo(data.updated_at)}.
    A atividade não é marcada como lida ao entrar no painel.</p>}
  </div>;
