@@ -133,3 +133,11 @@
 .venue-program-launch-steps :is(button,a):focus-visible{outline:2px solid #c3adff;outline-offset:4px}
 @media(max-width:950px){.venue-program-launch-steps{grid-template-columns:repeat(2,minmax(0,1fr))}}
 @media(max-width:560px){.venue-program-launch-guide{padding:15px}.venue-program-launch-steps{grid-template-columns:1fr}.venue-program-launch-guide header>.btn{width:100%;justify-content:center}}
+
+
+/* Share/preview approved shows only: unpublished drafts have no public URL. */
+.venue-program-published-share{border:1px solid #587a6f;border-radius:12px;background:#1c352d;padding:12px 13px;margin-bottom:17px;display:flex;align-items:center;justify-content:space-between;gap:11px;flex-wrap:wrap}
+.venue-program-published-share>span{display:inline-flex;align-items:center;gap:7px;font-size:12px;font-weight:800;color:#c4efdd}
+.venue-program-published-share>div{display:flex;gap:7px;flex-wrap:wrap}
+.venue-program-published-share .btn{font-size:12px;min-height:42px;padding:10px 12px}
+@media(max-width:540px){.venue-program-published-share>div{width:100%;display:grid;grid-template-columns:1fr}.venue-program-published-share .btn{justify-content:center;width:100%}}
