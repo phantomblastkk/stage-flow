@@ -4,6 +4,7 @@ import Link from "next/link";
 import { useEffect, useState } from "react";
 import { ArrowLeft, Building2, Mic2, Guitar, CheckCircle2 } from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
+import "./hybrid-confirm.css";
 
 const reservedArtistUsernames = new Set([
   "admin", "api", "auth", "artista", "artistas", "cadastro", "configuracoes",
