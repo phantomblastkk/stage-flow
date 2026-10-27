@@ -42,7 +42,7 @@ test("alerts require confirmed musicians, active future event and exclude notes"
  }
  assert.doesNotMatch(src,/new\.backstage_notes|new\.closing_notes|new\.closed_at/);
  assert.match(src,/left\('Show '/);
- assert.match(src,/array_to_string\(v_fields,','\)/);
+ assert.match(src,/array_to_string\(v_fields,', '\)/);
 });
 test("operational notice is coalesced per event and reopens as unread",()=>{
  const src=fn("stage_notify_show_briefing_trigger");
