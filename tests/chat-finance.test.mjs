@@ -73,3 +73,12 @@ test("finance controls require ownership and never move money",()=>{
  assert.match(dashboard,/href: "\/financeiro"/);
  assert.match(dashboard,/href: "\/conversas"/);
 });
+
+test("monthly finance compares projected net and actual cash without assuming payment",()=>{
+ assert.match(money,/projected:0,hasMissing:false/);
+ assert.match(money,/x\.projected\+=val\(r\.gross_revenue\)-val\(r\.expense_total\)-val\(r\.musician_agreed\)/);
+ assert.match(money,/x\.projected\+=val\(r\.personal_fee\)-val\(r\.personal_expenses\)/);
+ assert.match(money,/Resultado líquido previsto/);
+ assert.match(money,/Saldo de caixa registrado/);
+ assert.match(money,/m\.hasMissing\?"Parcial/);
+});
