@@ -1,16 +1,10 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import Link from "next/link";
-import { useRouter } from "next/navigation";
-import {
-  ArrowRight, Bell, CalendarDays, Check, Guitar, Building2,
-  LoaderCircle, Mic2, Music2, Settings2,
-  UserRound, Users, Inbox, Search, ChartNoAxesCombined, Globe2, ShieldCheck
-} from "lucide-react";
+import {useRouter} from "next/navigation";
+import {Check,Guitar,LayoutDashboard,LoaderCircle,Mic2,Settings2} from "lucide-react";
 import WorkspaceSidebar from "@/src/domains/navigation/components/workspace-sidebar";
 import WorkspaceOverview from "@/src/domains/dashboard/components/workspace-overview";
-import {LayoutDashboard} from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
 import NotificationBell from "@/components/notification-bell";
 import DashboardAccountMenu from "@/components/dashboard-account-menu";
