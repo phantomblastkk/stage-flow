@@ -276,3 +276,26 @@ test("approved house editing has publication guide and scoped public preview",()
   assert.match(editor,/stage_venue_gallery_admin_add/);
   assert.doesNotMatch(editor,/\.from\("stage_venue_calendar_events"\)\.insert\(/);
 });
+
+
+test("unapproved venues cannot host calendars, galleries or publicly readable media",()=>{
+  const sql=read("supabase/venue_pending_content_isolation_migration.sql");
+  const canManage=sqlFunction(sql,"stage_venue_can_manage");
+  const media=sqlFunction(sql,"stage_venue_media_can_upload");
+  assert.match(canManage,/v\.approval_status='approved'/);
+  assert.match(canManage,/v\.active and v\.is_official/);
+  assert.match(canManage,/public\.stage_venue_is_admin\(\)/);
+  assert.match(canManage,/m\.venue_id=v\.id and m\.profile_id=auth\.uid\(\)/);
+  assert.match(media,/v\.approval_status='approved'/);
+  assert.match(media,/split_part\(p_path,'\/',2\) in \('logo','cover'\)/);
+  assert.match(media,/split_part\(p_path,'\/',2\) in \('gallery','flyer'\)/);
+  assert.match(media,/stage_venue_can_manage\(v\.id\)/);
+  assert.match(sql,/revoke all on function public\.stage_venue_can_manage\(uuid\)/);
+  assert.match(sql,/revoke all on function public\.stage_venue_media_can_upload\(text\)/);
+  assert.match(sql,/grant execute on function public\.stage_venue_media_can_upload\(text\) to authenticated/);
+  assert.match(sql,/grant execute on function public\.stage_venue_can_manage\(uuid\) to authenticated/);
+  const rpc=sqlFunction(scoped,"stage_venue_calendar_admin_save");
+  assert.match(rpc,/stage_venue_can_manage\(v_venue\)/);
+  assert.match(sqlFunction(scoped,"stage_venue_gallery_admin_add"),
+    /stage_venue_can_manage\(p_venue_id\)/);
+});
