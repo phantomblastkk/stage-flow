@@ -75,3 +75,11 @@
 - Instalar as dependências e rodar npm run build e testes de interface num ambiente controlado antes de publicar.
 - Confirmar as migrations SQL no banco de teste, especialmente a nova policy de Storage que autoriza os diretórios /flyer e /gallery.
 - Testar em mobile: filtros por data, uploads (limite 5 MB), mensagens de erro, formulário público, modo de flyers e confirmação de que eventos pessoais não aparecem na casa.
+
+## Atualização QA — sugestões enviadas por cantores (27/10/2026)
+
+O fluxo atual substitui a inserção direta na tabela `venues` por `stage_venue_submit`: sugestões de usuários comuns ficam pendentes e privadas, acompanhadas por `stage_venue_my_submissions`. Apenas administradores globais podem decidir via `stage_venue_admin_review`.
+
+**Aprovação agora cria automaticamente o perfil oficial com uma URL única.** O calendário, os flyers, o logo, a capa e a galeria estão disponíveis para edição pelos responsáveis autorizados; nenhum arquivo é enviado automaticamente. Rejeição mantém a sugestão oculta. O cantor pode acessar o link da casa aprovada em `/locais`, mas não recebe permissão de editá-la por ser o remetente da sugestão.
+
+Migrações instaladas no Supabase QA: `venue_approval_workflow_migration.sql`, `venue_approval_official_profile_migration.sql` (com correção SQL) e `venue_approved_submitter_links_migration.sql`. Um teste transacional com `ROLLBACK` confirmou o caminho de envio, aprovação, URL e rejeição sem manter registros fictícios. A verificação visual com contas reais e upload de flyers continua pendente. O histórico acima descreve versões anteriores das funcionalidades.
