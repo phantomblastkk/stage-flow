@@ -35,7 +35,8 @@ function destination(n:Notice){
   return n.thread_id?"/conversas?conversa="+encodeURIComponent(n.thread_id):"/conversas";
  }
  if(n.event_code==="invite_received"||n.event_code==="invite_cancelled"){
-  return "/meus-convites";
+  return /^[0-9a-f]{8}(?:-[0-9a-f]{4}){3}-[0-9a-f]{12}$/i.test(n.source_id)
+   ?"/meus-convites?convite="+encodeURIComponent(n.source_id):"/meus-convites";
  }
  return n.event_id?"/convites?evento="+encodeURIComponent(n.event_id):"/convites";
 }
