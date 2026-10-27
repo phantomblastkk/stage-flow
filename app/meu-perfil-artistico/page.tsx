@@ -292,11 +292,11 @@ export default function MeuPerfilArtistico() {
 
       {config && <div className="artist-free-editor">
         <section className="feature">
-          <h2 style={{ fontSize: 21, marginBottom: 12 }}><Globe2 size={19} style={{ display: "inline", verticalAlign: "middle", marginRight: 7 }}/> Endereço gratuito</h2>
+          <h2 style={{ fontSize: 21, marginBottom: 12 }}><Globe2 size={19} style={{ display: "inline", verticalAlign: "middle", marginRight: 7 }}/> Seu único endereço público</h2>
           <p>Seu nome público: <strong style={{ color: "var(--text)" }}>{config.name}</strong></p>
           <div className="artist-free-address">
-            <strong>stageflow.com/{config.username || "seu-usuario"}</strong>
-            <span>{config.username ? "No domínio oficial, quando estiver disponível" : "Você ainda não cadastrou um nome de usuário"}</span>
+            <strong>/{config.username || "seu-usuario"}</strong>
+            <span>{config.username ? "Este caminho é usado no domínio StageFlow" : "Você ainda não cadastrou um nome de usuário"}</span>
           </div>
           <p className="fine">Você não precisa pagar para ter esse endereço. O @ é único e pertence à sua conta.</p>
           {!config.username && <form onSubmit={claimUsername} style={{ marginTop: 17 }}>
