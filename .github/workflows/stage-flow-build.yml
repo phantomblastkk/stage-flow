@@ -6,6 +6,7 @@ on:
     paths:
       - "app/**"
       - "components/**"
+      - "src/**"
       - "lib/**"
       - "middleware.ts"
       - "next.config.ts"
@@ -15,6 +16,7 @@ on:
       - "supabase/venue_*.sql"
       - "supabase/account_*.sql"
       - "supabase/stage_owner_admin_hub_migration.sql"
+      - "supabase/stage_workspace_*.sql"
       - "vercel.json"
       - ".github/workflows/stage-flow-build.yml"
   workflow_dispatch:
@@ -72,6 +74,8 @@ jobs:
         run: node --test tests/singer-public-site.test.mjs
       - name: Verify owner-only admin, venue approvals and badges
         run: node --test tests/owner-admin-hub.test.mjs
+      - name: Verify new SaaS navigation, dashboard, security, mobile UI and SEO contracts
+        run: node --test tests/workspace-saas.test.mjs tests/home-pro-notifications.test.mjs tests/artist-booking-musician-refresh.test.mjs
       - name: Check TypeScript
         run: npx tsc --noEmit
       - name: Build Next.js
