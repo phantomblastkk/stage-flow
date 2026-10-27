@@ -73,7 +73,7 @@ test("new inbox shows unread filters, acknowledges own notices and navigates saf
  assert.match(page,/\/meus-convites/);
  assert.match(page,/\/convites\?evento=/);
  assert.match(page,/document\.visibilityState==="visible"/);
- assert.match(dashboard,/href:"\/notificacoes"/);
+  assert.match(read("src/domains/navigation/workspace-navigation.ts"),/\/notificacoes/);
  assert.match(dashboard,/<NotificationBell\/>/);
  assert.match(bell,/stage_notifications_unread_count/);
  assert.match(conversation,/query\.get\("conversa"\)/);
