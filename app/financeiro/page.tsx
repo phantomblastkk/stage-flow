@@ -110,19 +110,21 @@ export default function Financeiro(){
  ];
  const maxCategory=Math.max(1,...categories.map(c=>c.value));
  const monthly=useMemo(()=>{
-  const groups=new Map<string,{key:string;count:number;gross:number;received:number;expenses:number;team:number;cash:number;hasMissing:boolean}>();
+  const groups=new Map<string,{key:string;count:number;gross:number;received:number;expenses:number;team:number;cash:number;projected:number;hasMissing:boolean}>();
   for(const r of visibleOwner){
-   const key=yearMonth(r.starts_at);const x=groups.get(key)??{key,count:0,gross:0,received:0,expenses:0,team:0,cash:0,hasMissing:false};
+   const key=yearMonth(r.starts_at);const x=groups.get(key)??{key,count:0,gross:0,received:0,expenses:0,team:0,cash:0,projected:0,hasMissing:false};
    x.count++;x.gross+=val(r.gross_revenue);x.received+=val(r.received);
    x.expenses+=val(r.expense_total);x.team+=val(r.musician_agreed);
    x.cash+=val(r.received)-val(r.expense_paid)-val(r.musician_paid);
+   x.projected+=val(r.gross_revenue)-val(r.expense_total)-val(r.musician_agreed);
    x.hasMissing ||=r.gross_revenue===null||val(r.musician_unpriced)>0;
    groups.set(key,x);
   }
   for(const r of visibleMusician){
-   const key=yearMonth(r.starts_at);const x=groups.get(key)??{key,count:0,gross:0,received:0,expenses:0,team:0,cash:0,hasMissing:false};
+   const key=yearMonth(r.starts_at);const x=groups.get(key)??{key,count:0,gross:0,received:0,expenses:0,team:0,cash:0,projected:0,hasMissing:false};
    x.count++;x.gross+=val(r.personal_fee);x.received+=val(r.personal_received);
    x.expenses+=val(r.personal_expenses);x.cash+=val(r.personal_received)-val(r.personal_expenses);
+   x.projected+=val(r.personal_fee)-val(r.personal_expenses);
    x.hasMissing ||=r.personal_fee===null;groups.set(key,x);
   }
   return [...groups.values()].sort((a,b)=>b.key.localeCompare(a.key));
@@ -213,10 +215,11 @@ export default function Financeiro(){
      </div>
     </div>
     <div className="finance-panel"><h2><CalendarDays size={19}/> Por mês</h2>
-     <p>O mês é o da apresentação; não representa a data da transferência ou depósito.</p>
+     <p>Compare o resultado estimado com o caixa registrado. Agrupamento pelo mês do show, não pelo dia do pagamento.</p>
      {monthly.length?<div className="finance-month-list">{monthly.map(m=><div key={m.key} className="finance-month">
       <strong>{monthLabel(m.key)} <small>{m.count} shows</small></strong>
       <span>Receita informada {cash(m.gross)}</span><span>Recebido {cash(m.received)}</span>
+      <span>Resultado líquido previsto <b>{m.hasMissing?"Parcial · ":""}{cash(m.projected)}</b></span>
       <span>Saldo de caixa registrado <b>{cash(m.cash)}</b></span>
       {m.hasMissing&&<small>Valores incompletos neste mês</small>}
      </div>)}</div>:<p className="fine">Sem shows neste período.</p>}
