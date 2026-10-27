@@ -231,7 +231,7 @@ export default function OperationPage(){
      <div><strong>{data.progress?.overdue||0}</strong><span>Com prazo vencido</span></div>
      <div><strong>{data.private_details?.closed_at?"Encerrado":"Em andamento"}</strong><span>Fechamento operacional</span></div>
     </section>}
-    {!owner&&<p className="ops-privacy"><ShieldCheck size={17}/> Briefing da sua apresentação confirmada. As tarefas internas, custos e pagamentos do organizador são privados.</p>}
+    {!owner&&<p className="ops-privacy"><ShieldCheck size={17}/> Briefing da sua apresentação confirmada. As tarefas internas, custos e pagamentos do organizador são privados. Se os horários ou a logística mudarem, você receberá um aviso na Central de Notificações.</p>}
     {cancelled&&<p className="ops-privacy"><CircleAlert size={17}/> Show cancelado: informações preservadas apenas para consulta.</p>}
     <section className="ops-panel">
      <h2><Clock3 size={19}/> Horários e informações para a equipe</h2>
@@ -280,7 +280,7 @@ export default function OperationPage(){
       {canEdit&&<button className="btn btn-primary" type="submit" disabled={!!busy}>
        {busy==="brief"?<LoaderCircle size={15}/>:<Save size={15}/>} Salvar briefing
       </button>}
-      <small className="ops-help">Somente horários e informações logísticas são compartilhados com músicos que aceitaram o convite.</small>
+      <small className="ops-help">Somente horários e informações logísticas são compartilhados com músicos que aceitaram o convite. Mudanças nesses dados geram avisos na Central de Notificações dos músicos confirmados. Anotações privadas não geram avisos; nenhum WhatsApp ou push é enviado.</small>
      </form>:<div className="ops-brief">
       <div><span>Chegada</span><strong>{data.briefing.arrival_at?humanDate(data.briefing.arrival_at):"A combinar"}</strong></div>
       <div><span>Passagem de som</span><strong>{data.briefing.soundcheck_at?humanDate(data.briefing.soundcheck_at):"A combinar"}</strong></div>
