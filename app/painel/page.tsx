@@ -11,6 +11,7 @@ import {
 import type { LucideIcon } from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
 import NotificationBell from "@/components/notification-bell";
+import DashboardAccountMenu from "@/components/dashboard-account-menu";
 import "./painel-account-actions.css";
 
 type ArtistKind = "lead" | "support";
@@ -329,11 +330,10 @@ export default function Dashboard() {
       <Link className="brand" href="/"><span className="brand-mark">S</span> stage flow</Link>
       <div className="dashboard-account-actions">
         <NotificationBell/>
-        <Link className="btn btn-quiet" href="/minha-conta" aria-label="Meu perfil e minhas funções"><UserRound size={16}/> Meu perfil</Link>
-        <Link className="btn btn-quiet" href="/"><ArrowLeft size={15}/> Site</Link>
-        <button className="btn btn-quiet" onClick={() => void handleSignOut()} disabled={signingOut}>
-          <LogOut size={15}/>{signingOut ? "Saindo..." : "Sair"}
-        </button>
+        <DashboardAccountMenu displayName={profile?.display_name||""}
+          isSinger={Boolean(profile?.is_singer)} isMusician={Boolean(profile?.is_musician)}
+          isOwnerAdmin={isOwnerAdmin} signingOut={signingOut}
+          onSignOut={()=>void handleSignOut()}/>
       </div>
     </nav>
 
