@@ -125,10 +125,20 @@ test("locked Pro modules show blurred preview and upgrade without hiding free ac
  const styles=read("components/pro-feature-lock.css");
  const pro=read("app/meu-perfil-artistico/site-profissional/pro-publish-controls.tsx");
  assert.match(lock,/Assinar versão Pro/);
- assert.match(lock,/href="\/planos"/);
+ assert.match(lock,/href="\/assinatura"/);
  assert.match(lock,/aria-hidden="true" inert/);
  assert.match(styles,/filter:blur\(13px\)/);
  assert.match(money,/ProFeatureLock title="Relatórios financeiros Pro"/);
  assert.match(pro,/ProFeatureLock title="Portfólio profissional Pro"/);
  assert.match(money,/EventBudgetPanel/);
+});
+
+test("subscription landing never creates payments and reads server-side entitlement",()=>{
+ const landing=read("app/assinatura/page.tsx");
+ const plan=read("app/planos/page.tsx");
+ assert.match(landing,/stage_my_pro_site_publication/);
+ assert.match(landing,/Assinatura ainda indisponível/);
+ assert.match(landing,/Não estamos recebendo pagamentos/);
+ assert.match(plan,/href="\/assinatura"/);
+ assert.doesNotMatch(landing,/signUp\(|checkout\.sessions|stripe\.checkout|service_role/i);
 });
