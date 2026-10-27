@@ -44,3 +44,17 @@ O legado de cores nos bancos deve continuar reconhecido; não migrar valores his
 - A homologação visual completa requer uma sessão autorizada, pois o projeto QA da Vercel é protegido por SSO. Testar em desktop e celular, inclusive os estados Free, Pro autorizado e músico publicado.
 
 **Produção `stage-flow`: não publicar nem fazer merge na `main` sem autorização.**
+
+
+## Contratação direta e portfólio do músico — 27/10/2026
+
+- Código **diretamente na `main`**, sem `develop`; deploy automático **desativado**. As novas migrações e testes foram executados primeiro no Supabase de homologação. O código e a migração só entram no site oficial por publicação manual autorizada.
+- No editor de cantor e no editor de músico, `BookingContactSettings` permite escolher independentemente por função como o botão **Contratar** funciona: usar o canal já existente (automático), **WhatsApp**, **Instagram**, **formulário StageFlow** (somente cantor) ou não exibir botão.
+- **Privacidade:** o número WhatsApp para contratações é informado pelo próprio artista no editor, separadamente de `musician_whatsapp_preferences`, agenda privada e telefone de cadastro. A tabela `stage_public_booking_contacts` não tem SELECT ou escrita direta por clientes. RPCs de alteração validam `auth.uid()` e a função artística escolhida; RPC pública só revela o telefone após publicação do perfil correspondente e `mode='whatsapp'`. Publicar/despublicar o perfil não altera números privados ou cobranças.
+- Mensagem WhatsApp personalizada (até 260 caracteres), com substituição opcional de `{artista}`; link construído como `https://wa.me/55...?...=` via `encodeURIComponent`, sem contato direto com APIs externas. Para Instagram, é usada apenas a URL HTTPS oficial cadastrada no perfil.
+- **Compatibilidade:** quando o artista não configurou um novo canal, o cantor conserva o formulário anteriormente ativado, ou o Instagram público. Para músicos com Instagram público, o botão vai para essa conta. O modo **Não exibir contato** oculta o botão; o modo **Automático** mantém o comportamento compatível.
+- O menu do painel exibe a **foto de cantor** carregada no bucket público `stage-artist-public` ou a foto de **músico** do portfólio (a função ativa decide a preferência nas contas híbridas). Em caso de imagem inexistente, ausente ou com erro, volta a exibir as iniciais; URLs são validadas por origem e pasta.
+- Portfólio do músico refinado: foto mais destacada, instrumentos com destaque para o principal, painel de contratação, Instagram com @, layout adaptado para celular e vídeos do YouTube reproduzíveis dentro da página **somente após clique**. O iframe é de `youtube-nocookie.com`; links externos continuam disponíveis para vídeos bloqueados para incorporação.
+- Novos limites **gratuitos** em `stage_save_musician_portfolio_v4`: uma apresentação principal + quatro vídeos adicionais (total **cinco**), seis destaques de carreira e oito formatos de apresentação. A versão anterior `v3` permanece para compatibilidade de clientes antigos.
+- Migrações na ordem: `stage_public_booking_contacts_migration.sql`, `stage_public_booking_contacts_auto_mode_migration.sql`, `stage_musician_portfolio_expanded_migration.sql` e `stage_musician_portfolio_v4_permissions_lockdown.sql`.
+- Testes em QA com `ROLLBACK`: tentativas de alterar contato de terceiros, telefone inválido, ativação e revogação do contato público, publicação exigida, limite de cinco vídeos e ausência de privilégios de gravação por `anon`. Nenhuma alteração de dados de teste persistiu.
