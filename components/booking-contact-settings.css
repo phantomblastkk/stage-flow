@@ -1,0 +1,34 @@
+.booking-contact-settings{
+ display:grid;gap:17px;margin:18px 0;padding:23px;
+ border:1px solid #57496b;border-radius:19px;
+ background:linear-gradient(135deg,#241d37,#172437);
+ color:#f6edff;box-shadow:0 15px 38px #08041122
+}
+.booking-contact-heading{display:flex;gap:14px;align-items:center}
+.booking-contact-heading>div{min-width:0}
+.booking-contact-icon{flex:none;display:grid;place-items:center;width:45px;height:45px;border-radius:14px;background:#533578;color:#ebd5ff}
+.booking-contact-heading strong{font:850 17px/1.3 Manrope,sans-serif}
+.booking-contact-heading p{font-size:12px;line-height:1.65;margin:5px 0 0;color:#c8bdd9}
+.booking-contact-options{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:9px}
+.booking-contact-options label{display:flex;gap:10px;align-items:flex-start;padding:13px;border:1px solid #5a4c6e;border-radius:12px;background:#1e1b2e;cursor:pointer}
+.booking-contact-options label:hover,.booking-contact-options label.is-selected{border-color:#b58ce6;background:#352946}
+.booking-contact-options input{flex:none;accent-color:#a678f4;margin:4px 0 0}
+.booking-contact-options label span{display:grid;gap:4px;min-width:0}
+.booking-contact-options strong{font-size:12px;font-weight:850;color:#f9efff}
+.booking-contact-options small,.booking-contact-details small{font-size:11px;line-height:1.65;color:#c5b8d6}
+.booking-contact-details{display:grid;gap:9px}
+.booking-contact-details label{font:800 12px Manrope,sans-serif;margin-top:5px}
+.booking-contact-details input,.booking-contact-details textarea{
+ width:100%;min-width:0;display:block;padding:12px 13px;border:1px solid #746289;
+ border-radius:10px;background:#171b2d;color:#fff;font:12px/1.6 Manrope,sans-serif
+}
+.booking-contact-details textarea{resize:vertical}
+.booking-contact-details input:focus-visible,.booking-contact-details textarea:focus-visible{outline:2px solid #d7b8ff;outline-offset:2px}
+.booking-contact-hint{display:flex;align-items:flex-start;gap:9px;font-size:12px;line-height:1.7;color:#e5d2f5;margin:0}
+.booking-contact-hint svg{flex:none;margin-top:2px}
+.booking-contact-footer{display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:12px;padding-top:14px;border-top:1px solid #655276}
+.booking-contact-footer span{display:flex;align-items:center;gap:7px;color:#bbaed0;font-size:11px}
+.booking-contact-footer .btn{justify-content:center}
+.booking-contact-feedback{display:flex;align-items:center;gap:7px;margin:0;padding:12px;border-radius:10px;background:#1c403a;color:#d9faef;font-size:12px}
+.booking-contact-feedback.is-error{background:#4c2534;color:#ffd5dc}
+@media(max-width:670px){.booking-contact-settings{padding:17px}.booking-contact-options{grid-template-columns:1fr}.booking-contact-footer>.btn{width:100%}}
