@@ -245,18 +245,22 @@ test("singer sees a public venue link only after approval",()=>{
 test("new public shows with a selected flyer wait for media attachment before publication",()=>{
   const editor=read("components/venue-programming-workspace.tsx");
   const styles=read("app/admin/casas/[id]/programacao/programacao.css");
-  const stage=editor.indexOf('const publishAfterFlyer=!showForm.id && showForm.status==="published" && !!pendingFlyer;');
+  const stage=editor.indexOf('const publishAfterFlyer=showForm.status==="published" && !!pendingFlyer && !wasPublished;');
   const draft=editor.indexOf('p_event:{...details,status:publishAfterFlyer?"draft":showForm.status}',stage);
   const attach=editor.indexOf('await attachFlyer(result.id,pendingFlyer);',draft);
   const publish=editor.indexOf('p_event:{...details,id:result.id,status:"published"}',attach);
-  assert.ok(stage>=0,"staged publication must be limited to a new show with pending flyer");
+  assert.ok(stage>=0,"staged publication must include new shows and previously saved drafts with pending flyers");
+  assert.ok(editor.includes('const wasPublished=shows.some(x=>x.id===showForm.id && x.status==="published")'));
   assert.ok(draft>stage,"new show must be saved as private draft first");
   assert.ok(attach>draft,"flyer should be attached after the draft is created");
   assert.ok(publish>attach,"public status must be requested only after flyer attachment");
   assert.ok(editor.includes('status:publishAfterFlyer?"draft":prev.status'));
   assert.ok(editor.includes('setError("O show foi salvo como rascunho, sem publicação pública.'));
   assert.ok(editor.includes('if(!published){'));
-  assert.ok(editor.includes('Ao publicar um show novo com flyer, ele será mantido como rascunho'));
+  assert.ok(editor.includes('Um show novo ou rascunho marcado como publicado só será liberado'));
+  assert.ok(editor.includes('O arquivo selecionado continua disponível neste formulário.'));
+  assert.ok(editor.includes('showForm.id?"Selecionar flyer ao salvar (opcional)"'));
+  assert.ok(editor.includes('setPendingFlyer(null);'));
   assert.match(styles,/\.venue-program-launch-guide/);
   assert.match(styles,/@media\(max-width:560px\)/);
 });
@@ -300,4 +304,30 @@ test("unapproved venues cannot host calendars, galleries or publicly readable me
   assert.match(rpc,/stage_venue_can_manage\(v_venue\)/);
   assert.match(sqlFunction(scoped,"stage_venue_gallery_admin_add"),
     /stage_venue_can_manage\(p_venue_id\)/);
+});
+
+
+test("public show sharing resolves only published events returned by the public month RPC",()=>{
+ const publicPage=read("app/casa/[slug]/page.tsx");
+ const editor=read("components/venue-programming-workspace.tsx");
+ const calendar=sqlFunction(venueBase,"stage_venue_public_month");
+ assert.match(calendar,/status='published'/);
+ assert.match(publicPage,/url\.searchParams\.set\("mes",venueDayKey\(show\.starts_at\)\.slice\(0,7\)\)/);
+ assert.match(publicPage,/url\.searchParams\.set\("show",show\.id\)/);
+ assert.match(publicPage,/new URLSearchParams\(window\.location\.search\)/);
+ assert.match(publicPage,/setLinkedShow\(\{id:id\.toLowerCase\(\),month:monthKey\}\)/);
+ assert.match(publicPage,/venueMonthKey\(month\)!==linkedShow\.month/);
+ assert.match(publicPage,/events\.find\(e=>e\.id===linkedShow\.id&&e\.status==="published"\)/);
+ assert.match(publicPage,/if\(show\)\{setFocusedShow\(show\)/);
+ assert.match(publicPage,/setLinkedShow\(null\)/);
+ assert.match(publicPage,/\.rpc\("stage_venue_public_month"/);
+ assert.doesNotMatch(publicPage,/\.rpc\("stage_venue_calendar_admin_list"/);
+ assert.doesNotMatch(publicPage,/\.from\("stage_venue_calendar_events"\)/);
+ assert.match(publicPage,/Copiar link deste show/);
+ assert.match(editor,/const selectedPublishedShow=shows\.find\(x=>/);
+ assert.match(editor,/x\.id===showForm\.id&&x\.status==="published"/);
+ assert.match(editor,/Copiar link/);
+ assert.match(editor,/Ver show publicado/);
+ assert.match(editor,/url\.searchParams\.set\("show",selectedPublishedShow\.id\)/);
+ assert.match(editor,/\.status==="published"/);
 });
