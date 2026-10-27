@@ -11,3 +11,25 @@
 .sf-verified-compact svg{width:17px;height:17px}
 .mp-shell.mp-theme-ivory .sf-verified{background:#e5f0ff;border-color:#7ba7ec;color:#204d85}
 @media(max-width:500px){.sf-verified{white-space:normal;line-height:1.4}}
+
+/* Verification belongs to StageFlow, not Instagram. Clear on every theme. */
+.premium-site-identity h1 .sf-verified,
+.mp-polished .mp-identity-copy h1 .sf-verified,
+.venue-public-identity-copy h1 .sf-verified{
+ margin-left:11px;vertical-align:middle;
+ letter-spacing:normal;line-height:1.35;
+ text-transform:none;font-size:10px;
+ font-style:normal
+}
+.premium-site-identity h1 .sf-verified svg,
+.mp-polished .mp-identity-copy h1 .sf-verified svg,
+.venue-public-identity-copy h1 .sf-verified svg{
+ display:inline-block
+}
+@media(max-width:550px){
+ .premium-site-identity h1 .sf-verified,
+ .mp-polished .mp-identity-copy h1 .sf-verified,
+ .venue-public-identity-copy h1 .sf-verified{
+  margin-left:8px
+ }
+}
