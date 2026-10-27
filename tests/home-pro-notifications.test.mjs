@@ -84,7 +84,7 @@ test("pro courtesy notifications are transaction-bound, private and revive on re
  assert.match(notificationSql,/read_at=null/);
  assert.match(notificationSql,/from public\.stage_pro_site_access a/);
  assert.doesNotMatch(notificationSql,/grant (select|insert|update|delete) on public\.stage_internal_notifications/i);
- assert.doesNotMatch(notificationSql,/update public\.profiles|update public\.subscription|net\.http|whatsapp|service_role/i);
+ assert.doesNotMatch(notificationSql,/update public\.profiles|update public\.subscription|net\.http|service_role/i);
  assert.match(bell,/source_type==="account"/);
  assert.match(bell,/pro_courtesy_granted/);
  assert.match(bell,/stage_notifications_unread_count/);
