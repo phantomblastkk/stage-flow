@@ -31,7 +31,14 @@ test("singer signup has explicit optional musician access while free singer and 
 });
 
 test("profile hub sits by notifications and keeps distinct singer/musician public profiles",()=>{
- assert.match(dashboard,/<NotificationBell\/>\s*<Link className="btn btn-quiet" href="\/minha-conta"/);
+ assert.match(dashboard,/<NotificationBell\/>\s*<DashboardAccountMenu/);
+ assert.match(dashboard,/isOwnerAdmin=\{isOwnerAdmin\}/);
+ const menu=read("components/dashboard-account-menu.tsx");
+ assert.match(menu,/href="\/minha-conta"/);
+ assert.match(menu,/href="\/minha-conta\?aba=cantor"/);
+ assert.match(menu,/href="\/minha-conta\?aba=musico"/);
+ assert.match(menu,/isOwnerAdmin&&<Link/);
+ assert.match(menu,/event\.key==="Escape"/);
  assert.match(dashboard,/profile\.is_singer&&<button/);
  assert.match(dashboard,/profile\.is_musician&&<button/);
  assert.match(dashboard,/isLead && profile\?\.is_musician/);
@@ -97,4 +104,42 @@ test("new signup resolves the artist kind before assigning singer and musician r
   assert.match(signup,/chosen_artist and \(chosen_kind = 'support'/);
   assert.match(signup,/is_singer, is_musician, plan_code/);
  }
+});
+
+
+test("both roles require an additional explicit, accessible confirmation at signup and in account settings",()=>{
+ assert.match(signup,/const \[hybridConfirmed,setHybridConfirmed\] = useState\(false\)/);
+ assert.match(signup,/artistKind==="lead" && alsoMusician && !hybridConfirmed/);
+ assert.match(signup,/checked=\{hybridConfirmed\} required/);
+ assert.match(signup,/somente a administração pode revertê-la/);
+ assert.match(hub,/role="dialog" aria-modal="true"/);
+ assert.match(hub,/confirmationText\.trim\(\)\.toLocaleUpperCase\("pt-BR"\)!=="ATIVAR"/);
+ assert.match(hub,/confirmationChecked/);
+ assert.match(hub,/onClick=\{event=>openRoleConfirmation\("singer",event\)\}/);
+ assert.match(hub,/onClick=\{event=>openRoleConfirmation\("musician",event\)\}/);
+ assert.match(hub,/event\.key==="Escape"/);
+ assert.match(hub,/window\.requestAnimationFrame\(\(\)=>roleOrigin\.current\?\.focus\(\)\)/);
+ assert.doesNotMatch(hub,/\.from\("profiles"\)\.update\(\{is_singer|\.from\("profiles"\)\.update\(\{is_musician/);
+});
+
+test("profile settings have separate tabs, real email/password controls, and independent visibility",()=>{
+ for(const section of ["Visão geral","Perfil de cantor","Perfil de músico","Dados pessoais","E-mail e segurança","Privacidade"]){
+  assert.ok(hub.includes(section),section+" should be offered");
+ }
+ assert.match(hub,/aria-label="Áreas do meu perfil"/);
+ assert.match(hub,/window\.addEventListener\("popstate"/);
+ assert.match(hub,/stage_my_account_identity/);
+ assert.match(hub,/\.auth\.updateUser\(\{email:proposed\}\)/);
+ assert.match(hub,/\.auth\.updateUser\(\{password\}\)/);
+ assert.match(hub,/password\.length<12/);
+ assert.match(hub,/password!==passwordAgain/);
+ assert.match(hub,/account\.is_public/);
+ assert.match(hub,/account\.musician_published/);
+ assert.match(hub,/account\.is_singer/);
+ assert.match(hub,/account\.is_musician/);
+ assert.match(hub,/\/meu-perfil-artistico/);
+ assert.match(hub,/\/meu-portfolio/);
+ assert.doesNotMatch(hub,/SERVICE_ROLE|NEXT_PUBLIC_SUPABASE_SERVICE/);
+ assert.match(css,/\.account-shell/);
+ assert.match(css,/@media\(max-width:770px\)/);
 });
