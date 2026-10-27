@@ -5,7 +5,7 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import {
   ArrowRight, Bell, BellRing, CheckCircle2, LoaderCircle,
-  MessageCircle, RefreshCw, XCircle
+  MessageCircle, RefreshCw, XCircle, Crown, Gift
 } from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
 import styles from "./notification-bell.module.css";
@@ -13,7 +13,7 @@ import styles from "./notification-bell.module.css";
 type NotificationPreview = {
   id: string;
   source_id: string;
-  source_type: "invitation" | "proposal" | "conversation" | "operations";
+  source_type: "invitation" | "proposal" | "conversation" | "operations" | "account";
   event_code: string;
   event_id: string | null;
   thread_id: string | null;
@@ -32,6 +32,10 @@ const timeFormatter = new Intl.DateTimeFormat("pt-BR", {
 });
 
 function destination(item: NotificationPreview) {
+  if(item.source_type==="account"){
+    return item.event_code==="pro_courtesy_granted"
+      ?"/meu-perfil-artistico?aba=pro":"/minha-conta?aba=cantor";
+  }
   if (item.source_type === "operations") {
     return item.event_id ? "/eventos/operacao?evento=" + encodeURIComponent(item.event_id) : "/eventos";
   }
@@ -51,6 +55,8 @@ function destination(item: NotificationPreview) {
 }
 
 function NoticeIcon({ code }: { code: string }) {
+  if(code==="pro_courtesy_granted")return <Gift size={18}/>;
+  if(code==="pro_courtesy_revoked")return <Crown size={18}/>;
   if (code === "show_briefing_changed") return <BellRing size={18} />;
   if (code === "chat_message") return <MessageCircle size={18} />;
   if (code === "invite_accepted" || code === "proposal_accepted") return <CheckCircle2 size={18} />;
@@ -107,7 +113,16 @@ export default function NotificationBell() {
     }
     void refresh();
     const interval = setInterval(() => { void refresh(); }, 25000);
-    return () => { alive = false; clearInterval(interval); };
+    // Keep the count fresh when the owner returns from the administration
+    // or a musician reopens the tab after receiving a new Pro courtesy.
+    const onReturn=()=>{if(document.visibilityState==="visible")void refresh();};
+    document.addEventListener("visibilitychange",onReturn);
+    window.addEventListener("focus",onReturn);
+    return () => {
+      alive=false;clearInterval(interval);
+      document.removeEventListener("visibilitychange",onReturn);
+      window.removeEventListener("focus",onReturn);
+    };
   }, [open]);
 
   useEffect(() => {
@@ -138,7 +153,10 @@ export default function NotificationBell() {
           p_ids: [item.id], p_all: false
         });
         if (!rpcError && data?.status === "ok") {
-          setUnread(count => count === null ? null : Math.max(0, count - 1));
+          setItems(previous=>previous.map(notice=>
+            notice.id===item.id?{...notice,read_at:new Date().toISOString()}:notice
+          ));
+          setUnread(count => count === null ? null : Math.max(0, count - Math.min(1,Number(data.marked)||0)));
         }
       } catch {
         // Mark-as-read failures must not block access to the original subject.
@@ -179,7 +197,7 @@ export default function NotificationBell() {
           ? <div className={styles.empty}>
               <Bell size={22} />
               <strong>Nenhuma notificação ainda</strong>
-              <span>Seus próximos convites, propostas e mensagens aparecerão aqui.</span>
+              <span>Convites, propostas, mensagens e cortesias Pro aparecerão aqui.</span>
             </div>
           : items.map(item =>
             <button key={item.id} type="button"
