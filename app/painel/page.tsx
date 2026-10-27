@@ -27,6 +27,7 @@ type Profile = {
   username: string | null;
   city: string | null;
   is_public: boolean;
+  artist_avatar_path?:string|null;
 };
 
 type Shortcut = {
@@ -40,6 +41,8 @@ type Shortcut = {
 export default function Dashboard() {
   const router = useRouter();
   const [profile, setProfile] = useState<Profile | null>(null);
+  const [singerPhoto,setSingerPhoto]=useState<string|null>(null);
+  const [musicianPhoto,setMusicianPhoto]=useState<string|null>(null);
   const [email, setEmail] = useState("");
   const [loading, setLoading] = useState(true);
   const [message, setMessage] = useState("");
@@ -79,7 +82,7 @@ export default function Dashboard() {
       setEmail(user.email ?? "");
       const { data, error } = await supabase
         .from("profiles")
-        .select("id, role, is_artist, is_producer, is_singer, is_musician, display_name, username, city, is_public")
+        .select("id, role, is_artist, is_producer, is_singer, is_musician, display_name, username, city, is_public, artist_avatar_path")
         .eq("id", user.id)
         .maybeSingle();
 
@@ -107,6 +110,29 @@ export default function Dashboard() {
           }
         }
         setProfile({ ...data, artist_kind: kind } as Profile);
+        // Publicly uploaded artist photo. Initials are only a fallback.
+        const singerPath=data.artist_avatar_path;
+        if(data.is_singer&&singerPath&&
+          new RegExp("^"+user.id+"/[0-9a-f-]{36}\\.(jpg|png|webp)$","i").test(singerPath)){
+          setSingerPhoto(supabase.storage.from("stage-artist-public")
+            .getPublicUrl(singerPath).data.publicUrl);
+        }else setSingerPhoto(null);
+        if(data.is_musician){
+          // The private owner-only RPC returns the public avatar the musician
+          // explicitly uploaded in the portfolio editor.
+          const {data:portfolioData}=await supabase.rpc("stage_my_musician_portfolio");
+          if(!active)return;
+          const url=(portfolioData as {avatar_url?:string|null}|null)?.avatar_url;
+          const safePrefix=new URL(supabase.storage.from("stage-musician-media")
+            .getPublicUrl(user.id+"/placeholder.png").data.publicUrl);
+          try{
+            const candidate=url?new URL(url):null;
+            setMusicianPhoto(candidate&&candidate.protocol==="https:"&&
+              candidate.origin===safePrefix.origin&&
+              candidate.pathname.startsWith(safePrefix.pathname.replace("placeholder.png",""))?
+                candidate.href:null);
+          }catch{setMusicianPhoto(null);}
+        }else setMusicianPhoto(null);
         // O portal de parceiros e opcional e nao interfere no painel atual.
         const {data: partnerData}=await supabase.rpc("stage_venue_partner_access");
         if (!active) return;
@@ -170,6 +196,7 @@ export default function Dashboard() {
     : profile?.artist_kind === "support" ? "support" : "lead";
   const isSupport = Boolean(profile?.is_musician && kind === "support");
   const isLead = Boolean(profile?.is_singer && kind === "lead");
+  const accountPhoto=isSupport?(musicianPhoto||singerPhoto):(singerPhoto||musicianPhoto);
   const roleLabel = !profile ? "Conta"
     : isSupport ? "Músico de apoio" + (profile.is_producer ? " + Produtor" : "")
     : isLead ? "Cantor / artista" + (profile.is_producer ? " + Produtor" : "")
@@ -330,7 +357,7 @@ export default function Dashboard() {
       <Link className="brand" href="/"><span className="brand-mark">S</span> stage flow</Link>
       <div className="dashboard-account-actions">
         <NotificationBell/>
-        <DashboardAccountMenu displayName={profile?.display_name||""}
+        <DashboardAccountMenu displayName={profile?.display_name||""} avatarUrl={accountPhoto}
           isSinger={Boolean(profile?.is_singer)} isMusician={Boolean(profile?.is_musician)}
           isOwnerAdmin={isOwnerAdmin} signingOut={signingOut}
           onSignOut={()=>void handleSignOut()}/>
