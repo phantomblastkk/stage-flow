@@ -6,7 +6,7 @@ import { useRouter } from "next/navigation";
 import {
   ArrowLeft, ArrowRight, Bell, CalendarDays, Check, Guitar, Building2,
   LoaderCircle, LogOut, Mic2, Music2, Settings2,
-  UserRound, Users, Inbox, Search, ChartNoAxesCombined, Globe2
+  UserRound, Users, Inbox, Search, ChartNoAxesCombined, Globe2, ShieldCheck
 } from "lucide-react";
 import type { LucideIcon } from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
@@ -46,6 +46,7 @@ export default function Dashboard() {
   const [signingOut, setSigningOut] = useState(false);
   const [changingKind, setChangingKind] = useState(false);
   const [partnerHouseCount, setPartnerHouseCount] = useState(0);
+  const [isOwnerAdmin, setIsOwnerAdmin] = useState(false);
 
   useEffect(() => {
     let active = true;
@@ -110,6 +111,11 @@ export default function Dashboard() {
         if (!active) return;
         const available=partnerData as {status?:string;items?:unknown[]} | null;
         if (available?.status==="ok") setPartnerHouseCount(available.items?.length||0);
+        // Optional navigation only; every privileged action is independently
+        // authorized by its own RPC in the database.
+        const {data: ownerAccess,error:ownerAccessError}=await supabase.rpc("stage_owner_admin_status");
+        if (!active) return;
+        setIsOwnerAdmin(!ownerAccessError&&ownerAccess===true);
       }
       setLoading(false);
     }
@@ -278,6 +284,13 @@ export default function Dashboard() {
     href:"/notificacoes",title:"Central de notificações",icon:Bell,
     description:"Novos convites, propostas, mensagens, confirmações e cancelamentos, com contador de avisos não lidos.",
     label:"CAIXA DE ENTRADA"
+  });
+  // Only the authenticated owner can see a shortcut to the private hub.
+  // The database remains the authorization boundary even for a known URL.
+  if (isOwnerAdmin) primary.unshift({
+    href:"/admin/central",title:"Administração geral",icon:ShieldCheck,
+    description:"Relatórios de cadastros, aprovação de casas e verificação de perfis do StageFlow.",
+    label:"ACESSO EXCLUSIVO"
   });
   const secondary: Shortcut[] = [];
   if (isSupport) {
