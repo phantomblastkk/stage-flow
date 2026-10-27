@@ -3,7 +3,7 @@ import { LockKeyhole, ArrowRight } from "lucide-react";
 import "./pro-feature-lock.css";
 
 type Props={title:string;description:string;children:React.ReactNode;href?:string};
-export default function ProFeatureLock({title,description,children,href="/planos"}:Props){
+export default function ProFeatureLock({title,description,children,href="/assinatura"}:Props){
  return <section className="stage-pro-locked" aria-label={title+" — exclusivo Pro"}>
    <div className="stage-pro-locked-preview" aria-hidden="true" inert>{children}</div>
    <div className="stage-pro-locked-overlay">
