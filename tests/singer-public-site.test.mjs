@@ -24,7 +24,7 @@ test("the public singer @ is the shared Pro-style design, whether free or entitl
  assert.match(shared,/stage_public_artist_accepts_bookings/);
  assert.match(shared,/setProUnlocked\(false\)/);
  assert.match(shared,/setProUnlocked\(true\)/);
- assert.match(shared,/proUnlocked\?\s*"Site Pro publicado":"Perfil público gratuito"/);
+ assert.match(shared,/proUnlocked\?\s*"Recursos Pro ativos":"Perfil público gratuito"/);
  assert.match(shared,/Seu site já tem o visual profissional do StageFlow/);
 });
 
@@ -86,4 +86,50 @@ test("singer URL helpers use the one canonical free-and-Pro public path",()=>{
  assert.match(helpers,/return getStageFlowOrigin\(\)\+"\/"\+encodeURIComponent\(username\)/);
  assert.doesNotMatch(helpers,/getStageFlowOrigin\(\)\+"\/pro\/"/);
  assert.doesNotMatch(helpers,/agenda de shows deste artista no Stage Flow Pro/);
+});
+
+test("singer has one editing workspace for free identity and Pro features",()=>{
+ const editor=source("app/meu-perfil-artistico/page.tsx");
+ const premium=source("components/singer-pro-editor.tsx");
+ const legacyEditor=source("app/meu-perfil-artistico/site-profissional/page.tsx");
+ assert.match(editor,/import SingerProEditor from/);
+ assert.match(editor,/aria-label="Áreas do perfil de cantor"/);
+ assert.match(editor,/Dados e publicação/);
+ assert.match(editor,/Aparência e galerias/);
+ assert.match(editor,/activeTab === "dados"/);
+ assert.match(editor,/proVisited &&/);
+ assert.match(editor,/singer-editor-canonical/);
+ assert.doesNotMatch(editor,/href="\/meu-perfil-artistico\/site-profissional"/);
+ assert.match(legacyEditor,/redirect\("\/meu-perfil-artistico\?aba=pro"\)/);
+ assert.match(premium,/MESMO PERFIL PÚBLICO/);
+ assert.match(premium,/O link antigo com \/pro\/ apenas redireciona/);
+ assert.doesNotMatch(premium,/publicado em <strong>\/pro\//);
+ assert.match(publication,/Endereço único do seu perfil de cantor/);
+ assert.match(publication,/Ativar recursos Pro/);
+ const tabs=source("app/meu-perfil-artistico/singer-unified-editor.css");
+ assert.match(tabs,/\.singer-editor-tabs/);
+ assert.match(tabs,/@media\(max-width:700px\)/);
+});
+
+test("musician showcase has calm colors, safe previews, and a real full-screen editor",()=>{
+ const view=source("components/musician-portfolio-view.tsx");
+ const musicianEditor=source("app/meu-portfolio/page.tsx");
+ const musicianCss=source("components/musician-portfolio-polish.css");
+ const editorCss=source("app/meu-portfolio/musician-portfolio-editor.css");
+ const singerCss=source("app/meu-perfil-artistico/site-profissional/premium-preview.css");
+ assert.doesNotMatch(view,/#c6f36b|label: "Lima"/);
+ assert.doesNotMatch(musicianCss,/#c6f36b|#b2e65f/);
+ assert.doesNotMatch(editorCss,/#c6f36b|#b2e65f|var\(--lime\)/);
+ assert.doesNotMatch(singerCss,/#b2e65f|#d4f2a8/);
+ assert.match(view,/portfolio\.accent === "lime" \? "violet"/);
+ assert.match(view,/instanceId/);
+ assert.match(view,/onClick=\{preview \? event => event\.preventDefault\(\) : undefined\}/);
+ assert.match(musicianEditor,/aria-haspopup="dialog"/);
+ assert.match(musicianEditor,/role="dialog" aria-modal="true"/);
+ assert.match(musicianEditor,/event\.key === "Escape"/);
+ assert.match(musicianEditor,/document\.body\.style\.overflow = "hidden"/);
+ assert.match(musicianEditor,/instanceId="editor-compact"/);
+ assert.match(musicianEditor,/instanceId="editor-full"/);
+ assert.match(editorCss,/\.mp-preview-dialog/);
+ assert.match(musicianCss,/@media\(max-width:520px\)/);
 });
