@@ -87,7 +87,13 @@ export default function CentralAdministrativa(){
     const db=createClient();
     const {data:{user},error:sessionError}=await db.auth.getUser();
     if(!active)return;
-    if(sessionError)throw sessionError;
+    if(sessionError){
+     // A missing session should open the login form. A session that cannot
+     // be validated due to a network error must not be mistaken for logout.
+     const {data:{session}}=await db.auth.getSession();
+     if(!active)return;
+     if(session)throw sessionError;
+    }
     if(!user){router.replace("/login?next=%2Fadmin%2Fcentral");return;}
     const {data,error}=await db.rpc("stage_owner_admin_status");
     if(!active)return;
