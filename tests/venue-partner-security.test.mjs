@@ -95,7 +95,10 @@ test("partner editor and global admin share UI but not data permissions",()=>{
   assert.match(editor,/stage_venue_calendar_admin_save/);
   assert.match(editor,/stage_venue_gallery_admin_add/);
   assert.doesNotMatch(portal,/supabase\.from\("venues"\)/);
-  assert.match(home,/href: "\/parceiros"/);
+  const navigation=read("src/domains/navigation/workspace-navigation.ts");
+  assert.match(home,/partnerHouseCount/);
+  assert.match(navigation,/parceiros/);
+  assert.match(navigation,/role.partnerHouseCount/);
 });
 
 test("administrator can guide manager registration and safely share access",()=>{
