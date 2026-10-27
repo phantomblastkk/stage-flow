@@ -220,7 +220,10 @@ export default function VenueProgrammingWorkspace({mode}: {mode: "admin" | "part
     setBusy("save");setError("");setSuccess("");
     let savedId:string|null=null;
     // A new show with a flyer must not appear publicly before its image is attached.
-    const publishAfterFlyer=!showForm.id && showForm.status==="published" && !!pendingFlyer;
+    // A saved draft retry has the same safety requirement as the first creation.
+    // A live show's existing flyer remains public while a replacement is uploaded.
+    const wasPublished=shows.some(x=>x.id===showForm.id && x.status==="published");
+    const publishAfterFlyer=showForm.status==="published" && !!pendingFlyer && !wasPublished;
     const hadPendingFlyer=!!pendingFlyer;
     let published=!publishAfterFlyer;
     try{
@@ -263,7 +266,8 @@ export default function VenueProgrammingWorkspace({mode}: {mode: "admin" | "part
           setError("O show foi salvo como rascunho, sem publicação pública. "+
             "O flyer ou a publicação não pôde ser concluído: "+
             (e instanceof Error?e.message:"tente novamente.")+
-            " Abra este show novamente para concluir o flyer e publicar.");
+            " O arquivo selecionado continua disponível neste formulário. "+
+            "Escolha Publicado novamente e clique em Salvar show para tentar outra vez.");
         }else{
           setError("O show foi salvo, mas houve um problema para concluir o flyer ou atualizar a lista: "+
             (e instanceof Error?e.message:"tente novamente.")+
@@ -280,6 +284,7 @@ export default function VenueProgrammingWorkspace({mode}: {mode: "admin" | "part
     setBusy("flyer");setError("");setSuccess("");
     try{
       await attachFlyer(showForm.id,file);
+      setPendingFlyer(null);
       await refresh();setSuccess("Flyer atualizado e associado à data do show.");
     }catch(e){setError(e instanceof Error?e.message:"Não foi possível salvar o flyer.");}
     finally{setBusy("");}
@@ -511,15 +516,15 @@ export default function VenueProgrammingWorkspace({mode}: {mode: "admin" | "part
                   <option value="published">Publicado — aparece no calendário</option>
                   <option value="cancelled">Cancelado — oculto do site</option>
                 </select></div>
-              {!showForm.id&&<div className="venue-program-new-flyer">
-                <label htmlFor="vp-new-flyer"><ImagePlus size={17}/> Flyer (opcional)</label>
+              <div className="venue-program-new-flyer">
+                <label htmlFor="vp-new-flyer"><ImagePlus size={17}/> {showForm.id?"Selecionar flyer ao salvar (opcional)":"Flyer (opcional)"}</label>
                 <input id="vp-new-flyer" type="file" accept="image/jpeg,image/png,image/webp"
                   disabled={!!busy} onChange={e=>{chooseFlyerForNewShow(e.target.files?.[0]);e.target.value="";}}/>
                 {pendingFlyer&&<div className="venue-program-pending-flyer">
                   <span>Selecionado: <strong>{pendingFlyer.name}</strong></span>
                   <button type="button" disabled={!!busy} onClick={()=>setPendingFlyer(null)}>Retirar</button>
                 </div>}
-                <p className="fine">Ao publicar um show novo com flyer, ele será mantido como rascunho até a imagem estar vinculada. Se o upload falhar, a apresentação não será publicada sem o flyer.</p>
+                <p className="fine">Um show novo ou rascunho marcado como publicado só será liberado após vincular o flyer selecionado. Se o envio falhar, você pode repetir a operação aqui, sem criar outro show.</p>
               </div>}
               <div className="venue-program-buttons">
                 <button className="btn btn-primary" type="submit" disabled={!!busy}>
