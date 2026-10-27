@@ -29,7 +29,7 @@ test("booking phone is opt-in, account-scoped and never uses private WhatsApp pr
  assert.match(contactSql,/case when c\.mode='whatsapp' then c\.phone_e164 else null end/);
  assert.doesNotMatch(contactSql,/musician_whatsapp_preferences|service_role|raw_user_meta_data/);
  assert.doesNotMatch(contactSql,/grant (?:insert|select|update|delete) on public\.stage_public_booking_contacts/i);
- assert.match(contactHelpers,/^ export type BookingMode/m);
+ assert.match(contactHelpers,/^export type BookingMode/m);
  assert.match(contactHelpers,/https:\/\/wa\.me\//);
  assert.match(contactHelpers,/encodeURIComponent\(text\)/);
  assert.match(contactHelpers,/\/\^55\[1-9\]/);
