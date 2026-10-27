@@ -57,6 +57,7 @@ export default function CadastroPage() {
   }, []);
   const [isProducer, setIsProducer] = useState(false);
   const [alsoMusician,setAlsoMusician] = useState(false);
+  const [hybridConfirmed,setHybridConfirmed] = useState(false);
   const [partnerOnboarding, setPartnerOnboarding] = useState(false);
   const isArtist = artistKind !== "none";
   const [displayName, setDisplayName] = useState("");
@@ -73,6 +74,8 @@ export default function CadastroPage() {
     e.preventDefault(); setBusy(true); setMessage(""); setError(false);
     try {
       if (!inviteCode && !isArtist && !isProducer) throw new Error("Selecione sua atividade principal.");
+      if (!inviteCode && artistKind==="lead" && alsoMusician && !hybridConfirmed)
+        throw new Error("Confirme que deseja ativar os dois perfis artísticos antes de criar a conta.");
       const supabase = createClient();
       const cleanUsername = username.trim().toLowerCase();
       if (artistKind === "lead" && !inviteCode && reservedArtistUsernames.has(cleanUsername)) {
@@ -151,9 +154,18 @@ export default function CadastroPage() {
           </button>
         </div>
         {artistKind==="lead"&&<label className="signup-producer-add">
-          <input type="checkbox" checked={alsoMusician} onChange={e=>setAlsoMusician(e.target.checked)}/>
+          <input type="checkbox" checked={alsoMusician} onChange={e=>{
+             setAlsoMusician(e.target.checked);setHybridConfirmed(false);
+           }}/>
           <span><strong>Também sou músico</strong><small>Libera meu portfólio de músico, convites para tocar e as funções de instrumentista nesta conta. Meu perfil de cantor continua separado.</small></span>
           <CheckCircle2 size={18} color={alsoMusician ? "#C0A7FF" : "#657083"}/>
+        </label>}
+        {artistKind==="lead"&&alsoMusician&&<label className="signup-hybrid-confirm">
+          <input type="checkbox" checked={hybridConfirmed} required
+            onChange={e=>setHybridConfirmed(e.target.checked)}/>
+          <span><strong>Confirmo que quero os dois perfis</strong>
+            <small>Entendo que terei uma página de cantor e um portfólio de músico independentes. A função extra não pode ser removida por mim; somente a administração pode revertê-la.</small>
+          </span>
         </label>}
         {isArtist && <label className="signup-producer-add">
           <input type="checkbox" checked={isProducer} onChange={e => setIsProducer(e.target.checked)}/>
