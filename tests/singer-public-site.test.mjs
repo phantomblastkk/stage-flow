@@ -98,6 +98,8 @@ test("singer has one editing workspace for free identity and Pro features",()=>{
  assert.match(editor,/Aparência e galerias/);
  assert.match(editor,/activeTab === "dados"/);
  assert.match(editor,/proVisited &&/);
+ assert.match(editor,/className="singer-editor-data-panel"/);
+ assert.match(editor,/style=\{\{ display: activeTab === "dados" \? "block" : "none" \}\}/);
  assert.match(editor,/singer-editor-canonical/);
  assert.doesNotMatch(editor,/href="\/meu-perfil-artistico\/site-profissional"/);
  assert.match(legacyEditor,/redirect\("\/meu-perfil-artistico\?aba=pro"\)/);
