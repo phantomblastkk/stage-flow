@@ -111,3 +111,28 @@
 .venue-public-share-actions{display:flex;flex-wrap:wrap;align-items:center;gap:9px;margin-top:13px}
 .venue-public-share-actions .venue-public-share-show{margin-top:0}
 @media(max-width:540px){.venue-public-share-actions{display:grid;grid-template-columns:1fr}}
+
+
+/* Official venue card: precise contact labels and share actions, touch-first. */
+.venue-public-action-bar{display:flex;flex-direction:column;gap:11px;border:1px solid #6c558a;border-radius:17px;background:linear-gradient(110deg,#2b2140,#1b192b);padding:16px;margin:-12px 0 26px}
+.venue-public-action-primary,.venue-public-action-share{display:flex;align-items:center;gap:9px;flex-wrap:wrap}
+.venue-public-action-primary a,.venue-public-action-share button{display:inline-flex;align-items:center;justify-content:center;gap:8px;min-height:44px;border-radius:11px;padding:10px 13px;font:800 12px Manrope,sans-serif;text-decoration:none;cursor:pointer}
+.venue-public-action-main{color:#fff;background:#67469a;border:1px solid #9874d2}
+.venue-public-action-main:hover{background:#7856b2}
+.venue-public-action-secondary{color:#eadcff;background:#342747;border:1px solid #725b95}
+.venue-public-action-secondary:hover{background:#45315c}
+.venue-public-action-secondary svg:last-child{flex:none}
+.venue-public-action-share{border-top:1px solid #594571;padding-top:12px}
+.venue-public-action-share button{color:#e9d8ff;border:1px solid #675283;background:#241d36}
+.venue-public-action-share button:hover{background:#3d2d55}
+.venue-public-action-bar :is(a,button,input):focus-visible{outline:2px solid #dcc2ff;outline-offset:3px}
+.venue-public-share-feedback{display:grid;gap:7px;font-size:12px;color:#d7c1f1;line-height:1.5}
+.venue-public-share-feedback input{max-width:100%;width:100%;min-width:0;padding:10px 11px;border-radius:9px;border:1px solid #795ca8;background:#1b172a;color:#fff}
+.venue-public-contact-details{display:grid;gap:11px;border:1px solid #5c476f;background:#241d38;border-radius:13px;padding:14px;margin:16px 0 0;overflow-wrap:anywhere}
+.venue-public-contact-details h3{display:flex;align-items:center;gap:7px;color:#f1e5ff;font:800 13px Manrope,sans-serif;margin:0}
+.venue-public-contact-details p{color:#e3d4f2;font-size:12px;line-height:1.6;margin:0}
+.venue-public-contact-details>a{display:flex;align-items:center;gap:7px;color:#e8c9ff;text-decoration:underline;text-underline-offset:3px;font-size:12px;font-weight:700}
+.venue-public-contact-details small{font-size:11px;color:#c3b1d6;line-height:1.55}
+.venue-public-no-contact{color:#cbbad9;font-size:12px!important;line-height:1.55;margin-top:13px}
+@media(max-width:650px){.venue-public-action-bar{padding:12px;margin-top:-8px}.venue-public-action-primary a{flex:1}.venue-public-action-share button{flex:1}}
+@media(max-width:430px){.venue-public-action-primary,.venue-public-action-share{display:grid;grid-template-columns:1fr}.venue-public-action-primary a,.venue-public-action-share button{width:100%}}
