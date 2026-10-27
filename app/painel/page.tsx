@@ -8,7 +8,9 @@ import {
   LoaderCircle, Mic2, Music2, Settings2,
   UserRound, Users, Inbox, Search, ChartNoAxesCombined, Globe2, ShieldCheck
 } from "lucide-react";
-import type { LucideIcon } from "lucide-react";
+import WorkspaceSidebar from "@/src/domains/navigation/components/workspace-sidebar";
+import WorkspaceOverview from "@/src/domains/dashboard/components/workspace-overview";
+import {LayoutDashboard} from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
 import NotificationBell from "@/components/notification-bell";
 import DashboardAccountMenu from "@/components/dashboard-account-menu";
@@ -28,14 +30,6 @@ type Profile = {
   city: string | null;
   is_public: boolean;
   artist_avatar_path?:string|null;
-};
-
-type Shortcut = {
-  href: string;
-  title: string;
-  description: string;
-  icon: LucideIcon;
-  label?: string;
 };
 
 export default function Dashboard() {
@@ -202,245 +196,58 @@ export default function Dashboard() {
     : isLead ? "Cantor / artista" + (profile.is_producer ? " + Produtor" : "")
     : "Produtor / contratante";
 
-  let primary: Shortcut[];
-  if (isSupport) {
-    primary = [
-      {
-        href: "/meus-convites", title: "Meus convites", icon: Bell,
-        description: "Receba oportunidades, confirme participações e negocie seu cachê em particular.",
-        label: "COMECE AQUI"
-      },
-      {
-        href: "/meu-portfolio", title: "Meu portfólio de músico", icon: Guitar,
-        description: "Divulgue instrumentos, trabalhos, cidade e escolha entre mostrar cachê ou sob consulta."
-      },
-      {
-        href: "/meu-desempenho", title: "Meu desempenho", icon: ChartNoAxesCombined,
-        description: "Acompanhe visitas ao portfólio, visibilidade no marketplace e convites recebidos."
-      },
-      {
-        href: "/eventos", title: "Minha agenda", icon: CalendarDays,
-        description: "Veja seus shows e as participações que já estão confirmadas."
-      }
-    ];
-  } else if (isLead) {
-    primary = [
-      {
-        href: "/eventos", title: "Minha agenda de shows", icon: CalendarDays,
-        description: "Cadastre shows, locais e horários e escolha quais eventos serão públicos.",
-        label: "COMECE AQUI"
-      },
-      {
-        href: "/meu-perfil-artistico", title: "Minha página de cantor", icon: Mic2,
-        description: "Divulgue sua carreira no endereço gratuito com seu @ artístico."
-      },
-      {
-        href: "/meu-perfil-artistico/site-profissional", title: "Meu site Pro", icon: Globe2,
-        description: "Personalize a galeria e a agenda e publique seu site Pro se sua conta estiver habilitada."
-      },
-      {
-        href: "/meu-perfil-artistico/solicitacoes", title: "Pedidos de contratação", icon: Inbox,
-        description: "Leia as solicitações recebidas pela página pública e responda aos interessados."
-      },
-      {
-        href: "/convites", title: "Convidar músicos", icon: Users,
-        description: "Envie propostas individuais e acompanhe respostas e negociações."
-      },
-      {
-        href: "/equipes", title: "Minhas equipes", icon: Music2,
-        description: "Salve formações para reutilizar nos próximos shows."
-      }
-    ];
-  } else {
-    primary = [
-      {
-        href: "/eventos", title: "Meus eventos", icon: CalendarDays,
-        description: "Organize os shows que você produz ou contrata.", label: "COMECE AQUI"
-      },
-      {
-        href: "/convites", title: "Convidar músicos", icon: Users,
-        description: "Acompanhe respostas e negocie valores individuais de contratação."
-      },
-      {
-        href: "/equipes", title: "Formações de músicos", icon: Music2,
-        description: "Crie equipes recorrentes e reutilize-as em novos eventos."
-      }
-    ];
-  }
+  return <main className="sf-workspace">
+    <WorkspaceSidebar role={{
+      isSinger:Boolean(profile?.is_singer),
+      isMusician:Boolean(profile?.is_musician),
+      isProducer:Boolean(profile?.is_producer),
+      isOwnerAdmin,
+      partnerHouseCount
+    }}/>
+    <div className="sf-workspace-main">
+      <header className="sf-workspace-topbar">
+        <div className="sf-workspace-breadcrumb"><LayoutDashboard size={18}/>
+          <span>Início / Visão geral</span>
+        </div>
+        <div className="sf-workspace-top-actions">
+          <NotificationBell/>
+          <DashboardAccountMenu displayName={profile?.display_name||""}
+            avatarUrl={accountPhoto}
+            isSinger={Boolean(profile?.is_singer)}
+            isMusician={Boolean(profile?.is_musician)}
+            isOwnerAdmin={isOwnerAdmin}
+            signingOut={signingOut}
+            onSignOut={()=>void handleSignOut()}/>
+        </div>
+      </header>
+      <section className="sf-workspace-welcome">
+        <span className="eyebrow"><span className="dot"/> SEU STAGEFLOW · {roleLabel.toUpperCase()}</span>
+        <h1>Olá, <span>{profile?.display_name||"bem-vindo(a)"}</span>!</h1>
+        <p>O que merece sua atenção hoje? Suas tarefas, shows e oportunidades em um só lugar.</p>
+        {email&&<p className="sf-workspace-private-email">Conta: {email}</p>}
+      </section>
 
-  if (profile?.is_artist) primary.splice(0,0,{
-    href: "/minha-disponibilidade", title: "Minha disponibilidade", icon: CalendarDays,
-    description: "Bloqueie datas, cadastre bandas fixas e identifique conflitos com shows aceitos.",
-    label: "AGENDA INTELIGENTE"
-  });
-  primary.splice(1,0,{
-    href: "/eventos", title: "Operação dos shows", icon: CalendarDays,
-    description: "Acesse cada apresentação para organizar checklist, horários, transporte, equipamentos e encerramento.",
-    label: "DIA DO SHOW"
-  });
-  primary.splice(1,0,{
-    href: "/shows-recorrentes", title: "Shows recorrentes", icon: Music2,
-    description: "Crie temporadas semanais, gere apresentações em rascunho e reutilize equipes fixas sem refazer cada show.",
-    label: "PROGRAMAÇÃO SEMANAL"
-  });
-  primary.splice(0,0,{
-    href: "/conversas", title: "Conversas e contratações", icon: Inbox,
-    description: "Converse com músicos ou contratantes, consulte disponibilidade e acompanhe propostas.",
-    label: "CHAT INTERNO"
-  });
-  primary.splice(2,0,{
-    href: "/financeiro", title: "Central financeira", icon: ChartNoAxesCombined,
-    description: "Receitas brutas, cachês, transporte, despesas, valores pagos e relatório por show e por mês.",
-    label: "CONTROLE OPCIONAL"
-  });
-  primary.splice(1,0,{
-    href: "/meus-shows", title: "Meus shows e histórico", icon: CalendarDays,
-    description: "Reveja apresentações realizadas, confirme participações e acompanhe seus relatórios financeiros opcionais.",
-    label: "HISTÓRICO E FINANCEIRO"
-  });
-  if (partnerHouseCount > 0) primary.unshift({
-    href: "/parceiros", title: "Minhas casas parceiras", icon: Building2,
-    description: "Gerencie shows, flyers, fotos e sugestões das casas autorizadas para você.",
-    label: "ACESSO DA CASA"
-  });
-  primary.unshift({
-    href:"/minha-conta",title:"Meu perfil e minhas funções",icon:UserRound,
-    description:"Veja suas páginas públicas de cantor e músico, edite seu nome e escolha as funções da conta.",
-    label:"IDENTIDADE"
-  });
-  primary.unshift({
-    href:"/notificacoes",title:"Central de notificações",icon:Bell,
-    description:"Novos convites, propostas, mensagens, confirmações e cancelamentos, com contador de avisos não lidos.",
-    label:"CAIXA DE ENTRADA"
-  });
-  // Only the authenticated owner can see a shortcut to the private hub.
-  // The database remains the authorization boundary even for a known URL.
-  if (isOwnerAdmin) primary.unshift({
-    href:"/admin/central",title:"Administração geral",icon:ShieldCheck,
-    description:"Relatórios de cadastros, aprovação de casas e verificação de perfis do StageFlow.",
-    label:"ACESSO EXCLUSIVO"
-  });
-  const secondary: Shortcut[] = [];
-  if (isSupport) {
-    secondary.push(
-      { href: "/convites", title: "Convidar músicos para um show", description: "Se também organizar uma apresentação.", icon: Users },
-      { href: "/equipes", title: "Gerenciar minhas formações", description: "Se quiser criar sua própria equipe.", icon: Music2 },
-      { href: "/meu-perfil-artistico/solicitacoes", title: "Pedidos de contratação", description: "Veja contatos enviados pela sua página pública de artista.", icon: Inbox }
-    );
-  }
-  if (isSupport && profile?.is_singer) secondary.push({
-    href:"/meu-perfil-artistico", title:"Editar meu perfil de cantor",
-    description:"Sua página artística continua disponível nesta conta.",icon:Mic2
-  });
-  if (isLead && profile?.is_musician) {
-    secondary.push(
-      { href: "/meus-convites", title: "Convites para tocar", description: "Cantores também podem participar de outros shows.", icon: Bell },
-      { href: "/meu-portfolio", title: "Portfólio simples de músico", description: "Use também sua vitrine de instrumentista.", icon: Guitar },
-      { href: "/meu-desempenho", title: "Desempenho do portfólio de músico", description: "Visitas e oportunidades do seu perfil gratuito de instrumentista.", icon: ChartNoAxesCombined },
-      { href: "/meu-perfil-artistico/site-profissional", title: "Editor e publicação Pro", description: "Prepare a versão profissional; publicar exige direito Pro habilitado.", icon: Globe2 }
-    );
-  }
-  secondary.push({
-    href: "/marketplace", title: "Marketplace de músicos · Em breve",
-    description: "Conheça o próximo espaço para descobrir talentos. O catálogo ainda não foi lançado.",
-    icon: Search
-  });
-  if (profile?.is_singer && profile.username && profile.is_public) {
-    secondary.push({
-      href: "/" + profile.username, title: "Abrir minha página @" + profile.username,
-      description: "Veja o seu perfil gratuito como o público vê.", icon: UserRound
-    });
-  }
+      {message&&<div role={messageError?"alert":"status"}
+        className={messageError?"sf-workspace-error":"sf-workspace-feedback"}>{message}</div>}
 
-  return <main><div className="container" style={{ paddingBottom: 60 }}>
-    <nav className="nav">
-      <Link className="brand" href="/"><span className="brand-mark">S</span> stage flow</Link>
-      <div className="dashboard-account-actions">
-        <NotificationBell/>
-        <DashboardAccountMenu displayName={profile?.display_name||""} avatarUrl={accountPhoto}
-          isSinger={Boolean(profile?.is_singer)} isMusician={Boolean(profile?.is_musician)}
-          isOwnerAdmin={isOwnerAdmin} signingOut={signingOut}
-          onSignOut={()=>void handleSignOut()}/>
-      </div>
-    </nav>
+      {profile?.is_singer&&profile.is_musician&&
+        <section className="sf-workspace-role" aria-label="Sua função em destaque">
+          <span><Settings2 size={15}/> Minha experiência:</span>
+          <button type="button" aria-pressed={kind==="lead"}
+            disabled={changingKind} onClick={()=>void changeExperience("lead")}>
+            <Mic2 size={16}/> Cantor {kind==="lead"&&<Check size={15}/>}
+          </button>
+          <button type="button" aria-pressed={kind==="support"}
+            disabled={changingKind} onClick={()=>void changeExperience("support")}>
+            <Guitar size={16}/> Músico {kind==="support"&&<Check size={15}/>}
+          </button>
+        </section>}
 
-    <section style={{ padding: "48px 0 26px" }}>
-      <div className="eyebrow"><span className="dot"/> PAINEL STAGE FLOW · {roleLabel.toUpperCase()}</div>
-      <h1 style={{ fontSize: "clamp(33px, 5vw, 47px)", marginBottom: 12 }}>
-        Olá, <span className="accent">{profile?.display_name || "bem-vindo(a)"}</span>!
-      </h1>
-      <p className="lead" style={{ maxWidth: 690 }}>
-        {isSupport
-          ? "Seu espaço para receber convites, acertar cachês e mostrar seu trabalho aos contratantes."
-          : isLead
-            ? "Seus shows, sua equipe e sua presença artística, tudo no mesmo lugar."
-            : "Organize eventos, monte equipes e acompanhe os músicos contratados."}
-      </p>
-      <p style={{ color: "var(--muted)", fontSize: 12, overflowWrap: "anywhere" }}>{email}</p>
-    </section>
-
-    {message && <div className="coming" role={messageError ? "alert" : "status"}
-      style={messageError ? { borderColor: "#754343", background: "#281919", color: "#ffb5b5" } : {}}>
-      {message}
-    </div>}
-
-    {profile?.is_artist && <section className="dashboard-experience" aria-label="Escolha como usar o Stage Flow">
-      <div>
-        <span className="dashboard-experience-eyebrow"><Settings2 size={15}/> MINHA ATIVIDADE PRINCIPAL</span>
-        <p>Escolha quais ferramentas aparecem primeiro. Pode mudar quando quiser, sem perder dados.</p>
-      </div>
-      <div className="dashboard-experience-actions">
-        {profile.is_singer&&<button type="button" className="dashboard-experience-choice" aria-pressed={kind === "lead"}
-          disabled={changingKind} onClick={() => void changeExperience("lead")}>
-          <Mic2 size={17}/> Cantor / artista {kind === "lead" && <Check size={15}/>}
-        </button>}
-        {profile.is_musician&&<button type="button" className="dashboard-experience-choice" aria-pressed={kind === "support"}
-          disabled={changingKind} onClick={() => void changeExperience("support")}>
-          <Guitar size={17}/> Músico de apoio {kind === "support" && <Check size={15}/>}
-        </button>}
-        {(!profile.is_singer||!profile.is_musician)&&<Link className="btn btn-quiet" href="/minha-conta">Ativar outra função</Link>}
-      </div>
-    </section>}
-
-    <section className="section" style={{ paddingTop: 34 }}>
-      <div className="section-heading">
-        <h2>{isSupport ? "Seu trabalho musical" : isLead ? "Sua carreira, organizada" : "Gestão de eventos"}</h2>
-        <p>{isSupport ? "Tudo o que você precisa para tocar em novos shows." :
-          isLead ? "Acesse as ferramentas essenciais para cuidar das suas apresentações." :
-          "Suas principais ferramentas de produção em um só lugar."}</p>
-      </div>
-      <div className="dashboard-shortcuts">
-        {primary.map(item => {
-          const Icon = item.icon;
-          return <Link className="dashboard-shortcut" href={item.href} key={item.href}>
-            <div className="dashboard-shortcut-top">
-              <span className="dashboard-shortcut-icon"><Icon size={22}/></span>
-              {item.label && <span className="dashboard-shortcut-tag">{item.label}</span>}
-              <ArrowRight size={16} className="dashboard-shortcut-arrow"/>
-            </div>
-            <h3>{item.title}</h3>
-            <p>{item.description}</p>
-          </Link>;
-        })}
-      </div>
-    </section>
-
-    {secondary.length > 0 && <section style={{ paddingTop: 14 }}>
-      <h2 className="dashboard-secondary-title">Outras ferramentas</h2>
-      <div className="dashboard-secondary-grid">
-        {secondary.map(item => {
-          const Icon = item.icon;
-          return <Link className="dashboard-secondary-link" href={item.href} key={item.href}>
-            <Icon size={17}/><span><strong>{item.title}</strong><small>{item.description}</small></span>
-            <ArrowRight size={15}/>
-          </Link>;
-        })}
-      </div>
-    </section>}
-
-    {profile && <p className="fine" style={{ marginTop: 35, lineHeight: 1.7 }}>
-      As preferências de visualização não alteram seus papéis, cachês ou assinatura.
-      Marketplace e subdomínios personalizados continuam em desenvolvimento.
-    </p>}
-  </div></main>;
+      <WorkspaceOverview isSinger={Boolean(profile?.is_singer)}
+        isMusician={Boolean(profile?.is_musician)}
+        isProducer={Boolean(profile?.is_producer)}/>
+      <p className="sf-workspace-asof">O painel reúne funções já existentes; as antigas URLs continuam válidas.
+        Sua função ativa não altera contratações, permissões, planos ou cachês.</p>
+    </div>
+  </main>;
 }
