@@ -12,6 +12,7 @@ import { createClient } from "@/lib/supabase/client";
 import StageVerifiedBadge from "@/components/stage-verified-badge";
 import {useStageVerified} from "@/lib/use-stage-verified";
 import {distinctPublicBiography} from "@/lib/profile-presentation";
+import {publicInstagramProfile} from "@/lib/artist-social";
 import ProShowCards from "@/app/meu-perfil-artistico/site-profissional/pro-show-cards";
 import ArtistBookingForm from "@/components/artist-booking-form";
 import {
@@ -96,7 +97,7 @@ function safeDesign(source:ProDesign):ProDesign{
 function anchor(id:SectionId){return sectionAnchors[id];}
 
 
-function LockedProFeature({type}:{type:"photos"|"videos"}){
+function LockedProFeature({type,eligible=false}:{type:"photos"|"videos";eligible?:boolean}){
   const isPhotos=type==="photos";
   return <div className="singer-premium-locked" aria-label={(isPhotos?"Galeria de fotos":"Galeria de vídeos")+" disponível no plano Pro"}>
     <div className="singer-premium-blurred" aria-hidden="true">
@@ -107,8 +108,8 @@ function LockedProFeature({type}:{type:"photos"|"videos"}){
     <div className="singer-premium-lock-content">
       <LockKeyhole size={24}/>
       <strong>{isPhotos?"Galeria de fotos Pro":"Vídeos em destaque Pro"}</strong>
-      <span>Personalize esta seção quando tiver acesso ao plano Pro.</span>
-      <Link href="/planos" className="btn btn-primary">Conhecer planos <ArrowUpRight size={15}/></Link>
+      <span>{eligible?"O cantor já recebeu acesso Pro e está preparando esta galeria.":"Galeria opcional da versão Pro."}</span>
+      {!eligible&&<Link href="/planos" className="btn btn-primary">Conhecer planos <ArrowUpRight size={15}/></Link>}
     </div>
   </div>;
 }
@@ -119,6 +120,7 @@ export default function PublicSingerSite(){
   const [media,setMedia]=useState<PremiumMediaItem[]>([]);
   const [loading,setLoading]=useState(true);
   const [proUnlocked,setProUnlocked]=useState(false);
+  const [proEligible,setProEligible]=useState(false);
   const [error,setError]=useState("");
   const [copied,setCopied]=useState(false);
   const [month,setMonth]=useState(()=>new Date(
@@ -147,15 +149,16 @@ export default function PublicSingerSite(){
         );
         if(!active)return;
         if(freeError||!freeData){
-          setData(null);setMedia([]);setProUnlocked(false);
+          setData(null);setMedia([]);setProUnlocked(false);setProEligible(false);
           if(freeError)setError("Não foi possível carregar o perfil público no momento.");
           setLoading(false);
           return;
         }
         const artist=freeData as FreeArtist;
-        const [eventsResult,bookingResult]=await Promise.all([
+        const [eventsResult,bookingResult,proResult]=await Promise.all([
           client.rpc("stage_public_artist_events",{p_username:username}),
-          client.rpc("stage_public_artist_accepts_bookings",{p_username:username})
+          client.rpc("stage_public_artist_accepts_bookings",{p_username:username}),
+          client.rpc("stage_public_singer_pro_access",{p_username:username})
         ]);
         if(!active)return;
         const freeEvents=eventsResult.error?[]:
@@ -170,12 +173,14 @@ export default function PublicSingerSite(){
           }))
         });
         setProUnlocked(false);
+        setProEligible(!proResult.error&&proResult.data===true);
         setMedia([]);
         setLoading(false);
         return;
       }
       const result=publicData as PublicPro;
       setProUnlocked(true);
+      setProEligible(true);
       setData(result);
       // A imagem original permanece no bucket privado. Um visitante recebe
       // somente fotos explicitamente selecionadas para a versão publicada.
@@ -220,11 +225,14 @@ export default function PublicSingerSite(){
     id=>design.visible_sections.includes(id)
   );
   const events=data?.events||[];
+  const nextShow=events.filter(show=>new Date(show.starts_at).getTime()>=Date.now())
+    .sort((a,b)=>new Date(a.starts_at).getTime()-new Date(b.starts_at).getTime())[0];
   const showDays=useMemo(()=>new Set(events.map(e=>showCode(e.starts_at))),[events]);
   const currentShows=selectedDay?
     events.filter(e=>showCode(e.starts_at)===selectedDay):events;
   const artist=data?.artist;
   const biography=artist?distinctPublicBiography(artist.headline,artist.bio):"";
+  const instagram=publicInstagramProfile(artist?.instagram_url);
   function imageUrl(path:string|null|undefined){
     return path?createClient().storage.from("stage-artist-public")
       .getPublicUrl(path).data.publicUrl:"";
@@ -292,6 +300,17 @@ export default function PublicSingerSite(){
           <p className="premium-site-intro">{biography
             ?biography.length>210?biography.slice(0,207)+"…":biography
             :"Conheça os shows, o repertório e as novidades deste artista."}</p>
+          {nextShow&&design.visible_sections.includes("agenda")&&
+            <a href="#premium-agenda" className="pro-public-spotlight" aria-label={"Próximo show: "+nextShow.title}>
+              <span className="pro-public-spotlight-icon"><CalendarDays size={21}/></span>
+              <span className="pro-public-spotlight-details">
+                <small>PRÓXIMO SHOW · EM DESTAQUE</small>
+                <strong>{nextShow.title}</strong>
+                <span>{new Intl.DateTimeFormat("pt-BR",{day:"2-digit",month:"long",hour:"2-digit",minute:"2-digit",timeZone:"America/Sao_Paulo"}).format(new Date(nextShow.starts_at))}
+                  {nextShow.venue?" · "+nextShow.venue:nextShow.city?" · "+nextShow.city:""}</span>
+              </span>
+              <ArrowUpRight size={18}/>
+            </a>}
           <div className="premium-site-socials">
             {artist.instagram_url&&<a target="_blank" rel="noopener noreferrer"
               href={artist.instagram_url} aria-label="Instagram"><Instagram size={19}/></a>}
@@ -311,7 +330,7 @@ export default function PublicSingerSite(){
               </a>}
           </div>
           <div className="premium-site-identity-foot">
-            <span><CheckCircle2 size={15}/> {proUnlocked?"Recursos Pro ativos":"Perfil público gratuito"}</span>
+            <span><CheckCircle2 size={15}/> {proUnlocked?"Recursos Pro publicados":proEligible?"Pro liberado · galerias em preparação":"Perfil público gratuito"}</span>
             <span>{events.length} {events.length===1?"show público futuro":"shows públicos futuros"}</span>
           </div>
 
@@ -334,12 +353,12 @@ export default function PublicSingerSite(){
               <p>{biography||"Este artista está preparando sua história musical. Enquanto isso, descubra as próximas apresentações e entre em contato para saber mais."}</p>
             </div>
             <div className="premium-site-summary">
-              <span className="premium-site-summary-icon"><Mic2 size={22}/></span>
-              <div><small>PERFIL OFICIAL</small><strong>@{artist.username}</strong></div>
-              <p>Perfil oficial do cantor no StageFlow, com identidade profissional.</p>
-              {!proUnlocked&&<Link href="/planos">
-                Conhecer recursos Pro <ArrowUpRight size={15}/>
-              </Link>}
+              <span className="premium-site-summary-icon"><Instagram size={23}/></span>
+              <div><small>INSTAGRAM DO ARTISTA</small><strong>{instagram?.handle||"Redes do artista"}</strong></div>
+              <p>{instagram?"Siga o artista para ver bastidores, novidades e próximas apresentações.":"O artista ainda não informou um Instagram público."}</p>
+              {instagram&&<a href={instagram.url} target="_blank" rel="noopener noreferrer">
+                Abrir Instagram <ArrowUpRight size={15}/>
+              </a>}}
             </div>
           </section>}
 
@@ -358,7 +377,7 @@ export default function PublicSingerSite(){
             </div>
             {proUnlocked
               ? <PremiumGalleryShowcase items={media} section="photos" showEmpty showHeading={false}/>
-              : <LockedProFeature type="photos"/>}
+              : <LockedProFeature type="photos" eligible={proEligible}/>}
           </section>}
 
         {design.visible_sections.includes("videos")&&
@@ -377,7 +396,7 @@ export default function PublicSingerSite(){
             {proUnlocked
               ? <PremiumGalleryShowcase items={media} section="videos" showEmpty showHeading={false}
                   youtubeUrl={artist.youtube_url} spotifyUrl={artist.spotify_url}/>
-              : <LockedProFeature type="videos"/>}
+              : <LockedProFeature type="videos" eligible={proEligible}/>}
           </section>}
 
         {design.visible_sections.includes("agenda")&&
@@ -474,20 +493,19 @@ export default function PublicSingerSite(){
                 <ArtistBookingForm username={artist.username} artistName={artist.name}/>
               </div>}
           </section>}
-        {!proUnlocked&&<section className="singer-premium-upgrade" aria-label="Personalização Pro bloqueada"
+        {!proUnlocked&&<section className="singer-premium-upgrade" aria-label={proEligible?"Recursos Pro em preparação":"Personalização Pro bloqueada"}
           style={{order:6}}>
           <div className="singer-premium-upgrade-symbol"><Crown size={22}/></div>
-          <div><h2>Mais destaque para a sua carreira</h2>
-            <p>Seu site já tem o visual profissional do StageFlow. Galerias completas,
-              temas exclusivos e destaques são recursos opcionais do plano Pro.</p></div>
-          <Link href="/planos" className="btn btn-primary">Ver planos e benefícios <ArrowUpRight size={16}/></Link>
+          <div><h2>{proEligible?"Seu Pro já está liberado":"Mais destaque para a sua carreira"}</h2>
+            <p>{proEligible?"O cantor pode publicar o visual e as galerias Pro quando estiver pronto. Nenhum conteúdo privado é exposto antes da publicação.":"Seu perfil já tem um visual profissional; galerias e temas especiais são recursos opcionais Pro."}</p></div>
+          {!proEligible&&<Link href="/planos" className="btn btn-primary">Ver planos e benefícios <ArrowUpRight size={16}/></Link>}
         </section>}
       </div>
       <footer className="premium-site-footer">
         <span><Music2 size={18}/> STAGE FLOW
           <small>Conectando artistas, músicos e produtores</small>
         </span>
-        <span>{proUnlocked?"Perfil de cantor · Recursos Pro ativos":"Perfil de cantor · Recursos Pro opcionais"} · Stage Flow</span>
+        <span>{proUnlocked?"Perfil de cantor · Pro publicado":proEligible?"Perfil de cantor · Pro liberado":"Perfil de cantor · Recursos Pro opcionais"} · Stage Flow</span>
       </footer>
     </div>
     {error&&<p className="pro-public-error" role="alert">{error}</p>}
