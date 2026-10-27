@@ -2,7 +2,7 @@ name: Stage Flow • Venue security checks
 
 on:
   push:
-    branches: [develop]
+    branches: [main]
     paths:
       - "supabase/venue_*.sql"
       - "app/parceiros/**"
