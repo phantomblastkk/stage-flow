@@ -29,8 +29,8 @@ begin
        'áàâãäåéèêëíìîïóòôõöúùûüçñ',
        'aaaaaaeeeeiiiiooooouuuucn'
     )),'[^a-z0-9]+','-','g');
-    v_slug:=pg_catalog.coalesce(
-      pg_catalog.nullif(pg_catalog.btrim(pg_catalog.left(v_base,15),'-'),''),
+    v_slug:=coalesce(
+      nullif(pg_catalog.btrim(pg_catalog.left(v_base,15),'-'),''),
       'casa'
     )||'-'||pg_catalog.replace(p_venue_id::text,'-','');
 
