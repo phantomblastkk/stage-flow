@@ -12,7 +12,7 @@ import styles from "./notification-bell.module.css";
 
 type NotificationPreview = {
   id: string;
-  source_type: "invitation" | "proposal" | "conversation";
+  source_type: "invitation" | "proposal" | "conversation" | "operations";
   event_code: string;
   event_id: string | null;
   thread_id: string | null;
@@ -31,6 +31,9 @@ const timeFormatter = new Intl.DateTimeFormat("pt-BR", {
 });
 
 function destination(item: NotificationPreview) {
+  if (item.source_type === "operations") {
+    return item.event_id ? "/eventos/operacao?evento=" + encodeURIComponent(item.event_id) : "/eventos";
+  }
   if (item.source_type === "conversation" || item.source_type === "proposal") {
     return item.thread_id
       ? "/conversas?conversa=" + encodeURIComponent(item.thread_id)
@@ -45,6 +48,7 @@ function destination(item: NotificationPreview) {
 }
 
 function NoticeIcon({ code }: { code: string }) {
+  if (code === "show_briefing_changed") return <BellRing size={18} />;
   if (code === "chat_message") return <MessageCircle size={18} />;
   if (code === "invite_accepted" || code === "proposal_accepted") return <CheckCircle2 size={18} />;
   if (code === "invite_declined" || code === "proposal_declined" || code === "invite_cancelled" || code === "proposal_withdrawn") {
