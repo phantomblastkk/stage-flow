@@ -200,3 +200,14 @@ Esta decisão substitui quaisquer menções anteriores a cobrança do marketplac
 - O frontend consulta a autorização existente `stage_my_pro_site_publication` para exibir as ferramentas analíticas do cantor. Por segurança, isso é **apenas uma trava visual**: as funções de leitura existentes (`stage_finance_organizer_overview`, `stage_my_show_history`) ainda enviam dados de que é possível recomputar relatórios. Portanto, a exclusividade dos relatórios **não está pronta para cobrança**.
 - **Antes de comercializar**, criar endpoint/RPC seguro de relatórios Pro com verificação no banco de `stage_pro_site_is_entitled(auth.uid())`, separar os dados necessários aos lançamentos gratuitos dos relatórios analíticos e testar permissões; nunca considerar apenas a checagem React como controle de acesso.
 - Preços, checkout, subdomínio e planos finais permanecem pendentes; nada nesta alteração constitui cobrança ou migração de produção.
+
+
+## Destaque da agenda, Instagram e cortesia Pro (27/10/2026)
+
+- A cortesia Pro fica registrada independentemente da publicação. É possível ter `stage_pro_site_is_entitled=true` e `stage_pro_site_publications.published=false`, como ocorreu com um perfil de cantor que havia recebido a cortesia: o benefício está ativo, mas os recursos Pro ainda aguardam publicação do artista.
+- A página pública consulta somente o indicador limitado `stage_public_singer_pro_access` para dizer se o Pro está liberado; **não** expõe rascunhos, fotos privadas, assinaturas, pagamentos ou a origem do benefício.
+- A galeria e os temas só são divulgados quando o cantor confirmar a publicação em seu editor. O editor agora identifica claramente `PRO LIBERADO · PUBLICAÇÃO PENDENTE` e mostra o botão de publicação.
+- A coluna do Instagram na seção Sobre utiliza exclusivamente o perfil social informado pelo próprio artista, com validação de URL HTTPS oficial e exibição do @; não inventar contas ou copiar identificadores da URL do StageFlow.
+- O próximo show efetivamente publicado ganhou destaque no topo do perfil, inspirado na organização de conteúdo em destaque de Spotify for Artists. Sem evento futuro, o bloco não é exibido.
+- A home consulta `stage_public_partner_venues` e `stage_public_verified_singers`: casas só entram como parceiras se estiverem ativas, aprovadas, oficiais e marcadas como parceiras; cantores precisam estar públicos e possuir selo oficial. Não copiar os dados fictícios da homologação para a produção.
+- Todas as alterações de código ficam na `main`. Deploy automático permanece bloqueado e novas publicações exigem comando manual separado.
