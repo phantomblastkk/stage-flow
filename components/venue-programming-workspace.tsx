@@ -215,32 +215,56 @@ export default function VenueProgrammingWorkspace({mode}: {mode: "admin" | "part
     e.preventDefault();if(busy)return;
     setBusy("save");setError("");setSuccess("");
     let savedId:string|null=null;
+    // A new show with a flyer must not appear publicly before its image is attached.
+    const publishAfterFlyer=!showForm.id && showForm.status==="published" && !!pendingFlyer;
+    const hadPendingFlyer=!!pendingFlyer;
+    let published=!publishAfterFlyer;
     try{
       const starts=toIso(showForm.start);
       if(!starts)throw new Error("Informe uma data e um horário válidos.");
+      const details={id:showForm.id,venue_id:id,title:showForm.title,
+        description:showForm.description,starts_at:starts,ends_at:toIso(showForm.end)};
       const {data,error:saveError}=await createClient().rpc("stage_venue_calendar_admin_save",{
-        p_event:{id:showForm.id,venue_id:id,title:showForm.title,description:showForm.description,
-          starts_at:starts,ends_at:toIso(showForm.end),status:showForm.status}
+        p_event:{...details,status:publishAfterFlyer?"draft":showForm.status}
       });
       if(saveError)throw saveError;
       const result=data as {status:string;id?:string};
       if(result.status!=="ok"||!result.id)throw new Error(friendly(result.status));
       savedId=result.id;
-      // Salva primeiro para ter ID: a mídia não pode ficar vinculada à casa errada.
-      setShowForm(prev=>({...prev,id:result.id||prev.id}));
+      setShowForm(prev=>({...prev,id:result.id||prev.id,
+        status:publishAfterFlyer?"draft":prev.status}));
       if(pendingFlyer){
         await attachFlyer(result.id,pendingFlyer);
         setPendingFlyer(null);
       }
+      if(publishAfterFlyer){
+        const {data:publishedResult,error:publishError}=await createClient()
+          .rpc("stage_venue_calendar_admin_save",{
+            p_event:{...details,id:result.id,status:"published"}
+          });
+        if(publishError)throw publishError;
+        if((publishedResult as {status:string}).status!=="ok")
+          throw new Error(friendly((publishedResult as {status:string}).status));
+        published=true;
+        setShowForm(prev=>({...prev,status:"published"}));
+      }
       await refresh();
-      setSuccess("Show salvo no calendário da casa."+(pendingFlyer?" Flyer incluído com sucesso.":"")+
-        (showForm.status==="published"?" Já pode aparecer na agenda pública.":" Está como rascunho ou cancelado."));
+      setSuccess("Show salvo no calendário da casa."+
+        (hadPendingFlyer?" Flyer incluído com sucesso.":"")+
+        (showForm.status==="published"?" Publicação disponível na agenda da casa.":" Mantido como rascunho ou cancelado."));
     }catch(e){
       if(savedId){
         try{await refresh();}catch{}
-        setError("O show foi salvo, mas houve um problema para concluir o flyer ou atualizar a lista: "+
-          (e instanceof Error?e.message:"tente novamente.")+
-          " Você pode tentar salvar outra vez, sem criar outro show.");
+        if(!published){
+          setError("O show foi salvo como rascunho, sem publicação pública. "+
+            "O flyer ou a publicação não pôde ser concluído: "+
+            (e instanceof Error?e.message:"tente novamente.")+
+            " Abra este show novamente para concluir o flyer e publicar.");
+        }else{
+          setError("O show foi salvo, mas houve um problema para concluir o flyer ou atualizar a lista: "+
+            (e instanceof Error?e.message:"tente novamente.")+
+            " Você pode tentar salvar outra vez, sem criar outro show.");
+        }
       }else{
         setError(e instanceof Error?e.message:"Erro ao salvar o show.");
       }
@@ -442,7 +466,7 @@ export default function VenueProgrammingWorkspace({mode}: {mode: "admin" | "part
                   <span>Selecionado: <strong>{pendingFlyer.name}</strong></span>
                   <button type="button" disabled={!!busy} onClick={()=>setPendingFlyer(null)}>Retirar</button>
                 </div>}
-                <p className="fine">Escolha o flyer antes de salvar. O show e a imagem serão cadastrados em uma única operação na tela.</p>
+                <p className="fine">Ao publicar um show novo com flyer, ele será mantido como rascunho até a imagem estar vinculada. Se o upload falhar, a apresentação não será publicada sem o flyer.</p>
               </div>}
               <div className="venue-program-buttons">
                 <button className="btn btn-primary" type="submit" disabled={!!busy}>
