@@ -59,6 +59,8 @@ jobs:
         run: npm run test:notifications
       - name: Verify show operations and participant briefing
         run: npm run test:show-operations
+      - name: Verify show briefing notifications and isolation
+        run: npm run test:show-operations-alerts
       - name: Check TypeScript
         run: npx tsc --noEmit
       - name: Build Next.js
