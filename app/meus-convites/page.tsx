@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { ArrowLeft, CalendarDays, Check, CheckCircle2, Clock3, LoaderCircle, MapPin, MessageCircle, Music2, X } from "lucide-react";
@@ -39,6 +39,8 @@ export default function MeusConvitesPage() {
   const [processingId, setProcessingId] = useState<string | null>(null);
   const [feeFocus, setFeeFocus] = useState({ invitationId: "", request: 0 });
   const [filter, setFilter] = useState<Filter>("all");
+  const [highlightedInvite, setHighlightedInvite] = useState("");
+  const focusedFromNotification = useRef(false);
   const [feedback, setFeedback] = useState("");
   const [isError, setIsError] = useState(false);
   const [whatsappPhone, setWhatsappPhone] = useState("");
@@ -154,6 +156,21 @@ export default function MeusConvitesPage() {
     setWhatsappSaving(false);
   }
 
+  useEffect(() => {
+    if (loading || focusedFromNotification.current) return;
+    const id = new URLSearchParams(window.location.search).get("convite") || "";
+    if (!/^[0-9a-f]{8}(?:-[0-9a-f]{4}){3}-[0-9a-f]{12}$/i.test(id)) return;
+    if (!invites.some(invite => invite.id === id)) return;
+    focusedFromNotification.current = true;
+    setFilter("all");
+    setHighlightedInvite(id);
+    window.requestAnimationFrame(() => {
+      const target = document.getElementById("convite-" + id);
+      target?.scrollIntoView({ behavior: "smooth", block: "center" });
+      target?.focus({ preventScroll: true });
+    });
+  }, [invites, loading]);
+
   const pendingCount = invites.filter((invite) => invite.status === "pending").length;
   const acceptedCount = invites.filter((invite) => invite.status === "accepted").length;
   const filtered = useMemo(() => filter === "all" ? invites : invites.filter((invite) => invite.status === filter), [invites, filter]);
@@ -234,7 +251,10 @@ export default function MeusConvitesPage() {
 
     <div style={{ display: "grid", gap: 16, maxWidth: 800 }}>
       {filtered.map((invite) => (
-        <article key={invite.id} className="feature" style={{ padding: "22px 20px" }}>
+        <article key={invite.id} id={"convite-" + invite.id} tabIndex={-1} className="feature"
+          style={{ padding: "22px 20px", scrollMarginTop: 24,
+            outline: highlightedInvite === invite.id ? "2px solid var(--accent-solid)" : undefined,
+            outlineOffset: highlightedInvite === invite.id ? 4 : undefined }}>
           <div style={{ display: "flex", justifyContent: "space-between", flexWrap: "wrap", gap: 10, alignItems: "center", marginBottom: 12 }}>
             <span style={{ fontSize: 12, color: "var(--muted)" }}>Convite de <strong style={{ color: "var(--text)" }}>{invite.organizer_name}</strong></span>
             <span style={{
