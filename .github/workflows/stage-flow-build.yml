@@ -57,6 +57,8 @@ jobs:
         run: npm run test:show-team-lineup
       - name: Verify internal notifications and recipient isolation
         run: npm run test:notifications
+      - name: Verify show operations and participant briefing
+        run: npm run test:show-operations
       - name: Check TypeScript
         run: npx tsc --noEmit
       - name: Build Next.js
