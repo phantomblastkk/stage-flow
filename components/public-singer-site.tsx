@@ -35,7 +35,7 @@ type PublicShow={
   id:string;title:string;venue:string|null;city:string|null;starts_at:string;
   flyer_path?:string|null;flyer_settings?:unknown;
 };
-type FreeArtist=Omit<ProArtist,"bookings_enabled">;
+type FreeArtist=Omit<ProArtist,"bookings_enabled"> & {accent?:Accent|null};
 type FreePublicShow={title:string;venue:string|null;city:string|null;starts_at:string};
 type PublicPro={
   artist:ProArtist;
@@ -158,7 +158,7 @@ export default function PublicSingerSite(){
           ((eventsResult.data||[]) as FreePublicShow[]);
         setData({
           artist:{...artist,bookings_enabled:bookingResult.data===true&&!bookingResult.error},
-          design:{theme:"midnight",accent:"violet",
+          design:{theme:"midnight",accent:palette.includes(artist.accent as Accent)?artist.accent as Accent:"violet",
             section_order:[...sectionIds],visible_sections:[...sectionIds]},
           media:[],
           events:freeEvents.map((event,i)=>({
