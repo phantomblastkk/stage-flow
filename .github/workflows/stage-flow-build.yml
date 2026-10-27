@@ -14,6 +14,7 @@ on:
       - "tests/**"
       - "supabase/venue_*.sql"
       - "supabase/account_*.sql"
+      - "supabase/stage_owner_admin_hub_migration.sql"
       - "vercel.json"
       - ".github/workflows/stage-flow-build.yml"
   workflow_dispatch:
@@ -69,6 +70,8 @@ jobs:
         run: node --test tests/account-identity-dual-roles.test.mjs
       - name: Verify canonical singer Pro-style profile and manual deployments
         run: node --test tests/singer-public-site.test.mjs
+      - name: Verify owner-only admin, venue approvals and badges
+        run: node --test tests/owner-admin-hub.test.mjs
       - name: Check TypeScript
         run: npx tsc --noEmit
       - name: Build Next.js
