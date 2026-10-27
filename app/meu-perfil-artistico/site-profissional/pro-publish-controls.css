@@ -135,3 +135,15 @@
   cursor:pointer;
 }
 .pro-publish-verify-button:hover{border-color:#c0b8df}
+
+
+.pro-publish-status.is-entitled{border-color:#9369b7;background:#443253;color:#f1dcff;max-width:100%;white-space:normal}
+.pro-publish-ready-notice{
+ display:flex;align-items:flex-start;gap:11px;margin:0 0 19px;padding:16px 18px;
+ border:1px solid #a07ec3;border-radius:13px;
+ background:linear-gradient(110deg,#44305b,#28243d);
+ color:#f2e5ff;font:650 12px/1.8 "Manrope",sans-serif
+}
+.pro-publish-ready-notice svg{flex:none;margin-top:3px;color:#efd1ff}
+.pro-publish-ready-notice strong{color:#fff}
+@media(max-width:620px){.pro-publish-ready-notice{padding:14px;font-size:11px}}
