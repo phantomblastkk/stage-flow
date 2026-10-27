@@ -16,7 +16,8 @@
     "test:show-team-lineup": "node --test tests/show-team-lineup.test.mjs",
     "test:notifications": "node --test tests/internal-notifications.test.mjs",
     "test:show-operations": "node --test tests/show-operations.test.mjs",
-    "test:show-operations-alerts": "node --test tests/show-operations-alerts.test.mjs"
+    "test:show-operations-alerts": "node --test tests/show-operations-alerts.test.mjs",
+    "test:agenda-mobile": "node tests/browser/agenda-finance.mjs"
   },
   "dependencies": {
     "@supabase/ssr": "^0.6.1",
@@ -32,6 +33,7 @@
     "@types/react-dom": "^19.0.3",
     "eslint": "^9.19.0",
     "eslint-config-next": "^15.2.0",
-    "typescript": "^5.7.3"
+    "typescript": "^5.7.3",
+    "playwright": "1.62.1"
   }
 }

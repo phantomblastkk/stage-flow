@@ -76,7 +76,20 @@ jobs:
         run: node --test tests/owner-admin-hub.test.mjs
       - name: Verify new SaaS navigation, dashboard, security, mobile UI and SEO contracts
         run: node --test tests/workspace-saas.test.mjs tests/workspace-saas-part2.test.mjs tests/workspace-navigation-routes.test.mjs tests/home-pro-notifications.test.mjs tests/artist-booking-musician-refresh.test.mjs
+      - name: Verify agenda services through PostgREST request builder
+        run: node --test tests/agenda-service.test.mjs
       - name: Check TypeScript
         run: npx tsc --noEmit
       - name: Build Next.js
         run: npm run build
+      - name: Install Chromium for mobile regression
+        run: npx playwright install --with-deps chromium --only-shell
+      - name: Verify agenda and finance in browser (synthetic API only)
+        run: npm run test:agenda-mobile
+      - name: Attach browser verification evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: agenda-finance-browser-evidence
+          path: test-results/
+          retention-days: 7

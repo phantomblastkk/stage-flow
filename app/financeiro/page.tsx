@@ -1,11 +1,12 @@
 "use client";
-import { FormEvent, useCallback, useEffect, useMemo, useState } from "react";
+import { FormEvent, useCallback, useEffect, useMemo, useRef, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { ArrowLeft, ArrowRight, BarChart3, CalendarDays, CheckCircle2, CircleAlert, Download, LoaderCircle, LockKeyhole, PencilLine, RefreshCw, Save, Wallet } from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
 import EventBudgetPanel from "@/components/event-budget-panel";
 import ProFeatureLock from "@/components/pro-feature-lock";
+import { Button, EmptyState, LoadingState, StatCard } from "@/src/components/ui";
 import "./financeiro.css";
 
 type Organized = {
@@ -53,6 +54,9 @@ export default function Financeiro(){
  const [expanded,setExpanded]=useState<string|null>(null);
  const [team,setTeam]=useState<TeamMember[]>([]);
  const [teamError,setTeamError]=useState("");
+ const [teamLoading,setTeamLoading]=useState(false);
+ const teamRequest=useRef<AbortController|null>(null);
+ useEffect(()=>()=>teamRequest.current?.abort(),[]);
  const [editPaid,setEditPaid]=useState<Record<string,string>>({});
  const [busy,setBusy]=useState<string|null>(null);
  const [nonce,setNonce]=useState(0);
@@ -147,14 +151,19 @@ export default function Financeiro(){
  const months=Array.from(new Set([...organized,...participations].filter(r=>year==="all"||yearMonth(r.starts_at).startsWith(year)).map(r=>yearMonth(r.starts_at)))).sort().reverse();
 
  async function openTeam(id:string){
-  if(expanded===id){setExpanded(null);return;}
-  setExpanded(id);setTeam([]);setTeamError("");
+  if(busy)return;
+  teamRequest.current?.abort();
+  if(expanded===id){setExpanded(null);setTeamLoading(false);return;}
+  const request=new AbortController();teamRequest.current=request;
+  setExpanded(id);setTeam([]);setTeamError("");setEditPaid({});setTeamLoading(true);
   try{
-   const {data,error:rpcError}=await createClient().rpc("stage_finance_event_team",{p_event_id:id});
-   if(rpcError||data?.status!=="ok")throw Error(rpcError?.message||"Sem acesso aos cachês deste show.");
+   const {data,error:rpcError}=await createClient().rpc("stage_finance_event_team",{p_event_id:id}).abortSignal(request.signal);
+   if(request.signal.aborted)return;
+   if(rpcError||data?.status!=="ok"||!Array.isArray(data.items))throw Error("Não foi possível carregar os pagamentos da equipe. Tente novamente.");
    const rows=data.items as TeamMember[];
    setTeam(rows);setEditPaid(Object.fromEntries(rows.map(r=>[r.invitation_id,inputValue(r.paid_amount)])));
-  }catch(e){setTeamError(e instanceof Error?e.message:"Não foi possível consultar a equipe.");}
+  }catch(e){if(!request.signal.aborted)setTeamError(e instanceof Error?e.message:"Não foi possível consultar a equipe.");}
+  finally{if(!request.signal.aborted)setTeamLoading(false);}
  }
  async function savePaid(e:FormEvent<HTMLFormElement>,invitationId:string){
   e.preventDefault();if(busy)return;
@@ -192,7 +201,9 @@ export default function Financeiro(){
   </header>
   {error&&<p className="finance-feedback is-error" role="alert">{error}</p>}
   {notice&&<p className="finance-feedback" role="status">{notice}</p>}
-  <div className="finance-controls">
+  <details className="finance-filter-panel">
+   <summary>Filtrar período e atuação <span>{mode==="all"?"Tudo":mode==="organizer"?"Organização":"Músico"} · {month!=="all"?monthLabel(month):year!=="all"?year:"Todos os períodos"}</span></summary>
+   <div className="finance-controls">
    <label>Atuação <select value={mode} onChange={e=>setMode(e.target.value as Mode)}>
     <option value="all">Tudo</option><option value="organizer">Organização / produção</option>
     <option value="musician">Cachês de músico</option></select></label>
@@ -200,28 +211,38 @@ export default function Financeiro(){
     <option value="all">Todos</option>{years.map(y=><option key={y} value={y}>{y}</option>)}</select></label>
    <label>Mês <select value={month} onChange={e=>setMonth(e.target.value)}>
     <option value="all">Todos</option>{months.map(m=><option key={m} value={m}>{monthLabel(m)}</option>)}</select></label>
+   </div>
+  </details>
+  <div className="finance-toolbar">
    <button className="btn btn-quiet" type="button" disabled={loading} onClick={()=>setNonce(n=>n+1)}><RefreshCw size={15}/> Atualizar</button>
-   {reportAccess?<button className="btn btn-quiet" type="button" disabled={loading||!hasAny||!reportAccessReady} onClick={exportCsv}><Download size={15}/> Exportar CSV detalhado</button>:
+   {reportAccess?<button className="btn btn-quiet" type="button" disabled={loading||Boolean(error)||!hasAny||!reportAccessReady} onClick={exportCsv}><Download size={15}/> Exportar CSV detalhado</button>:
     <Link className="btn btn-quiet" href="/planos"><LockKeyhole size={15}/> Exportação detalhada · Cantor Pro</Link>}
   </div>
-  {loading?<div className="finance-loading"><LoaderCircle size={20}/> Carregando valores privados...</div>:<>
+  {loading?<LoadingState label="Carregando valores privados…"/>:error?<EmptyState title="Financeiro indisponível" description="Os valores não foram carregados. Tente novamente para consultar seu resumo." action={<Button onClick={()=>setNonce(n=>n+1)}>Tentar novamente</Button>}/>:<>
    <section className="finance-kpis" aria-label="Resumo financeiro">
     {[
-     ["Receita bruta contratada",cash(gross),missingRevenue?"Valores faltando":""],
      ["Recebido registrado",cash(received),"Informado manualmente"],
      ["A receber (estimado)",cash(pendingReceivables),pendingIncomplete?"Parcial: valores ainda não definidos":"Valores contratados ainda não recebidos"],
-     ["Despesas dos shows",cash(extras+personalCost),"Custos previstos e pessoais"],
-     ["Cachês acordados da equipe",cash(teamAgreed),"Custo de contratação"],
      ["Compromissos a pagar",cash(pendingExpenses+pendingFees),"Despesas extras e cachês ainda não registrados como pagos"],
-     ["Saldo de caixa registrado",cash(cashFlow),"Recebido − despesas pagas − cachês pagos"],
-     ["Resultado líquido estimado",hasAny?cash(projected):"Sem dados",incomplete?"Parcial: há valores a definir":"Não é lucro bancário comprovado"]
-    ].map(([title,value,note])=><div key={title} className="finance-kpi">
-     <span>{title}</span><strong>{value}</strong><small>{note}</small>
-    </div>)}
+     ["Saldo de caixa registrado",cash(cashFlow),"Recebido − despesas pagas − cachês pagos"]
+    ].map(([title,value,note])=><StatCard key={title} label={title} value={value} description={note}/>)}
    </section>
+   <details className="finance-extra-summary">
+    <summary>Ver receita, despesas e resultado estimado</summary>
+    <div className="finance-kpis">
+     {[
+      ["Receita bruta contratada",cash(gross),missingRevenue?"Valores faltando":""],
+      ["Despesas dos shows",cash(extras+personalCost),"Custos previstos e pessoais"],
+      ["Cachês acordados da equipe",cash(teamAgreed),"Custo de contratação"],
+      ["Resultado líquido estimado",hasAny?cash(projected):"Sem dados",incomplete?"Parcial: há valores a definir":"Não é lucro bancário comprovado"]
+     ].map(([title,value,note])=><StatCard key={title} label={title} value={value} description={note}/>)}
+    </div>
+   </details>
    {(incomplete||!hasAny)&&<p className="finance-warning"><CircleAlert size={17}/>
     {hasAny?"Os totais são parciais: há receitas ou cachês sem valor. O lucro líquido definitivo depende de todos os lançamentos e pagamentos.":"Nenhum valor registrado ainda. Cadastre um show ou registre seus custos para começar."}
    </p>}
+   <details className="finance-reports">
+    <summary>Análises por categoria e mês</summary>
    {reportAccess?<section className="finance-two">
     <div className="finance-panel"><h2><BarChart3 size={19}/> Despesas por categoria</h2>
      <p>Transporte, equipe externa, equipamentos e alimentação podem ser informados dentro de cada show.</p>
@@ -249,6 +270,7 @@ export default function Financeiro(){
      <div className="finance-panel"><h2>Resultado por mês</h2><p>Receita, lucro previsto e saldo de caixa</p><strong>R$ — · R$ —</strong></div>
     </div>
    </ProFeatureLock>}
+   </details>
    <section className="finance-panel finance-event-panel">
     <div className="finance-head"><div><h2>Financeiro por apresentação</h2>
      <p>Confira cada show e expanda para editar despesas, faturamento e cachês pagos.</p></div>
@@ -262,15 +284,16 @@ export default function Financeiro(){
       {r.gross_revenue===null||val(r.musician_unpriced)>0?" (parcial: valores pendentes)":""}
       {" · "}A receber: <strong>{r.gross_revenue===null?"A definir":cash(Math.max(0,val(r.gross_revenue)-val(r.received)))}</strong>
       {" · "}A pagar: <strong>{cash(Math.max(0,val(r.expense_total)-val(r.expense_paid))+Math.max(0,val(r.musician_agreed)-val(r.musician_paid)))}</strong></p>}
-     <button className="btn btn-quiet" type="button" aria-expanded={expanded===r.event_id}
+     <button className="btn btn-quiet" type="button" disabled={Boolean(busy)} aria-expanded={expanded===r.event_id} aria-controls={"finance-detail-"+r.event_id}
        onClick={()=>void openTeam(r.event_id)}><PencilLine size={15}/>
        {expanded===r.event_id?"Fechar lançamento":"Editar financeiro e pagamentos"}</button>
-     {expanded===r.event_id&&<div className="finance-event-detail">
+     {expanded===r.event_id&&<div id={"finance-detail-"+r.event_id} className="finance-event-detail">
       <EventBudgetPanel eventId={r.event_id}/>
       <div className="finance-team">
        <h3>Pagamentos à banda</h3>
        <p>Registre quanto realmente foi pago para cada músico com convite aceito. Isso não envia Pix nem marca pagamento no perfil dele.</p>
        {teamError&&<p className="finance-feedback is-error">{teamError}</p>}
+       {teamLoading&&<LoadingState label="Carregando pagamentos da equipe…"/>}
        {team.map(m=><form key={m.invitation_id} className="finance-team-row" onSubmit={e=>void savePaid(e,m.invitation_id)}>
          <div><strong>{m.musician_name}</strong><small>Cachê registrado: {cash(m.fee)}</small></div>
          <label>Já pago (R$)<input aria-label={"Valor pago a "+m.musician_name} inputMode="decimal"
@@ -278,7 +301,7 @@ export default function Financeiro(){
           onChange={e=>setEditPaid(v=>({...v,[m.invitation_id]:e.target.value}))}/></label>
          <button className="btn btn-quiet" type="submit" disabled={!!busy}><Save size={14}/> Salvar</button>
        </form>)}
-       {!team.length&&!teamError&&<p className="fine">Nenhum músico com convite aceito neste show.</p>}
+       {!teamLoading&&!team.length&&!teamError&&<p className="fine">Nenhum músico com convite aceito neste show.</p>}
       </div>
      </div>}
     </article>)}

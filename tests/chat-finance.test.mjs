@@ -117,7 +117,7 @@ test("advanced singer reports use Pro entitlement while core finances remain ava
  assert.match(money,/reportAccess&&<p>Resultado líquido previsto:/);
  assert.match(money,/reportAccess&&<p>Resultado estimado:/);
  assert.match(money,/href="\/planos"/);
- assert.match(money,/disabled=\{loading\|\|!hasAny\|\|!reportAccessReady\}/);
+ assert.match(money,/disabled=\{loading\|\|Boolean\(error\)\|\|!hasAny\|\|!reportAccessReady\}/);
 });
 
 test("locked Pro modules show blurred preview and upgrade without hiding free accounting",()=>{

@@ -38,5 +38,5 @@ as $$
   order by e.starts_at asc, e.id;
 $$;
 
-revoke all on function public.stage_accepted_shows() from public;
+revoke all on function public.stage_accepted_shows() from public, anon;
 grant execute on function public.stage_accepted_shows() to authenticated;

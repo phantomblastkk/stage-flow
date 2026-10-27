@@ -1,0 +1,59 @@
+name: Stage Flow • Agenda database isolation
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - "supabase/accepted_shows_agenda_migration.sql"
+      - "supabase/received_invitations_migration.sql"
+      - "supabase/private_fee_negotiations_migration.sql"
+      - "supabase/schema.sql"
+      - "tests/homologation/agenda-compat.sql"
+      - "tests/homologation/postgres-shim.sql"
+      - "tests/sql/agenda-invitation-isolation.sql"
+      - ".github/workflows/agenda-isolation.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  invitation-flow:
+    name: Invitation and agenda (disposable PostgreSQL, no deploy)
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    services:
+      postgres:
+        image: postgres:17
+        env:
+          POSTGRES_PASSWORD: disposable-agenda-fixture
+        ports: ["5432:5432"]
+        options: >-
+          --health-cmd "pg_isready -U postgres"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 10
+    env:
+      PGHOST: localhost
+      PGPORT: "5432"
+      PGDATABASE: postgres
+      PGUSER: postgres
+      PGPASSWORD: disposable-agenda-fixture
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - name: Apply minimal invitation contracts in disposable database
+        run: |
+          set -euo pipefail
+          for sql in \
+            tests/homologation/postgres-shim.sql \
+            supabase/schema.sql \
+            tests/homologation/agenda-compat.sql \
+            supabase/received_invitations_migration.sql \
+            supabase/private_fee_negotiations_migration.sql \
+            supabase/accepted_shows_agenda_migration.sql; do
+            psql -X -v ON_ERROR_STOP=1 -f "$sql"
+          done
+      - name: Verify acceptance, fee gate and private agenda with rollback
+        run: psql -X -v ON_ERROR_STOP=1 -f tests/sql/agenda-invitation-isolation.sql

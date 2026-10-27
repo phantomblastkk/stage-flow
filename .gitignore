@@ -11,3 +11,6 @@ dist
 # Staging credentials: never commit
 .env.homologation
 .env.staging
+
+# Local/browser verification outputs
+test-results/
