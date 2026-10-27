@@ -106,3 +106,8 @@
 .venue-public-share-show:focus-visible{outline:2px solid #d5b7ff;outline-offset:3px}
 .venue-public-share-message{font-size:12px;line-height:1.55;color:#d6c4ec}
 @media(max-width:540px){.venue-public-share-show{width:100%}}
+
+
+.venue-public-share-actions{display:flex;flex-wrap:wrap;align-items:center;gap:9px;margin-top:13px}
+.venue-public-share-actions .venue-public-share-show{margin-top:0}
+@media(max-width:540px){.venue-public-share-actions{display:grid;grid-template-columns:1fr}}
