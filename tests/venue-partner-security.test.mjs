@@ -368,3 +368,42 @@ test("public show and approved admin workspace use native mobile sharing with co
  assert.match(css,/\.venue-public-share-actions/);
  assert.match(css,/@media\(max-width:540px\)/);
 });
+
+
+test("approved venue branding uses local preview before a confirmed upload",()=>{
+ const admin=read("app/admin/casas/page.tsx");
+ const css=read("app/admin/casas/venues-admin.css");
+ assert.match(admin,/const \[pendingImages,setPendingImages\] = useState/);
+ assert.match(admin,/const \[previewUrls,setPreviewUrls\] = useState/);
+ assert.match(admin,/URL\.createObjectURL\(pendingImages\.logo\)/);
+ assert.match(admin,/URL\.createObjectURL\(pendingImages\.cover\)/);
+ assert.match(admin,/URL\.revokeObjectURL\(logo\)/);
+ assert.match(admin,/URL\.revokeObjectURL\(cover\)/);
+ assert.match(admin,/selectIdentityImage\(kind,e\.target\.files\?\.\[0\]\)/);
+ assert.match(admin,/file\.size===0\|\|file\.size>5\*1024\*1024/);
+ assert.match(admin,/onError=\{\(\)=>\{setPendingImages\(old=>\(\{\.\.\.old,\[kind\]:null\}\)\);setError\(/);
+ assert.match(admin,/onClick=\{\(\)=>void upload\(kind,pendingImages\[kind\]\|\|undefined\)\}/);
+ assert.match(admin,/Confirmar envio/);
+ assert.match(admin,/Prévia local\. O arquivo não foi enviado nem publicado/);
+ assert.match(admin,/Prévia privada do perfil da casa/);
+ assert.match(admin,/form\.approval_status!=="approved"/);
+ assert.match(admin,/previewUrls\.cover\|\|mediaUrl\(form\.cover_path\)/);
+ assert.match(admin,/previewUrls\.logo\|\|mediaUrl\(form\.logo_path\)/);
+ assert.match(admin,/form\.description\.trim\(\)/);
+ assert.match(admin,/setPendingImages\(old=>\(\{\.\.\.old,\[kind\]:null\}\)\)/);
+ assert.match(css,/\.venue-admin-profile-preview/);
+ assert.match(css,/\.venue-admin-preview-cover/);
+ assert.match(css,/\.venue-admin-preview-identity/);
+ assert.match(css,/@media\(max-width:560px\)/);
+});
+
+test("venue image uploads remain scoped to the approved house and do not cross-edit profiles",()=>{
+ const admin=read("app/admin/casas/page.tsx");
+ assert.match(admin,/if\(uploading\|\|saving\|\|reviewing\)return/);
+ assert.match(admin,/onClick=\{\(\) => edit\(item\)\} disabled=\{!!uploading\|\|saving\|\|reviewing\}/);
+ assert.match(admin,/const path = form\.id \+ "\/" \+ kind \+ "\/" \+ crypto\.randomUUID\(\) \+ "\." \+ extension/);
+ assert.match(admin,/\.upload\(path, file, \{ contentType: file\.type, upsert: false \}\)/);
+ assert.match(admin,/\.rpc\("stage_venue_admin_save"/);
+ assert.match(admin,/if\(form\.approval_status!=="approved"\)/);
+ assert.doesNotMatch(admin,/\.from\("venues"\)\.update\(/);
+});
