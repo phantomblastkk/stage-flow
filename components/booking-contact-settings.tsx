@@ -5,17 +5,9 @@ import {CheckCircle2,Instagram,LoaderCircle,MessageCircle,Save,ShieldCheck} from
 import {createClient} from "@/lib/supabase/client";
 import "./booking-contact-settings.css";
 
-export type BookingMode="off"|"whatsapp"|"instagram"|"form";
-export type BookingContact={mode:BookingMode;phone:string|null;greeting:string};
+import type {BookingMode} from "@/lib/booking-contact";
 
 const defaultGreeting="Olá! Vi seu perfil no StageFlow e gostaria de conversar sobre uma contratação.";
-export function whatsappBookingUrl(phone:string|null|undefined,greeting:string,artistName:string):string|null{
- const digits=(phone||"").replace(/\D/g,"");
- if(!/^55[1-9][0-9]{9,10}$/.test(digits))return null;
- const text=(greeting||defaultGreeting).trim().slice(0,260).replace(/\{artista\}/gi,artistName);
- return "https://wa.me/"+digits+"?text="+encodeURIComponent(text);
-}
-
 export default function BookingContactSettings({kind,instagramConfigured=false,formEnabled=false}:{
  kind:"singer"|"musician";instagramConfigured?:boolean;formEnabled?:boolean;
 }){
