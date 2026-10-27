@@ -87,6 +87,6 @@ test("plans keep core Stage Flow free and singer Pro gated without checkout",()=
  assert.match(plans,/Valores a definir/);
  assert.match(plans,/Subdomínio personalizado incluído no plano/);
  assert.match(plans,/Não há checkout, assinatura automática/);
- assert.match(publish,/href="\/planos"/);
+ assert.match(publish,/ProFeatureLock title="Portfólio profissional Pro"/);
  assert.match(publish,/!info.entitled/);
 });
