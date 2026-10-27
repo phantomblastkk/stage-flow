@@ -45,7 +45,8 @@ test("free singer Pro features are deliberately blurred but no private content i
 test("old /pro/username is a compatibility redirect, not a paid 404 gate",()=>{
  assert.match(legacy,/permanentRedirect\("\/"\+encodeURIComponent\(username\)\)/);
  assert.match(legacy,/if\(!\/\^\[a-z0-9-\]\{3,30\}\$\/.test\(username\)\)notFound\(\)/);
- assert.doesNotMatch(legacyLayout,/getPublishedProSite|\\bnotFound\\s*\\(/);
+ assert.ok(!legacyLayout.includes("getPublishedProSite("));
+ assert.ok(!legacyLayout.includes("notFound("));
  assert.match(legacyLayout,/canonical:"\/"\+encodeURIComponent\(username\)/);
  assert.match(publication,/const canonicalProfilePath=info\?\.username/);
  assert.match(publication,/href=\{canonicalProfilePath\}/);
