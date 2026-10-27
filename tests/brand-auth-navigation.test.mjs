@@ -64,3 +64,16 @@ test("site navigation does not flash login during auth rehydration",()=>{
  assert.match(dashboard,/<Link className="btn btn-quiet" href="\/"\>/);
  assert.doesNotMatch(homeActions,/auth\.signOut\(/);
 });
+
+test("musicians can register for free without singer invitations or compulsory WhatsApp",()=>{
+ const signup=load("app/cadastro/page.tsx");
+ const premium=load("app/meu-perfil-artistico/site-profissional/page.tsx");
+ assert.match(signup,/useState<"lead" \| "support" \| "none">\("support"\)/);
+ assert.match(signup,/Músicos não precisam de convite/);
+ assert.match(signup,/const needsMusicianPhone = \(Boolean\(inviteCode\) \|\| isArtist\) && whatsappConsent/);
+ assert.doesNotMatch(signup,/Esta confirmação é obrigatória/);
+ assert.match(signup,/required=\{whatsappConsent\}/);
+ assert.match(premium,/Recursos Pro do cantor/);
+ assert.match(premium,/incluídos nos planos pagos/);
+ assert.match(premium,/a cobrança ainda não estão ativados/);
+});
