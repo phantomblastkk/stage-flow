@@ -14,7 +14,8 @@
     "test:musician-availability": "node --test tests/musician-availability.test.mjs",
     "test:recurring-shows": "node --test tests/recurring-shows.test.mjs",
     "test:show-team-lineup": "node --test tests/show-team-lineup.test.mjs",
-    "test:notifications": "node --test tests/internal-notifications.test.mjs"
+    "test:notifications": "node --test tests/internal-notifications.test.mjs",
+    "test:show-operations": "node --test tests/show-operations.test.mjs"
   },
   "dependencies": {
     "@supabase/ssr": "^0.6.1",
