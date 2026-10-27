@@ -161,6 +161,7 @@ export default function ProSitePublicationControls({
         </div>
         {!info.entitled&&<p className="pro-publish-entitlement-note">
           <Crown size={15}/> <LockKeyhole size={15}/> Site profissional, personalização Pro e subdomínio estarão incluídos nos planos pagos de cantores. A cobrança online e o subdomínio ainda não estão ativos. Por enquanto, a publicação exige autorização do Stage Flow; seu perfil gratuito permanece disponível.
+          {" "}<Link href="/planos">Comparar Gratuito e Pro</Link>
         </p>}
         <p className="pro-publish-privacy"><ShieldCheck size={15}/>
           Só o conteúdo escolhido para a publicação fica acessível. Convites, negociações,
