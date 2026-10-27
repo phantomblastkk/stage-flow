@@ -8,10 +8,12 @@ import { createClient } from "@/lib/supabase/client";
 import { trackPublicPortfolioView } from "@/lib/musician-metrics";
 import MusicianPortfolioView, { MusicianPortfolio } from "@/components/musician-portfolio-view";
 import {useStageVerified} from "@/lib/use-stage-verified";
+import type {PublicBookingContact} from "@/lib/booking-contact";
 
 export default function PortfolioMusicoPublico() {
   const { slug } = useParams<{ slug: string }>();
   const [portfolio, setPortfolio] = useState<MusicianPortfolio | null>(null);
+  const [bookingContact,setBookingContact]=useState<PublicBookingContact|null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
   const [copied, setCopied] = useState(false);
@@ -25,16 +27,19 @@ export default function PortfolioMusicoPublico() {
         setLoading(false);
         return;
       }
-      const { data, error: requestError } = await createClient().rpc(
-        "stage_public_musician_portfolio",
-        { p_slug: slug }
-      );
+      const client=createClient();
+      const [{data,error:requestError},{data:bookingData,error:bookingError}]=await Promise.all([
+        client.rpc("stage_public_musician_portfolio",{p_slug:slug}),
+        client.rpc("stage_public_booking_contact",{p_kind:"musician",p_slug:slug})
+      ]);
       if (!active) return;
       if (requestError) {
         setError("Não foi possível carregar este portfólio no momento. Tente novamente mais tarde.");
       } else {
         const published = (data as MusicianPortfolio | null) ?? null;
         setPortfolio(published);
+        setBookingContact(!bookingError&&bookingData&&typeof bookingData.mode==="string"
+          ?bookingData as PublicBookingContact:null);
         // Apenas página pública realmente carregada, não o editor nem a prévia.
         // Contagens são aproximadas e deduplicadas por navegador/dia.
         if (published?.slug) void trackPublicPortfolioView(published.slug);
@@ -83,7 +88,7 @@ export default function PortfolioMusicoPublico() {
       <Link className="btn btn-primary" style={{ marginTop: 16 }} href="/">Voltar ao Stage Flow</Link>
     </section>
     : <div className="mp-public-wrap">
-      <MusicianPortfolioView portfolio={portfolio} verified={verified} onShare={() => void sharePortfolio()}/>
+      <MusicianPortfolioView portfolio={portfolio} verified={verified} bookingContact={bookingContact} onShare={() => void sharePortfolio()}/>
       {copied && <p role="status" style={{ fontSize: 12, color: "var(--lime)", marginTop: 13, display: "flex", alignItems: "center", gap: 6 }}><Copy size={14}/> Link copiado!</p>}
       {error && <p role="alert" style={{ fontSize: 12, color: "#ffb5b5", marginTop: 13 }}>{error}</p>}
       {manualUrl && <div className="mp-public-manual-share">
