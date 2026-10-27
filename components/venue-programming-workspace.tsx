@@ -5,7 +5,7 @@ import Link from "next/link";
 import { useParams, useRouter } from "next/navigation";
 import {
   ArrowLeft, CalendarDays, ImagePlus, LoaderCircle, MessageCircle, Plus,
-  Save, Trash2, UploadCloud, Images, Music2, ShieldCheck, ExternalLink, Clock3, CheckCircle2
+  Save, Trash2, UploadCloud, Images, Music2, ShieldCheck, ExternalLink, Clock3, CheckCircle2, Copy
 } from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
 import VenueMonthCalendar, {
@@ -359,6 +359,21 @@ export default function VenueProgrammingWorkspace({mode}: {mode: "admin" | "part
   }
   const publishedCount=shows.filter(x=>x.status==="published").length;
   const publishedFlyers=shows.filter(x=>x.status==="published"&&!!x.flyer_path).length;
+  const selectedPublishedShow=shows.find(x=>
+    x.id===showForm.id&&x.status==="published")||null;
+  async function copyPublishedShowLink(){
+    if(!publicSlug||!selectedPublishedShow)return;
+    const url=new URL("/casa/"+publicSlug,window.location.origin);
+    url.searchParams.set("mes",venueDayKey(selectedPublishedShow.starts_at).slice(0,7));
+    url.searchParams.set("show",selectedPublishedShow.id);
+    try{
+      if(!navigator.clipboard?.writeText)throw new Error("Clipboard unavailable");
+      await navigator.clipboard.writeText(url.toString());
+      setError("");setSuccess("Link público da apresentação copiado.");
+    }catch{
+      setError("Não foi possível copiar. Abra a apresentação e use Compartilhar do navegador.");
+    }
+  }
   const currentFlyer=shows.find(x=>x.id===showForm.id)?.flyer_path;
   return <main className="venue-program-page"><div className="container">
     <nav className="nav">
@@ -489,6 +504,20 @@ export default function VenueProgrammingWorkspace({mode}: {mode: "admin" | "part
           </section>
           <section className="venue-program-panel">
             <div className="venue-program-heading"><h2>{showForm.id?"Editar apresentação":"Cadastrar apresentação"}</h2></div>
+            {selectedPublishedShow&&publicSlug&&<div className="venue-program-published-share" role="group" aria-label="Compartilhar apresentação publicada">
+              <span><CheckCircle2 size={15}/> Esta apresentação está pública.</span>
+              <div>
+                <Link className="btn btn-quiet" href={"/casa/"+publicSlug+
+                  "?mes="+venueDayKey(selectedPublishedShow.starts_at).slice(0,7)+
+                  "&show="+encodeURIComponent(selectedPublishedShow.id)}
+                  target="_blank" rel="noopener noreferrer">
+                  <ExternalLink size={15}/> Ver show publicado
+                </Link>
+                <button type="button" className="btn btn-quiet" onClick={()=>void copyPublishedShowLink()}>
+                  <Copy size={15}/> Copiar link
+                </button>
+              </div>
+            </div>}
             <form onSubmit={saveShow}>
               <div className="field"><label htmlFor="vp-title">Nome do show *</label>
                 <input id="vp-title" required maxLength={120} value={showForm.title}
