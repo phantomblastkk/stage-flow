@@ -480,7 +480,7 @@ export default function MeuPerfilArtistico() {
       </div>}
       </>}
       {proVisited && <div className="singer-editor-pro-panel" style={{ display: activeTab === "pro" ? "block" : "none" }}>
-        <SingerProEditor active={activeTab === "pro"}/>
+        <SingerProEditor active={activeTab === "pro"} onEditData={() => switchTab("dados")}/>
       </div>}
     </div>
   </main>;
