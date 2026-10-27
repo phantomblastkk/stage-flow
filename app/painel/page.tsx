@@ -232,6 +232,11 @@ export default function Dashboard() {
     label: "AGENDA INTELIGENTE"
   });
   primary.splice(1,0,{
+    href: "/eventos", title: "Operação dos shows", icon: CalendarDays,
+    description: "Acesse cada apresentação para organizar checklist, horários, transporte, equipamentos e encerramento.",
+    label: "DIA DO SHOW"
+  });
+  primary.splice(1,0,{
     href: "/shows-recorrentes", title: "Shows recorrentes", icon: Music2,
     description: "Crie temporadas semanais, gere apresentações em rascunho e reutilize equipes fixas sem refazer cada show.",
     label: "PROGRAMAÇÃO SEMANAL"
