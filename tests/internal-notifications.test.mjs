@@ -80,3 +80,28 @@ test("new inbox shows unread filters, acknowledges own notices and navigates saf
  assert.match(conversation,/openedThreads\.some\(item=>item\.id===conversation\)/);
  assert.doesNotMatch(page,/service_role|WHATSAPP_CLOUD_ACCESS_TOKEN/);
 });
+
+test("bell opens a five-item preview and keeps full inbox available",()=>{
+ const css=read("components/notification-bell.module.css");
+ assert.match(bell,/useState\(false\)/);
+ assert.match(bell,/aria-expanded=\{open\}/);
+ assert.match(bell,/aria-controls=\{panelId\}/);
+ assert.match(bell,/setOpen\(value => !value\)/);
+ assert.match(bell,/stage_notifications_list/);
+ assert.match(bell,/p_filter: "all", p_limit: 5/);
+ assert.match(bell,/stage_notifications_unread_count/);
+ assert.match(bell,/stage_notifications_mark/);
+ assert.match(bell,/p_ids: \[item.id\], p_all: false/);
+ assert.match(bell,/router\.push\(destination\(item\)\)/);
+ assert.match(bell,/\/conversas\?conversa=/);
+ assert.match(bell,/\/convites\?evento=/);
+ assert.match(bell,/\/meus-convites/);
+ assert.match(bell,/Ver todas as notificações/);
+ assert.match(bell,/role="region"/);
+ assert.match(bell,/event\.key === "Escape"/);
+ assert.match(bell,/document\.addEventListener\("pointerdown"/);
+ assert.match(bell,/document\.visibilityState !== "visible"/);
+ assert.match(css,/@media\(max-width:560px\)/);
+ assert.match(css,/max-height/);
+ assert.doesNotMatch(bell,/service_role|WHATSAPP_CLOUD_ACCESS_TOKEN|\.from\("stage_internal_notifications"\)/);
+});
