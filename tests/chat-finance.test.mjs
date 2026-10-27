@@ -105,3 +105,17 @@ test("per-show financial summaries and detailed CSV preserve unknown values",()=
  assert.match(money,/r\.personal_fee===null\?"":/);
  assert.match(money,/safeCsvCell/);
 });
+
+test("advanced singer reports use Pro entitlement while core finances remain available",()=>{
+ const plans=read("app/planos/page.tsx");
+ assert.match(plans,/Relatórios financeiros avançados do cantor/);
+ assert.match(plans,/Controle financeiro básico por show/);
+ assert.match(plans,/Galeria profissional, vídeos e destaques/);
+ assert.match(money,/stage_my_pro_site_publication/);
+ assert.match(money,/entitlement\?\.entitled===true/);
+ assert.match(money,/reportAccess\?<section className="finance-two">/);
+ assert.match(money,/reportAccess&&<p>Resultado líquido previsto:/);
+ assert.match(money,/reportAccess&&<p>Resultado estimado:/);
+ assert.match(money,/href="\/planos"/);
+ assert.match(money,/disabled=\{loading\|\|!hasAny\|\|!reportAccessReady\}/);
+});
