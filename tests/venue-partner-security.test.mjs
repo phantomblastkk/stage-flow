@@ -331,3 +331,40 @@ test("public show sharing resolves only published events returned by the public 
  assert.match(editor,/url\.searchParams\.set\("show",selectedPublishedShow\.id\)/);
  assert.match(editor,/\.status==="published"/);
 });
+
+
+test("mobile flyer preview cleans up temporary URLs and broken files are not queued",()=>{
+ const editor=read("components/venue-programming-workspace.tsx");
+ const css=read("app/admin/casas/[id]/programacao/programacao.css");
+ assert.match(editor,/const \[pendingFlyerPreview,setPendingFlyerPreview\] = useState<string\|null>\(null\)/);
+ assert.match(editor,/const preview=URL\.createObjectURL\(pendingFlyer\)/);
+ assert.match(editor,/return \(\)=>URL\.revokeObjectURL\(preview\)/);
+ assert.match(editor,/src=\{pendingFlyerPreview\} alt="Prévia local do flyer selecionado"/);
+ assert.match(editor,/onError=\{\(\)=>\{setPendingFlyer\(null\);setError\(/);
+ assert.match(editor,/Escolha outro arquivo JPG, PNG ou WebP/);
+ assert.match(editor,/Selec(?:ionado|ionado):/);
+ assert.match(editor,/pendingFlyer\.size\/1024\/1024/);
+ assert.match(css,/\.venue-program-flyer-preview/);
+ assert.match(css,/@media\(max-width:420px\)/);
+});
+
+test("public show and approved admin workspace use native mobile sharing with copy fallback",()=>{
+ const editor=read("components/venue-programming-workspace.tsx");
+ const page=read("app/casa/[slug]/page.tsx");
+ const css=read("app/casa/[slug]/venue-public.css");
+ assert.match(editor,/async function sharePublishedShow\(\)/);
+ assert.match(editor,/if\(!navigator\.share\)\{/);
+ assert.match(editor,/await navigator\.share\(\{title:selectedPublishedShow\.title,url\}\)/);
+ assert.match(editor,/err\.name==="AbortError"/);
+ assert.match(editor,/Compartilhar show/);
+ assert.match(editor,/Copiar link/);
+ assert.match(editor,/const selectedPublishedShow=shows\.find\(x=>/);
+ assert.match(page,/async function shareShow\(show:HouseShow\)/);
+ assert.match(page,/if\(!navigator\.share\)\{await copyShowLink\(show\);return;\}/);
+ assert.match(page,/await navigator\.share\(\{title:show\.title,url\}\)/);
+ assert.match(page,/err\.name==="AbortError"/);
+ assert.match(page,/Compartilhar show/);
+ assert.match(page,/Copiar link deste show/);
+ assert.match(css,/\.venue-public-share-actions/);
+ assert.match(css,/@media\(max-width:540px\)/);
+});
