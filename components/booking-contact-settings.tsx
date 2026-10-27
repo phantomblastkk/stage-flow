@@ -11,7 +11,7 @@ const defaultGreeting="Olá! Vi seu perfil no StageFlow e gostaria de conversar 
 export default function BookingContactSettings({kind,instagramConfigured=false,formEnabled=false}:{
  kind:"singer"|"musician";instagramConfigured?:boolean;formEnabled?:boolean;
 }){
- const [mode,setMode]=useState<BookingMode>("off");
+ const [mode,setMode]=useState<BookingMode>("auto");
  const [phone,setPhone]=useState("");
  const [greeting,setGreeting]=useState(defaultGreeting);
  const [loading,setLoading]=useState(true);
@@ -63,16 +63,18 @@ export default function BookingContactSettings({kind,instagramConfigured=false,f
   {loading?<p className="booking-contact-hint"><LoaderCircle size={15}/> Carregando opções...</p>:<>
    <div className="booking-contact-options" role="group" aria-label="Destino do botão de contratação">
     {([
+     ["auto","Usar contato já cadastrado","Mantém seu Instagram público ou formulário existente, quando disponível."],
      ["whatsapp","WhatsApp direto","Abre uma conversa com mensagem pronta."],
      ["instagram","Instagram","Abre o perfil que você cadastrou."],
      ...(kind==="singer"?[["form","Formulário StageFlow","Receba solicitações dentro do site."]]:[]),
-     ["off","Não exibir contato","Desativa o botão externo de contratação."]
+     ["off","Não exibir contato","Oculta o botão e o formulário público de contratação."]
     ] as string[][]).map(([value,label,details])=><label key={value} className={mode===value?"is-selected":""}>
      <input type="radio" name={"booking-contact-"+kind} checked={mode===value}
       onChange={()=>setMode(value as BookingMode)}/>
      <span><strong>{label}</strong><small>{details}</small></span>
     </label>)}
    </div>
+   {mode==="auto"&&<p className="booking-contact-hint"><ShieldCheck size={16}/> O StageFlow usa o formulário já ativado pelo cantor ou o Instagram público. Escolha outro canal se quiser mudar.</p>}
    {mode==="whatsapp"&&<div className="booking-contact-details">
      <label htmlFor={"booking-phone-"+kind}>Número público para contratação (WhatsApp)</label>
      <input id={"booking-phone-"+kind} type="tel" autoComplete="tel-national" inputMode="tel"
