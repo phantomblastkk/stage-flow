@@ -12,6 +12,8 @@ import {
   Sparkles, Youtube, Palette, Save, Eye, EyeOff, RotateCcw, ArrowUp, ArrowDown
 } from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
+import {publicInstagramProfile} from "@/lib/artist-social";
+import {distinctPublicBiography} from "@/lib/profile-presentation";
 import ProShowCards from "@/app/meu-perfil-artistico/site-profissional/pro-show-cards";
 import { PremiumGalleryEditor, PremiumGalleryShowcase, usePremiumGallery } from "@/app/meu-perfil-artistico/site-profissional/premium-media-gallery";
 import ProSitePublicationControls from "@/app/meu-perfil-artistico/site-profissional/pro-publish-controls";
@@ -121,6 +123,8 @@ export default function SiteProfissionalPreview({ active = true, onEditData }: {
   const [month, setMonth] = useState(() => new Date(new Date().getFullYear(), new Date().getMonth(), 1));
   const [selectedDate, setSelectedDate] = useState<string | null>(null);
   const [draft, setDraft] = useState<PremiumDraft>(defaultDraft);
+  const instagram=publicInstagramProfile(artist?.instagram_url);
+  const biography=artist?distinctPublicBiography(artist.headline,artist.bio):"";
   const [savedDraft, setSavedDraft] = useState<PremiumDraft>(defaultDraft);
   const [savingDraft, setSavingDraft] = useState(false);
   const [draftError, setDraftError] = useState("");
@@ -446,9 +450,9 @@ export default function SiteProfissionalPreview({ active = true, onEditData }: {
               </p>
             </div>
             {artist.city && <p className="premium-site-city"><MapPin size={16}/> {artist.city}</p>}
-            <p className="premium-site-intro">{artist.bio?.trim()
-              ? artist.bio.length > 320 ? artist.bio.slice(0, 317) + "…" : artist.bio
-              : "Apresente ao público a sua identidade musical, suas experiências e o que torna cada show especial. Complete a biografia na aba Dados e publicação para atualizar esta prévia."}</p>
+            <p className="premium-site-intro">{biography
+              ?biography.length>210?biography.slice(0,207)+"…":biography
+              :"Conheça os shows, o repertório e as novidades deste artista."}</p>
 
             <div className="premium-site-socials">
               {artist.instagram_url && <a href={artist.instagram_url} target="_blank" rel="noopener noreferrer" aria-label="Instagram"><Instagram size={19}/></a>}
@@ -481,15 +485,13 @@ export default function SiteProfissionalPreview({ active = true, onEditData }: {
           <div>
             <span className="premium-site-section-overline">{String(draft.section_order.indexOf("about") + 1).padStart(2,"0")} / A HISTÓRIA POR TRÁS DO SOM</span>
             <h2>Sobre <em>o artista.</em></h2>
-            <p>{artist.bio || "Sua biografia ficará aqui. Escreva sua trajetória na aba Dados e publicação para atualizar este mesmo perfil."}</p>
+            <p>{biography || "Escreva sua história na aba Dados e publicação. Sua assinatura fica apenas abaixo do nome."}</p>
           </div>
           <div className="premium-site-summary">
-            <span className="premium-site-summary-icon"><Mic2 size={22}/></span>
-            <div><small>PERFIL OFICIAL</small><strong>@{artist.username || "seuusuario"}</strong></div>
-            <p>Este é o único perfil público do cantor. O plano Pro adiciona recursos a ele, sem mudar o endereço.</p>
-            {artist.username && artist.is_public && <Link href={"/" + artist.username} target="_blank">
-              Abrir meu perfil público <ArrowUpRight size={15}/>
-            </Link>}
+            <span className="premium-site-summary-icon"><Instagram size={22}/></span>
+            <div><small>INSTAGRAM DO ARTISTA</small><strong>{instagram?.handle||"Redes do artista"}</strong></div>
+            <p>{instagram?"O Instagram informado será exibido aos visitantes com link direto.":"Cadastre seu Instagram na aba Dados para mostrar o @ e seu perfil social."}</p>
+            {instagram&&<a href={instagram.url} target="_blank" rel="noopener noreferrer">Abrir Instagram <ArrowUpRight size={15}/></a>}
           </div>
         </section>}
 
