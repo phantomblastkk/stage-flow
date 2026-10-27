@@ -7,6 +7,7 @@ import {
   Music2, Play, Share2, Sparkles, Wallet, Youtube
 } from "lucide-react";
 import "./musician-portfolio-polish.css";
+import StageVerifiedBadge from "@/components/stage-verified-badge";
 
 export type MusicianTheme = "midnight" | "ivory" | "stage";
 export type MusicianAccent = "lime" | "violet" | "coral" | "cyan" | "gold";
@@ -84,9 +85,9 @@ function youTubeId(link: string): string | null {
   } catch { return null; }
 }
 
-type Props = { portfolio: MusicianPortfolio; preview?: boolean; onShare?: () => void; instanceId?: string };
+type Props = { portfolio: MusicianPortfolio; preview?: boolean; onShare?: () => void; instanceId?: string; verified?: boolean };
 
-export default function MusicianPortfolioView({ portfolio, preview = false, onShare, instanceId }: Props) {
+export default function MusicianPortfolioView({ portfolio, preview = false, onShare, instanceId, verified = false }: Props) {
   const theme: MusicianTheme = musicianThemes.some(t => t.value === portfolio.theme)
     ? portfolio.theme : "midnight";
   // Legacy lime portfolios remain valid in storage, but never render neon green.
@@ -145,7 +146,7 @@ export default function MusicianPortfolioView({ portfolio, preview = false, onSh
           </div>
           <div className="mp-identity-copy">
             <p className="mp-overline">MÚSICO INDEPENDENTE</p>
-            <h1>{portfolio.name || "Seu nome artístico"}</h1>
+            <h1>{portfolio.name || "Seu nome artístico"}{verified&&<StageVerifiedBadge compact/>}</h1>
             <p className="mp-headline">{title}</p>
             <div className="mp-hero-meta">
               {portfolio.city && <span><MapPin size={15}/> {portfolio.city}</span>}
