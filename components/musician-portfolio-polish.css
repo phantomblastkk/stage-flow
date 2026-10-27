@@ -494,3 +494,17 @@
   .mp-polished .mp-work-card:hover,.mp-polished .mp-action-primary:hover,
   .mp-polished .mp-hero-secondary:hover,.mp-polished .mp-social-grid a:hover{transform:none}
 }
+
+/* Clipboard fallback on a public portfolio (e.g. browsers without permissions). */
+.mp-public-manual-share{
+  display:grid;gap:9px;padding:14px 16px;margin-top:14px;
+  border:1px solid #695589;border-radius:12px;
+  background:#201a32
+}
+.mp-public-manual-share label{font-size:11px;font-weight:800;color:#d4c6eb}
+.mp-public-manual-share input{
+  display:block;width:100%;padding:12px 13px;
+  color:#eee8ff;background:#101426;border:1px solid #64567e;
+  border-radius:9px;font-size:12px;min-width:0
+}
+.mp-public-manual-share input:focus-visible{outline:2px solid #c6a6fd}
