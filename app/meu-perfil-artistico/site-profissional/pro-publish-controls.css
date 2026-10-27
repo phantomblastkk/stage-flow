@@ -45,7 +45,7 @@
 .pro-publish-checklist>div{display:flex;align-items:start;gap:10px}
 .pro-publish-checklist>div>span{
   width:30px;height:30px;flex:none;display:grid;place-items:center;
-  color:#b4e0ac;background:#284438;border-radius:8px
+  color:#cbb6f4;background:#413450;border-radius:8px
 }
 .pro-publish-checklist>div>div{display:grid;gap:5px}
 .pro-publish-checklist strong{font:800 12px "Manrope",sans-serif}
@@ -67,7 +67,7 @@
   font-size:10px;font-weight:900;letter-spacing:.08em;color:#aebed3
 }
 .pro-publish-url strong{
-  font-size:12px;color:#d1e9b2;overflow-wrap:anywhere;
+  font-size:12px;color:#d7c4ff;overflow-wrap:anywhere;
   line-height:1.6
 }
 .pro-publish-links{display:flex;align-items:center;gap:8px;flex-wrap:wrap}
