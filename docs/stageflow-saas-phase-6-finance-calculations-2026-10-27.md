@@ -40,7 +40,10 @@ Sem develop, homologação, acesso a banco remoto, migration ou deploy.
 - 178 testes Node aprovados localmente, incluindo 14 casos novos de cálculos/CSV/contrato.
 - TypeScript e build Next.js verificados.
 - Testes de navegador em 360/768/1280 px ampliados para baixar o CSV, verificar arquivo e valores e confirmar que um snapshot inválido não mostra zeros ou permite exportar.
-- Conferir o workflow do commit desta parte para o resultado real de navegador.
+- CI aprovado no commit `500fffcfbb391e2f08df4258a51d67ce299df107`, incluindo download e validação do conteúdo do CSV nas três larguras e tratamento de dados inválidos.
+- [Workflow aprovado](https://github.com/phantomblastkk/stage-flow/actions/runs/40602160945).
+- [Screenshots e log do navegador](https://github.com/phantomblastkk/stage-flow/actions/runs/40602160945/artifacts/12779415717), retenção de sete dias.
+- A formatação também preserva os centavos até o limite de inteiros seguros, sem converter o valor completo para decimal binário na apresentação.
 
 Os testes usam somente fixtures e API sintética no CI. Não houve teste com dados
 ou contas reais, nem medição de carga. O contrato de agregação no servidor foi
