@@ -119,3 +119,16 @@ test("advanced singer reports use Pro entitlement while core finances remain ava
  assert.match(money,/href="\/planos"/);
  assert.match(money,/disabled=\{loading\|\|!hasAny\|\|!reportAccessReady\}/);
 });
+
+test("locked Pro modules show blurred preview and upgrade without hiding free accounting",()=>{
+ const lock=read("components/pro-feature-lock.tsx");
+ const styles=read("components/pro-feature-lock.css");
+ const pro=read("app/meu-perfil-artistico/site-profissional/pro-publish-controls.tsx");
+ assert.match(lock,/Assinar versão Pro/);
+ assert.match(lock,/href="\/planos"/);
+ assert.match(lock,/aria-hidden="true" inert/);
+ assert.match(styles,/filter:blur\(13px\)/);
+ assert.match(money,/ProFeatureLock title="Relatórios financeiros Pro"/);
+ assert.match(pro,/ProFeatureLock title="Portfólio profissional Pro"/);
+ assert.match(money,/EventBudgetPanel/);
+});
