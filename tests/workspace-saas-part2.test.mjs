@@ -69,3 +69,26 @@ test("shared UI has roving keyboard tabs, safe buttons and announced input guida
  assert.match(ui,/aria-controls=\{t.panelId\}/);
  assert.match(ui,/role="dialog" aria-modal="true"/);
 });
+
+
+test("QA-only safe RLS corrections retain ownership and reduce row-scoped auth evaluations",()=>{
+ const rls=read("supabase/stage_workspace_rls_events_invitations_migration.sql");
+ const venue=read("supabase/stage_workspace_venue_submit_rls_optimization.sql");
+ for(const name of [
+  "Producers can view own events",
+  "Producers can create own events",
+  "Producers can update own events",
+  "Producers can delete own events",
+  "Musicians can view own invitations",
+  "Producers can invite musicians to own events",
+  "Musicians can respond to own invitations"
+ ])assert.ok(rls.includes('alter policy "'+name+'"'));
+ assert.match(rls,/\(select auth.uid\(\)\)=producer_id/);
+ assert.match(rls,/\(select auth.uid\(\)\)=musician_id/);
+ assert.match(rls,/p.role='producer'::public.account_role/);
+ assert.match(rls,/stage_hiring_proposals_musician_fk_idx/);
+ assert.match(rls,/stage_hiring_proposals_requester_fk_idx/);
+ assert.match(rls,/stage_hiring_threads_event_fk_idx/);
+ assert.match(venue,/\(select auth.uid\(\)\)=submitted_by/);
+ for(const doc of [rls,venue])assert.doesNotMatch(doc,/drop policy|grant select on|grant all|disable row level security|delete from|update public\./i);
+});
