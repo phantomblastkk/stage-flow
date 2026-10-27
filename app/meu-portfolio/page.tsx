@@ -221,9 +221,9 @@ export default function MeuPortfolioDeMusico() {
     const performanceList = performancesText.split(",").map(v => v.trim()).filter(Boolean);
     const highlightList = highlightsText.split("\n").map(v => v.trim()).filter(Boolean);
     const additionalLinks = additionalMediaText.split("\n").map(v => v.trim()).filter(Boolean);
-    if (performanceList.length > 5 || highlightList.length > 4 || additionalLinks.length > 2) {
+    if (performanceList.length > 8 || highlightList.length > 6 || additionalLinks.length > 4) {
       setError(true);
-      setStatus("Use até 5 formatos de apresentação, 4 destaques de carreira e 2 links extras.");
+      setStatus("Use até 8 formatos de apresentação, 6 destaques de carreira e 4 vídeos extras.");
       setSaving(false);
       return;
     }
@@ -243,7 +243,7 @@ export default function MeuPortfolioDeMusico() {
       return;
     }
     const { data, error: saveError } = await createClient().rpc(
-      "stage_save_musician_portfolio_v3", {
+      "stage_save_musician_portfolio_v4", {
         p_slug: portfolio.slug.trim(),
         p_bio: portfolio.bio.trim(),
         p_city: portfolio.city.trim(),
@@ -286,14 +286,14 @@ export default function MeuPortfolioDeMusico() {
         text_too_long: "Algum texto ultrapassou o limite permitido.",
         invalid_experience: "Informe entre 0 e 60 anos de experiência ou deixe vazio.",
         invalid_availability: "A informação sobre disponibilidade deve ter até 140 caracteres.",
-        too_many_details: "Use no máximo 5 formatos, 4 destaques e 2 vídeos extras.",
+        too_many_details: "Use no máximo 8 formatos, 6 destaques e 4 vídeos extras.",
         invalid_performance: "Cada formato de apresentação precisa ter entre 2 e 45 caracteres.",
         invalid_highlights: "Cada destaque precisa ter entre 4 e 120 caracteres.",
         invalid_social: "Confira os links: use Instagram, YouTube ou Spotify com endereço HTTPS."
       };
       setError(true);
-      setStatus((saveError?.code === "PGRST202" || saveError?.code === "42883")
-        ? "Para salvar os novos campos, execute musician_portfolio_complete_migration.sql no Supabase."
+       setStatus((saveError?.code === "PGRST202" || saveError?.code === "42883")
+        ? "O banco ainda precisa da migração stage_musician_portfolio_expanded_migration.sql para usar os campos expandidos."
         : saveError?.message || messages[String(data)] || "Não foi possível salvar o portfólio.");
     } else {
       setPortfolio(prev => ({
@@ -314,9 +314,9 @@ export default function MeuPortfolioDeMusico() {
     ...portfolio,
     instruments: instrumentsText.split(",").map(v => v.trim()).filter(Boolean).slice(0, 10),
     genres: genresText.split(",").map(v => v.trim()).filter(Boolean).slice(0, 10),
-    performance_types: performancesText.split(",").map(v => v.trim()).filter(Boolean).slice(0, 5),
-    career_highlights: highlightsText.split("\n").map(v => v.trim()).filter(Boolean).slice(0, 4),
-    additional_media_urls: additionalMediaText.split("\n").map(v => v.trim()).filter(Boolean).slice(0, 2),
+    performance_types: performancesText.split(",").map(v => v.trim()).filter(Boolean).slice(0, 8),
+    career_highlights: highlightsText.split("\n").map(v => v.trim()).filter(Boolean).slice(0, 6),
+    additional_media_urls: additionalMediaText.split("\n").map(v => v.trim()).filter(Boolean).slice(0, 4),
     reference_fee: portfolio.price_mode === "from" && Number(referenceFeeText.replace(",", ".")) > 0
       ? Number(referenceFeeText.replace(",", ".")) : null
   };
@@ -534,15 +534,15 @@ export default function MeuPortfolioDeMusico() {
               <input id="mp-formats" value={performancesText}
                 onChange={e => setPerformancesText(e.target.value)}
                 placeholder="Banda completa, Roda de samba, Eventos corporativos"/>
-              <span className="field-help">Separe por vírgulas. Até 5 formatos, com 45 caracteres cada.</span>
+              <span className="field-help">Separe por vírgulas. Até 8 formatos, com 45 caracteres cada.</span>
             </div>
             <div className="field">
               <label htmlFor="mp-highlights">Projetos, apresentações ou experiências marcantes</label>
-              <textarea id="mp-highlights" rows={5} maxLength={520}
+              <textarea id="mp-highlights" rows={6} maxLength={760}
                 value={highlightsText} onChange={e => setHighlightsText(e.target.value)}
                 placeholder={"Participação no grupo X\nShow na casa de samba Y\nGravação do projeto Z"}
                 style={{ ...fieldStyle, resize: "vertical" }}/>
-              <span className="field-help">Um destaque por linha, até 4, com 120 caracteres cada. Informe somente experiências reais.</span>
+              <span className="field-help">Um destaque por linha, até 6, com 120 caracteres cada. Informe somente experiências reais.</span>
             </div>
             <div className="field" style={{ marginBottom: 0 }}>
               <label htmlFor="mp-availability">Regiões e disponibilidade para shows</label>
@@ -555,14 +555,14 @@ export default function MeuPortfolioDeMusico() {
 
           <section className="mp-editor-panel">
             <h2><Youtube size={18} style={{ verticalAlign: "middle", marginRight: 7 }}/> Vídeos e redes sociais</h2>
-            <p>Seu portfólio gratuito pode mostrar até 3 trabalhos externos, sem precisar fazer upload de vídeos.</p>
+            <p>Seu portfólio gratuito pode mostrar até 5 vídeos e apresentações, com reprodução incorporada ao clicar no vídeo do YouTube. Não precisa fazer upload.</p>
             <div className="field">
               <label htmlFor="mp-extra-media">Mais vídeos ou apresentações (opcional)</label>
-              <textarea id="mp-extra-media" rows={3} maxLength={1020}
+              <textarea id="mp-extra-media" rows={5} maxLength={2100}
                 value={additionalMediaText} onChange={e => setAdditionalMediaText(e.target.value)}
                 placeholder={"https://youtu.be/....\nhttps://www.youtube.com/watch?v=...."}
                 style={{ ...fieldStyle, resize: "vertical" }}/>
-              <span className="field-help">Um endereço HTTPS por linha. Até 2 links extras além da apresentação principal.</span>
+              <span className="field-help">Um endereço HTTPS por linha. Até 4 links extras além da apresentação principal, chegando a 5 trabalhos.</span>
             </div>
             <div className="field">
               <label htmlFor="mp-instagram"><Instagram size={14} style={{ verticalAlign: "middle" }}/> Instagram</label>
