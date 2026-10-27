@@ -463,6 +463,7 @@ export default function CentralAdministrativa(){
        </button>)}
      </div>
      <p className="sf-admin-count">{venueCount} casas encontradas. Aprovar cria o perfil oficial pelo fluxo já existente.</p>
+      <p className="sf-admin-pro-guidance"><Building2 size={18}/> Para a casa aparecer com sua logo na página inicial, ela precisa estar ativa, oficial e marcada como parceira. Abra o cadastro da casa, marque <strong>Casa parceira</strong> e envie o logotipo. <Link href="/admin/casas">Editar casas <ArrowUpRight size={14}/></Link></p>
      <div className="sf-admin-venue-list">
       {venues.map(venue=><article className="sf-admin-venue" key={venue.id}>
        <div className="sf-admin-venue-mark"><Building2 size={21}/></div>
@@ -476,6 +477,7 @@ export default function CentralAdministrativa(){
         {(venue.submitted_by_name||venue.submitted_by_email)&&<small>Solicitada por: {venue.submitted_by_name||venue.submitted_by_email}</small>}
        </div>
        <div className="sf-admin-venue-actions">
+        {venue.approval_status==="approved"&&(!venue.is_official||!venue.is_partner)&&<Link href="/admin/casas"><Building2 size={15}/> Configurar parceira</Link>}
         {venue.approval_status==="pending"&&<>
          <button disabled={Boolean(busy)} className="approve" type="button" onClick={()=>void reviewVenue(venue,"approved")}>
           <CheckCircle2 size={16}/> Aprovar
