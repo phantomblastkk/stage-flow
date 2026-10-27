@@ -50,7 +50,17 @@ export default function MeusConvitesPage() {
   const reload = useCallback(async () => {
     const supabase = createClient();
     const { data: { user }, error: authError } = await supabase.auth.getUser();
-    if (authError || !user) {
+    if (authError) {
+      // A network validation error must not discard a session.
+      const { data: { session } } = await supabase.auth.getSession();
+      if (session) {
+        setIsError(true);
+        setFeedback("Não foi possível validar sua sessão agora. Sua conta não foi desconectada. Confira a conexão e tente novamente.");
+        setLoading(false);
+        return;
+      }
+    }
+    if (!user) {
       router.replace("/login");
       return;
     }
@@ -73,8 +83,16 @@ export default function MeusConvitesPage() {
     let active = true;
     async function loadWhatsAppPreferences() {
       const supabase = createClient();
-      const { data: authData } = await supabase.auth.getUser();
-      if (!active || !authData.user) return;
+      const { data: authData, error: authError } = await supabase.auth.getUser();
+      if (!active) return;
+      if (authError || !authData.user) {
+        setWhatsappLoading(false);
+        if (authError) {
+          setWhatsappError(true);
+          setWhatsappMessage("Não foi possível consultar suas preferências de WhatsApp agora. Tente novamente mais tarde.");
+        }
+        return;
+      }
       const { data, error } = await supabase.rpc("stage_my_whatsapp_preference");
       if (!active) return;
       if (error) {
