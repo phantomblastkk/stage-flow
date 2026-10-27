@@ -75,7 +75,7 @@ jobs:
       - name: Verify owner-only admin, venue approvals and badges
         run: node --test tests/owner-admin-hub.test.mjs
       - name: Verify new SaaS navigation, dashboard, security, mobile UI and SEO contracts
-        run: node --test tests/workspace-saas.test.mjs tests/home-pro-notifications.test.mjs tests/artist-booking-musician-refresh.test.mjs
+        run: node --test tests/workspace-saas.test.mjs tests/workspace-saas-part2.test.mjs tests/workspace-navigation-routes.test.mjs tests/home-pro-notifications.test.mjs tests/artist-booking-musician-refresh.test.mjs
       - name: Check TypeScript
         run: npx tsc --noEmit
       - name: Build Next.js

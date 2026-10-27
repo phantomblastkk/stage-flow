@@ -50,7 +50,7 @@ test("dashboard displays a contextual priority instead of empty cards while stil
 test("mobile drawer traps focus, recovers on escape and prioritizes invitations for musicians",()=>{
  assert.match(nav,/role="dialog" aria-modal="true"/);
  assert.match(nav,/closeRef.current\?\.focus\(\)/);
- assert.match(nav,/event.key==="Tab"/);
+ assert.match(nav,/if\(event.key!=="Tab"\)return/);
  assert.match(nav,/event.key==="Escape"/);
  assert.match(nav,/first\.focus\(\)/);
  assert.match(nav,/last\.focus\(\)/);

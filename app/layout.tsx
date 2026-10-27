@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import "./globals.css";
+import WorkspaceBoundary from "@/src/domains/navigation/components/workspace-boundary";
 
 export const metadata: Metadata = {
   title: "Stage Flow — sua música, sua agenda",
@@ -20,7 +21,7 @@ export default function RootLayout({ children }: Readonly<{ children: React.Reac
             AMBIENTE DE HOMOLOGAÇÃO — DADOS DE TESTE, NÃO É O SITE OFICIAL
           </div>
         )}
-        {children}
+        <WorkspaceBoundary>{children}</WorkspaceBoundary>
       </body>
     </html>
   );

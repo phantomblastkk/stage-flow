@@ -191,3 +191,22 @@
  .sf-workspace-journey>span{width:100%;margin:0}
  .sf-workspace-journey>a{flex:1 1 auto;justify-content:center;text-align:center}
 }
+
+/* Part 3: persistent frame for opted-in legacy work routes. */
+.sf-workspace-route{min-height:100dvh;background:var(--sf-ui-bg,#10101c)}
+.sf-workspace-route-ready{display:grid;grid-template-columns:246px minmax(0,1fr)}
+.sf-workspace-route-main,.sf-workspace-route-content{min-width:0}
+.sf-workspace-route-bar{display:flex;align-items:center;gap:10px;min-height:64px;
+ padding:12px 24px;border-bottom:1px solid #383048;color:#d6cbe5;font-size:13px}
+.sf-workspace-route-bar a{color:#d4b7fc;min-height:44px;display:inline-flex;align-items:center}
+.sf-workspace-route-content>main{min-height:calc(100dvh - 64px)}
+.sf-workspace-route-content .container{width:100%;max-width:1280px;padding-inline:clamp(12px,2.5vw,32px)}
+.sf-workspace-skip{position:fixed;left:12px;top:-100px;z-index:300;padding:12px 18px;
+ background:#f2e6ff;color:#21132f;border-radius:8px}
+.sf-workspace-skip:focus{top:12px}
+@media(max-width:850px){
+ .sf-workspace-route-ready{grid-template-columns:minmax(0,1fr)}
+ .sf-workspace-route-ready .sf-workspace-route-main{padding-bottom:calc(92px + env(safe-area-inset-bottom))}
+ .sf-workspace-route-ready .sf-workspace-route-bar{padding-left:96px}
+ .sf-workspace-route-bar{padding-inline:12px}
+}
