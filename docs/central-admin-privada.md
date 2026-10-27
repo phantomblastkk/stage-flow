@@ -75,5 +75,6 @@ Aprovações e selos exigem confirmação na interface e são sempre verificados
 - `stage_owner_admin_pro_snapshot(uuid[])`: somente proprietário; valida no máximo 30 UUIDs por página; informa manual, pago e efetivo.
 - `stage_owner_admin_set_pro_access(uuid,boolean)`: valida `auth.uid()` no PostgreSQL, verifica função de cantor, serializa acesso e grava auditoria apenas se houver mudança efetiva. Não altera plano ou cobrança.
 - A página `/admin/central` nunca controla planos financeiros, apenas permissões promocionais separadas. A confirmação é obrigatória para conceder ou retirar.
-- Testes de concessão/revogação em QA devem rodar com `ROLLBACK`, incluindo intruso, idempotência, ausência de `INSERT/DELETE` direto por `authenticated` e histórico de auditoria.
+- **Homologação (27/10/2026):** migração aplicada em `zycuprhymoukhnuamtit`; testes com `ROLLBACK` validaram proprietário versus intruso, concessão/revogação, idempotência, histórico e proteção de plano pago. Sem concessões persistidas. Tabelas continuam sem privilégios de escrita direta para `authenticated`.
+- **Supabase oficial (27/10/2026):** a migração foi aplicada em `bmudkggwjybyjuhgefvw`; proprietário versus intruso, acesso efetivo, revogação e auditoria também foram testados com `ROLLBACK`. **Nenhuma cortesia Pro foi concedida durante a instalação.** A interface precisa ser publicada separadamente mediante deploy manual autorizado.
 - Permanecem as diretrizes: commits **somente na `main`** e nenhum deploy automático; publicação do código somente mediante autorização manual.
