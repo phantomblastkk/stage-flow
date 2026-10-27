@@ -61,7 +61,7 @@ test("scheduling UI is private, integrated and exposes no contacts or secrets",(
  assert.match(page,/Banda fixa semanal/);
  assert.match(page,/compromissos semanais/i);
  assert.match(page,/4 horas/);
- assert.match(dash,/href: "\/minha-disponibilidade"/);
+  assert.match(read("src/domains/navigation/workspace-navigation.ts"),/\/minha-disponibilidade/);
  assert.match(props,/Verificar conflito antes de enviar/);
  assert.match(props,/schedule_conflict/);
  assert.doesNotMatch(page,/SUPABASE_SERVICE_ROLE_KEY|WHATSAPP_CLOUD_ACCESS_TOKEN/);
