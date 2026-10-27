@@ -77,16 +77,35 @@ export default function MeuPortfolioDeMusico() {
   const [uploading, setUploading] = useState<"avatar" | "cover" | null>(null);
   const [previewTab, setPreviewTab] = useState(false);
   const closePreviewRef = useRef<HTMLButtonElement>(null);
+  const openPreviewRef = useRef<HTMLButtonElement>(null);
   const [copied, setCopied] = useState(false);
 
   useEffect(() => {
     if (!previewTab) return;
+    const previousOverflow = document.body.style.overflow;
+    document.body.style.overflow = "hidden";
     closePreviewRef.current?.focus();
-    const onEscape = (event: KeyboardEvent) => {
+    const onKey = (event: KeyboardEvent) => {
       if (event.key === "Escape") setPreviewTab(false);
+      if (event.key !== "Tab") return;
+      const dialog = closePreviewRef.current?.closest('[role="dialog"]');
+      if (!dialog) return;
+      const elements = Array.from(dialog.querySelectorAll<HTMLElement>(
+        'a[href],button:not([disabled]),[tabindex]:not([tabindex="-1"])'
+      ));
+      const first = elements[0], last = elements[elements.length - 1];
+      if (event.shiftKey && document.activeElement === first) {
+        event.preventDefault(); last?.focus();
+      } else if (!event.shiftKey && document.activeElement === last) {
+        event.preventDefault(); first?.focus();
+      }
     };
-    window.addEventListener("keydown", onEscape);
-    return () => window.removeEventListener("keydown", onEscape);
+    window.addEventListener("keydown", onKey);
+    return () => {
+      document.body.style.overflow = previousOverflow;
+      window.removeEventListener("keydown", onKey);
+      openPreviewRef.current?.focus();
+    };
   }, [previewTab]);
 
   function update<K extends keyof EditorPortfolio>(key: K, value: EditorPortfolio[K]) {
@@ -629,8 +648,9 @@ export default function MeuPortfolioDeMusico() {
       <aside className="mp-editor-preview">
         <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 10, marginBottom: 12 }}>
           <div className="mp-editor-title" style={{ margin: 0 }}><Sparkles size={17} color="#C0A7FF"/> Prévia em tempo real</div>
-          <button type="button" className="btn btn-quiet" style={{ padding: "8px 11px", fontSize: 12 }}
-            onClick={() => setPreviewTab(prev => !prev)}>
+          <button type="button" ref={openPreviewRef} className="btn btn-quiet" style={{ padding: "8px 11px", fontSize: 12 }}
+            aria-haspopup="dialog" aria-expanded={previewTab}
+            onClick={() => setPreviewTab(true)}>
             {previewTab ? "Prévia aberta" : "Abrir tela cheia"}
           </button>
         </div>
