@@ -1,4 +1,4 @@
-export type BookingMode="off"|"whatsapp"|"instagram"|"form";
+export type BookingMode="auto"|"off"|"whatsapp"|"instagram"|"form";
 export type PublicBookingContact={mode:BookingMode;phone:string|null;greeting:string};
 
 /** Only explicitly public BR numbers; never read private phone preferences. */
