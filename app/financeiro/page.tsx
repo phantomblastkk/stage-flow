@@ -242,7 +242,7 @@ export default function Financeiro(){
       {m.hasMissing&&<small>Valores incompletos neste mês</small>}
      </div>)}</div>:<p className="fine">Sem shows neste período.</p>}
     </div>
-   </section>
+   </section>:
    <ProFeatureLock title="Relatórios financeiros Pro" description="Desbloqueie análises mensais, gráficos e exportação detalhada. Seus lançamentos básicos seguem gratuitos.">
     <div className="finance-two" style={{padding:16}}>
      <div className="finance-panel"><h2>Despesas por categoria</h2><p>Transporte · Equipamentos · Equipe · Alimentação</p><div className="finance-bar-track"><span style={{width:"72%"}}/></div><div className="finance-bar-track"><span style={{width:"43%"}}/></div></div>
