@@ -11,6 +11,7 @@ import {
 import type { LucideIcon } from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
 import NotificationBell from "@/components/notification-bell";
+import "./painel-account-actions.css";
 
 type ArtistKind = "lead" | "support";
 type Profile = {
@@ -313,7 +314,7 @@ export default function Dashboard() {
   return <main><div className="container" style={{ paddingBottom: 60 }}>
     <nav className="nav">
       <Link className="brand" href="/"><span className="brand-mark">S</span> stage flow</Link>
-      <div style={{ display: "flex", gap: 10, alignItems: "center" }}>
+      <div className="dashboard-account-actions">
         <NotificationBell/>
         <Link className="btn btn-quiet" href="/minha-conta" aria-label="Meu perfil e minhas funções"><UserRound size={16}/> Meu perfil</Link>
         <Link className="btn btn-quiet" href="/"><ArrowLeft size={15}/> Site</Link>
