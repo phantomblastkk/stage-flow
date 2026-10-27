@@ -254,8 +254,8 @@ export default function PublicSingerSite(){
   const contactHref=contactMode==="whatsapp"
     ?whatsappBookingUrl(bookingContact?.phone,bookingContact?.greeting||"",artist?.name||"")
     :contactMode==="instagram"?instagram?.url||null
-    :bookingContact===null&&!artist?.bookings_enabled?instagram?.url||null:null;
-  const contactIsForm=contactMode==="form"||(bookingContact===null&&Boolean(artist?.bookings_enabled));
+    :(bookingContact===null||contactMode==="auto")&&!artist?.bookings_enabled?instagram?.url||null:null;
+  const contactIsForm=(contactMode==="form"&&Boolean(artist?.bookings_enabled))||((bookingContact===null||contactMode==="auto")&&Boolean(artist?.bookings_enabled));
   const contactTitle=contactMode==="whatsapp"?"Contratar pelo WhatsApp":contactMode==="instagram"?"Chamar no Instagram":"Contrate o cantor";
   function imageUrl(path:string|null|undefined){
     return path?createClient().storage.from("stage-artist-public")
