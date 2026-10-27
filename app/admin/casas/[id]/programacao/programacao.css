@@ -141,3 +141,10 @@
 .venue-program-published-share>div{display:flex;gap:7px;flex-wrap:wrap}
 .venue-program-published-share .btn{font-size:12px;min-height:42px;padding:10px 12px}
 @media(max-width:540px){.venue-program-published-share>div{width:100%;display:grid;grid-template-columns:1fr}.venue-program-published-share .btn{justify-content:center;width:100%}}
+
+
+/* Preview the chosen poster locally before spending bandwidth on upload. */
+.venue-program-flyer-preview{width:105px;height:145px;max-width:35vw;object-fit:contain;border:1px solid #786098;border-radius:11px;background:#171224;flex-shrink:0}
+.venue-program-pending-flyer>span{display:grid;gap:5px;flex:1;min-width:0}
+.venue-program-pending-flyer small{font-size:11px;color:#c5b3d9}
+@media(max-width:420px){.venue-program-flyer-preview{width:84px;height:120px}}
