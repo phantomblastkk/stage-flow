@@ -12,7 +12,8 @@
     "test:chat-finance": "node --test tests/chat-finance.test.mjs",
     "test:hiring-proposals": "node --test tests/hiring-proposals.test.mjs",
     "test:musician-availability": "node --test tests/musician-availability.test.mjs",
-    "test:recurring-shows": "node --test tests/recurring-shows.test.mjs"
+    "test:recurring-shows": "node --test tests/recurring-shows.test.mjs",
+    "test:show-team-lineup": "node --test tests/show-team-lineup.test.mjs"
   },
   "dependencies": {
     "@supabase/ssr": "^0.6.1",
