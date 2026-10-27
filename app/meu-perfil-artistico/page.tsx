@@ -10,6 +10,7 @@ import {
 } from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
 import SingerProEditor from "@/components/singer-pro-editor";
+import BookingContactSettings from "@/components/booking-contact-settings";
 import "./singer-unified-editor.css";
 
 type ArtistConfig = {
@@ -419,6 +420,9 @@ export default function MeuPerfilArtistico() {
             {bookingAvailable && !savedPublished && <p className="field-help">O formulário ficará visível somente depois de publicar sua página gratuita.</p>}
             {bookingNotice && <p className="field-help" role="status">{bookingNotice}</p>}
           </section>
+          <BookingContactSettings kind="singer"
+            instagramConfigured={Boolean(config.instagram_url)}
+            formEnabled={bookingEnabled}/>
           {savedPublished && config.username && <Link href={"/" + config.username} target="_blank" className="btn btn-quiet" style={{ marginTop: 16 }}>
             <ExternalLink size={16}/> Visualizar página pública <ArrowUpRight size={15}/>
           </Link>}
