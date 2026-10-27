@@ -5,6 +5,7 @@ import {resolve} from "node:path";
 
 const read=path=>readFileSync(resolve(process.cwd(),path),"utf8");
 const sql=read("supabase/stage_owner_admin_hub_migration.sql");
+const proSql=read("supabase/stage_owner_admin_pro_access_migration.sql");
 const page=read("app/admin/central/page.tsx");
 const css=read("app/admin/central/central.css");
 const metadata=read("app/admin/central/layout.tsx");
@@ -141,4 +142,66 @@ test("main is the only active CI branch; commits never auto-deploy",()=>{
  const policy=read("AGENTS.md");
  assert.match(policy,/branch `main`/);
  assert.match(policy,/NUNCA habilite deploy automático/);
+});
+
+
+function proFunctionSql(name){
+ const start=proSql.indexOf("create or replace function public."+name+"(");
+ assert.ok(start>=0,"Missing "+name);
+ const end=proSql.indexOf("\n$$;",start);
+ assert.ok(end>start,"Unterminated "+name);
+ return proSql.slice(start,end);
+}
+
+test("only the owner can grant and revoke manual singer Pro with audit",()=>{
+ const grant=proFunctionSql("stage_owner_admin_set_pro_access");
+ assert.match(grant,/if not public\.stage_owner_admin_status\(\) then return 'forbidden';end if/);
+ assert.match(grant,/where p\.id=p_target_id and p\.is_artist=true and p\.is_singer=true/);
+ assert.match(grant,/for update/);
+ assert.match(grant,/insert into public\.stage_pro_site_access\(owner_id\)/);
+ assert.match(grant,/delete from public\.stage_pro_site_access where owner_id=p_target_id/);
+ assert.match(grant,/if v_paid then return 'subscription_active';end if/);
+ assert.match(grant,/insert into public\.stage_owner_admin_audit/);
+ assert.match(proSql,/pro_access_granted/);
+ assert.match(proSql,/pro_access_revoked/);
+ assert.match(proSql,/revoke all on function public\.stage_owner_admin_set_pro_access\(uuid,boolean\) from public,anon,authenticated/);
+ assert.match(proSql,/grant execute on function public\.stage_owner_admin_set_pro_access\(uuid,boolean\) to authenticated/);
+ assert.doesNotMatch(grant,/update public\.profiles|update public\.subscriptions|delete from public\.subscriptions|delete from auth\.users/);
+ assert.doesNotMatch(grant,/set plan_code|set subscription_status|update.*payment|asaas|stripe/i);
+});
+
+test("owner-only Pro listing distinguishes manual courtesy and paid subscriptions",()=>{
+ const snapshot=proFunctionSql("stage_owner_admin_pro_snapshot");
+ assert.match(snapshot,/if not public\.stage_owner_admin_status\(\) then/);
+ assert.match(snapshot,/cardinality\(p_ids\)>30/);
+ assert.match(snapshot,/array_position\(p_ids,null\) is not null/);
+ assert.match(snapshot,/exists\(select 1 from public\.stage_pro_site_access/);
+ assert.match(snapshot,/p\.plan_code in \('artist_plus','studio'\)/);
+ assert.match(snapshot,/p\.subscription_status in \('active','trialing'\)/);
+ assert.match(snapshot,/public\.stage_pro_site_is_entitled\(p\.id\)/);
+ assert.match(proSql,/revoke all on function public\.stage_owner_admin_pro_snapshot\(uuid\[\]\) from public,anon,authenticated/);
+ assert.match(proSql,/grant execute on function public\.stage_owner_admin_pro_snapshot\(uuid\[\]\) to authenticated/);
+ assert.doesNotMatch(proSql,/insert into public\.stage_owner_admins|grant (?:select|insert|update|delete) on public\.stage_pro_site_access/);
+ const entitlement=read("supabase/pro_artist_publication_migration.sql");
+ assert.match(entitlement,/exists\(select 1 from public\.stage_pro_site_access a where a\.owner_id=p_owner\)/);
+ assert.match(entitlement,/public\.stage_pro_site_is_entitled\(p\.id\)/);
+});
+
+test("central shows per-singer Pro privileges, protects paid accounts, confirms revocation",()=>{
+ assert.match(page,/stage_owner_admin_pro_snapshot/);
+ assert.match(page,/stage_owner_admin_set_pro_access/);
+ assert.match(page,/p_target_id:user\.id,p_enabled:!removing/);
+ assert.match(page,/status\.paid_entitled&&!status\.manual_granted/);
+ assert.match(page,/proByUser\[user\.id\]\.manual_granted/);
+ assert.match(page,/proByUser\[user\.id\]\.paid_entitled/);
+ assert.match(page,/!proReady/);
+ assert.match(page,/window\.confirm\(warning\)/);
+ assert.match(page,/Cortesia Pro concedida/);
+ assert.match(page,/Retirar cortesia Pro/);
+ assert.match(page,/Assinatura ativa: não é possível retirar aqui/);
+ assert.match(page,/pro_access_granted/);
+ assert.match(page,/pro_access_revoked/);
+ assert.match(page,/Pro cortesia/);
+ assert.match(css,/\.sf-admin-pro-actions/);
+ assert.match(css,/@media\(max-width:600px\)/);
 });
