@@ -52,7 +52,21 @@ export default function Dashboard() {
       const { data: { user }, error: userError } = await supabase.auth.getUser();
       if (!active) return;
 
-      if (userError || !user) {
+      if (userError) {
+        // A transient validation/network error must not be mistaken for sign-out.
+        // Never sign out or discard an existing local session here.
+        const {data:{session}}=await supabase.auth.getSession();
+        if (!active) return;
+        if (session) {
+          setMessageError(true);
+          setMessage("Não foi possível validar a sessão agora. Sua conta não foi desconectada. Confira a conexão e atualize a página.");
+          setLoading(false);
+          return;
+        }
+        router.replace("/login");
+        return;
+      }
+      if (!user) {
         router.replace("/login");
         return;
       }
