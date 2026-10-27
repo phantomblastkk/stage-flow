@@ -229,7 +229,7 @@ export default function PublicSingerSite(){
     const url=window.location.href;
     if(navigator.share){
       try{
-        await navigator.share({title:(artist?.name||"Artista")+" — Stage Flow Pro",url});
+        await navigator.share({title:(artist?.name||"Artista")+" — StageFlow",url});
         return;
       }catch(e){if(e instanceof Error&&e.name==="AbortError")return;}
     }
@@ -306,7 +306,7 @@ export default function PublicSingerSite(){
               </a>}
           </div>
           <div className="premium-site-identity-foot">
-            <span><CheckCircle2 size={15}/> {proUnlocked?"Site Pro publicado":"Perfil público gratuito"}</span>
+            <span><CheckCircle2 size={15}/> {proUnlocked?"Recursos Pro ativos":"Perfil público gratuito"}</span>
             <span>{events.length} {events.length===1?"show público futuro":"shows públicos futuros"}</span>
           </div>
 
@@ -482,7 +482,7 @@ export default function PublicSingerSite(){
         <span><Music2 size={18}/> STAGE FLOW
           <small>Conectando artistas, músicos e produtores</small>
         </span>
-        <span>{proUnlocked?"Site Pro publicado":"Perfil de cantor gratuito · Recursos Pro opcionais"} · Stage Flow</span>
+        <span>{proUnlocked?"Perfil de cantor · Recursos Pro ativos":"Perfil de cantor · Recursos Pro opcionais"} · Stage Flow</span>
       </footer>
     </div>
     {error&&<p className="pro-public-error" role="alert">{error}</p>}
