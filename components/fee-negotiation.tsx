@@ -20,13 +20,14 @@ type Props = {
   perspective: "musician" | "organizer";
   onChanged?: () => void;
   openRequest?: number;
+  invitationStatus?: FeeData["status"];
   onConfirmParticipation?: () => void;
   confirmingParticipation?: boolean;
 };
 const money = (value: number) =>
   new Intl.NumberFormat("pt-BR", { style: "currency", currency: "BRL" }).format(value);
 
-export default function FeeNegotiation({ invitationId, perspective, onChanged, openRequest = 0, onConfirmParticipation, confirmingParticipation = false }: Props) {
+export default function FeeNegotiation({ invitationId, perspective, onChanged, openRequest = 0, invitationStatus, onConfirmParticipation, confirmingParticipation = false }: Props) {
   const [expanded, setExpanded] = useState(false);
   const [data, setData] = useState<FeeData | null>(null);
   const [loading, setLoading] = useState(false);
@@ -135,9 +136,10 @@ export default function FeeNegotiation({ invitationId, perspective, onChanged, o
     setBusy(false);
   }
 
-  const canOffer = data?.status === "pending" && data.agreed_amount == null
+  const effectiveStatus = invitationStatus ?? data?.status;
+  const canOffer = effectiveStatus === "pending" && data?.agreed_amount == null
     && (!data.has_offer || !data.last_by_me);
-  const canAccept = data?.status === "pending" && data.agreed_amount == null
+  const canAccept = effectiveStatus === "pending" && data?.agreed_amount == null
     && data.has_offer && !data.last_by_me;
 
   return <div ref={panelRef} style={{ marginTop: 12, borderTop: "1px solid var(--line)", paddingTop: 10 }}>
@@ -154,14 +156,14 @@ export default function FeeNegotiation({ invitationId, perspective, onChanged, o
       {!loading && data && <>
         {data.agreed_amount !== null ? <div className="coming" style={{ margin: 0 }}>
           <strong style={{ display: "flex", alignItems: "center", gap: 7 }}><Check size={17}/> Valor fechado: {money(data.agreed_amount)}</strong>
-          <p style={{ fontSize: 12, margin: "6px 0 0" }}>{perspective === "musician" && data.status === "pending" ? "Cachê acordado! Agora confirme sua participação no convite." : "Cachê acordado exclusivamente para esta apresentação."}</p>
+          <p style={{ fontSize: 12, margin: "6px 0 0" }}>{perspective === "musician" && effectiveStatus === "pending" ? "Cachê acordado! Agora confirme sua participação no convite." : "Cachê acordado exclusivamente para esta apresentação."}</p>
         </div> : data.has_offer && data.last_amount !== null ? <div className="coming" style={{ margin: 0 }}>
           <span style={{ display: "block", fontSize: 12, color: "var(--muted)" }}>Última proposta de {data.last_by_me ? "você" : other}</span>
           <strong style={{ display: "block", fontSize: 21, margin: "5px 0" }}>{money(data.last_amount)}</strong>
           {data.last_note && <p style={{ fontSize: 13, margin: "4px 0" }}>“{data.last_note}”</p>}
           {data.last_by_me && <p style={{ fontSize: 12, margin: "5px 0 0" }}>Aguardando resposta do {other}.</p>}
         </div> : <p style={{ fontSize: 13, color: "var(--muted)", margin: 0 }}>Nenhuma proposta enviada ainda. Você pode iniciar a negociação.</p>}
-        {perspective === "musician" && data.status === "pending" && data.agreed_amount !== null && onConfirmParticipation && <button type="button" className="btn btn-primary" disabled={confirmingParticipation || busy} onClick={onConfirmParticipation} style={{ justifyContent: "center" }}>
+        {perspective === "musician" && effectiveStatus === "pending" && data.agreed_amount !== null && onConfirmParticipation && <button type="button" className="btn btn-primary" disabled={confirmingParticipation || busy} onClick={onConfirmParticipation} style={{ justifyContent: "center" }}>
           {confirmingParticipation ? <LoaderCircle size={16}/> : <Check size={16}/>} {confirmingParticipation ? "Confirmando presença..." : "Confirmar presença no show"}
         </button>}
         {canAccept && !countering && <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit,minmax(145px,1fr))", gap: 8 }}>
