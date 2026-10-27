@@ -39,9 +39,6 @@ begin
   chosen_name := coalesce(nullif(trim(new.raw_user_meta_data ->> 'display_name'), ''), 'Novo usuário');
   chosen_username := lower(nullif(trim(new.raw_user_meta_data ->> 'username'), ''));
   if not chosen_artist then chosen_username := null; end if;
-  chosen_singer := chosen_artist and chosen_kind = 'lead';
-  chosen_musician := chosen_artist and (chosen_kind = 'support'
-    or coalesce((new.raw_user_meta_data ->> 'is_musician')::boolean,false));
   chosen_invite := nullif(trim(new.raw_user_meta_data ->> 'invite_code'), '');
 
   if chosen_artist then
@@ -52,6 +49,11 @@ begin
   else
     chosen_kind := null;
   end if;
+
+  -- Evaluate roles only after artist_kind is resolved (including fallback).
+  chosen_singer := chosen_artist and chosen_kind = 'lead';
+  chosen_musician := chosen_artist and (chosen_kind = 'support'
+    or coalesce((new.raw_user_meta_data ->> 'is_musician')::boolean,false));
 
   insert into public.profiles
     (id, role, display_name, username, is_artist, is_producer,

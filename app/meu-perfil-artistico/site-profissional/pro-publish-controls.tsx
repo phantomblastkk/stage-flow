@@ -19,6 +19,7 @@ type Publication = {
 };
 
 type Props={
+  active?:boolean;
   unsaved:boolean;
   draftReady:boolean;
   galleryBusy:boolean;
@@ -26,7 +27,7 @@ type Props={
 };
 
 export default function ProSitePublicationControls({
-  unsaved,draftReady,galleryBusy,galleryLoading
+  active=true,unsaved,draftReady,galleryBusy,galleryLoading
 }:Props){
   const [info,setInfo]=useState<Publication|null>(null);
   const [loading,setLoading]=useState(true);
@@ -34,6 +35,7 @@ export default function ProSitePublicationControls({
   const [error,setError]=useState("");
   const [message,setMessage]=useState("");
   const [copied,setCopied]=useState(false);
+  const canonicalProfilePath=info?.username?"/"+encodeURIComponent(info.username):null;
 
   async function load(){
     setLoading(true);
@@ -61,7 +63,9 @@ export default function ProSitePublicationControls({
     setLoading(false);
   }
 
-  useEffect(()=>{void load();},[]);
+  // When returning from the free data tab, re-read publication eligibility.
+  // Draft choices stay mounted in the parent and are not reset here.
+  useEffect(()=>{if(active)void load();},[active]);
 
   async function toggle(publish:boolean){
     if(!info||busy)return;
@@ -74,10 +78,10 @@ export default function ProSitePublicationControls({
       return;
     }
     if(publish&&!window.confirm(
-      "Publicar seu site Pro para qualquer pessoa acessar? Fotos e vídeos da galeria do rascunho serão incluídos nesta versão pública. Você poderá retirar o site do ar depois."
+      "Ativar os recursos Pro no seu perfil público? As fotos e vídeos selecionados no rascunho serão exibidos no mesmo endereço do cantor. Você pode desativá-los depois."
     ))return;
     if(!publish&&!window.confirm(
-      "Retirar seu site Pro do ar? O endereço público ficará indisponível, mas o rascunho, a galeria e seu perfil gratuito serão preservados."
+      "Desativar os recursos Pro publicados? Seu perfil de cantor continua no mesmo endereço com as funções pagas bloqueadas."
     ))return;
     setBusy(true);setError("");setMessage("");
     const {data,error:actionError}=await createClient().rpc(
@@ -98,29 +102,28 @@ export default function ProSitePublicationControls({
     }else{
       setInfo(current=>current?{...current,published:publish}:current);
       setMessage(publish
-        ?"Seu site Pro foi publicado! Compartilhe o novo endereço com seus fãs e contratantes."
-        :"Seu site Pro saiu do ar. O rascunho e o perfil gratuito foram preservados.");
+        ?"Recursos Pro ativados no seu perfil! O endereço público continua o mesmo."
+        :"A versão Pro foi retirada do ar. Seu perfil público continua disponível com funções Pro bloqueadas.");
     }
     setBusy(false);
   }
 
   async function copyLink(){
-    if(!info?.url_path)return;
+    if(!canonicalProfilePath)return;
     try{
-      await navigator.clipboard.writeText(window.location.origin+info.url_path);
+      await navigator.clipboard.writeText(window.location.origin+canonicalProfilePath);
       setCopied(true);
     }catch{
       setError("Não foi possível copiar automaticamente. Abra o endereço e copie pelo navegador.");
     }
   }
 
-  return <section className="pro-publish-controls" aria-label="Publicar site Pro do cantor">
+  return <section className="pro-publish-controls" aria-label="Publicar recursos Pro no perfil do cantor">
     <div className="pro-publish-head">
       <div>
-        <span className="pro-publish-eyebrow"><Globe2 size={16}/> PUBLICAÇÃO DO SITE PRO</span>
-        <h2>Seu palco, agora na internet.</h2>
-        <p>Transforme seu rascunho em um site profissional para compartilhar.
-          É você quem decide quando publicar ou retirar do ar.</p>
+        <span className="pro-publish-eyebrow"><Globe2 size={16}/> PUBLICAÇÃO DOS RECURSOS PRO</span>
+        <h2>Um perfil, mais possibilidades.</h2>
+        <p>Seu perfil gratuito já tem um endereço público. Escolha quando aplicar o visual e as galerias Pro a essa mesma página.</p>
       </div>
       <span className={"pro-publish-status"+(info?.published?" is-live":"")}>
         {info?.published?<><CheckCircle2 size={15}/> PUBLICADO</>:
@@ -140,7 +143,7 @@ export default function ProSitePublicationControls({
       <div className="pro-publish-info">
         <div className="pro-publish-checklist">
           <div><span>{info.entitled?<CheckCircle2 size={16}/>:<LockKeyhole size={16}/>}</span>
-            <div><strong>Acesso ao site Pro</strong>
+            <div><strong>Acesso aos recursos Pro</strong>
               <small>{info.entitled?"Habilitado para sua conta.":
                 "Recurso incluído nos planos pagos de cantores. A contratação online ainda não está disponível."}</small>
             </div>
@@ -160,9 +163,9 @@ export default function ProSitePublicationControls({
             </div>
           </div>
         </div>
-        {!info.entitled&&<ProFeatureLock title="Portfólio profissional Pro" description="Libere layouts especiais, galeria de destaques, publicação profissional e subdomínio incluso no plano do cantor.">
+        {!info.entitled&&<ProFeatureLock title="Personalização Pro do perfil" description="Libere temas especiais e galerias no mesmo perfil público do cantor. Subdomínio é um benefício futuro, ainda não ativado.">
           <div className="pro-publish-checklist">
-            <div><span><Crown size={16}/></span><div><strong>Site e portfólio profissionais</strong><small>Temas, galeria e publicação</small></div></div>
+            <div><span><Crown size={16}/></span><div><strong>Temas e galeria Pro</strong><small>Personalização da mesma página</small></div></div>
             <div><span><Globe2 size={16}/></span><div><strong>Subdomínio do artista</strong><small>Incluído no plano Pro</small></div></div>
           </div>
         </ProFeatureLock>}
@@ -173,13 +176,13 @@ export default function ProSitePublicationControls({
       </div>
 
       <div className="pro-publish-action-area">
-        {info.url_path&&<div className="pro-publish-url">
-          <span>Endereço do seu site Pro</span>
-          <strong>{typeof window!=="undefined"?window.location.origin+info.url_path:info.url_path}</strong>
+        {canonicalProfilePath&&<div className="pro-publish-url">
+          <span>Endereço único do seu perfil de cantor</span>
+          <strong>{typeof window!=="undefined"?window.location.origin+canonicalProfilePath:canonicalProfilePath}</strong>
         </div>}
-        {info.published&&info.url_path&&<div className="pro-publish-links">
-          <Link href={info.url_path} target="_blank" rel="noopener noreferrer">
-            <ExternalLink size={15}/> Abrir meu site
+        {info.published&&canonicalProfilePath&&<div className="pro-publish-links">
+          <Link href={canonicalProfilePath} target="_blank" rel="noopener noreferrer">
+            <ExternalLink size={15}/> Abrir meu perfil
           </Link>
           <button type="button" onClick={()=>void copyLink()}>
             {copied?<CheckCircle2 size={15}/>:<Copy size={15}/>}
@@ -193,15 +196,15 @@ export default function ProSitePublicationControls({
           onClick={()=>void toggle(true)}>
           {busy?<LoaderCircle size={17}/>:info.published?<RefreshCw size={17}/>:<Rocket size={17}/>}
           {busy?"Salvando publicação...":info.published
-            ?"Republicar alterações":"Publicar site Pro"}
+            ?"Republicar alterações":"Ativar recursos Pro"}
         </button>
         {info.published&&<button type="button" className="pro-publish-unpublish"
           disabled={busy} onClick={()=>void toggle(false)}>
-          <Unplug size={16}/> Retirar site Pro do ar
+          <Unplug size={16}/> Desativar versão Pro
         </button>}
         <small className="pro-publish-info-text">
           {info.published
-            ?"A página pública usa o último design e a galeria que você publicou. Alterações no editor só entram ao republicar."
+            ?"Seu perfil único usa o último visual e a galeria Pro que você publicou. Alterações no editor só entram ao republicar."
             :"Publicar exige confirmação. Não cria subdomínio nem altera cobrança ou assinatura."}
         </small>
       </div>

@@ -6,9 +6,11 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import {
   ArrowLeft, ArrowUpRight, CheckCircle2, Eye, EyeOff,
-  ExternalLink, Globe2, ImagePlus, Inbox, LoaderCircle, LockKeyhole, Music2, Palette, Save, Upload
+  ExternalLink, Globe2, ImagePlus, Inbox, LoaderCircle, LockKeyhole, Mic2, Music2, Palette, Save, Upload
 } from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
+import SingerProEditor from "@/components/singer-pro-editor";
+import "./singer-unified-editor.css";
 
 type ArtistConfig = {
   name: string;
@@ -29,6 +31,29 @@ type ArtistConfig = {
 export default function MeuPerfilArtistico() {
   const router = useRouter();
   const [config, setConfig] = useState<ArtistConfig | null>(null);
+  const [activeTab, setActiveTab] = useState<"dados" | "pro">("dados");
+  const [proVisited, setProVisited] = useState(false);
+
+  useEffect(() => {
+    const updateFromUrl = () => {
+      const next = new URLSearchParams(window.location.search).get("aba") === "pro" ? "pro" : "dados";
+      setActiveTab(next);
+      if (next === "pro") setProVisited(true);
+    };
+    updateFromUrl();
+    window.addEventListener("popstate", updateFromUrl);
+    return () => window.removeEventListener("popstate", updateFromUrl);
+  }, []);
+
+  function switchTab(next: "dados" | "pro") {
+    setActiveTab(next);
+    if (next === "pro") setProVisited(true);
+    const url = new URL(window.location.href);
+    if (next === "pro") url.searchParams.set("aba", "pro");
+    else url.searchParams.delete("aba");
+    window.history.pushState(null, "", url.pathname + url.search + url.hash);
+    window.scrollTo({ top: 0, behavior: "smooth" });
+  }
   const [bio, setBio] = useState("");
   const [headline, setHeadline] = useState("");
   const [accent, setAccent] = useState<"violet" | "lime" | "cyan">("violet");
@@ -226,18 +251,39 @@ export default function MeuPerfilArtistico() {
     <p style={{ color: "var(--muted)", display: "flex", alignItems: "center", gap: 9 }}><LoaderCircle size={18}/> Carregando perfil artístico...</p>
   </main>;
 
-  return <main>
+  return <main className="singer-unified-editor">
     <div className="container" style={{ paddingBottom: 60 }}>
       <nav className="nav">
         <Link className="brand" href="/"><span className="brand-mark">S</span> stage flow</Link>
         <Link href="/painel" className="btn btn-quiet"><ArrowLeft size={15}/> Meu painel</Link>
       </nav>
-      <section style={{ padding: "42px 0 23px" }}>
+      <section className="singer-editor-intro">
         <div className="eyebrow"><span className="dot"/> PERFIL PÚBLICO DO CANTOR</div>
-        <h1 style={{ fontSize: "clamp(32px,5vw,46px)", margin: "15px 0" }}>Seu @. <span className="accent">Seu palco.</span></h1>
-        <p className="lead">Tenha uma página pública com sua identidade, apresentação, redes sociais e shows publicados, sem pagar por subdomínio.</p>
+        <h1>Seu perfil. <span className="accent">Seu palco.</span></h1>
+        <p className="lead">Um só perfil público para o cantor: sua história, fotos, agenda e contato gratuitos. Personalize os recursos Pro no mesmo endereço, quando disponíveis no seu plano.</p>
       </section>
 
+      <nav className="singer-editor-tabs" aria-label="Áreas do perfil de cantor">
+        <button type="button" aria-current={activeTab === "dados" ? "page" : undefined}
+          aria-pressed={activeTab === "dados"} className={activeTab === "dados" ? "is-active" : ""}
+          onClick={() => switchTab("dados")}>
+          <Mic2 size={17}/> Dados e publicação <span>Gratuito</span>
+        </button>
+        <button type="button" aria-current={activeTab === "pro" ? "page" : undefined}
+          aria-pressed={activeTab === "pro"} className={activeTab === "pro" ? "is-active" : ""}
+          onClick={() => switchTab("pro")}>
+          <Palette size={17}/> Aparência e galerias <span>Recursos Pro</span>
+        </button>
+      </nav>
+      {config?.username && <div className="singer-editor-canonical">
+        <Globe2 size={17}/>
+        <span>Seu único endereço público: <strong>/{config.username}</strong></span>
+        {savedPublished && <Link href={"/" + encodeURIComponent(config.username)} target="_blank" rel="noopener noreferrer">
+          Ver página <ArrowUpRight size={14}/>
+        </Link>}
+      </div>}
+
+      <div className="singer-editor-data-panel" style={{ display: activeTab === "dados" ? "block" : "none" }}>
       {message && <div role={error ? "alert" : "status"} className="coming"
         style={error ? { borderColor: "#754343", background: "#281919", color: "#ffb5b5", maxWidth: 770 } : { maxWidth: 770 }}>
         {!error && <CheckCircle2 size={15} style={{ display: "inline", verticalAlign: "middle", marginRight: 6 }}/>}
@@ -246,11 +292,11 @@ export default function MeuPerfilArtistico() {
 
       {config && <div className="artist-free-editor">
         <section className="feature">
-          <h2 style={{ fontSize: 21, marginBottom: 12 }}><Globe2 size={19} style={{ display: "inline", verticalAlign: "middle", marginRight: 7 }}/> Endereço gratuito</h2>
+          <h2 style={{ fontSize: 21, marginBottom: 12 }}><Globe2 size={19} style={{ display: "inline", verticalAlign: "middle", marginRight: 7 }}/> Seu único endereço público</h2>
           <p>Seu nome público: <strong style={{ color: "var(--text)" }}>{config.name}</strong></p>
           <div className="artist-free-address">
-            <strong>stageflow.com/{config.username || "seu-usuario"}</strong>
-            <span>{config.username ? "No domínio oficial, quando estiver disponível" : "Você ainda não cadastrou um nome de usuário"}</span>
+            <strong>/{config.username || "seu-usuario"}</strong>
+            <span>{config.username ? "Este caminho é usado no domínio StageFlow" : "Você ainda não cadastrou um nome de usuário"}</span>
           </div>
           <p className="fine">Você não precisa pagar para ter esse endereço. O @ é único e pertence à sua conta.</p>
           {!config.username && <form onSubmit={claimUsername} style={{ marginTop: 17 }}>
@@ -281,7 +327,7 @@ export default function MeuPerfilArtistico() {
               <div className="artist-free-color-options">
                 {([
                   ["violet", "Roxo", "#a99bff"],
-                  ["lime", "Verde", "#c6f36b"],
+                  ["lime", "Rosa", "#e6a3c8"],
                   ["cyan", "Azul", "#72dce7"]
                 ] as const).map(([value, label, color]) =>
                   <button type="button" key={value} aria-pressed={accent === value}
@@ -385,7 +431,7 @@ export default function MeuPerfilArtistico() {
         <aside style={{ alignSelf: "start", display: "grid", gap: 17 }}>
           <section className="feature">
             <div className="eyebrow"><span className="dot"/> PRÉVIA EM TEMPO REAL</div>
-            <div className="artist-free-editor-preview" style={{ "--artist-free-accent": accent === "lime" ? "#c6f36b" : accent === "cyan" ? "#72dce7" : "#a99bff" } as CSSProperties}>
+            <div className="artist-free-editor-preview" style={{ "--artist-free-accent": accent === "lime" ? "#e6a3c8" : accent === "cyan" ? "#72dce7" : "#a99bff" } as CSSProperties}>
               <div className="artist-free-editor-cover" style={coverPath ? { backgroundImage: `linear-gradient(0deg,#0e1420cc,#10121b66),url("${photoUrl(coverPath)}")` } : {}}>
                 <div className="artist-free-editor-avatar">
                   {avatarPath ? <img src={photoUrl(avatarPath)} alt="Sua foto de perfil"/> : (config.name.trim().split(/\s+/).slice(0,2).map(n=>n[0]?.toUpperCase()).join("") || "SF")}
@@ -401,11 +447,15 @@ export default function MeuPerfilArtistico() {
           </section>
           <section className="feature">
           <div className="eyebrow"><span className="dot"/> RECURSO PROFISSIONAL</div>
-          <h2 style={{ fontSize: 22, marginTop: 19 }}>Site profissional Pro</h2>
-          <p>Seu site profissional com tema exclusivo, galeria de fotos e vídeos, agenda e pedidos de contratação já pode ser publicado no endereço <strong style={{ color: "var(--text)" }}>/pro/{config.username || "seuusuario"}</strong>, quando o acesso Pro for habilitado para sua conta. O subdomínio personalizado será configurado em uma etapa separada.</p>
-          <Link href="/meu-perfil-artistico/site-profissional" className="btn btn-primary" style={{ marginTop: 16, width: "100%", justifyContent: "center" }}>
-            <Globe2 size={17}/> Configurar e publicar meu site Pro <ArrowUpRight size={15}/>
-          </Link>
+          <h2 style={{ fontSize: 22, marginTop: 19 }}>Seu perfil já tem visual profissional</h2>
+          <p>Seu endereço público é <strong style={{ color: "var(--text)" }}>/{config.username || "seuusuario"}</strong>, com o mesmo visual do site Pro. Agenda, apresentação e contatos permanecem gratuitos. Galerias, temas exclusivos e destaques ficam bloqueados até a assinatura Pro ser habilitada.</p>
+          {config.username&&savedPublished&&<Link href={"/"+encodeURIComponent(config.username)} target="_blank" rel="noopener noreferrer"
+            className="btn btn-quiet" style={{marginTop:12,width:"100%",justifyContent:"center"}}>
+            <ExternalLink size={16}/> Ver meu perfil público <ArrowUpRight size={14}/>
+          </Link>}
+          <button type="button" onClick={() => switchTab("pro")} className="btn btn-primary" style={{ marginTop: 16, width: "100%", justifyContent: "center" }}>
+            <Palette size={17}/> Aparência e galerias deste perfil <ArrowUpRight size={15}/>
+          </button>
           <p style={{ color: "var(--muted)", fontSize: 12, lineHeight: 1.6, marginTop: 10 }}>
             Editor privado. A publicação é manual e exige acesso Pro autorizado. Não há cobrança automática.
           </p>
@@ -419,7 +469,7 @@ export default function MeuPerfilArtistico() {
             {savedPublished ? <Eye size={17}/> : <EyeOff size={17}/>}
             {savedPublished ? "Perfil gratuito publicado" : "Perfil gratuito em modo privado"}
           </div>
-          <p style={{ fontSize: 12, color: "var(--muted)" }}>O site comum permanece disponível mesmo que o subdomínio premium não esteja habilitado.</p>
+          <p style={{ fontSize: 12, color: "var(--muted)" }}>O mesmo perfil público permanece disponível quando os recursos Pro estão desativados.</p>
           <div style={{ borderTop: "1px solid var(--line)", paddingTop: 15, marginTop: 18 }}>
             <Link href="/meu-portfolio" className="btn btn-quiet" style={{ width: "100%", justifyContent: "center" }}>
               <Music2 size={16}/> Ver portfólio simples de músico
@@ -427,6 +477,10 @@ export default function MeuPerfilArtistico() {
           </div>
           </section>
         </aside>
+      </div>}
+      </div>
+      {proVisited && <div className="singer-editor-pro-panel" style={{ display: activeTab === "pro" ? "block" : "none" }}>
+        <SingerProEditor active={activeTab === "pro"} onEditData={() => switchTab("dados")}/>
       </div>}
     </div>
   </main>;

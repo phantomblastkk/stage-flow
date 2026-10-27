@@ -7,6 +7,7 @@ import { useParams } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
 import { trackPublicPortfolioView } from "@/lib/musician-metrics";
 import MusicianPortfolioView, { MusicianPortfolio } from "@/components/musician-portfolio-view";
+import {useStageVerified} from "@/lib/use-stage-verified";
 
 export default function PortfolioMusicoPublico() {
   const { slug } = useParams<{ slug: string }>();
@@ -14,6 +15,8 @@ export default function PortfolioMusicoPublico() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
   const [copied, setCopied] = useState(false);
+  const [manualUrl, setManualUrl] = useState("");
+  const verified=useStageVerified("musician",slug,Boolean(portfolio));
 
   useEffect(() => {
     let active = true;
@@ -28,7 +31,7 @@ export default function PortfolioMusicoPublico() {
       );
       if (!active) return;
       if (requestError) {
-        setError("Não foi possível carregar este portfólio. O banco pode precisar da migração de aparência.");
+        setError("Não foi possível carregar este portfólio no momento. Tente novamente mais tarde.");
       } else {
         const published = (data as MusicianPortfolio | null) ?? null;
         setPortfolio(published);
@@ -44,6 +47,7 @@ export default function PortfolioMusicoPublico() {
 
   async function sharePortfolio() {
     const url = window.location.href;
+    setManualUrl("");
     if (navigator.share) {
       try {
         await navigator.share({ title: (portfolio?.name || "Músico") + " — Stage Flow", url });
@@ -55,8 +59,10 @@ export default function PortfolioMusicoPublico() {
     try {
       await navigator.clipboard.writeText(url);
       setCopied(true);
+      setError("");
     } catch {
-      setError("Não foi possível compartilhar automaticamente. Copie o endereço da página no seu navegador.");
+      setManualUrl(url);
+      setError("Selecione o endereço abaixo para copiar manualmente.");
     }
   }
 
@@ -77,9 +83,15 @@ export default function PortfolioMusicoPublico() {
       <Link className="btn btn-primary" style={{ marginTop: 16 }} href="/">Voltar ao Stage Flow</Link>
     </section>
     : <div className="mp-public-wrap">
-      <MusicianPortfolioView portfolio={portfolio} onShare={() => void sharePortfolio()}/>
+      <MusicianPortfolioView portfolio={portfolio} verified={verified} onShare={() => void sharePortfolio()}/>
       {copied && <p role="status" style={{ fontSize: 12, color: "var(--lime)", marginTop: 13, display: "flex", alignItems: "center", gap: 6 }}><Copy size={14}/> Link copiado!</p>}
       {error && <p role="alert" style={{ fontSize: 12, color: "#ffb5b5", marginTop: 13 }}>{error}</p>}
+      {manualUrl && <div className="mp-public-manual-share">
+        <label htmlFor="mp-manual-share">Endereço do seu portfólio</label>
+        <input id="mp-manual-share" readOnly value={manualUrl}
+          onFocus={event => event.currentTarget.select()}
+          onClick={event => event.currentTarget.select()}/>
+      </div>}
       <p style={{ color: "var(--muted)", fontSize: 11, textAlign: "center", marginTop: 17 }}>
         Perfil criado e publicado pelo músico. O cachê de cada show é negociado em particular.
       </p>

@@ -129,7 +129,7 @@ test("locked Pro modules show blurred preview and upgrade without hiding free ac
  assert.match(lock,/aria-hidden="true" inert/);
  assert.match(styles,/filter:blur\(13px\)/);
  assert.match(money,/ProFeatureLock title="Relatórios financeiros Pro"/);
- assert.match(pro,/ProFeatureLock title="Portfólio profissional Pro"/);
+ assert.match(pro,/ProFeatureLock title="Personalização Pro do perfil"/);
  assert.match(money,/EventBudgetPanel/);
 });
 

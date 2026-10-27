@@ -8,6 +8,8 @@ import {
   MapPin, MessageCircle, Music2, Send, ShieldCheck, Sparkles, Ticket, X, ChevronLeft, ChevronRight, Copy, Share2
 } from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
+import StageVerifiedBadge from "@/components/stage-verified-badge";
+import {useStageVerified} from "@/lib/use-stage-verified";
 import VenueMonthCalendar, {
   venueDayOfMonth, venueDayKey, venueMonthKey, venueMonthStart
 } from "@/components/venue-month-calendar";
@@ -38,6 +40,7 @@ export default function CasaPublicaPage() {
   const params = useParams<{slug:string}>();
   const slug = params.slug;
   const [venue,setVenue] = useState<House|null>(null);
+  const verified=useStageVerified("venue",slug,Boolean(venue));
   const [loading,setLoading] = useState(true);
   const [error,setError] = useState("");
   const [month,setMonth] = useState(venueMonthStart);
@@ -288,7 +291,7 @@ export default function CasaPublicaPage() {
               <span><ShieldCheck size={13}/> Perfil oficial</span>
               {venue.is_partner&&<span className="partner"><Sparkles size={13}/> Parceiro Stage Flow</span>}
             </div>
-            <h1>{venue.name}</h1>
+            <h1>{venue.name}{verified&&<StageVerifiedBadge compact/>}</h1>
             <p><MapPin size={15}/>{[venue.city,venue.state].filter(Boolean).join(" · ")}
               {venue.address?" — "+venue.address:""}</p>
           </div>

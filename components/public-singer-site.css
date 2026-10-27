@@ -1,0 +1,92 @@
+/* One singer URL, Pro-grade design. Paid content is never fetched for Free users. */
+.singer-premium-locked{position:relative;isolation:isolate;overflow:hidden;border:1px solid #695285;border-radius:18px;min-height:245px;background:#211b36;display:grid;place-items:center}
+.singer-premium-blurred{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:10px;position:absolute;inset:14px;filter:blur(9px);opacity:.44;pointer-events:none;user-select:none}
+.singer-premium-mock-media{border-radius:12px;background:linear-gradient(145deg,#66508d,#332344 60%,#6d4974);aspect-ratio:3/4}
+.singer-premium-mock-media:nth-child(2){background:linear-gradient(155deg,#367a79,#46316f)}
+.singer-premium-mock-media:nth-child(3){background:linear-gradient(145deg,#9a688d,#353a76)}
+.singer-premium-lock-content{position:relative;z-index:1;display:flex;flex-direction:column;align-items:center;gap:11px;text-align:center;padding:28px 18px;color:#f7efff;max-width:380px}
+.singer-premium-lock-content>svg{color:#dfb7ff}
+.singer-premium-lock-content strong{font-size:17px;font-weight:850}
+.singer-premium-lock-content span{font-size:12px;line-height:1.6;color:#e6d8f1}
+.singer-premium-lock-content .btn{min-height:42px}
+.singer-premium-upgrade{margin:20px 0 5px;border:1px solid #7a598d;background:linear-gradient(115deg,#241a38,#3d245d);padding:21px;border-radius:16px;display:flex;flex-wrap:wrap;align-items:center;gap:16px}
+.singer-premium-upgrade-symbol{width:49px;height:49px;flex:none;display:grid;place-items:center;border-radius:13px;color:#f4d4ff;background:#5a3778}
+.singer-premium-upgrade>div:nth-child(2){flex:1;min-width:220px}
+.singer-premium-upgrade h2{font-size:clamp(17px,2.5vw,23px);margin:0 0 7px;color:#fff}
+.singer-premium-upgrade p{font-size:12px;line-height:1.6;margin:0;color:#decfec}
+.singer-premium-upgrade>.btn{min-height:44px;justify-content:center}
+@media(max-width:650px){.singer-premium-upgrade{padding:16px}.singer-premium-upgrade>.btn{width:100%}.singer-premium-locked{min-height:224px}}
+
+/* Refined public singer presentation — one face for Free and Pro. */
+.pro-public-page{
+  background:
+    radial-gradient(ellipse 68% 440px at 50% -60px,rgba(104,73,163,.2),transparent 85%),
+    #0b0d18
+}
+.pro-public-page .premium-site{
+  border-color:#453d62;
+  box-shadow:0 34px 110px rgba(2,4,17,.38);
+  overflow:hidden
+}
+.pro-public-page .premium-site-nav{
+  border-bottom-color:#393455;
+  background:rgba(15,18,34,.94);
+  backdrop-filter:blur(15px)
+}
+.pro-public-page .premium-site-nav nav a:hover,
+.pro-public-page .premium-site-tabs a:hover{
+  color:var(--pro-accent)
+}
+.pro-public-page .premium-site-hero{
+  border-bottom-color:#3d3655
+}
+.pro-public-page .premium-site-identity h1{
+  line-height:1.06;letter-spacing:-.065em;overflow-wrap:anywhere
+}
+.pro-public-page .premium-site-intro{
+  max-width:64ch;line-height:1.85
+}
+.pro-public-page .premium-site-main-action,
+.pro-public-page .premium-site-secondary-action,
+.pro-public-page .pro-public-share{
+  transition:background .18s,border-color .18s,transform .18s
+}
+.pro-public-page .premium-site-main-action:hover,
+.pro-public-page .premium-site-secondary-action:hover,
+.pro-public-page .pro-public-share:hover{transform:translateY(-2px)}
+.pro-public-page .premium-site-main-action:focus-visible,
+.pro-public-page .premium-site-secondary-action:focus-visible,
+.pro-public-page .pro-public-share:focus-visible,
+.pro-public-page .premium-site-nav a:focus-visible,
+.pro-public-page .premium-site-tabs a:focus-visible{
+  outline:3px solid var(--pro-accent);outline-offset:3px
+}
+.pro-public-page .premium-site-photo{
+  isolation:isolate;background-color:#171327
+}
+.pro-public-page .premium-site-portrait{
+  box-shadow:0 20px 55px rgba(0,0,0,.3)
+}
+.singer-premium-locked{
+  background:linear-gradient(145deg,#25203c,#191d33)
+}
+.singer-premium-lock-content .btn{min-height:44px}
+@media(max-width:720px){
+  .pro-public-page .premium-site-nav{padding-inline:17px}
+  .pro-public-page .premium-site-identity h1{font-size:clamp(31px,8vw,48px)}
+  .pro-public-page .premium-site-identity{padding-inline:20px}
+  .pro-public-page .premium-site-main-action,
+  .pro-public-page .premium-site-secondary-action{justify-content:center}
+  .pro-public-page .premium-site-tabs{
+    overflow-x:auto;overscroll-behavior-x:contain;scrollbar-width:none
+  }
+  .pro-public-page .premium-site-tabs a{white-space:nowrap}
+}
+@media(prefers-reduced-motion:reduce){
+  .pro-public-page .premium-site-main-action,
+  .pro-public-page .premium-site-secondary-action,
+  .pro-public-page .pro-public-share{transition:none}
+  .pro-public-page .premium-site-main-action:hover,
+  .pro-public-page .premium-site-secondary-action:hover,
+  .pro-public-page .pro-public-share:hover{transform:none}
+}

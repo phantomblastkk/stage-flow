@@ -82,3 +82,19 @@ test("free musician role enrollment is authenticated, and editing musician data 
  assert.match(fn(guards,"stage_choose_artist_experience"),/p_kind='support' and is_musician=true/);
  assert.match(fn(guards,"stage_guard_profile_role_username"),/not old\.is_singer/);
 });
+
+test("new signup resolves the artist kind before assigning singer and musician roles",()=>{
+ const repair=read("supabase/account_signup_role_initialization_fix_migration.sql");
+ for(const source of [schema,repair]){
+  const signup=fn(source,"handle_new_user");
+  const kindResolved=signup.indexOf("chosen_kind := null;");
+  const singerAssigned=signup.indexOf("chosen_singer := chosen_artist");
+  const musicianAssigned=signup.indexOf("chosen_musician := chosen_artist");
+  assert.ok(kindResolved >= 0,"artist-kind branch must exist");
+  assert.ok(singerAssigned > kindResolved,"singer role must be set after artist kind");
+  assert.ok(musicianAssigned > kindResolved,"musician role must be set after artist kind");
+  assert.match(signup,/chosen_kind := case when chosen_username is not null then 'lead' else 'support' end/);
+  assert.match(signup,/chosen_artist and \(chosen_kind = 'support'/);
+  assert.match(signup,/is_singer, is_musician, plan_code/);
+ }
+});
