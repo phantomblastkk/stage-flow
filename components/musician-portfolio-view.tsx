@@ -8,6 +8,7 @@ import {
 } from "lucide-react";
 import "./musician-portfolio-polish.css";
 import StageVerifiedBadge from "@/components/stage-verified-badge";
+import {distinctPublicBiography} from "@/lib/profile-presentation";
 
 export type MusicianTheme = "midnight" | "ivory" | "stage";
 export type MusicianAccent = "lime" | "violet" | "coral" | "cyan" | "gold";
@@ -114,6 +115,7 @@ export default function MusicianPortfolioView({ portfolio, preview = false, onSh
     { url: safeHttps(portfolio.spotify_url), label: "Spotify", Icon: Headphones }
   ].filter((item): item is { url: string; label: string; Icon: typeof Instagram } => Boolean(item.url));
   const title = portfolio.headline?.trim() || instruments.slice(0, 2).join(" • ") || "Músico profissional";
+  const biography=distinctPublicBiography(portfolio.headline,portfolio.bio);
   const experience = Number.isInteger(portfolio.experience_years) && portfolio.experience_years! >= 0
     ? portfolio.experience_years : null;
   const hasPhoto = Boolean(safeHttps(portfolio.avatar_url));
@@ -187,8 +189,8 @@ export default function MusicianPortfolioView({ portfolio, preview = false, onSh
         <div className="mp-about-copy">
           <span className="mp-section-kicker">PRAZER, EU SOU</span>
           <h2>Minha <span>história.</span></h2>
-          <p className="mp-description">{portfolio.bio ||
-            "Conte aqui sua trajetória, os projetos em que participa e sua experiência nos palcos."}</p>
+          <p className="mp-description">{biography ||
+            "Conheça os instrumentos, o repertório e os trabalhos deste músico."}</p>
           {genres.length > 0 && <div className="mp-genre-list">
             {genres.map((genre,i) => <span key={genre + i}>{genre}</span>)}
           </div>}
