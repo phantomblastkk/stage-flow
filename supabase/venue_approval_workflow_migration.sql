@@ -72,6 +72,7 @@ for each row execute function public.stage_venue_enforce_approval();
 -- For contribution submissions use a narrow, identity-checked RPC instead of
 -- direct INSERT grants. The resulting row is private until reviewed by an admin.
 revoke insert on public.venues from authenticated;
+revoke insert (name,address,city_id,submitted_by) on public.venues from authenticated;
 create or replace function public.stage_venue_submit(
  p_name text,p_city_id bigint,p_address text default null
 ) returns jsonb language plpgsql security definer set search_path=''
