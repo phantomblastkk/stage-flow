@@ -48,3 +48,13 @@ Migrações aplicadas no QA: `supabase/venue_approval_workflow_migration.sql` e 
 - Não considerar o teste de interface concluído apenas por CI/deploy ou simulação transacional bem-sucedidos. Login com duas contas, upload de imagens/flyers e navegação mobile ainda precisam de teste real no QA.
 
 **Extensão de QA aplicada:** `supabase/venue_approved_submitter_links_migration.sql` mostra a URL oficial somente na lista de sugestões da própria conta, após aprovação.
+
+
+## Verificação da programação e dos flyers (27/10/2026)
+
+- No painel administrativo `/admin/casas/[id]/programacao`, o guia **Prepare a página da casa** agora mostra identidade visual, quantidade de shows públicos, flyers publicados e fotos cadastradas, com links para administrar cada item.
+- Ao cadastrar **show novo com flyer** e selecionar **Publicado**, a UI salva primeiro o show como `draft`, tenta vincular o flyer e só então altera o status para `published`. Se o arquivo falhar, a apresentação permanece como rascunho. Shows sem flyer continuam podendo ser publicados, pois o flyer é opcional.
+- No Supabase QA, uma transação com `ROLLBACK` validou a sequência `draft` (invisível), tentativa de edição por outra conta (negada), `published` (visível), flyer em caminho alheio (recusado), `cancelled` (invisível). Nenhuma apresentação fictícia permaneceu após o teste.
+- Instalada no QA a migração `supabase/venue_pending_content_isolation_migration.sql`: a função `stage_venue_can_manage` só permite editar a programação de casas **aprovadas, ativas e oficiais**; `stage_venue_media_can_upload` também exige aprovação antes de qualquer upload de `logo`, `cover`, `gallery` ou `flyer`. A administração global ainda pode revisar uma sugestão e editar o cadastro básico antes da aprovação.
+- Uma segunda transação de QA, revertida integralmente, confirmou que até o administrador global recebe bloqueio para programação/mídia de casas pendentes; após aprovar a mesma casa, as permissões de edição e mídia ficam disponíveis.
+- **Pendente de teste visual:** login como administrador/gestor real, upload de uma imagem JPG/PNG/WebP de até 5 MB, confirmação da exibição no calendário e na galeria pública, navegação pelo celular. Sem contas reais e acesso HTTP autorizado ao deployment, CI e simulações SQL não comprovam upload de arquivos ponta a ponta.
