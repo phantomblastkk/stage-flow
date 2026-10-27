@@ -1,0 +1,70 @@
+/* StageFlow UI v1: scoped semantic primitives. Legacy screens keep their CSS until migrated. */
+:root{
+ --sf-ui-bg:#10101c;--sf-ui-surface:#19192b;--sf-ui-surface-raised:#212038;
+ --sf-ui-border:#403953;--sf-ui-text:#f7f4ff;--sf-ui-muted:#b3abc8;
+ --sf-ui-brand:#bd9aff;--sf-ui-brand-contrast:#191125;--sf-ui-danger:#f4a5a5;
+ --sf-ui-radius-sm:10px;--sf-ui-radius:15px;--sf-ui-radius-lg:22px;
+ --sf-ui-shadow:0 16px 44px rgba(4,3,13,.22);
+ --sf-ui-space-1:4px;--sf-ui-space-2:8px;--sf-ui-space-3:12px;
+ --sf-ui-space-4:16px;--sf-ui-space-6:24px;--sf-ui-space-8:32px
+}
+.sf-ui-button{min-height:44px;display:inline-flex;justify-content:center;align-items:center;gap:9px;padding:11px 16px;border:1px solid transparent;border-radius:var(--sf-ui-radius-sm);font:750 12px/1.4 Manrope,sans-serif;cursor:pointer;transition:background .15s,border-color .15s}
+.sf-ui-button-primary{color:var(--sf-ui-brand-contrast);background:var(--sf-ui-brand)}
+.sf-ui-button-secondary{background:#322945;color:#f9edff;border-color:#786090}
+.sf-ui-button-ghost{background:transparent;color:var(--sf-ui-text);border-color:var(--sf-ui-border)}
+.sf-ui-button-danger{background:#9d4458;color:#fff}
+.sf-ui-button:hover:not(:disabled){filter:brightness(1.12)}
+.sf-ui-button:disabled{opacity:.53;cursor:not-allowed}
+.sf-ui-button:focus-visible,.sf-ui-field :focus-visible,.sf-ui-tabs button:focus-visible{outline:3px solid var(--sf-ui-brand);outline-offset:3px}
+.sf-ui-field{display:grid;gap:8px}
+.sf-ui-field label{font-size:12px;font-weight:750;color:var(--sf-ui-text)}
+.sf-ui-field small{color:var(--sf-ui-muted);font-size:11px;line-height:1.5}
+.sf-ui-field small.sf-ui-error{color:var(--sf-ui-danger)}
+.sf-ui-input{min-height:44px;padding:12px 13px;width:100%;min-width:0;color:var(--sf-ui-text);border:1px solid var(--sf-ui-border);border-radius:var(--sf-ui-radius-sm);background:var(--sf-ui-surface)}
+.sf-ui-input[aria-invalid=true]{border-color:#e38ba0}
+.sf-ui-card{min-width:0;background:linear-gradient(145deg,var(--sf-ui-surface),#141627);border:1px solid var(--sf-ui-border);padding:20px;border-radius:var(--sf-ui-radius-lg)}
+.sf-ui-card-header h2{font:850 17px/1.3 Manrope,sans-serif;margin:0}
+.sf-ui-card-header p{color:var(--sf-ui-muted);font-size:12px;line-height:1.6;margin:6px 0 16px}
+.sf-ui-badge{display:inline-flex;align-items:center;gap:7px;padding:5px 9px;min-height:26px;font-size:10px;line-height:1.3;font-weight:800;border-radius:999px;border:1px solid var(--sf-ui-border);color:var(--sf-ui-muted);background:#272337}
+.sf-ui-badge-success{border-color:#37765d;color:#9ef5cd;background:#15362b}
+.sf-ui-badge-warning{border-color:#82673a;color:#ffe0a1;background:#3c2d15}
+.sf-ui-badge-danger{border-color:#803e51;color:#ffb8c7;background:#3c1c2a}
+.sf-ui-status-dot{width:6px;height:6px;border-radius:50%;background:currentColor}
+.sf-ui-avatar{flex:none;display:inline-grid;place-items:center;overflow:hidden;width:42px;height:42px;border-radius:13px;background:#53416f;color:#fff;font-size:13px;font-weight:850}
+.sf-ui-avatar img{display:block;width:100%;height:100%;object-fit:cover}
+.sf-ui-avatar-sm{height:30px;width:30px;border-radius:9px;font-size:10px}
+.sf-ui-avatar-lg{height:58px;width:58px;border-radius:17px;font-size:19px}
+.sf-ui-tabs{display:flex;overflow-x:auto;gap:7px;border-bottom:1px solid var(--sf-ui-border)}
+.sf-ui-tabs button{flex:none;min-height:44px;padding:10px 13px;white-space:nowrap;color:var(--sf-ui-muted);background:none;border:0;border-bottom:2px solid transparent;cursor:pointer}
+.sf-ui-tabs button[aria-selected=true]{color:var(--sf-ui-text);border-color:var(--sf-ui-brand);font-weight:850}
+.sf-ui-empty{display:flex;align-items:flex-start;flex-direction:column;gap:8px;padding:22px 0;color:var(--sf-ui-muted)}
+.sf-ui-empty>span{color:var(--sf-ui-brand)}
+.sf-ui-empty strong{font-size:13px;color:var(--sf-ui-text)}
+.sf-ui-empty p{font-size:12px;line-height:1.7;margin:0}
+.sf-ui-skeleton{display:block;max-width:100%;border-radius:9px;background:linear-gradient(90deg,#29253f,#45405e,#29253f);background-size:210% 100%;animation:sf-ui-shimmer 1.6s linear infinite}
+.sf-ui-loading{min-height:150px;display:flex;align-items:center;justify-content:center;gap:9px;font-size:13px;color:var(--sf-ui-muted)}
+.sf-ui-stat{display:flex;flex-direction:column;gap:10px}
+.sf-ui-stat-head{display:flex;justify-content:space-between;align-items:center;gap:10px;color:var(--sf-ui-muted);font-size:11px;font-weight:750}
+.sf-ui-stat-head svg{color:var(--sf-ui-brand)}
+.sf-ui-stat>strong{font:850 clamp(24px,3.5vw,33px)/1.2 Manrope,sans-serif;letter-spacing:-.035em;color:var(--sf-ui-text)}
+.sf-ui-stat>p{font-size:11px;line-height:1.65;color:var(--sf-ui-muted);margin:0}
+.sf-ui-stat-action{margin-top:auto}
+.sf-ui-stat-action a{font-size:11px;font-weight:800;color:var(--sf-ui-brand)}
+.sf-ui-toast{position:relative;display:flex;align-items:center;gap:10px;padding:13px 14px;border:1px solid #479271;border-radius:12px;background:#133e31;color:#e2fff2;box-shadow:var(--sf-ui-shadow);font-size:12px}
+.sf-ui-toast-danger{border-color:#b25d70;background:#42202a;color:#ffe8ed}
+.sf-ui-toast>span{flex:1}
+.sf-ui-toast button{border:0;background:none;color:inherit;cursor:pointer;min-height:32px;min-width:32px}
+.sf-ui-modal-layer{position:fixed;inset:0;z-index:500;display:flex;align-items:center;justify-content:center;padding:15px}
+.sf-ui-modal-backdrop{position:absolute;inset:0;border:0;background:rgba(6,4,16,.83);cursor:pointer}
+.sf-ui-modal{position:relative;z-index:1;width:min(560px,100%);max-height:90dvh;overflow-y:auto;background:#191727;border:1px solid #615078;border-radius:18px;box-shadow:0 28px 100px rgba(0,0,0,.55);color:var(--sf-ui-text)}
+.sf-ui-modal>header{display:flex;justify-content:space-between;align-items:flex-start;gap:12px;padding:19px 22px;border-bottom:1px solid var(--sf-ui-border)}
+.sf-ui-modal>header h2{margin:0;font:850 18px Manrope,sans-serif}
+.sf-ui-modal>header p{margin:7px 0 0;font-size:12px;color:var(--sf-ui-muted)}
+.sf-ui-modal>header button{min-width:36px;min-height:36px;border:1px solid var(--sf-ui-border);border-radius:9px;background:transparent;color:inherit;cursor:pointer}
+.sf-ui-modal-body{padding:22px;font-size:13px;line-height:1.65}
+.sf-ui-modal>footer{display:flex;justify-content:flex-end;gap:10px;padding:13px 22px 19px}
+.sf-ui-spin{animation:sf-ui-spin .9s linear infinite}
+@keyframes sf-ui-spin{to{transform:rotate(360deg)}}
+@keyframes sf-ui-shimmer{to{background-position-x:-210%}}
+@media(max-width:640px){.sf-ui-card{padding:16px;border-radius:17px}.sf-ui-modal-layer{align-items:flex-end;padding:0}.sf-ui-modal{border-radius:20px 20px 0 0;max-height:90dvh}}
+@media(prefers-reduced-motion:reduce){.sf-ui-spin,.sf-ui-skeleton{animation:none}.sf-ui-button{transition:none}}
