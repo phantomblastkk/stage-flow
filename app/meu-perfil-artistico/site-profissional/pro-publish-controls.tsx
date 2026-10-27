@@ -19,6 +19,7 @@ type Publication = {
 };
 
 type Props={
+  active?:boolean;
   unsaved:boolean;
   draftReady:boolean;
   galleryBusy:boolean;
@@ -26,7 +27,7 @@ type Props={
 };
 
 export default function ProSitePublicationControls({
-  unsaved,draftReady,galleryBusy,galleryLoading
+  active=true,unsaved,draftReady,galleryBusy,galleryLoading
 }:Props){
   const [info,setInfo]=useState<Publication|null>(null);
   const [loading,setLoading]=useState(true);
@@ -62,7 +63,9 @@ export default function ProSitePublicationControls({
     setLoading(false);
   }
 
-  useEffect(()=>{void load();},[]);
+  // When returning from the free data tab, re-read publication eligibility.
+  // Draft choices stay mounted in the parent and are not reset here.
+  useEffect(()=>{if(active)void load();},[active]);
 
   async function toggle(publish:boolean){
     if(!info||busy)return;
