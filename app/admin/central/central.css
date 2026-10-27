@@ -253,3 +253,51 @@
 @media(prefers-reduced-motion:reduce){
  .sf-admin-spin{animation:none}
 }
+
+
+/* Owner-only manual Pro grants, never a billing or subscription editor. */
+.sf-admin-pro-guidance{
+ display:flex;align-items:flex-start;gap:11px;margin:14px 0 21px;
+ padding:14px 16px;border:1px solid #6a577c;border-radius:13px;
+ background:linear-gradient(110deg,#31253c,#22243b);color:#e4d3ef;
+ font:600 11px/1.7 "Manrope",sans-serif;
+}
+.sf-admin-pro-guidance svg{flex:none;margin-top:1px;color:#e4baf7}
+.sf-admin-pro-actions{display:grid;justify-items:start;gap:9px;min-width:170px;max-width:240px}
+.sf-admin-pro-label{
+ display:inline-flex;align-items:center;gap:7px;
+ width:max-content;max-width:100%;padding:7px 10px;
+ border:1px solid #605771;border-radius:9px;
+ color:#c7c4dc;background:#292a3d;
+ font:850 10px "Manrope",sans-serif;
+}
+.sf-admin-pro-label svg{flex:none}
+.sf-admin-pro-label.is-on{
+ border-color:#9472ac;background:#413051;color:#f3dcff
+}
+.sf-admin-pro-actions button{
+ display:inline-flex;align-items:center;justify-content:center;gap:7px;
+ min-height:38px;width:100%;padding:9px 12px;
+ border-radius:10px;border:1px solid #9371ae;
+ color:#f5e4ff;background:#513b67;
+ font:850 10px "Manrope",sans-serif;
+ transition:background .15s,border-color .15s;
+}
+.sf-admin-pro-actions button:hover:not(:disabled){background:#6b4b87;border-color:#d0a4f7}
+.sf-admin-pro-actions button.remove{
+ background:#422936;border-color:#9f6179;color:#ffcbdd
+}
+.sf-admin-pro-actions button.remove:hover:not(:disabled){background:#623248}
+.sf-admin-pro-actions button:disabled{
+ opacity:.48;cursor:wait
+}
+.sf-admin-pro-actions button:focus-visible{
+ outline:3px solid #d0b1fa;outline-offset:3px
+}
+.sf-admin-pro-actions small{display:block;max-width:195px}
+@media(max-width:600px){
+ .sf-admin-pro-guidance{padding:12px;font-size:10px;line-height:1.75}
+ .sf-admin-pro-actions{min-width:154px}
+ .sf-admin-pro-actions button{min-height:44px}
+}
+@media(prefers-reduced-motion:reduce){.sf-admin-pro-actions button{transition:none}}
