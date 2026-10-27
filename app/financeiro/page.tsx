@@ -2,7 +2,7 @@
 import { FormEvent, useCallback, useEffect, useMemo, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { ArrowLeft, ArrowRight, BarChart3, CalendarDays, CheckCircle2, CircleAlert, Download, LoaderCircle, PencilLine, RefreshCw, Save, Wallet } from "lucide-react";
+import { ArrowLeft, ArrowRight, BarChart3, CalendarDays, CheckCircle2, CircleAlert, Download, LoaderCircle, LockKeyhole, PencilLine, RefreshCw, Save, Wallet } from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
 import EventBudgetPanel from "@/components/event-budget-panel";
 import "./financeiro.css";
@@ -55,17 +55,27 @@ export default function Financeiro(){
  const [editPaid,setEditPaid]=useState<Record<string,string>>({});
  const [busy,setBusy]=useState<string|null>(null);
  const [nonce,setNonce]=useState(0);
+ const [reportAccess,setReportAccess]=useState(false);
+ const [reportAccessReady,setReportAccessReady]=useState(false);
  const load=useCallback(async()=>{
   const db=createClient();
   const {data:{user},error:authError}=await db.auth.getUser();
   if(authError||!user){router.replace("/login");return;}
-  const [ownerResult,historyResult]=await Promise.all([
-   db.rpc("stage_finance_organizer_overview"),db.rpc("stage_my_show_history")
+  const [ownerResult,historyResult,profileResult]=await Promise.all([
+   db.rpc("stage_finance_organizer_overview"),db.rpc("stage_my_show_history"),
+   db.from("profiles").select("is_artist,artist_kind").eq("id",user.id).maybeSingle()
   ]);
   if(ownerResult.error)throw ownerResult.error;
   if(historyResult.error)throw historyResult.error;
   if(!Array.isArray(ownerResult.data)||!Array.isArray(historyResult.data))
    throw Error("O financeiro retornou dados inesperados.");
+  if(profileResult.error)throw profileResult.error;
+  const isSinger=profileResult.data?.is_artist===true&&profileResult.data?.artist_kind==="lead";
+  if(isSinger){
+   const {data:entitlement,error:entitlementError}=await db.rpc("stage_my_pro_site_publication");
+   setReportAccess(!entitlementError&&entitlement?.entitled===true);
+  }else setReportAccess(true);
+  setReportAccessReady(true);
   setOrganized(ownerResult.data as Organized[]);
   setParticipations((historyResult.data as Participation[]).filter(r=>r.kind==="participation"));
  },[router]);
@@ -190,7 +200,8 @@ export default function Financeiro(){
    <label>Mês <select value={month} onChange={e=>setMonth(e.target.value)}>
     <option value="all">Todos</option>{months.map(m=><option key={m} value={m}>{monthLabel(m)}</option>)}</select></label>
    <button className="btn btn-quiet" type="button" disabled={loading} onClick={()=>setNonce(n=>n+1)}><RefreshCw size={15}/> Atualizar</button>
-   <button className="btn btn-quiet" type="button" disabled={loading||!hasAny} onClick={exportCsv}><Download size={15}/> Exportar CSV</button>
+   {reportAccess?<button className="btn btn-quiet" type="button" disabled={loading||!hasAny||!reportAccessReady} onClick={exportCsv}><Download size={15}/> Exportar CSV detalhado</button>:
+    <Link className="btn btn-quiet" href="/planos"><LockKeyhole size={15}/> Exportação detalhada · Cantor Pro</Link>}
   </div>
   {loading?<div className="finance-loading"><LoaderCircle size={20}/> Carregando valores privados...</div>:<>
    <section className="finance-kpis" aria-label="Resumo financeiro">
@@ -210,7 +221,7 @@ export default function Financeiro(){
    {(incomplete||!hasAny)&&<p className="finance-warning"><CircleAlert size={17}/>
     {hasAny?"Os totais são parciais: há receitas ou cachês sem valor. O lucro líquido definitivo depende de todos os lançamentos e pagamentos.":"Nenhum valor registrado ainda. Cadastre um show ou registre seus custos para começar."}
    </p>}
-   <section className="finance-two">
+   {reportAccess?<section className="finance-two">
     <div className="finance-panel"><h2><BarChart3 size={19}/> Despesas por categoria</h2>
      <p>Transporte, equipe externa, equipamentos e alimentação podem ser informados dentro de cada show.</p>
      <div className="finance-category-list">
@@ -231,6 +242,10 @@ export default function Financeiro(){
      </div>)}</div>:<p className="fine">Sem shows neste período.</p>}
     </div>
    </section>
+   <div className="finance-panel"><h2><LockKeyhole size={18}/> Relatórios avançados · Cantor Pro</h2>
+    <p>O controle de receitas, custos e pagamentos continua gratuito. Gráficos por categoria, análises mensais e exportação detalhada fazem parte do plano Pro do cantor.</p>
+    <Link className="btn btn-quiet" href="/planos">Conhecer recursos do Cantor Pro <ArrowRight size={16}/></Link>
+   </div>}
    <section className="finance-panel finance-event-panel">
     <div className="finance-head"><div><h2>Financeiro por apresentação</h2>
      <p>Confira cada show e expanda para editar despesas, faturamento e cachês pagos.</p></div>
