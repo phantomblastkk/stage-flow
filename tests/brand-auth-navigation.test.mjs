@@ -82,11 +82,11 @@ test("plans keep core Stage Flow free and singer Pro gated without checkout",()=
  const plans=load("app/planos/page.tsx");
  const publish=load("app/meu-perfil-artistico/site-profissional/pro-publish-controls.tsx");
  assert.match(plans,/Músicos podem entrar sem convite/);
- assert.match(plans,/R\\$ 0/);
+ assert.match(plans,/R\$ 0/);
  assert.match(plans,/Cantor Pro/);
  assert.match(plans,/Valores a definir/);
  assert.match(plans,/Subdomínio personalizado incluído no plano/);
  assert.match(plans,/Não há checkout, assinatura automática/);
- assert.match(publish,/href="\\/planos"/);
+ assert.match(publish,/href="\/planos"/);
  assert.match(publish,/!info.entitled/);
 });
