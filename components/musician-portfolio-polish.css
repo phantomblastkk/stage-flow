@@ -540,3 +540,110 @@
  .mp-polished .mp-instrument-card,.mp-polished .mp-profile-facts>div,
  .mp-polished .mp-career-list>div{transition:none}
 }
+
+
+/* Booking-first professional musician portfolio, inspired by clean creator profiles. */
+.mp-polished .mp-avatar{
+ width:clamp(116px,13vw,165px);height:clamp(116px,13vw,165px);
+ border-radius:25px;border:4px solid color-mix(in srgb,var(--mp-accent),#fff 55%);
+ box-shadow:0 22px 62px #030412a8,0 0 0 6px #f5ebff10
+}
+.mp-polished .mp-avatar img{width:100%;height:100%;object-fit:cover;object-position:center 22%}
+.mp-polished .mp-hero-photo{opacity:.5;background-size:cover;background-position:center 33%;filter:saturate(.95) contrast(1.04)}
+.mp-polished .mp-hero-photo:after{
+ background:linear-gradient(95deg,rgba(9,13,23,.83),rgba(9,13,23,.31) 72%),
+ linear-gradient(0deg,#0e1220 0%,transparent 85%)
+}
+.mp-polished.mp-theme-ivory .mp-hero-photo{opacity:.25}
+.mp-polished.mp-theme-ivory .mp-hero-photo:after{
+ background:linear-gradient(90deg,rgba(250,248,243,.77),rgba(250,248,243,.28)),
+ linear-gradient(0deg,#faf8f3,transparent 82%)
+}
+.mp-polished .mp-action-booking{
+ display:inline-flex;align-items:center;justify-content:center;gap:9px;min-height:48px;
+ padding:13px 17px;border-radius:12px;background:var(--mp-accent);
+ color:var(--mp-on-accent);font:850 12px/1.4 "Manrope",sans-serif;
+ text-decoration:none;box-shadow:0 14px 35px #06061044;
+ transition:transform .15s,filter .15s
+}
+.mp-polished .mp-action-booking:hover{filter:brightness(1.09);transform:translateY(-2px)}
+.mp-polished .mp-action-booking:focus-visible{
+ outline:3px solid var(--mp-accent);outline-offset:4px
+}
+.mp-polished .mp-instrument-grid{gap:12px}
+.mp-polished .mp-instrument-card{
+ display:flex;align-items:center;text-align:left;gap:13px;min-width:0;
+ padding:17px;min-height:112px;
+ border:1px solid color-mix(in srgb,var(--mp-accent),transparent 75%);
+ background:linear-gradient(140deg,var(--mp-card),var(--mp-subcard));
+}
+.mp-polished .mp-instrument-card.is-primary{
+ border-color:color-mix(in srgb,var(--mp-accent),transparent 35%);
+ background:linear-gradient(125deg,color-mix(in srgb,var(--mp-accent),var(--mp-card) 87%),var(--mp-card))
+}
+.mp-polished .mp-instrument-icon{
+ display:grid;place-items:center;flex:none;width:47px;height:47px;
+ background:color-mix(in srgb,var(--mp-accent),transparent 85%);
+ border:1px solid color-mix(in srgb,var(--mp-accent),transparent 58%);
+ border-radius:13px;color:var(--mp-accent)
+}
+.mp-polished .mp-instrument-name{display:flex;flex:1;min-width:0;flex-direction:column;gap:7px}
+.mp-polished .mp-instrument-name small{
+ font:800 9px/1.4 "Manrope",sans-serif;letter-spacing:.09em;color:var(--mp-muted)
+}
+.mp-polished .mp-instrument-name strong{
+ font:850 clamp(13px,1.45vw,16px)/1.4 "Manrope",sans-serif;
+ color:var(--mp-text);overflow-wrap:anywhere
+}
+.mp-polished .mp-instrument-index{align-self:flex-start;flex:none;font-size:10px}
+.mp-polished .mp-work-preview-trigger{
+ display:block;position:relative;width:100%;height:100%;padding:0;border:0;
+ cursor:pointer;background:var(--mp-subcard);color:var(--mp-accent)
+}
+.mp-polished .mp-work-preview-trigger img{width:100%;height:100%;object-fit:cover}
+.mp-polished .mp-work-thumb iframe{
+ width:100%;height:100%;border:0;display:block;background:#090811
+}
+.mp-polished .mp-work-preview-trigger:focus-visible{
+ outline:3px solid var(--mp-accent);outline-offset:-3px
+}
+.mp-polished .mp-work-card-bottom{color:var(--mp-text);text-decoration:none}
+.mp-polished .mp-work-card-bottom:hover{text-decoration:none;color:var(--mp-accent)}
+.mp-polished .mp-work-card-bottom:focus-visible{
+ outline:3px solid var(--mp-accent);outline-offset:-3px
+}
+.mp-polished .mp-work-grid{grid-template-columns:repeat(auto-fit,minmax(220px,1fr))}
+.mp-polished .mp-work-card:first-child .mp-work-thumb{aspect-ratio:16/9}
+.mp-polished .mp-booking-section{
+ display:flex;flex-wrap:wrap;gap:17px;align-items:center;
+ padding:25px 27px;margin-top:36px;border-radius:19px;
+ border:1px solid color-mix(in srgb,var(--mp-accent),transparent 40%);
+ background:linear-gradient(105deg,
+ color-mix(in srgb,var(--mp-accent),var(--mp-bg) 88%),var(--mp-card));
+ scroll-margin-top:25px
+}
+.mp-booking-symbol{
+ display:grid;place-items:center;width:55px;height:55px;border-radius:16px;
+ flex:none;background:var(--mp-accent);color:var(--mp-on-accent)
+}
+.mp-booking-copy{flex:1;min-width:230px}
+.mp-booking-copy h2{margin:5px 0;font:900 clamp(20px,2.2vw,26px)/1.3 "Manrope",sans-serif}
+.mp-booking-copy h2 span{color:var(--mp-accent)}
+.mp-booking-copy p{max-width:48ch;margin:0;color:var(--mp-muted);font-size:12px;line-height:1.7}
+.mp-booking-preview-note{font-size:11px;line-height:1.6;color:var(--mp-muted)}
+.mp-polished.mp-preview .mp-booking-section{padding:15px;margin-top:21px}
+.mp-polished.mp-preview .mp-avatar{width:76px;height:76px;border-radius:17px}
+@media(max-width:700px){
+ .mp-polished .mp-avatar{width:112px;height:112px;border-radius:23px}
+ .mp-polished .mp-instrument-grid{grid-template-columns:repeat(auto-fit,minmax(175px,1fr))}
+ .mp-polished .mp-work-grid{grid-template-columns:repeat(auto-fit,minmax(220px,1fr))}
+ .mp-polished .mp-booking-section{padding:19px;align-items:flex-start}
+}
+@media(max-width:450px){
+ .mp-polished .mp-instrument-grid,.mp-polished .mp-work-grid{grid-template-columns:1fr}
+ .mp-polished .mp-booking-section>.mp-action-booking{width:100%}
+ .mp-polished .mp-booking-copy{min-width:0}
+ .mp-polished .mp-avatar{width:102px;height:102px}
+ .mp-polished .mp-instrument-card{min-height:93px}
+}
+@media(prefers-reduced-motion:reduce){.mp-polished .mp-action-booking{transition:none}.mp-polished .mp-action-booking:hover{transform:none}}
