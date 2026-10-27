@@ -129,7 +129,7 @@ export default function MusicianPortfolioView({ portfolio, preview = false, onSh
   const directBooking=bookingContact?.mode==="whatsapp"
     ?whatsappBookingUrl(bookingContact.phone,bookingContact.greeting,portfolio.name)
     :bookingContact?.mode==="instagram"?instagram?.url||null
-    :bookingContact===null?instagram?.url||null:null;
+    :(bookingContact===null||bookingContact.mode==="auto")?instagram?.url||null:null;
   const bookingLabel=bookingContact?.mode==="whatsapp"?"Contratar pelo WhatsApp":"Chamar o músico";
   const suffix = instanceId || portfolio.slug || "preview";
   const workAnchor = "mp-trabalhos-" + suffix;
