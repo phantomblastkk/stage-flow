@@ -22,9 +22,8 @@ test("home respects the browser session and links users back to dashboard",()=>{
 test("login page does not ask for password when a user already has a valid session",()=>{
   const login=load("app/login/page.tsx");
   assert.match(login,/auth\.getUser\(\)/);
-  assert.match(login,/window\.location\.replace\("\/painel"\)/);
-  assert.match(login,/window\\.location\\.replace\\(code\\?"\\/convite\\?codigo="\\+encodeURIComponent\\(code\\):"\\/painel"\\)/);
-  assert.doesNotMatch(login,/if\\(code\\)\\{setCheckingSession\\(false\\);return;\\}/);
+  assert.match(login,/window\.location\.replace\(code\?"\/convite\?codigo="\+encodeURIComponent\(code\):"\/painel"\)/);
+  assert.doesNotMatch(login,/if\(code\)\{setCheckingSession\(false\);return;\}/);
   assert.match(login,/signInWithPassword/);
 });
 
