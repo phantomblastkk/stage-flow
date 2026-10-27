@@ -1,0 +1,84 @@
+import {test} from "node:test";
+import assert from "node:assert/strict";
+import {readFileSync} from "node:fs";
+import {resolve} from "node:path";
+
+const read=(path)=>readFileSync(resolve(process.cwd(),path),"utf8");
+const schema=read("supabase/account_identity_dual_roles_migration.sql");
+const guards=read("supabase/account_identity_role_guards_migration.sql");
+const signup=read("app/cadastro/page.tsx");
+const dashboard=read("app/painel/page.tsx");
+const hub=read("app/minha-conta/page.tsx");
+const css=read("app/minha-conta/minha-conta.css");
+
+function fn(text,name){
+ const p=text.indexOf("create or replace function public."+name+"(");
+ assert.notEqual(p,-1,"Missing "+name);
+ const end=text.indexOf("\n$$;",p);
+ assert.notEqual(end,-1,"Unterminated "+name);
+ return text.slice(p,end);
+}
+
+test("singer signup has explicit optional musician access while free singer and musician profiles stay separate",()=>{
+ assert.match(signup,/const \[alsoMusician,setAlsoMusician\] = useState\(false\)/);
+ assert.match(signup,/artistKind==="lead"&&<label className="signup-producer-add"/);
+ assert.match(signup,/Também sou músico/);
+ assert.match(signup,/is_musician: Boolean\(inviteCode\) \|\| \(artistKind==="support"\) \|\| \(artistKind==="lead"&&alsoMusician\)/);
+ assert.match(schema,/chosen_musician := chosen_artist and/);
+ assert.match(schema,/chosen_singer := chosen_artist and chosen_kind = 'lead'/);
+ assert.match(schema,/is_singer, is_musician, plan_code/);
+ assert.doesNotMatch(schema,/set plan_code='artist_plus'/);
+});
+
+test("profile hub sits by notifications and keeps distinct singer/musician public profiles",()=>{
+ assert.match(dashboard,/<NotificationBell\/>\s*<Link className="btn btn-quiet" href="\/minha-conta"/);
+ assert.match(dashboard,/profile\.is_singer&&<button/);
+ assert.match(dashboard,/profile\.is_musician&&<button/);
+ assert.match(dashboard,/isLead && profile\?\.is_musician/);
+ assert.match(hub,/Meus perfis e funções/);
+ assert.match(hub,/Cantor \/ artista principal/);
+ assert.match(hub,/Músico \/ instrumentista/);
+ assert.match(hub,/href=\{"\/"\+encodeURIComponent\(account\.username\)\}/);
+ assert.match(hub,/href=\{"\/musico\/"\+encodeURIComponent\(account\.musician_slug\)\}/);
+ assert.match(hub,/\/meu-perfil-artistico/);
+ assert.match(hub,/\/meu-portfolio/);
+ assert.match(hub,/stage_my_account_identity/);
+ assert.match(hub,/stage_account_enable_role/);
+ assert.match(css,/@media\(max-width:770px\)/);
+});
+
+test("60-day identity cooldown is server-enforced and cannot be bypassed by resetting timestamps",()=>{
+ assert.match(schema,/add column if not exists display_name_changed_at timestamptz/);
+ assert.match(schema,/add column if not exists username_changed_at timestamptz/);
+ const guard=fn(schema,"stage_guard_profile_identity_changes");
+ assert.match(guard,/old\.display_name_changed_at \+ interval '60 days'/);
+ assert.match(guard,/old\.username_changed_at \+ interval '60 days'/);
+ assert.match(guard,/new\.display_name_changed_at:=old\.display_name_changed_at/);
+ assert.match(guard,/new\.username_changed_at:=old\.username_changed_at/);
+ assert.match(schema,/before update on public\.profiles for each row/);
+ const update=fn(schema,"stage_update_account_identity");
+ assert.match(update,/where id=auth\.uid\(\) for update/);
+ assert.match(update,/name_cooldown/);
+ assert.match(update,/username_cooldown/);
+ assert.match(update,/reserved_username/);
+ assert.match(update,/username_taken/);
+ assert.match(hub,/Próxima alteração do nome/);
+ assert.match(hub,/Próxima alteração do @/);
+ assert.match(hub,/stage_update_account_identity/);
+});
+
+test("free musician role enrollment is authenticated, and editing musician data cannot bypass its grant",()=>{
+ const enroll=fn(schema,"stage_account_enable_role");
+ assert.match(enroll,/auth\.uid\(\) is null/);
+ assert.match(enroll,/p_role not in \('singer','musician'\)/);
+ assert.match(enroll,/where id=auth\.uid\(\)/);
+ assert.match(schema,/revoke all on function public\.stage_account_enable_role\(text\) from public,anon,authenticated/);
+ assert.match(schema,/grant execute on function public\.stage_account_enable_role\(text\) to authenticated/);
+ assert.match(fn(schema,"stage_my_musician_portfolio"),/p\.is_musician = true/);
+ assert.match(fn(schema,"stage_save_musician_portfolio_v3"),/p\.is_musician = true/);
+ assert.match(fn(schema,"stage_guard_musician_portfolio_role"),/p\.is_musician=true/);
+ assert.match(fn(schema,"stage_marketplace_musician_guard"),/p\.is_musician=true/);
+ assert.match(fn(guards,"stage_choose_artist_experience"),/p_kind='lead' and is_singer=true/);
+ assert.match(fn(guards,"stage_choose_artist_experience"),/p_kind='support' and is_musician=true/);
+ assert.match(fn(guards,"stage_guard_profile_role_username"),/not old\.is_singer/);
+});
