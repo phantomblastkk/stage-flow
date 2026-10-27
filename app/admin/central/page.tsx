@@ -321,8 +321,8 @@ export default function CentralAdministrativa(){
    <div className="sf-admin-content">
     <header className="sf-admin-top">
      <div><span className="sf-admin-kicker"><Sparkles size={15}/> CENTRO DE CONTROLE</span>
-      <h1>{tab==="overview"?"Visão geral":tab==="users"?"Usuários cadastrados":tab==="venues"?"Casas e aprovações":"Histórico administrativo"}</h1>
-      <p>{tab==="overview"?"Seus indicadores e ações do StageFlow, em um só lugar.":tab==="users"?"Cadastros organizados por data, com verificação individual.":tab==="venues"?"Aprove casas, acompanhe solicitações e gerencie perfis oficiais.":"Registro de decisões e alterações de selos na plataforma."}</p>
+      <h1>{tab==="overview"?"Visão geral":tab==="users"?"Usuários e acessos Pro":tab==="venues"?"Casas e aprovações":"Histórico administrativo"}</h1>
+      <p>{tab==="overview"?"Seus indicadores e ações do StageFlow, em um só lugar.":tab==="users"?"Pesquise contas, conceda ou retire cortesia Pro e gerencie os selos.":tab==="venues"?"Aprove casas, acompanhe solicitações e gerencie perfis oficiais.":"Registro de decisões, selos, cortesias Pro e aprovações."}</p>
      </div>
      <button type="button" className="sf-admin-refresh" onClick={reload}>
       <RefreshCw size={17}/> Atualizar
@@ -368,6 +368,7 @@ export default function CentralAdministrativa(){
        <div className="sf-admin-panel-heading"><div><span>ACESSO RÁPIDO</span><h2>Ferramentas de gestão</h2></div></div>
        <div className="sf-admin-shortcuts">
         <button onClick={()=>setTab("users")} type="button"><Users2 size={21}/><span><strong>Ver todos os usuários</strong><small>Datas, funções e selos</small></span><ArrowUpRight size={17}/></button>
+        <button onClick={()=>setTab("users")} type="button"><Gift size={21}/><span><strong>Conceder ou retirar Pro</strong><small>Cortesias gratuitas por cantor, sem cobrança</small></span><ArrowUpRight size={17}/></button>
         <button onClick={()=>setTab("venues")} type="button"><Building2 size={21}/><span><strong>Aprovar solicitações</strong><small>Casas recebidas no StageFlow</small></span><ArrowUpRight size={17}/></button>
         <Link href="/admin/casas"><Sparkles size={21}/><span><strong>Editar casas oficiais</strong><small>Cadastro, responsáveis e conteúdo</small></span><ArrowUpRight size={17}/></Link>
         <button onClick={()=>setTab("history")} type="button"><FileClock size={21}/><span><strong>Histórico de decisões</strong><small>Selos e aprovações</small></span><ArrowUpRight size={17}/></button>
@@ -376,7 +377,7 @@ export default function CentralAdministrativa(){
      </div>
      <div className="sf-admin-context">
       <ShieldCheck size={19}/>
-      <p>Os perfis de cantor e músico podem receber selos independentes. Casas precisam ser aprovadas e oficiais antes de receber a verificação. <strong>O selo não altera planos, pagamentos ou direitos de acesso.</strong></p>
+      <p>Você pode conceder e retirar <strong>cortesia Pro</strong> para cantores na aba Usuários. O selo de verificação é independente do Pro. Cortesias não alteram o plano ou a assinatura paga, e toda mudança fica no histórico.</p>
      </div>
     </>}
 
@@ -393,21 +394,41 @@ export default function CentralAdministrativa(){
         <option value="newest">Mais recentes primeiro</option>
        </select>
       </label>
-      <button type="button" className="sf-admin-export" disabled={!users.length} onClick={exportPage}>
+      <button type="button" className="sf-admin-export" disabled={!users.length||!proReady} onClick={exportPage}>
        <ArrowDownToLine size={17}/> Exportar página CSV
       </button>
      </div>
      <div className="sf-admin-count"><span>{userCount.toLocaleString("pt-BR")} cadastros encontrados</span>
       <span>{verifiedUsers} com algum selo nesta página</span></div>
+     <p className="sf-admin-pro-guidance"><Crown size={17}/> Cortesia Pro é um benefício manual e gratuito para cantores. Não modifica pagamentos ou plano contratado. Retirar a cortesia não cancela uma assinatura Pro ativa; a publicação Pro depende da decisão do cantor.</p>
      <div className="sf-admin-table-scroll">
-      <table><thead><tr><th>Conta</th><th>Cadastro</th><th>Funções</th><th>Plano</th><th>Verificação StageFlow</th></tr></thead>
+      <table><thead><tr><th>Conta</th><th>Cadastro</th><th>Funções</th><th>Plano</th><th>Acesso Pro</th><th>Verificação StageFlow</th></tr></thead>
        <tbody>{users.map(user=><tr key={user.id}>
         <td><strong>{user.name}</strong><small>{user.email||"Sem e-mail"}{user.username?" · @"+user.username:""}</small>
          {user.username&&user.is_public&&<Link href={"/"+encodeURIComponent(user.username)} target="_blank">Abrir perfil <ExternalLink size={12}/></Link>}
         </td>
         <td className="sf-admin-date">{displayDate(user.created_at)}</td>
         <td><div className="sf-admin-tags">{user.is_singer&&<span>Cantor</span>}{user.is_musician&&<span>Músico</span>}{user.is_producer&&<span>Produtor</span>}{!user.is_singer&&!user.is_musician&&!user.is_producer&&<span>Conta</span>}</div></td>
-        <td><span className="sf-admin-plan">{user.plan_code||"free"}</span></td>
+        <td><span className="sf-admin-plan" title="Plano comercial, não alterado por cortesias Pro">{user.plan_code||"free"}</span></td>
+        <td><div className="sf-admin-pro-actions">
+         {!user.is_singer?<span className="sf-admin-muted">Disponível para cantores</span>:
+          !proReady?<span className="sf-admin-muted">Consultando acesso...</span>:
+          proByUser[user.id]?<>
+           <span className={"sf-admin-pro-label"+(proByUser[user.id].effective_entitled?" is-on":"")}>
+            <Crown size={14}/>{proByUser[user.id].paid_entitled?"Pro por assinatura":
+              proByUser[user.id].manual_granted?"Pro cortesia":"Pro não liberado"}
+           </span>
+           {proByUser[user.id].paid_entitled&&proByUser[user.id].manual_granted&&
+            <small className="sf-admin-muted">Assinatura + cortesia</small>}
+           {proByUser[user.id].paid_entitled&&!proByUser[user.id].manual_granted?
+            <small className="sf-admin-muted">Assinatura ativa: não é possível retirar aqui</small>:
+            <button type="button" className={proByUser[user.id].manual_granted?"remove":""}
+             disabled={Boolean(busy)||!proReady}
+             onClick={()=>void setProAccess(user,proByUser[user.id])}>
+             <Gift size={15}/>{proByUser[user.id].manual_granted?"Retirar cortesia Pro":"Conceder Pro"}
+            </button>}
+          </>:<span className="sf-admin-muted">Indisponível. Atualize.</span>}
+        </div></td>
         <td><div className="sf-admin-verification-actions">
          {user.is_singer&&<button type="button" disabled={Boolean(busy)}
           className={user.singer_verified?"on":""} onClick={()=>void setVerification("singer",user.id,user.singer_verified,user.name)}>
@@ -489,7 +510,7 @@ export default function CentralAdministrativa(){
      </div>
      <div className="sf-admin-history">
       {history.map(item=><article key={item.id}>
-       <span className="sf-admin-history-symbol">{item.action.includes("verification")?<BadgeCheck size={19}/>:<Building2 size={19}/>}</span>
+       <span className="sf-admin-history-symbol">{item.action.includes("verification")?<BadgeCheck size={19}/>:item.action.startsWith("pro_access_")?<Crown size={19}/>:<Building2 size={19}/>}</span>
        <div><strong>{actionText[item.action]}</strong><p>{kindText[item.kind]} · {item.target_id}</p>
         <small>Por {item.actor_name||"Administração"} · {displayDate(item.happened_at)}</small>
        </div>
