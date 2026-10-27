@@ -213,8 +213,8 @@ test("admin approval atomically publishes official venue URL; rejection stays pr
  assert.match(review,/approval_status='rejected'/);
  assert.match(review,/active=false,is_official=false,is_partner=false/);
  assert.match(review,/slug=null,logo_path=null,cover_path=null/);
- assert.match(review,/revoke all on function public\.stage_venue_admin_review\(uuid,text\)/);
- assert.match(review,/grant execute on function public\.stage_venue_admin_review\(uuid,text\)/);
+ assert.match(approval,/revoke all on function public\.stage_venue_admin_review\(uuid,text\)/);
+ assert.match(approval,/grant execute on function public\.stage_venue_admin_review\(uuid,text\)/);
  assert.match(publicRpc,/v\.active and v\.is_official and v\.slug=p_slug/);
  assert.match(month,/is_official and active/);
  assert.match(highlights,/is_official and active/);
