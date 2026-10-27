@@ -7,7 +7,7 @@ import { ArrowLeft, MapPin, Plus, LoaderCircle, CheckCircle2 } from "lucide-reac
 import { createClient } from "@/lib/supabase/client";
 
 type City = { id: number; name: string; state_code: string };
-type Submission = {id:string;name:string;city:string|null;state:string|null;approval_status:"pending"|"approved"|"rejected";submitted_at:string};
+type Submission = {id:string;name:string;city:string|null;state:string|null;approval_status:"pending"|"approved"|"rejected";slug:string|null;submitted_at:string};
 
 
 export default function LocaisPage() {
@@ -99,10 +99,13 @@ export default function LocaisPage() {
        <div style={{display:"grid",gap:10}}>
         {submissions.map(item=><div key={item.id} style={{display:"flex",gap:12,justifyContent:"space-between",flexWrap:"wrap",padding:"12px",border:"1px solid var(--line)",borderRadius:12}}>
          <div><strong>{item.name}</strong><p className="fine" style={{margin:"6px 0 0"}}>{[item.city,item.state].filter(Boolean).join(" · ")}</p></div>
-         <span style={{fontSize:12,fontWeight:800,color:"var(--text)"}}>{item.approval_status==="pending"?"Aguardando análise":item.approval_status==="approved"?"Aprovada para o catálogo":"Não aprovada"}</span>
+         <div style={{display:"grid",gap:7,justifyItems:"end"}}>
+          <span style={{fontSize:12,fontWeight:800,color:"var(--text)"}}>{item.approval_status==="pending"?"Aguardando análise":item.approval_status==="approved"?"Aprovada — perfil oficial criado":"Não aprovada"}</span>
+          {item.approval_status==="approved"&&item.slug&&<Link className="btn btn-quiet" href={"/casa/"+encodeURIComponent(item.slug)}>Ver página da casa</Link>}
+         </div>
         </div>)}
        </div>}
-      <p className="fine" style={{marginTop:14}}>Aprovação no catálogo não cria automaticamente página pública. URL, fotos e flyers são configurados pela administração após a análise.</p>
+      <p className="fine" style={{marginTop:14}}>Após a aprovação, o perfil oficial e sua URL são criados automaticamente. O administrador da casa poderá acrescentar fotos, programação e flyers; nada disso fica público enquanto a sugestão está pendente.</p>
     </section>
     <div className="coming" style={{maxWidth:720,marginTop:20}}>Não encontrou uma cidade? Por enquanto, o catálogo inicial contém algumas cidades brasileiras. O cadastro de cidades adicionais será uma próxima melhoria. Se quiser só registrar um show, você ainda pode informar o nome do local diretamente na agenda.</div>
   </div></main>;
