@@ -223,3 +223,20 @@ test("admin approval atomically publishes official venue URL; rejection stays pr
  assert.match(page,/form\.approval_status==="approved" && form\.is_official/);
  assert.match(page,/form\.approval_status==="approved" && <div className="venue-admin-media/);
 });
+
+
+test("singer sees a public venue link only after approval",()=>{
+ const sql=read("supabase/venue_approved_submitter_links_migration.sql");
+ const own=sqlFunction(sql,"stage_venue_my_submissions");
+ const page=read("app/locais/page.tsx");
+ assert.match(own,/where submitted_by=auth\.uid\(\)/);
+ assert.match(own,/when v\.approval_status='approved'/);
+ assert.match(own,/v\.active and v\.is_official then v\.slug else null end/);
+ assert.match(own,/order by created_at desc limit 50/);
+ assert.match(sql,/revoke all on function public\.stage_venue_my_submissions\(\)/);
+ assert.match(sql,/grant execute on function public\.stage_venue_my_submissions\(\)/);
+ assert.match(page,/item\.approval_status==="approved"&&item\.slug/);
+ assert.match(page,/\/casa\/"\+encodeURIComponent\(item\.slug\)/);
+ assert.match(page,/Aprovada — perfil oficial criado/);
+ assert.doesNotMatch(page,/\.from\("venues"\)\.insert/);
+});
