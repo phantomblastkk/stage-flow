@@ -5,7 +5,7 @@ import Link from "next/link";
 import { useParams } from "next/navigation";
 import {
   ArrowLeft, CalendarDays, CheckCircle2, ExternalLink, Images, Instagram,
-  MapPin, MessageCircle, Music2, Send, ShieldCheck, Sparkles, Ticket, X, ChevronLeft, ChevronRight
+  MapPin, MessageCircle, Music2, Send, ShieldCheck, Sparkles, Ticket, X, ChevronLeft, ChevronRight, Copy
 } from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
 import VenueMonthCalendar, {
@@ -48,6 +48,8 @@ export default function CasaPublicaPage() {
   const [day,setDay] = useState<number|null>(null);
   const [mode,setMode] = useState<Mode>("agenda");
   const [focusedShow,setFocusedShow] = useState<HouseShow|null>(null);
+  const [linkedShow,setLinkedShow] = useState<{id:string;month:string}|null>(null);
+  const [shareStatus,setShareStatus] = useState("");
   const [focusedPhoto,setFocusedPhoto] = useState<Gallery|null>(null);
   const [suggestOpen,setSuggestOpen] = useState(false);
   const [artist,setArtist] = useState("");
@@ -57,6 +59,18 @@ export default function CasaPublicaPage() {
   const [suggestBusy,setSuggestBusy] = useState(false);
   const [suggestDone,setSuggestDone] = useState(false);
   const [suggestError,setSuggestError] = useState("");
+
+  // A shared show link may only resolve against the PUBLIC month RPC.
+  // Never query private calendar/admin data to resolve a show identifier.
+  useEffect(()=>{
+    const query=new URLSearchParams(window.location.search);
+    const id=query.get("show")||"";
+    const monthKey=query.get("mes")||"";
+    if(!/^[0-9a-f]{8}(?:-[0-9a-f]{4}){3}-[0-9a-f]{12}$/i.test(id)
+      || !/^(20[0-9]{2}|2100)-(0[1-9]|1[0-2])$/.test(monthKey))return;
+    setMonth(new Date(Date.UTC(Number(monthKey.slice(0,4)),Number(monthKey.slice(5,7))-1,1)));
+    setDay(null);setMode("agenda");setLinkedShow({id:id.toLowerCase(),month:monthKey});
+  },[slug]);
 
   useEffect(()=>{
     let active=true;
@@ -114,6 +128,31 @@ export default function CasaPublicaPage() {
     void loadHighlights();
     return ()=>{active=false;};
   },[venue]);
+
+  useEffect(()=>{
+    if(!linkedShow||monthLoading||monthError||venueMonthKey(month)!==linkedShow.month)return;
+    // The public RPC returns published entries only, so drafts and cancellations
+    // can never be opened merely by knowing an event UUID.
+    const show=events.find(e=>e.id===linkedShow.id&&e.status==="published");
+    if(show){setFocusedShow(show);setDay(venueDayOfMonth(show.starts_at));}
+    setLinkedShow(null);
+  },[events,linkedShow,month,monthLoading,monthError]);
+
+  useEffect(()=>{setShareStatus("");},[focusedShow?.id]);
+
+  async function copyShowLink(show:HouseShow){
+    if(!venue)return;
+    const url=new URL("/casa/"+venue.slug,window.location.origin);
+    url.searchParams.set("mes",venueDayKey(show.starts_at).slice(0,7));
+    url.searchParams.set("show",show.id);
+    try{
+      if(!navigator.clipboard?.writeText)throw new Error("Clipboard unavailable");
+      await navigator.clipboard.writeText(url.toString());
+      setShareStatus("Link do show copiado.");
+    }catch{
+      setShareStatus("Não foi possível copiar automaticamente. Use a opção Compartilhar do navegador.");
+    }
+  }
 
   const visible=useMemo(()=>events.filter(e=>day===null||venueDayOfMonth(e.starts_at)===day),
     [events,day]);
@@ -316,6 +355,11 @@ export default function CasaPublicaPage() {
           <h2>{focusedShow.title}</h2>
           <p className="venue-public-modal-date">{showDate(focusedShow.starts_at)}</p>
           {focusedShow.description&&<p>{focusedShow.description}</p>}
+          <button type="button" className="venue-public-share-show"
+            onClick={()=>void copyShowLink(focusedShow)}>
+            <Copy size={16}/> Copiar link deste show
+          </button>
+          {shareStatus&&<p className="venue-public-share-message" role="status">{shareStatus}</p>}
         </>:focusedPhoto&&<>
           <img src={mediaUrl(focusedPhoto.media_path)} alt={focusedPhoto.caption||"Foto ampliada"}/>
           {focusedPhoto.caption&&<p>{focusedPhoto.caption}</p>}
