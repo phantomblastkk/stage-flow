@@ -45,17 +45,16 @@ export const musicianThemes: { value: MusicianTheme; label: string; description:
   { value: "stage", label: "Stage", description: "Noite e palco" }
 ];
 export const musicianAccents: { value: MusicianAccent; label: string; color: string }[] = [
-  { value: "lime", label: "Lima", color: "#c6f36b" },
   { value: "violet", label: "Violeta", color: "#afa6ff" },
   { value: "coral", label: "Coral", color: "#ffa48f" },
   { value: "cyan", label: "Ciano", color: "#79e3e8" },
   { value: "gold", label: "Dourado", color: "#f3c977" }
 ];
 const accentsDark: Record<MusicianAccent, string> = {
-  lime: "#c6f36b", violet: "#afa6ff", coral: "#ffa48f", cyan: "#79e3e8", gold: "#f3c977"
+  lime: "#afa6ff", violet: "#afa6ff", coral: "#ffa48f", cyan: "#79e3e8", gold: "#f3c977"
 };
 const accentsLight: Record<MusicianAccent, string> = {
-  lime: "#426711", violet: "#6043af", coral: "#a3432c", cyan: "#006d76", gold: "#83570d"
+  lime: "#6043af", violet: "#6043af", coral: "#a3432c", cyan: "#006d76", gold: "#83570d"
 };
 
 const money = (amount: number) =>
@@ -85,13 +84,14 @@ function youTubeId(link: string): string | null {
   } catch { return null; }
 }
 
-type Props = { portfolio: MusicianPortfolio; preview?: boolean; onShare?: () => void };
+type Props = { portfolio: MusicianPortfolio; preview?: boolean; onShare?: () => void; instanceId?: string };
 
-export default function MusicianPortfolioView({ portfolio, preview = false, onShare }: Props) {
+export default function MusicianPortfolioView({ portfolio, preview = false, onShare, instanceId }: Props) {
   const theme: MusicianTheme = musicianThemes.some(t => t.value === portfolio.theme)
     ? portfolio.theme : "midnight";
-  const accent: MusicianAccent = musicianAccents.some(a => a.value === portfolio.accent)
-    ? portfolio.accent : "violet";
+  // Legacy lime portfolios remain valid in storage, but never render neon green.
+  const accent: MusicianAccent = portfolio.accent === "lime" ? "violet" :
+    musicianAccents.some(a => a.value === portfolio.accent) ? portfolio.accent : "violet";
   const layout: MusicianLayout = portfolio.layout_style === "minimal" ? "minimal" : "spotlight";
   const themeColor = theme === "ivory" ? accentsLight[accent] : accentsDark[accent];
 
@@ -117,7 +117,9 @@ export default function MusicianPortfolioView({ portfolio, preview = false, onSh
     ? portfolio.experience_years : null;
   const hasPhoto = Boolean(safeHttps(portfolio.avatar_url));
   const hasBanner = Boolean(safeHttps(portfolio.cover_url));
-  const workAnchor = "mp-trabalhos-" + (portfolio.slug || "preview");
+  const suffix = instanceId || portfolio.slug || "preview";
+  const workAnchor = "mp-trabalhos-" + suffix;
+  const sectionAnchor = (section: string) => "mp-" + section + "-" + suffix;
 
   return <article
     className={"mp-shell mp-polished mp-theme-" + theme + " mp-layout-" + layout +
@@ -160,26 +162,27 @@ export default function MusicianPortfolioView({ portfolio, preview = false, onSh
             </a>}
             {socials.find(s => s.label === "Instagram") && <a
               className="mp-hero-secondary" href={socials.find(s => s.label === "Instagram")!.url}
-              target="_blank" rel="noopener noreferrer">
+              target="_blank" rel="noopener noreferrer"
+              onClick={preview ? event => event.preventDefault() : undefined}>
               <Instagram size={16}/> Instagram <ArrowUpRight size={15}/>
             </a>}
             {!preview && onShare && <button type="button" className="mp-hero-secondary"
               onClick={onShare}><Share2 size={16}/> Compartilhar</button>}
           </div>
-          <span className="mp-hero-index">PORTFÓLIO / 01</span>
+          <span className="mp-hero-index">STAGEFLOW <span aria-hidden="true">✦</span> MÚSICA EM MOVIMENTO</span>
         </div>
       </div>
     </header>
 
     <div className="mp-main">
       <nav className="mp-section-nav" aria-label="Seções do portfólio">
-        <a href={"#mp-sobre-" + (portfolio.slug || "preview")}>Sobre</a>
-        <a href={"#mp-instrumentos-" + (portfolio.slug || "preview")}>Instrumentos</a>
+        <a href={"#" + sectionAnchor("sobre")}>Sobre</a>
+        <a href={"#" + sectionAnchor("instrumentos")}>Instrumentos</a>
         {workLinks.length > 0 && <a href={"#" + workAnchor}>Trabalhos</a>}
-        {highlights.length > 0 && <a href={"#mp-trajetoria-" + (portfolio.slug || "preview")}>Trajetória</a>}
+        {highlights.length > 0 && <a href={"#" + sectionAnchor("trajetoria")}>Trajetória</a>}
       </nav>
 
-      <section className="mp-intro-row" id={"mp-sobre-" + (portfolio.slug || "preview")}>
+      <section className="mp-intro-row" id={sectionAnchor("sobre")}>
         <div className="mp-about-copy">
           <span className="mp-section-kicker">PRAZER, EU SOU</span>
           <h2>Minha <span>história.</span></h2>
@@ -213,7 +216,7 @@ export default function MusicianPortfolioView({ portfolio, preview = false, onSh
         </aside>
       </section>
 
-      <section className="mp-skills" id={"mp-instrumentos-" + (portfolio.slug || "preview")}>
+      <section className="mp-skills" id={sectionAnchor("instrumentos")}>
         <div className="mp-section-title">
           <div>
             <span className="mp-section-kicker">MEUS INSTRUMENTOS</span>
@@ -236,7 +239,7 @@ export default function MusicianPortfolioView({ portfolio, preview = false, onSh
       </section>
 
       {highlights.length > 0 && <section className="mp-career"
-        id={"mp-trajetoria-" + (portfolio.slug || "preview")}>
+        id={sectionAnchor("trajetoria")}>
         <div>
           <span className="mp-section-kicker">POR ONDE JÁ PASSEI</span>
           <h2>Experiências e <span>projetos.</span></h2>
@@ -253,7 +256,7 @@ export default function MusicianPortfolioView({ portfolio, preview = false, onSh
       <section className="mp-work" id={workAnchor}>
         <div className="mp-work-top">
           <div>
-            <span className="mp-section-kicker">SOM DE VERDADE</span>
+            <span className="mp-section-kicker">MINHA MÚSICA EM CENA</span>
             <h2>Meu <span>trabalho.</span></h2>
             <p>Vídeos, apresentações e registros da minha música.</p>
           </div>
@@ -264,6 +267,7 @@ export default function MusicianPortfolioView({ portfolio, preview = false, onSh
             const id = youTubeId(url);
             return <a key={url} className="mp-work-card" href={url}
               target="_blank" rel="noopener noreferrer"
+              onClick={preview ? event => event.preventDefault() : undefined}
               aria-label={"Abrir apresentação " + (index+1) + " em nova aba"}>
               <div className="mp-work-thumb">
                 {id ? <img src={"https://i.ytimg.com/vi/" + id + "/hqdefault.jpg"}
@@ -291,18 +295,19 @@ export default function MusicianPortfolioView({ portfolio, preview = false, onSh
       {socials.length > 0 && <section className="mp-social-section">
         <div>
           <span className="mp-section-kicker">ACOMPANHE MEU SOM</span>
-          <h2>Me encontre <span>online.</span></h2>
+          <h2>Vamos nos <span>conectar.</span></h2>
         </div>
         <div className="mp-social-grid">
           {socials.map(({url,label,Icon}) => <a key={label} href={url}
-            target="_blank" rel="noopener noreferrer">
+            target="_blank" rel="noopener noreferrer"
+              onClick={preview ? event => event.preventDefault() : undefined}>
             <Icon size={20}/><span>{label}</span><ArrowUpRight size={16}/>
           </a>)}
         </div>
       </section>}
 
       <footer className="mp-bottom">
-        <div><span className="mp-end-mark">SF.</span><span>UM ESPAÇO GRATUITO PARA QUEM VIVE DE MÚSICA</span></div>
+        <div><span className="mp-end-mark">SF.</span><span>MINHA MÚSICA, MEU PORTFÓLIO · STAGEFLOW</span></div>
         {!preview && onShare && <button type="button" onClick={onShare} className="mp-share">
           Compartilhar portfólio <Share2 size={15}/></button>}
       </footer>
