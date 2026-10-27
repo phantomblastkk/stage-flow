@@ -456,7 +456,7 @@ export default function MinhaConta(){
            <div><strong>O que fica privado?</strong>
              <p>Seu e-mail de acesso, sua senha e dados internos da conta não aparecem nas páginas públicas. Informações de contratação e recursos privados só podem ser lidos pelas pessoas autorizadas.</p>
              <p>Para ocultar fotos, biografia ou o perfil inteiro, altere a publicação no editor de cantor ou músico e salve. A página pública só mostra conteúdo publicado.</p>
-             <Link href="/privacidade">Ler a política de privacidade <ExternalLink size={14}/></Link>
+             <button type="button" className="account-inline-action" onClick={()=>switchTab("seguranca")}>Revisar segurança da minha conta <ArrowRight size={15}/></button>
            </div>
          </div>
        </section>}
