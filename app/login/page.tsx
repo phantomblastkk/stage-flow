@@ -7,16 +7,22 @@ import { createClient } from "@/lib/supabase/client";
 
 export default function LoginPage() {
   const [inviteCode, setInviteCode] = useState("");
+  const [checkingSession,setCheckingSession] = useState(true);
   useEffect(() => {
     const code=new URLSearchParams(window.location.search).get("convite") || "";
     setInviteCode(code);
-    // Convites continuam sendo tratados pela tela de convite; sem convite,
-    // uma sessão já válida deve voltar ao painel, nunca pedir senha novamente.
-    if(code)return;
+    // During auth verification, never render a password form to someone
+    // already logged in. The login page is not a logout action.
+    if(code){setCheckingSession(false);return;}
     let active=true;
-    void createClient().auth.getUser().then(({data,error})=>{
-      if(active && !error && data.user) window.location.replace("/painel");
-    }).catch(()=>{});
+    async function check(){
+      try{
+        const {data,error}=await createClient().auth.getUser();
+        if(active&&!error&&data.user){window.location.replace("/painel");return;}
+      }catch{/* On network failure show the form without signing anyone out. */}
+      if(active)setCheckingSession(false);
+    }
+    void check();
     return()=>{active=false};
   }, []);
   const [email, setEmail] = useState("");
@@ -38,6 +44,12 @@ export default function LoginPage() {
       setMessage(err instanceof Error ? err.message : "Não foi possível entrar. Confira os dados e tente novamente.");
     } finally { setBusy(false); }
   }
+
+  if(checkingSession)return <main className="auth-wrap">
+    <div className="container" style={{minHeight:"60vh",display:"grid",placeItems:"center",textAlign:"center"}}>
+      <p style={{color:"var(--muted)"}}>Verificando sua sessão do Stage Flow...</p>
+    </div>
+  </main>;
 
   return <main className="auth-wrap">
     <aside className="auth-aside"><Link className="brand" href="/"><span className="brand-mark">S</span> stage flow</Link><div><div className="eyebrow">BEM-VINDO DE VOLTA</div><h1>Sua próxima apresentação começa <span className="accent">aqui.</span></h1><p className="tagline">Entre para acompanhar sua agenda musical, seus convites e as novidades da plataforma.</p></div><Link href="/" className="fine"><ArrowLeft size={14} style={{display:"inline",verticalAlign:"middle"}}/> Voltar ao início</Link></aside>
