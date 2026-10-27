@@ -151,3 +151,17 @@ test("public musician sharing falls back to a selectable URL when clipboard is b
  assert.match(publicMusician,/event\.currentTarget\.select\(\)/);
  assert.match(css,/\.mp-public-manual-share input:focus-visible/);
 });
+
+test("switching singer editor tabs refreshes eligibility and preserves the Pro draft",()=>{
+ const editor=source("app/meu-perfil-artistico/page.tsx");
+ const premium=source("components/singer-pro-editor.tsx");
+ const publication=source("app/meu-perfil-artistico/site-profissional/pro-publish-controls.tsx");
+ assert.match(editor,/proVisited &&/);
+ assert.match(editor,/active=\{activeTab === "pro"\}/);
+ assert.match(editor,/onEditData=\{\(\) => switchTab\("dados"\)\}/);
+ assert.match(premium,/if \(!active \|\| loading\) return/);
+ assert.match(premium,/stage_my_artist_page/);
+ assert.match(premium,/onEditData\(\)/);
+ assert.match(publication,/useEffect\(\(\)=>\{if\(active\)void load\(\);\},\[active\]\)/);
+ assert.doesNotMatch(publication,/setInfo\(\{entitled:true/);
+});
