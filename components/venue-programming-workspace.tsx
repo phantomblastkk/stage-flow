@@ -554,7 +554,7 @@ export default function VenueProgrammingWorkspace({mode}: {mode: "admin" | "part
                   <button type="button" disabled={!!busy} onClick={()=>setPendingFlyer(null)}>Retirar</button>
                 </div>}
                 <p className="fine">Um show novo ou rascunho marcado como publicado só será liberado após vincular o flyer selecionado. Se o envio falhar, você pode repetir a operação aqui, sem criar outro show.</p>
-              </div>}
+              </div>
               <div className="venue-program-buttons">
                 <button className="btn btn-primary" type="submit" disabled={!!busy}>
                   <Save size={16}/>{busy==="save"?"Salvando...":"Salvar show"}</button>
