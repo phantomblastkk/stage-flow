@@ -62,3 +62,26 @@ test("history, optional financial breakdown and all roles are connected",()=>{
   assert.doesNotMatch(page,/\.from\("stage_show_participation_finance"\)/);
   assert.match(read("app/meus-shows/meus-shows.css"),/show-history-list/);
 });
+
+
+test("next gigs are visible before past history with private mobile briefing shortcuts",()=>{
+  const fn=getFn("stage_my_show_history");
+  const css=read("app/meus-shows/meus-shows.css");
+  assert.match(fn,/musician_id=auth\.uid\(\) and status='accepted'/);
+  assert.match(fn,/producer_id=auth\.uid\(\)/);
+  assert.match(page,/const upcoming=useMemo\(\(\)=>scoped\.filter\(r=>/);
+  assert.match(page,/r\.event_status!=="cancelled"&&r\.event_status!=="completed"/);
+  assert.match(page,/new Date\(r\.starts_at\)\.getTime\(\)>Date\.now\(\)/);
+  assert.match(page,/sort\(\(a,b\)=>new Date\(a\.starts_at\)\.getTime\(\)-new Date\(b\.starts_at\)\.getTime\(\)\)/);
+  assert.match(page,/\.slice\(0,6\)/);
+  assert.match(page,/aria-label="Próximas apresentações"/);
+  assert.match(page,/upcoming\.map\(\(r,index\)=>/);
+  assert.match(page,/href=\{"\/eventos\/operacao\?evento="\+encodeURIComponent\(r\.event_id\)\}/);
+  assert.match(page,/href="\/notificacoes"/);
+  assert.match(page,/href="\/meus-convites"/);
+  assert.match(page,/Alterações de horários e logística podem gerar avisos/);
+  assert.match(css,/\.show-history-upcoming-list/);
+  assert.match(css,/@media\(max-width:720px\)/);
+  assert.match(css,/@media\(max-width:450px\)/);
+  assert.doesNotMatch(page,/\.from\("invitations"\)|\.from\("stage_show_operations"\)/);
+});
