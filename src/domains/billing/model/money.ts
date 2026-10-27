@@ -35,7 +35,13 @@ export function optionalCents(value: MoneyValue): number | null {
 
 const currency = new Intl.NumberFormat("pt-BR", { style: "currency", currency: "BRL" });
 export function formatCents(value: number | null | undefined): string {
-  return value == null ? "A definir" : currency.format(assertCents(value) / 100);
+  if (value == null) return "A definir";
+  assertCents(value);
+  const units = Math.trunc(value / 100);
+  const whole = units === 0 ? (value < 0 ? -0 : 0) : units;
+  const fraction = String(Math.abs(value % 100)).padStart(2, "0");
+  // Format the integer part separately: dividing very large safe-cent values would lose cents.
+  return currency.formatToParts(whole).map(part => part.type === "fraction" ? fraction : part.value).join("");
 }
 export function formatAmount(value: MoneyValue): string { return formatCents(toCents(value)); }
 export function decimalCents(value: number, separator = ","): string {

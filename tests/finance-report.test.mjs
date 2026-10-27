@@ -2,7 +2,7 @@ import test from "node:test";
 import assert from "node:assert/strict";
 import { loadTsModule } from "./helpers/load-ts-module.mjs";
 const { buildFinanceReport } = await loadTsModule("src/domains/billing/model/finance-report.ts");
-const { toCents, addCents, decimalCents, parseAmountInput, financeMonthKey } = await loadTsModule("src/domains/billing/model/money.ts");
+const { toCents, addCents, decimalCents, formatCents, parseAmountInput, financeMonthKey } = await loadTsModule("src/domains/billing/model/money.ts");
 const { buildFinanceCsv, safeCsvCell } = await loadTsModule("src/domains/billing/model/finance-csv.ts");
 const { buildFinanceSummaryRequest, parseFinanceSummaryResponse } = await loadTsModule("src/domains/billing/contracts/finance-summary.ts");
 const all = { mode: "all", year: "all", month: "all" };
@@ -52,6 +52,8 @@ test("decimal addition never accumulates binary floating-point drift", () => {
   assert.equal(decimalCents(-29), "-0,29");
   assert.equal(parseAmountInput(" 12,34 "), 12.34);
   assert.equal(parseAmountInput("12,345"), null);
+  assert.match(formatCents(-29), /-R\$\s*0,29/);
+  assert.match(formatCents(Number.MAX_SAFE_INTEGER), /90\.071\.992\.547\.409,91$/);
 });
 
 test("cancelled shows are excluded from totals, monthly analyses and exported rows", () => {
