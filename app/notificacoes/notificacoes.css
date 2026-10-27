@@ -1,0 +1,40 @@
+.notifications-page{min-height:100vh;padding-bottom:55px;background:radial-gradient(ellipse at 78% 0%,#4931684f,transparent 58%),var(--bg)}
+.notifications-hero{padding:41px 0 27px}
+.notifications-hero h1{font:900 clamp(35px,5vw,49px)/1.12 Manrope,sans-serif;letter-spacing:-1.6px;margin:17px 0}
+.notifications-hero>p{color:var(--muted);font-size:13px;line-height:1.75;max-width:750px}
+.notifications-metrics{display:flex;gap:12px;flex-wrap:wrap;margin-top:22px}
+.notifications-metrics span{display:flex;gap:9px;align-items:center;background:#28203c;border:1px solid #634b86;color:#cdbde3;font-size:12px;padding:11px 14px;border-radius:12px}
+.notifications-metrics strong{color:#e5d0ff;font-size:17px}
+.notifications-metrics svg{color:#c39cf6}
+.notifications-body{border:1px solid #50406a;background:linear-gradient(130deg,#201b33,#171628);border-radius:18px;padding:21px}
+.notifications-toolbar{display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap;border-bottom:1px solid #514067;padding-bottom:18px}
+.notifications-filters{display:flex;align-items:center;gap:8px;flex-wrap:wrap}
+.notifications-filters button{background:#2a2240;border:1px solid #594377;border-radius:999px;padding:10px 14px;color:#c9b8df;font-size:12px;font-weight:800;cursor:pointer}
+.notifications-filters button[aria-pressed=true]{background:#784acd;border-color:#b28fe8;color:#fff}
+.notifications-actions{display:flex;align-items:center;gap:8px;flex-wrap:wrap}
+.notifications-actions .btn{font-size:11px;padding:10px}
+.notifications-feed>section>h2{margin:24px 0 12px;font:850 13px Manrope,sans-serif;text-transform:capitalize;color:#c5a7ef}
+.notifications-list{display:grid;gap:10px}
+.notifications-item{display:flex;gap:15px;background:#232033;border:1px solid #453956;border-radius:14px;padding:17px}
+.notifications-item.is-unread{background:linear-gradient(120deg,#302445,#221b34);border-color:#835cac}
+.notifications-icon{width:44px;height:44px;flex:none;display:grid;place-items:center;border:1px solid #675084;background:#37284f;color:#d6baff;border-radius:13px}
+.notifications-icon.invite_accepted,.notifications-icon.proposal_accepted{color:#c4ecd2;border-color:#567a66;background:#24392d}
+.notifications-icon.invite_cancelled,.notifications-icon.invite_declined,.notifications-icon.proposal_declined{color:#e9bfd0;border-color:#7f5169;background:#402a38}
+.notifications-content{flex:1;min-width:0}
+.notifications-item-title{display:flex;align-items:center;gap:10px;flex-wrap:wrap}
+.notifications-item-title strong{font:850 15px Manrope,sans-serif;color:#f1e9fc}
+.notifications-unread-dot{height:8px;width:8px;flex:none;border-radius:100%;background:#ac81ff}
+.notifications-content>p{font-size:12px;line-height:1.65;color:#baafcd;margin:8px 0 10px;overflow-wrap:anywhere}
+.notifications-item-meta{display:flex;align-items:center;gap:12px;flex-wrap:wrap;color:#aa9dbc;font-size:10px}
+.notifications-item-meta span{display:flex;align-items:center;gap:5px}
+.notifications-item-actions{display:flex;align-items:center;flex-wrap:wrap;gap:8px;margin-top:14px}
+.notifications-item-actions .btn{font-size:11px;padding:9px 12px}
+.notifications-empty{padding:55px 18px;display:flex;align-items:center;justify-content:center;flex-direction:column;gap:12px;text-align:center;color:#cdb0f6}
+.notifications-empty h2{margin:0;font:850 20px Manrope,sans-serif}
+.notifications-empty p{max-width:430px;font-size:12px;color:#b5a6c9;line-height:1.65;margin:0 0 9px}
+.notifications-loading{display:flex;align-items:center;gap:9px;padding:35px 10px;color:#bfa7da}
+.notifications-feedback{border:1px solid #74569c;background:#2c2241;border-radius:11px;color:#ecddff;padding:13px;font-size:12px;margin-bottom:17px}
+.notifications-feedback.is-error{background:#3e2838;border-color:#965a78;color:#ffd7e4}
+.notifications-footer{color:#a99dbd;line-height:1.7;font-size:11px;margin:19px 0}
+.notifications-page button:focus-visible,.notifications-page a:focus-visible{outline:2px solid #cfafff;outline-offset:3px}
+@media(max-width:640px){.notifications-body{padding:13px}.notifications-item{padding:13px;gap:10px}.notifications-icon{width:36px;height:36px}.notifications-item-actions .btn{flex:1}.notifications-toolbar{align-items:stretch}.notifications-actions .btn{flex:1}}
