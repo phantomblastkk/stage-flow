@@ -39,9 +39,9 @@ test("profile hub sits by notifications and keeps distinct singer/musician publi
  assert.match(menu,/href="\/minha-conta\?aba=musico"/);
  assert.match(menu,/isOwnerAdmin&&<Link/);
  assert.match(menu,/event\.key==="Escape"/);
-  assert.match(dashboard,/profile\\?\\.is_singer&&profile.is_musician&&/);
-  assert.match(dashboard,/changeExperience\\("support"\\)/);
-  assert.match(dashboard,/isSinger=\\{Boolean\\(profile\\?\\.is_singer\\)\\}/);
+  assert.ok(dashboard.includes("profile?.is_singer&&profile.is_musician&&"));
+  assert.ok(dashboard.includes('changeExperience("support")'));
+  assert.ok(dashboard.includes("isSinger={Boolean(profile?.is_singer)}"));
  assert.match(hub,/Meus perfis e funções/);
  assert.match(hub,/Cantor \/ artista principal/);
  assert.match(hub,/Músico \/ instrumentista/);
