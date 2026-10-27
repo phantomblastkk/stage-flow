@@ -78,3 +78,14 @@ Migrações aplicadas no QA: `supabase/venue_approval_workflow_migration.sql` e 
 - **Copiar link** continua disponível separadamente. Cancelar o compartilhamento nativo não publica nada nem altera o show.
 - Apenas eventos com status `published` podem receber um link específico em `?mes=AAAA-MM&show=<uuid>`; a visualização pública continua usando exclusivamente a RPC pública do calendário.
 - O teste automatizado cobre o ciclo de vida da prévia, a validação de erro, o compartilhamento nativo e o fallback. O teste visual com upload real e conta administrativa autenticada continua pendente porque a conexão de acesso ao deployment QA retorna HTTP 403.
+
+
+## Perfil oficial: prévia privada e identidade visual (27/10/2026)
+
+- O administrador vê uma prévia responsiva da **capa, logotipo, nome, cidade e descrição**. Alterações nos campos de texto aparecem na prévia antes de serem salvas; **a prévia não publica dados**.
+- Para logotipo e capa de casa aprovada, o fluxo passou a ser: **Selecionar imagem → Ver prévia local → Confirmar envio**. Escolher arquivo não faz upload nem modifica a identidade publicada.
+- O arquivo precisa ser JPG, PNG ou WebP, não vazio, com tamanho máximo de 5 MB. A prévia temporária usa `URL.createObjectURL` e seu recurso é liberado com `URL.revokeObjectURL` ao remover ou trocar a imagem. Falha de exibição remove o arquivo selecionado.
+- Após confirmação, o backend ainda verifica permissão administrativa, caminho pertencente à casa e existência do objeto no bucket. O fluxo anterior de aprovação continua obrigatório: sugestões pendentes e rejeitadas não podem receber logotipo, capa, perfil público, programação ou flyers.
+- O painel bloqueia troca de casa enquanto ocorre uma operação de salvamento ou upload para evitar que o arquivo seja associado ao cadastro errado.
+- Teste visual recomendado: com uma conta administradora QA, abra uma casa já aprovada, selecione uma capa, confirme que o perfil público **não muda antes de clicar em Confirmar envio**, confirme a imagem e confira sua aparição na página pública. Repita com logotipo no celular, teste um arquivo maior que 5 MB e uma imagem inválida. Não faça upload de imagens privadas ou de produção durante o teste.
+- CI e validações estáticas verificam a nova prévia e o fluxo de confirmação. Um upload real com uma conta administrativa pelo navegador permanece pendente até que o acesso automatizado autorizado à Vercel QA esteja disponível.
