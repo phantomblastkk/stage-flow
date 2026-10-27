@@ -413,6 +413,49 @@ export default function AdminCasasPage() {
               </div>
              </div>}
             {form.id && form.approval_status==="rejected"&&<p className="venue-admin-review">Sugestão rejeitada. Nenhum perfil público está disponível.</p>}
+            <section className="venue-admin-profile-preview" aria-label="Prévia privada do perfil da casa">
+              <div className="venue-admin-preview-top">
+                <div>
+                  <span className="eyebrow"><Building2 size={14}/> PRÉVIA DO PERFIL</span>
+                  <p>Confira a aparência da página. Mudanças de texto precisam ser salvas; imagens selecionadas precisam de envio confirmado.</p>
+                </div>
+                <span className="venue-admin-preview-state">
+                  {form.id&&form.approval_status==="approved"&&form.active&&form.is_official&&form.slug
+                    ?"Página oficial existente":"Prévia privada"}
+                </span>
+              </div>
+              <div className="venue-admin-preview-cover">
+                {(previewUrls.cover||form.cover_path)
+                  ?<img src={previewUrls.cover||mediaUrl(form.cover_path)}
+                    alt="Prévia da capa da casa"/>
+                  :<div className="venue-admin-preview-placeholder"><ImagePlus size={35}/><span>Capa panorâmica</span></div>}
+              </div>
+              <div className="venue-admin-preview-identity">
+                <div className="venue-admin-preview-logo">
+                  {(previewUrls.logo||form.logo_path)
+                    ?<img src={previewUrls.logo||mediaUrl(form.logo_path)}
+                      alt="Prévia do logotipo da casa"/>
+                    :<Building2 size={32}/>}
+                </div>
+                <div className="venue-admin-preview-copy">
+                  <strong>{form.name.trim()||"Nome da casa de show"}</strong>
+                  <p><MapPin size={14}/>{[
+                    cities.find(c=>c.id===form.city_id)?.name||form.city_name||"Cidade a informar",
+                    cities.find(c=>c.id===form.city_id)?.state_code||form.state_code
+                  ].filter(Boolean).join(" · ")}</p>
+                  <p className="venue-admin-preview-description">
+                    {form.description.trim()||"Descreva o ambiente, os estilos musicais e a experiência da casa para os visitantes."}
+                  </p>
+                </div>
+              </div>
+              <p className="venue-admin-preview-footnote">
+                {form.approval_status!=="approved"
+                  ?"Este cadastro aguarda autorização administrativa e não possui uma página pública."
+                  :previewUrls.logo||previewUrls.cover
+                    ?"Há imagens selecionadas que ainda não foram enviadas. Esta é apenas uma prévia local."
+                    :"A prévia é interna ao painel. O site público mostra somente os dados já salvos."}
+              </p>
+            </section>
             <form onSubmit={save}>
               <div className="venue-admin-fields">
                 <div className="field"><label htmlFor="venue-admin-name">Nome da casa *</label>
@@ -474,18 +517,36 @@ export default function AdminCasasPage() {
                   return <div className="venue-admin-media-card" key={kind}>
                     <strong>{kind === "logo" ? "Logotipo" : "Capa"}</strong>
                     <div className={"venue-admin-image " + kind}>
-                      {path ? <img src={mediaUrl(path)} alt={kind === "logo" ? "Logotipo cadastrado" : "Capa cadastrada"}/> :
+                      {previewUrls[kind] ? <img src={previewUrls[kind]}
+                        alt={kind==="logo"?"Prévia do novo logotipo":"Prévia da nova capa"}
+                        onError={()=>{setPendingImages(old=>({...old,[kind]:null}));setError("Não foi possível abrir a imagem. Escolha outro arquivo.");}}/>
+                        :path ? <img src={mediaUrl(path)} alt={kind === "logo" ? "Logotipo cadastrado" : "Capa cadastrada"}/> :
                         <ImagePlus size={28}/>}
                     </div>
-                    <label className={"btn btn-quiet " + (!form.id || form.approval_status!=="approved" || !!uploading ? "venue-admin-disabled" : "")}>
-                      <UploadCloud size={15}/> {uploading === kind ? "Enviando..." : "Enviar imagem"}
+                    {pendingImages[kind]&&<div className="venue-admin-image-selected">
+                      <span><strong>{pendingImages[kind]?.name}</strong> · {((pendingImages[kind]?.size||0)/1024/1024).toFixed(2)} MB</span>
+                      <small>Prévia local. O arquivo não foi enviado nem publicado.</small>
+                    </div>}
+                    <label className={"btn btn-quiet " + (!form.id || form.approval_status!=="approved" || !!uploading || saving ? "venue-admin-disabled" : "")}>
+                      <ImagePlus size={15}/> {pendingImages[kind]?"Trocar imagem":"Selecionar imagem"}
                       <input type="file" accept="image/jpeg,image/png,image/webp" hidden
                         disabled={!form.id || form.approval_status!=="approved" || !!uploading || saving}
                         onChange={(e) => {
-                          void upload(kind, e.target.files?.[0]);
+                          selectIdentityImage(kind,e.target.files?.[0]);
                           e.currentTarget.value = "";
                         }}/>
                     </label>
+                    {pendingImages[kind]&&<div className="venue-admin-image-actions">
+                      <button type="button" className="btn btn-primary"
+                        disabled={!!uploading||saving||form.approval_status!=="approved"}
+                        onClick={()=>void upload(kind,pendingImages[kind]||undefined)}>
+                        <UploadCloud size={15}/>{uploading===kind?"Enviando...":"Confirmar envio"}
+                      </button>
+                      <button type="button" className="btn btn-quiet"
+                        disabled={!!uploading} onClick={()=>setPendingImages(old=>({...old,[kind]:null}))}>
+                        Cancelar
+                      </button>
+                    </div>}
                   </div>;
                 })}
               </div>
