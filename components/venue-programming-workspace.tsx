@@ -5,7 +5,7 @@ import Link from "next/link";
 import { useParams, useRouter } from "next/navigation";
 import {
   ArrowLeft, CalendarDays, ImagePlus, LoaderCircle, MessageCircle, Plus,
-  Save, Trash2, UploadCloud, Images, Music2, ShieldCheck, ExternalLink, Clock3, CheckCircle2, Copy
+  Save, Trash2, UploadCloud, Images, Music2, ShieldCheck, ExternalLink, Clock3, CheckCircle2, Copy, Share2
 } from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
 import VenueMonthCalendar, {
@@ -95,6 +95,13 @@ export default function VenueProgrammingWorkspace({mode}: {mode: "admin" | "part
   const [selectedDay,setSelectedDay] = useState<number|null>(null);
   const [showForm,setShowForm] = useState<FormShow>(()=>blank(id,venueDayKey(new Date().toISOString())));
   const [pendingFlyer,setPendingFlyer] = useState<File|null>(null);
+  const [pendingFlyerPreview,setPendingFlyerPreview] = useState<string|null>(null);
+  useEffect(()=>{
+    if(!pendingFlyer){setPendingFlyerPreview(null);return;}
+    const preview=URL.createObjectURL(pendingFlyer);
+    setPendingFlyerPreview(preview);
+    return ()=>URL.revokeObjectURL(preview);
+  },[pendingFlyer]);
   const [caption,setCaption] = useState("");
   const [busy,setBusy] = useState("");
   const [error,setError] = useState("");
@@ -361,17 +368,37 @@ export default function VenueProgrammingWorkspace({mode}: {mode: "admin" | "part
   const publishedFlyers=shows.filter(x=>x.status==="published"&&!!x.flyer_path).length;
   const selectedPublishedShow=shows.find(x=>
     x.id===showForm.id&&x.status==="published")||null;
-  async function copyPublishedShowLink(){
-    if(!publicSlug||!selectedPublishedShow)return;
+  function publishedShowUrl(){
+    if(!publicSlug||!selectedPublishedShow)return null;
     const url=new URL("/casa/"+publicSlug,window.location.origin);
     url.searchParams.set("mes",venueDayKey(selectedPublishedShow.starts_at).slice(0,7));
     url.searchParams.set("show",selectedPublishedShow.id);
+    return url.toString();
+  }
+  async function copyPublishedShowLink(){
+    const url=publishedShowUrl();
+    if(!url)return;
     try{
       if(!navigator.clipboard?.writeText)throw new Error("Clipboard unavailable");
-      await navigator.clipboard.writeText(url.toString());
+      await navigator.clipboard.writeText(url);
       setError("");setSuccess("Link público da apresentação copiado.");
     }catch{
-      setError("Não foi possível copiar. Abra a apresentação e use Compartilhar do navegador.");
+      setError("Não foi possível copiar. Use Compartilhar no celular ou abra a apresentação.");
+    }
+  }
+  async function sharePublishedShow(){
+    const url=publishedShowUrl();
+    if(!url||!selectedPublishedShow)return;
+    if(!navigator.share){
+      await copyPublishedShowLink();
+      return;
+    }
+    try{
+      await navigator.share({title:selectedPublishedShow.title,url});
+      setError("");setSuccess("Compartilhamento concluído.");
+    }catch(err){
+      if(err instanceof Error&&err.name==="AbortError")return;
+      setError("O compartilhamento não pôde ser concluído. Você pode copiar o link.");
     }
   }
   const currentFlyer=shows.find(x=>x.id===showForm.id)?.flyer_path;
@@ -516,6 +543,9 @@ export default function VenueProgrammingWorkspace({mode}: {mode: "admin" | "part
                 <button type="button" className="btn btn-quiet" onClick={()=>void copyPublishedShowLink()}>
                   <Copy size={15}/> Copiar link
                 </button>
+                <button type="button" className="btn btn-quiet" onClick={()=>void sharePublishedShow()}>
+                  <Share2 size={15}/> Compartilhar show
+                </button>
               </div>
             </div>}
             <form onSubmit={saveShow}>
@@ -550,7 +580,12 @@ export default function VenueProgrammingWorkspace({mode}: {mode: "admin" | "part
                 <input id="vp-new-flyer" type="file" accept="image/jpeg,image/png,image/webp"
                   disabled={!!busy} onChange={e=>{chooseFlyerForNewShow(e.target.files?.[0]);e.target.value="";}}/>
                 {pendingFlyer&&<div className="venue-program-pending-flyer">
-                  <span>Selecionado: <strong>{pendingFlyer.name}</strong></span>
+                  {pendingFlyerPreview&&<img className="venue-program-flyer-preview"
+                    src={pendingFlyerPreview} alt="Prévia local do flyer selecionado"
+                    onError={()=>setError("Não foi possível abrir a imagem. Escolha outro arquivo JPG, PNG ou WebP.")}/>}
+                  <span>Selecionado: <strong>{pendingFlyer.name}</strong>
+                    <small>{(pendingFlyer.size/1024/1024).toFixed(2)} MB · Prévia antes do envio</small>
+                  </span>
                   <button type="button" disabled={!!busy} onClick={()=>setPendingFlyer(null)}>Retirar</button>
                 </div>}
                 <p className="fine">Um show novo ou rascunho marcado como publicado só será liberado após vincular o flyer selecionado. Se o envio falhar, você pode repetir a operação aqui, sem criar outro show.</p>
