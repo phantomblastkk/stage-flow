@@ -35,7 +35,9 @@ Para transferir a posse, execute essa operação manualmente sob conta privilegi
 - Usuários cadastrados: lista paginada de 30 por vez, pesquisa por nome, arroba ou e-mail e ordenação de **mais antigos primeiro** (padrão) ou mais novos primeiro. Exportação em CSV somente da página visível, indicada no botão, com proteção contra execução de fórmulas em planilhas.
 - Casas e aprovações: fila de solicitações, filtros, aprovação e rejeição com confirmação. O controle usa a implementação já existente `stage_venue_admin_review`, que cria a casa oficial após aprovação. A central também liga à administração completa de casas, responsáveis e programação.
 - Selos oficiais: perfis de **cantor** e **músico** recebem verificação independente mesmo quando são a mesma pessoa. Casas só podem receber selo após aprovação e publicação oficial. Os botões concedem ou retiram o selo sem alterar assinatura, plano ou permissões.
-- Histórico: log privado de concessão/revogação de selo e aprovação/rejeição de casas, com executor, tipo de entidade e data.
+- Acesso Pro por cortesia: na aba Usuários, pesquisar qualquer conta de cantor e **conceder ou retirar a cortesia Pro**. O botão usa `stage_owner_admin_set_pro_access`, e o estado real vem de `stage_owner_admin_pro_snapshot`. A cortesia reutiliza `stage_pro_site_access`/`stage_pro_site_is_entitled` e libera os recursos Pro sem tocar em `plan_code`, assinatura ou cobrança. A publicação do perfil e das galerias continua sendo decisão do cantor.
+- Proteção do plano pago: se houver assinatura Pro ativa, a central mostra **Pro por assinatura** e não oferece um botão para cancelá-la. Se houver cortesia e assinatura simultaneamente, retirar a cortesia não remove a assinatura. Revogação da cortesia desativa acesso Pro somente quando não há direito pago; o conteúdo rascunhado permanece armazenado e não é apagado.
+- Histórico: log privado de concessão/revogação de selo, cortesia Pro e aprovação/rejeição de casas, com executor, tipo de entidade e data.
 
 ## Aparência pública
 
@@ -65,3 +67,13 @@ Aprovações e selos exigem confirmação na interface e são sempre verificados
 - A área privada é acessível em `/admin/central`. O painel `/painel` só exibe o atalho administrativo se o RPC de autorização retornar `true`; o login aceita exclusivamente `next=/admin/central` como retorno especial (sem redirecionamento aberto).
 
 **Não divulgar UUID, e-mail, chaves, nem lista de usuários em logs públicos.**
+
+## Migração de administração Pro
+
+- Arquivo incremental: `supabase/stage_owner_admin_pro_access_migration.sql` (requer `stage_owner_admin_hub_migration.sql` e `pro_artist_publication_migration.sql`).
+- Adiciona as operações `pro_access_granted` / `pro_access_revoked` ao histórico já protegido. Não concede Pro a ninguém durante a migração.
+- `stage_owner_admin_pro_snapshot(uuid[])`: somente proprietário; valida no máximo 30 UUIDs por página; informa manual, pago e efetivo.
+- `stage_owner_admin_set_pro_access(uuid,boolean)`: valida `auth.uid()` no PostgreSQL, verifica função de cantor, serializa acesso e grava auditoria apenas se houver mudança efetiva. Não altera plano ou cobrança.
+- A página `/admin/central` nunca controla planos financeiros, apenas permissões promocionais separadas. A confirmação é obrigatória para conceder ou retirar.
+- Testes de concessão/revogação em QA devem rodar com `ROLLBACK`, incluindo intruso, idempotência, ausência de `INSERT/DELETE` direto por `authenticated` e histórico de auditoria.
+- Permanecem as diretrizes: commits **somente na `main`** e nenhum deploy automático; publicação do código somente mediante autorização manual.
