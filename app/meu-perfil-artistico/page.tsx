@@ -283,7 +283,7 @@ export default function MeuPerfilArtistico() {
         </Link>}
       </div>}
 
-      {activeTab === "dados" && <>
+      <div className="singer-editor-data-panel" style={{ display: activeTab === "dados" ? "block" : "none" }}>
       {message && <div role={error ? "alert" : "status"} className="coming"
         style={error ? { borderColor: "#754343", background: "#281919", color: "#ffb5b5", maxWidth: 770 } : { maxWidth: 770 }}>
         {!error && <CheckCircle2 size={15} style={{ display: "inline", verticalAlign: "middle", marginRight: 6 }}/>}
@@ -478,7 +478,7 @@ export default function MeuPerfilArtistico() {
           </section>
         </aside>
       </div>}
-      </>}
+      </div>
       {proVisited && <div className="singer-editor-pro-panel" style={{ display: activeTab === "pro" ? "block" : "none" }}>
         <SingerProEditor active={activeTab === "pro"} onEditData={() => switchTab("dados")}/>
       </div>}
