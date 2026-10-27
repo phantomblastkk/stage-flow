@@ -5,6 +5,13 @@ import { useEffect, useState } from "react";
 import { Music2, ArrowLeft } from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
 
+// Only allow the private owner dashboard as an explicit post-login return target.
+// Other values are ignored to avoid open redirects.
+function postLoginDestination(): string {
+  return new URLSearchParams(window.location.search).get("next") === "/admin/central"
+    ? "/admin/central" : "/painel";
+}
+
 export default function LoginPage() {
   const [inviteCode, setInviteCode] = useState("");
   const [checkingSession,setCheckingSession] = useState(true);
@@ -18,7 +25,7 @@ export default function LoginPage() {
       try{
         const {data,error}=await createClient().auth.getUser();
         if(active&&!error&&data.user){
-          window.location.replace(code?"/convite?codigo="+encodeURIComponent(code):"/painel");
+          window.location.replace(code?"/convite?codigo="+encodeURIComponent(code):postLoginDestination());
           return;
         }
       }catch{/* On network failure show the form without signing anyone out. */}
@@ -40,7 +47,7 @@ export default function LoginPage() {
       const supabase = createClient();
       const { error: signInError } = await supabase.auth.signInWithPassword({ email, password });
       if (signInError) throw signInError;
-      window.location.href = inviteCode ? "/convite?codigo=" + encodeURIComponent(inviteCode) : "/painel";
+      window.location.href = inviteCode ? "/convite?codigo=" + encodeURIComponent(inviteCode) : postLoginDestination();
     } catch (err) {
       setError(true);
       setMessage(err instanceof Error ? err.message : "Não foi possível entrar. Confira os dados e tente novamente.");
