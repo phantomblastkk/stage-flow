@@ -27,6 +27,8 @@ type Venue = {
   is_official: boolean;
   is_partner: boolean;
   active: boolean;
+  approval_status: "pending" | "approved" | "rejected";
+  reviewed_at?: string | null;
   submitted_by?: string | null;
 };
 type ListResponse = { status: string; items?: Venue[] };
@@ -36,7 +38,7 @@ type AssignedManager = { profile_id: string; email: string; display_name: string
 const blank = (): Venue => ({
   id: null, name: "", city_id: null, address: "", slug: "",
   description: "", instagram_url: "", whatsapp: "", logo_path: "", cover_path: "",
-  is_official: false, is_partner: false, active: true
+  is_official: false, is_partner: false, active: true, approval_status:"approved"
 });
 
 function mediaUrl(path: string): string {
@@ -49,7 +51,8 @@ function statusMessage(status: string): string {
     invalid: "Revise os campos. Para publicar uma casa oficial, é necessário um endereço de página válido.",
     invalid_media: "O arquivo da imagem não foi reconhecido pelo banco. Faça o upload novamente.",
     duplicate: "Já existe uma casa com esse nome na cidade ou com esse endereço de página.",
-    not_found: "Esta casa não foi encontrada. Atualize a lista."
+    not_found: "Esta casa não foi encontrada. Atualize a lista.",
+    not_approved: "A casa precisa ser aprovada antes de criar perfil, URL e flyers."
   };
   return labels[status] || "Não foi possível salvar. Verifique as configurações do banco.";
 }
@@ -66,6 +69,7 @@ export default function AdminCasasPage() {
   const [form, setForm] = useState<Venue>(blank);
   const [query, setQuery] = useState("");
   const [saving, setSaving] = useState(false);
+  const [reviewing, setReviewing] = useState(false);
   const [uploading, setUploading] = useState<"logo" | "cover" | null>(null);
   const [notice, setNotice] = useState("");
   const [error, setError] = useState("");
@@ -227,6 +231,26 @@ export default function AdminCasasPage() {
     setForm((previous) => ({ ...previous, [field]: value }));
   }
 
+  async function reviewVenue(decision:"approved"|"rejected") {
+    if (!form.id || form.approval_status!=="pending" || reviewing) return;
+    if (!window.confirm(decision==="approved"
+      ? "Aprovar esta casa e disponibilizá-la no catálogo? O perfil oficial ainda precisará ser configurado."
+      : "Rejeitar esta sugestão? Ela continuará registrada, mas não ficará pública.")) return;
+    setReviewing(true);setError("");setNotice("");
+    try {
+      const {data,error}=await createClient().rpc("stage_venue_admin_review",{
+        p_venue_id:form.id,p_decision:decision
+      });
+      if(error)throw error;
+      if(data!==decision)throw Error(data==="already_reviewed"?"Esta solicitação já foi analisada. Atualize a lista.":"Não foi possível concluir a análise.");
+      await refresh(form.id);
+      setNotice(decision==="approved"
+        ? "Casa aprovada no catálogo. Agora configure a página oficial, URL e identidade visual, se necessário."
+        : "Solicitação rejeitada. Nenhuma página pública foi criada.");
+    }catch(err){setError(err instanceof Error?err.message:"Falha na análise.");}
+    finally{setReviewing(false);}
+  }
+
   async function save(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
     setSaving(true); setError(""); setNotice("");
@@ -253,6 +277,9 @@ export default function AdminCasasPage() {
     if (!form.id) {
       setError("Salve o cadastro antes de enviar imagens.");
       return;
+    }
+    if(form.approval_status!=="approved"){
+      setError("Aprove a casa antes de enviar identidade visual.");return;
     }
     const extByType: Record<string, string> = {
       "image/jpeg": "jpg", "image/png": "png", "image/webp": "webp"
@@ -294,7 +321,7 @@ export default function AdminCasasPage() {
     <header className="venue-admin-header">
       <div className="eyebrow"><ShieldCheck size={14}/> ACESSO RESTRITO</div>
       <h1>Casas de <span className="accent">show.</span></h1>
-      <p className="lead">Gerencie o catálogo colaborativo, crie páginas oficiais e destaque casas parceiras do Stage Flow.</p>
+      <p className="lead">Analise as casas indicadas por artistas antes de liberar cadastro público, endereço de página, calendário e flyers.</p>
     </header>
     {checking ? <div className="feature"><LoaderCircle size={18}/> Verificando acesso...</div> :
       !authorized ? <div className="feature venue-admin-alert" role="alert">
@@ -306,6 +333,7 @@ export default function AdminCasasPage() {
         {notice && <div className="venue-admin-message" role="status"><CheckCircle2 size={17}/>{notice}</div>}
         <div className="venue-admin-stats">
           <span><strong>{venues.length}</strong> casas cadastradas</span>
+          <span><strong>{venues.filter(v=>v.approval_status==="pending").length}</strong> aguardando aprovação</span>
           <span><strong>{venues.filter((v) => v.is_official && v.active).length}</strong> perfis oficiais ativos</span>
           <span><strong>{venues.filter((v) => v.is_partner && v.active).length}</strong> parceiras ativas</span>
         </div>
@@ -330,7 +358,7 @@ export default function AdminCasasPage() {
                   <strong>{item.name}</strong>
                   <small>{[item.city_name, item.state_code].filter(Boolean).join(" · ") || "Cidade não informada"}</small>
                   <span className="venue-admin-flags">
-                    {!item.active ? "Inativa" : item.is_partner ? "Parceira" : item.is_official ? "Oficial" : "Catálogo"}
+                    {item.approval_status==="pending"?"Aguardando aprovação":item.approval_status==="rejected"?"Rejeitada":!item.active?"Inativa":item.is_partner?"Parceira":item.is_official?"Oficial":"Catálogo"}
                   </span>
                 </span>
               </button>)}
@@ -345,9 +373,18 @@ export default function AdminCasasPage() {
             <div className="venue-admin-editor-head">
               <div><span className="venue-admin-overline">{form.id ? "EDITAR ESTABELECIMENTO" : "NOVO ESTABELECIMENTO"}</span>
                 <h2>{form.name || "Nova casa de show"}</h2></div>
-              {form.id && form.is_official && form.active && form.slug && <Link className="btn btn-quiet" target="_blank"
+              {form.id && form.approval_status==="approved" && form.is_official && form.active && form.slug && <Link className="btn btn-quiet" target="_blank"
                 href={"/casa/" + form.slug}>Ver página <ExternalLink size={15}/></Link>}
             </div>
+            {form.id && form.approval_status==="pending"&&<div className="venue-admin-review" role="group" aria-label="Analisar sugestão de casa">
+              <strong>Cadastro aguardando aprovação</strong>
+              <p>Enviada por um usuário do StageFlow. Enquanto estiver pendente, esta casa não possui página pública, URL, logotipo, fotos ou flyers. Analise a solicitação antes de publicar.</p>
+              <div className="venue-admin-review-actions">
+                <button type="button" className="btn btn-primary" disabled={reviewing||saving} onClick={()=>void reviewVenue("approved")}><CheckCircle2 size={16}/>{reviewing?"Analisando...":"Aprovar casa"}</button>
+                <button type="button" className="btn btn-quiet" disabled={reviewing||saving} onClick={()=>void reviewVenue("rejected")}>Rejeitar sugestão</button>
+              </div>
+             </div>}
+            {form.id && form.approval_status==="rejected"&&<p className="venue-admin-review">Sugestão rejeitada. Nenhum perfil público está disponível.</p>}
             <form onSubmit={save}>
               <div className="venue-admin-fields">
                 <div className="field"><label htmlFor="venue-admin-name">Nome da casa *</label>
@@ -367,7 +404,7 @@ export default function AdminCasasPage() {
                     onChange={(e) => setField("description", e.target.value)}
                     placeholder="Conte um pouco sobre o espaço, o estilo musical e a experiência..."/></div>
                 <div className="field"><label htmlFor="venue-admin-slug">Endereço da página (slug)</label>
-                  <input id="venue-admin-slug" value={form.slug}
+                  <input id="venue-admin-slug" disabled={form.approval_status!=="approved"} value={form.slug}
                     onChange={(e) => setField("slug", cleanSlug(e.target.value))}
                     placeholder="ex.: deckspetobar" maxLength={50}/>
                   <small className="fine">stageflow.com/casa/{form.slug || "nome-da-casa"}</small></div>
@@ -381,15 +418,15 @@ export default function AdminCasasPage() {
                     placeholder="https://www.instagram.com/nome_da_casa/"/></div>
               </div>
               <div className="venue-admin-checks">
-                <label><input type="checkbox" checked={form.active}
+                <label><input type="checkbox" disabled={form.approval_status!=="approved"} checked={form.active}
                   onChange={(e) => setField("active", e.target.checked)}/>
                   <span><strong>Ativa no catálogo</strong><small>Disponível nas sugestões para os músicos</small></span></label>
-                <label><input type="checkbox" checked={form.is_official}
+                <label><input type="checkbox" disabled={form.approval_status!=="approved"} checked={form.is_official}
                   onChange={(e) => {
                     setForm((old) => ({ ...old, is_official: e.target.checked, is_partner: e.target.checked ? old.is_partner : false }));
                   }}/>
                   <span><strong>Perfil oficial</strong><small>Publica a página da casa quando ativa e com slug</small></span></label>
-                <label><input type="checkbox" checked={form.is_partner} disabled={!form.is_official}
+                <label><input type="checkbox" checked={form.is_partner} disabled={form.approval_status!=="approved"||!form.is_official}
                   onChange={(e) => setField("is_partner", e.target.checked)}/>
                   <span><strong><Star size={14}/> Casa parceira</strong><small>Destaque reservado às parcerias aprovadas</small></span></label>
               </div>
@@ -412,10 +449,10 @@ export default function AdminCasasPage() {
                       {path ? <img src={mediaUrl(path)} alt={kind === "logo" ? "Logotipo cadastrado" : "Capa cadastrada"}/> :
                         <ImagePlus size={28}/>}
                     </div>
-                    <label className={"btn btn-quiet " + (!form.id || !!uploading ? "venue-admin-disabled" : "")}>
+                    <label className={"btn btn-quiet " + (!form.id || form.approval_status!=="approved" || !!uploading ? "venue-admin-disabled" : "")}>
                       <UploadCloud size={15}/> {uploading === kind ? "Enviando..." : "Enviar imagem"}
                       <input type="file" accept="image/jpeg,image/png,image/webp" hidden
-                        disabled={!form.id || !!uploading || saving}
+                        disabled={!form.id || form.approval_status!=="approved" || !!uploading || saving}
                         onChange={(e) => {
                           void upload(kind, e.target.files?.[0]);
                           e.currentTarget.value = "";
@@ -425,7 +462,7 @@ export default function AdminCasasPage() {
                 })}
               </div>
             </div>
-            {form.id && <div className="venue-admin-media venue-admin-show-review">
+            {form.id && form.approval_status==="approved" && <div className="venue-admin-media venue-admin-show-review">
               <h3><CalendarDays size={20}/> Calendário oficial da casa</h3>
               <p className="fine">Cadastre os shows desta casa, organize flyers por data, publique fotos e consulte as sugestões recebidas. Esta agenda é independente da agenda dos músicos.</p>
               <Link className="btn btn-primary" href={"/admin/casas/" + form.id + "/programacao"}>
