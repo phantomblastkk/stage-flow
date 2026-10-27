@@ -93,3 +93,15 @@ test("financial overview includes outstanding receivables and unpaid commitments
  assert.match(money,/Compromissos a pagar/);
  assert.match(money,/pendingIncomplete\?"Parcial/);
 });
+
+test("per-show financial summaries and detailed CSV preserve unknown values",()=>{
+ assert.match(money,/Resultado líquido previsto:/);
+ assert.match(money,/Resultado estimado:/);
+ assert.match(money,/A receber: <strong>/);
+ assert.match(money,/A pagar: <strong>/);
+ assert.match(money,/stage-flow-financeiro-detalhado\.csv/);
+ assert.match(money,/Compromissos a pagar","Resultado líquido previsto","Saldo de caixa registrado","Valores incompletos/);
+ assert.match(money,/r\.gross_revenue===null\?"":/);
+ assert.match(money,/r\.personal_fee===null\?"":/);
+ assert.match(money,/safeCsvCell/);
+});
