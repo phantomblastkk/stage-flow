@@ -68,3 +68,13 @@ Migrações aplicadas no QA: `supabase/venue_approval_workflow_migration.sql` e 
 - No formulário administrativo, um show novo **ou um rascunho previamente salvo** com flyer selecionado segue a ordem: gravar como rascunho, vincular a imagem e só então publicar. Isso permite repetir o upload de imagem se a primeira tentativa falhar, sem criar apresentação duplicada.
 - Arquivos selecionados podem continuar visíveis no formulário após falha de upload; o usuário pode marcar a apresentação como `Publicado` e salvar novamente. A foto precisa existir no storage e passar pela validação de caminhos da casa para ser associada.
 - A verificação automatizada testa a ordem de operações e os caminhos da interface. Um teste de upload de arquivo JPG/PNG/WebP com uma sessão humana autenticada no navegador continua necessário. Links diretos a shows não substituem permissão administrativa para alterar conteúdo.
+
+
+## Flyer e compartilhamento no celular — atualização de 27/10/2026
+
+- O formulário de programação mostra a **prévia local do flyer** JPG/PNG/WebP escolhido, o nome e o tamanho do arquivo antes de iniciar o upload (limite de 5 MB). Arquivos que o navegador não consegue abrir são retirados da seleção.
+- A prévia usa uma URL temporária do navegador e executa `URL.revokeObjectURL` ao substituir/remover a imagem, evitando acumular arquivos em memória durante a navegação.
+- A página pública e a administração oferecem **Compartilhar show** com `navigator.share` nos dispositivos compatíveis, incluindo a folha de compartilhamento do celular. Se o navegador não suportar essa API, o sistema tenta copiar o URL.
+- **Copiar link** continua disponível separadamente. Cancelar o compartilhamento nativo não publica nada nem altera o show.
+- Apenas eventos com status `published` podem receber um link específico em `?mes=AAAA-MM&show=<uuid>`; a visualização pública continua usando exclusivamente a RPC pública do calendário.
+- O teste automatizado cobre o ciclo de vida da prévia, a validação de erro, o compartilhamento nativo e o fallback. O teste visual com upload real e conta administrativa autenticada continua pendente porque a conexão de acesso ao deployment QA retorna HTTP 403.
