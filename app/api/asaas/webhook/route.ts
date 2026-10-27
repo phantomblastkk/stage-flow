@@ -43,24 +43,30 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ error: "sandbox_only" }, { status: 503 });
   }
   const url = process.env.NEXT_PUBLIC_SUPABASE_URL;
-  const key = process.env.SUPABASE_SERVICE_ROLE_KEY;
-  if (!url || !key || !url.startsWith("https://zycuprhymoukhnuamtit.supabase.co")) {
+  const anonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
+  const ingestToken = process.env.STAGE_ASAAS_INGEST_TOKEN;
+  if (url !== "https://zycuprhymoukhnuamtit.supabase.co" ||
+      !anonKey || !ingestToken || !/^[a-f0-9]{64}$/.test(ingestToken)) {
     return NextResponse.json({ error: "storage_not_configured" }, { status: 503 });
   }
   try {
-    const admin = createClient(url, key, {
+    const db = createClient(url, anonKey, {
       auth: { autoRefreshToken: false, persistSession: false }
     });
-    const { error } = await admin.from("stage_asaas_webhook_inbox").upsert({
-      event_id: event.id,
-      event_type: event.event,
-      payment_id: event.payment.id,
-      subscription_id: event.payment.subscription,
-      payment_status: event.payment.status
-    }, { onConflict: "event_id", ignoreDuplicates: true });
-    if (error) return NextResponse.json({ error: "storage_unavailable" }, { status: 503 });
-    // 200 only after durable insert or verified duplicate; never grants Pro.
-    return NextResponse.json({ received: true }, { status: 200 });
+    const { data, error } = await db.rpc("stage_asaas_ingest_verified_event", {
+      p_ingest_token: ingestToken,
+      p_event_id: event.id,
+      p_event_type: event.event,
+      p_payment_id: event.payment.id,
+      p_subscription_id: event.payment.subscription,
+      p_payment_status: event.payment.status
+    });
+    if (error || (data !== "stored" && data !== "duplicate")) {
+      // Never acknowledge before the database confirms durable receipt.
+      return NextResponse.json({ error: "storage_unavailable" }, { status: 503 });
+    }
+    // Acknowledgment is NOT payment verification and never unlocks Pro.
+    return NextResponse.json({ received: true, duplicate: data === "duplicate" }, { status: 200 });
   } catch {
     return NextResponse.json({ error: "storage_unavailable" }, { status: 503 });
   }
