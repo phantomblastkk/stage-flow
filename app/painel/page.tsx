@@ -4,8 +4,8 @@ import { useEffect, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import {
-  ArrowLeft, ArrowRight, Bell, CalendarDays, Check, Guitar, Building2,
-  LoaderCircle, LogOut, Mic2, Music2, Settings2,
+  ArrowRight, Bell, CalendarDays, Check, Guitar, Building2,
+  LoaderCircle, Mic2, Music2, Settings2,
   UserRound, Users, Inbox, Search, ChartNoAxesCombined, Globe2, ShieldCheck
 } from "lucide-react";
 import type { LucideIcon } from "lucide-react";
