@@ -21,3 +21,13 @@ Status: planejamento de migração, **não aplicado no Supabase**.
 
 ## Estado nesta etapa
 A tentativa de criar a migração Pro pelo conector foi bloqueada pela configuração de segurança da ferramenta. Não houve execução SQL nem modificação de dados do Supabase.
+
+
+## Instalação da inbox do Asaas no QA (27/10/2026)
+
+- Aplicadas ao projeto QA `zycuprhymoukhnuamtit` as migrações `asaas_webhook_inbox` e `asaas_webhook_inbox_integrity`.
+- Verificação em QA: RLS ativo, 5 constraints de integridade e 1 índice único (chave primária do evento).
+- Tabela `public.stage_asaas_webhook_inbox` mantém os eventos separados de perfis, assinaturas e pagamentos financeiros. Nenhuma assinatura foi liberada.
+- O endpoint ainda depende de `ASAAS_WEBHOOK_AUTH_TOKEN` e `SUPABASE_SERVICE_ROLE_KEY` configurados **apenas** no servidor QA; nunca enviar essas chaves pelo chat, commitar ou expor via NEXT_PUBLIC.
+- O site QA continua sem publicação deste código mais recente. Não configurar webhook real até haver deploy QA, credenciais de sandbox e teste de entrega/duplicata.
+- Para registrar sucesso, o endpoint faz upsert com `ignoreDuplicates: true`, preservando o primeiro evento recebido. O processamento idempotente posterior e a validação da titularidade da assinatura seguem pendentes.
