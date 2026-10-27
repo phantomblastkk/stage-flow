@@ -228,7 +228,7 @@ export default function OperationPage(){
   setCopying(true);setError("");setNotice("");
   try{
    if(!navigator.clipboard?.writeText)throw Error("Cópia não disponível neste navegador.");
-   await navigator.clipboard.writeText(lines.join("\\n"));
+   await navigator.clipboard.writeText(lines.join("\n"));
    setNotice("Resumo do show copiado. Confira as notificações para eventuais alterações.");
   }catch(e){
    setError(e instanceof Error?e.message:"Não foi possível copiar o resumo.");
