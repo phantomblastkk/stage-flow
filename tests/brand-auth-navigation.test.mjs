@@ -67,14 +67,14 @@ test("site navigation does not flash login during auth rehydration",()=>{
 
 test("musicians can register for free without singer invitations or compulsory WhatsApp",()=>{
  const signup=load("app/cadastro/page.tsx");
- const premium=load("app/meu-perfil-artistico/site-profissional/page.tsx");
+ const premium=load("components/singer-pro-editor.tsx");
  assert.match(signup,/useState<"lead" \| "support" \| "none">\("support"\)/);
  assert.match(signup,/Músicos não precisam de convite/);
  assert.match(signup,/const needsMusicianPhone = \(Boolean\(inviteCode\) \|\| isArtist\) && whatsappConsent/);
  assert.doesNotMatch(signup,/Esta confirmação é obrigatória/);
  assert.match(signup,/required=\{whatsappConsent\}/);
- assert.match(premium,/Recursos Pro do cantor/);
- assert.match(premium,/incluídos nos planos pagos/);
+ assert.match(premium,/Recursos Pro do perfil único de cantor/);
+ assert.match(premium,/A publicação das opções pagas exige autorização da conta/);
  assert.match(premium,/a cobrança ainda não estão ativados/);
 });
 
@@ -87,7 +87,7 @@ test("plans keep core Stage Flow free and singer Pro gated without checkout",()=
  assert.match(plans,/Valores a definir/);
  assert.match(plans,/Subdomínio personalizado incluído no plano/);
  assert.match(plans,/Não há checkout, assinatura automática/);
- assert.match(publish,/ProFeatureLock title="Portfólio profissional Pro"/);
+ assert.match(publish,/ProFeatureLock title="Personalização Pro do perfil"/);
  assert.match(publish,/!info.entitled/);
 });
 
