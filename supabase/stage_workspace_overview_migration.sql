@@ -81,18 +81,22 @@ begin
  ) order by s.starts_at,s.id),'[]'::jsonb)
  into v_upcoming
  from (
-  select distinct on (e.id) e.id,e.title,e.starts_at,e.venue,e.city,
-    case when e.producer_id=v_uid then 'organized' else 'participation' end kind
-  from public.events e
-  where e.status<>'cancelled' and e.starts_at>=now()
-    and (e.producer_id=v_uid or exists(
-      select 1 from public.invitations i
-      where i.event_id=e.id and i.musician_id=v_uid and i.status='accepted'
-    ))
-  order by e.id,e.starts_at
-  limit 100
+   (select e.id,e.title,e.starts_at,e.venue,e.city,'organized'::text kind
+    from public.events e
+    where e.producer_id=v_uid and e.status<>'cancelled'
+      and e.starts_at>=now()
+    order by e.starts_at,e.id limit 6)
+   union all
+   (select e.id,e.title,e.starts_at,e.venue,e.city,'participation'::text kind
+    from public.invitations i
+    join public.events e on e.id=i.event_id
+    where i.musician_id=v_uid and i.status='accepted'
+     and e.producer_id<>v_uid and e.status<>'cancelled'
+     and e.starts_at>=now()
+    order by e.starts_at,e.id limit 6)
+
  ) s;
- -- Cap returned data to six cards even for very active users.
+ -- Merge at most twelve candidate shows and return six sorted cards.
  select coalesce(jsonb_agg(item order by item->>'starts_at'),'[]'::jsonb)
  into v_upcoming from (
   select value item from jsonb_array_elements(v_upcoming)
