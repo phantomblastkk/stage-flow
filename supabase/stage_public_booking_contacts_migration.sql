@@ -5,7 +5,7 @@ begin;
 create table if not exists public.stage_public_booking_contacts (
  owner_id uuid not null references public.profiles(id) on delete cascade,
  kind text not null check (kind in ('singer','musician')),
- mode text not null default 'off' check (mode in ('off','whatsapp','instagram','form')),
+ mode text not null default 'auto' check (mode in ('auto','off','whatsapp','instagram','form')),
  phone_e164 text,
  greeting text not null default '' check (char_length(greeting) <= 260),
  updated_at timestamptz not null default now(),
@@ -40,7 +40,7 @@ begin
  from public.stage_public_booking_contacts c
  where c.owner_id=auth.uid() and c.kind=p_kind;
  return coalesce(v_result,jsonb_build_object(
-  'status','ok','mode','off','phone',null,'greeting',''
+  'status','ok','mode','auto','phone',null,'greeting',''
  ));
 end;
 $$;
@@ -56,7 +56,7 @@ declare v_phone text;
 begin
  if auth.uid() is null then return 'login_required';end if;
  if p_kind is null or p_kind not in ('singer','musician')
-  or p_mode is null or p_mode not in ('off','whatsapp','instagram','form')
+  or p_mode is null or p_mode not in ('auto','off','whatsapp','instagram','form')
  then return 'invalid';end if;
  if p_kind='musician' and p_mode='form' then return 'invalid';end if;
  if not exists(
