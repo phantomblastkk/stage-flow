@@ -13,12 +13,14 @@ export default function LoginPage() {
     setInviteCode(code);
     // During auth verification, never render a password form to someone
     // already logged in. The login page is not a logout action.
-    if(code){setCheckingSession(false);return;}
     let active=true;
     async function check(){
       try{
         const {data,error}=await createClient().auth.getUser();
-        if(active&&!error&&data.user){window.location.replace("/painel");return;}
+        if(active&&!error&&data.user){
+          window.location.replace(code?"/convite?codigo="+encodeURIComponent(code):"/painel");
+          return;
+        }
       }catch{/* On network failure show the form without signing anyone out. */}
       if(active)setCheckingSession(false);
     }
