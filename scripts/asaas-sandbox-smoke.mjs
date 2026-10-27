@@ -7,10 +7,11 @@
 const base=process.env.ASAAS_QA_BASE_URL||"https://stage-flow-homologacao.vercel.app";
 const url=new URL("/api/asaas/webhook",base);
 if(url.hostname!=="stage-flow-homologacao.vercel.app")throw Error("QA host required");
+const testId="stageflow_smoke_"+crypto.randomUUID().replaceAll("-","").slice(0,24);
 const sample={
- id:"evt_stageflow_smoke_20261027",
+ id:"evt_"+testId,
  event:"PAYMENT_CREATED",
- payment:{id:"pay_stageflow_smoke_20261027",subscription:null,status:"PENDING"}
+ payment:{id:"pay_"+testId,subscription:null,status:"PENDING"}
 };
 async function post(token,payload=sample){
  const headers={"content-type":"application/json"};
