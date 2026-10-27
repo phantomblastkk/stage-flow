@@ -32,7 +32,12 @@ export default function EventosPage() {
  const focusScrolled=useRef<string|null>(null);
  const [loading,setLoading]=useState(true),[saving,setSaving]=useState(false),[ownerId,setOwnerId]=useState("");
  const [message,setMessage]=useState(""),[isError,setIsError]=useState(false);
- const [calendarMonth,setCalendarMonth]=useState(()=>new Date(new Date().getFullYear(),new Date().getMonth(),1));
+ const [calendarMonth,setCalendarMonth]=useState(()=>new Date(2000,0,1));
+ const [calendarReady,setCalendarReady]=useState(false);
+ useEffect(()=>{
+  const today=new Date();setCalendarMonth(new Date(today.getFullYear(),today.getMonth(),1));
+  setCalendarReady(true);
+ },[]);
  const [selectedDate,setSelectedDate]=useState<string|null>(null);
  const [spotlightEventId,setSpotlightEventId]=useState<string|null>(null);
  const [openTeamEventId,setOpenTeamEventId]=useState<string|null>(null);
@@ -60,6 +65,7 @@ export default function EventosPage() {
   setCalendarMonth(value=>new Date(value.getFullYear(),value.getMonth()+delta,1));
  }
  useEffect(()=>{
+  if(!calendarReady)return;
   const request=new AbortController();setMarkers({own:[],guest:[]});setMarkerMessage("");
   void loadAgendaMarkers(createClient(),request.signal,{from:monthFrom,to:monthTo}).then(result=>{
    if(request.signal.aborted)return;
@@ -67,7 +73,7 @@ export default function EventosPage() {
    if(result.partial)setMarkerMessage("Este mês tem muitos shows. Algumas marcações podem não aparecer; selecione a data para consultar a lista completa.");
   }).catch(error=>{if(!request.signal.aborted&&!(error instanceof AgendaSessionRequired))setMarkerMessage(error instanceof Error?error.message:"Marcações indisponíveis.");});
   return()=>request.abort();
- },[monthFrom,monthTo,markerNonce]);
+ },[monthFrom,monthTo,markerNonce,calendarReady]);
 
  const loadEvents=useCallback(async()=>{
   loadRequest.current?.abort();ownMoreRequest.current?.abort();guestMoreRequest.current?.abort();
@@ -91,9 +97,9 @@ export default function EventosPage() {
    setAgendaError(text);setGuestError(text);
   }finally{if(!request.signal.aborted)setLoading(false);}
  },[router,listFrom,listTo]);
- useEffect(()=>{void loadEvents();return()=>{
+ useEffect(()=>{if(!calendarReady)return;void loadEvents();return()=>{
   loadRequest.current?.abort();ownMoreRequest.current?.abort();guestMoreRequest.current?.abort();
- };},[loadEvents]);
+ };},[loadEvents,calendarReady]);
  async function loadMore(source:AgendaSource){
   const own=source==="owned",cursor=own?ownNext:guestNext;
   const ref=own?ownMoreRequest:guestMoreRequest;
@@ -212,6 +218,7 @@ export default function EventosPage() {
  const visibleEvents=pin?[pin,...events]:events;
  const visibleGuestShows=guestShows;
 
+ if(!calendarReady)return <main className="agenda-page"><LoadingState label="Abrindo sua agenda…"/></main>;
  return <main className="agenda-page"><div className="container">
   <nav className="nav"><Link className="brand" href="/"><span className="brand-mark">S</span> stage flow</Link><Link className="btn btn-quiet" href="/painel"><ArrowLeft size={15}/> Voltar ao painel</Link></nav>
   <section className="agenda-hero"><div className="eyebrow"><span className="dot"/> AGENDA PROFISSIONAL</div><h1 style={{fontSize:"clamp(34px,5vw,46px)"}}>Seus <span className="accent">eventos.</span></h1><p className="lead">Seus próprios shows e as participações confirmadas em outras equipes, todos no mesmo calendário.</p><div className="agenda-primary-actions">

@@ -16,6 +16,7 @@ Nenhum deploy, migration ou alteração de dados/schema em banco remoto nesta pa
 | Financeiro misturava rede, autorização e tela | Mudanças difíceis de testar e risco de resposta antiga | `src/domains/billing/services/finance-service.ts` e `types.ts`; leituras abortáveis e respostas tardias descartadas |
 | Uma falha de Auth encerrava a navegação do Financeiro | Erro temporário confundido com sessão inexistente | Estados distintos para sessão ausente e validação temporariamente indisponível |
 | Relatórios atuais têm limites internos de 400/300 | Histórico parcial poderia ser tratado como total e exportado | Detecção conservadora do limite conhecido; aviso de cobertura e exportação pausada nesse caso; sem calcular totais de uma página isolada |
+| Mês do servidor pode divergir do mês local do navegador | Erro de hidratação e reconstrução do calendário | Mês definido no cliente após a montagem, com estado inicial de carregamento idêntico no servidor e navegador |
 | Filtros financeiros eram recriados a cada edição de campo | Recalculava também o agrupamento mensal | Filtros memorizados por dados, atuação e período; agrupamento mensal mantém referências estáveis |
 
 ## Arquivos principais
