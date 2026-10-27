@@ -98,3 +98,11 @@
 .venue-public-photo-controls button:hover{background:#4c3671}
 .venue-public-photo-controls span{font:700 12px Manrope,sans-serif;color:#b9acd3}
 @media(max-width:550px){.venue-public-identity+.sf-house-featured{margin-top:6px}}
+
+
+/* Safe share action appears only in a published show's public dialog. */
+.venue-public-share-show{display:inline-flex;align-items:center;justify-content:center;gap:8px;min-height:44px;border:1px solid #8970af;border-radius:11px;padding:10px 14px;background:#392a55;color:#f5eaff;font:800 12px Manrope,sans-serif;cursor:pointer;margin-top:13px}
+.venue-public-share-show:hover{background:#4b3570}
+.venue-public-share-show:focus-visible{outline:2px solid #d5b7ff;outline-offset:3px}
+.venue-public-share-message{font-size:12px;line-height:1.55;color:#d6c4ec}
+@media(max-width:540px){.venue-public-share-show{width:100%}}
