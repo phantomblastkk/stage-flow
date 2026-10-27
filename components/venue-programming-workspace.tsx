@@ -122,10 +122,14 @@ export default function VenueProgrammingWorkspace({mode}: {mode: "admin" | "part
         const {data,error:authError}=await db.rpc(mode==="admin"
           ? "stage_venue_admin_list" : "stage_venue_partner_access");
         if(authError) throw authError;
-        const payload=data as {status:string;items?:Array<{id:string;name:string;slug:string|null;is_official:boolean;active:boolean}>};
+        const payload=data as {status:string;items?:Array<{id:string;name:string;slug:string|null;is_official:boolean;active:boolean;approval_status?:"pending"|"approved"|"rejected"}>};
         if(payload.status!=="ok") throw new Error(friendly(payload.status));
         const house=payload.items?.find(x=>x.id===id);
         if(!house)throw new Error("Casa não encontrada neste catálogo.");
+        if(!house.is_official||!house.active||
+          (mode==="admin"&&house.approval_status!=="approved")){
+          throw new Error("Esta casa ainda não possui perfil oficial ativo e aprovado. Volte à administração para revisar e aprovar o cadastro antes de criar shows ou flyers.");
+        }
         if(!active)return;
         setName(house.name);
         setPublicSlug(mode==="partner" ? house.slug : (house.is_official&&house.active?house.slug:null));
