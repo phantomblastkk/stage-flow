@@ -295,6 +295,8 @@ export default function RecurringShowsPage(){
              className="btn btn-quiet">Ver show</Link>
             <Link href={"/eventos/equipe?evento="+encodeURIComponent(e.event_id)}
              className="btn btn-quiet">Gerenciar escala</Link>
+             <Link href={"/eventos/operacao?evento="+encodeURIComponent(e.event_id)}
+              className="btn btn-quiet">Checklist e operação</Link>
             {s.team_id&&s.team_members>0&&e.status!=="cancelled"&&e.status!=="completed"&&
              <button className="btn btn-quiet" type="button" disabled={!!busy}
               onClick={()=>void invite(s,e)}><Send size={14}/> Convidar equipe</button>}
