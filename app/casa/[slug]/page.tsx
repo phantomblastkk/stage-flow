@@ -5,7 +5,7 @@ import Link from "next/link";
 import { useParams } from "next/navigation";
 import {
   ArrowLeft, CalendarDays, CheckCircle2, ExternalLink, Images, Instagram,
-  MapPin, MessageCircle, Music2, Send, ShieldCheck, Sparkles, Ticket, X, ChevronLeft, ChevronRight, Copy
+  MapPin, MessageCircle, Music2, Send, ShieldCheck, Sparkles, Ticket, X, ChevronLeft, ChevronRight, Copy, Share2
 } from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
 import VenueMonthCalendar, {
@@ -140,17 +140,34 @@ export default function CasaPublicaPage() {
 
   useEffect(()=>{setShareStatus("");},[focusedShow?.id]);
 
-  async function copyShowLink(show:HouseShow){
-    if(!venue)return;
+  function publicShowUrl(show:HouseShow){
+    if(!venue)return null;
     const url=new URL("/casa/"+venue.slug,window.location.origin);
     url.searchParams.set("mes",venueDayKey(show.starts_at).slice(0,7));
     url.searchParams.set("show",show.id);
+    return url.toString();
+  }
+  async function copyShowLink(show:HouseShow){
+    const url=publicShowUrl(show);
+    if(!url)return;
     try{
       if(!navigator.clipboard?.writeText)throw new Error("Clipboard unavailable");
-      await navigator.clipboard.writeText(url.toString());
+      await navigator.clipboard.writeText(url);
       setShareStatus("Link do show copiado.");
     }catch{
-      setShareStatus("Não foi possível copiar automaticamente. Use a opção Compartilhar do navegador.");
+      setShareStatus("Não foi possível copiar automaticamente. Use Compartilhar no celular.");
+    }
+  }
+  async function shareShow(show:HouseShow){
+    const url=publicShowUrl(show);
+    if(!url)return;
+    if(!navigator.share){await copyShowLink(show);return;}
+    try{
+      await navigator.share({title:show.title,url});
+      setShareStatus("Compartilhamento concluído.");
+    }catch(err){
+      if(err instanceof Error&&err.name==="AbortError")return;
+      setShareStatus("Não foi possível compartilhar. Tente copiar o link.");
     }
   }
 
@@ -355,10 +372,16 @@ export default function CasaPublicaPage() {
           <h2>{focusedShow.title}</h2>
           <p className="venue-public-modal-date">{showDate(focusedShow.starts_at)}</p>
           {focusedShow.description&&<p>{focusedShow.description}</p>}
-          <button type="button" className="venue-public-share-show"
-            onClick={()=>void copyShowLink(focusedShow)}>
-            <Copy size={16}/> Copiar link deste show
-          </button>
+          <div className="venue-public-share-actions">
+            <button type="button" className="venue-public-share-show"
+              onClick={()=>void shareShow(focusedShow)}>
+              <Share2 size={16}/> Compartilhar show
+            </button>
+            <button type="button" className="venue-public-share-show"
+              onClick={()=>void copyShowLink(focusedShow)}>
+              <Copy size={16}/> Copiar link deste show
+            </button>
+          </div>
           {shareStatus&&<p className="venue-public-share-message" role="status">{shareStatus}</p>}
         </>:focusedPhoto&&<>
           <img src={mediaUrl(focusedPhoto.media_path)} alt={focusedPhoto.caption||"Foto ampliada"}/>
