@@ -316,11 +316,11 @@ export default function MeuPerfilArtistico() {
 
           <form onSubmit={save} style={{ display: "grid", gap: 12, marginTop: 21 }}>
             <div className="field">
-              <label htmlFor="artist-headline">Frase de destaque</label>
+              <label htmlFor="artist-headline">Frase de assinatura</label>
               <input id="artist-headline" maxLength={100} value={headline}
                 onChange={e => setHeadline(e.target.value)}
                 placeholder="Ex.: Pagode, samba e muita energia em cada show"/>
-              <span className="field-help">Aparece abaixo do nome. Até 100 caracteres.</span>
+              <span className="field-help">Aparece apenas uma vez, em fonte de assinatura logo abaixo do seu nome. Até 100 caracteres. A biografia é independente.</span>
             </div>
             <div className="field">
               <label><Palette size={15} style={{ display: "inline", verticalAlign: "middle" }}/> Cor do perfil gratuito</label>
@@ -369,7 +369,7 @@ export default function MeuPerfilArtistico() {
                 maxLength={1000} rows={5}
                 placeholder="Conte sua história, estilo musical e o que faz seus shows especiais..."
                 style={{ width: "100%", padding: 13, background: "var(--panel)", color: "var(--text)", border: "1px solid var(--line)", borderRadius: 11, resize: "vertical" }}/>
-              <span className="field-help">{bio.length}/1000 caracteres</span>
+              <span className="field-help">{bio.length}/1000 caracteres. Conte sua história sem repetir a frase de assinatura. Se os textos forem idênticos, o site exibirá a assinatura apenas uma vez.</span>
             </div>
             <div className="field">
               <label htmlFor="artist-city">Cidade de atuação</label>
@@ -440,7 +440,8 @@ export default function MeuPerfilArtistico() {
               <div className="artist-free-editor-preview-info">
                 <span>@{config.username || "seuusuario"}</span>
                 <strong>{config.name}</strong>
-                <p>{headline || "Música ao vivo"}{city && " · " + city}</p>
+                <p className="artist-free-editor-preview-signature">{headline || "Sua assinatura artística"}</p>
+                {city && <p className="artist-free-editor-preview-city">{city}</p>}
               </div>
             </div>
             <p className="field-help" style={{ marginTop: 12 }}>Sua capa, foto e cor são mostradas aqui antes de publicar.</p>
