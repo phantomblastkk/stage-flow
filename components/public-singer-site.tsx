@@ -9,6 +9,8 @@ import {
   MapPin, Mic2, Music2, PlayCircle, Share2, Youtube, LockKeyhole, Crown
 } from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
+import StageVerifiedBadge from "@/components/stage-verified-badge";
+import {useStageVerified} from "@/lib/use-stage-verified";
 import ProShowCards from "@/app/meu-perfil-artistico/site-profissional/pro-show-cards";
 import ArtistBookingForm from "@/components/artist-booking-form";
 import {
@@ -122,6 +124,7 @@ export default function PublicSingerSite(){
     new Date().getFullYear(),new Date().getMonth(),1
   ));
   const [selectedDay,setSelectedDay]=useState<string|null>(null);
+  const verified=useStageVerified("singer",username,Boolean(data));
 
   useEffect(()=>{
     let active=true;
@@ -280,7 +283,7 @@ export default function PublicSingerSite(){
         <div className="premium-site-identity">
           <div className="premium-site-small-label"><span/> ARTISTA / STAGE FLOW</div>
           <div className="premium-site-name-row">
-            <h1>{artist.name}</h1>
+            <h1>{artist.name}{verified&&<StageVerifiedBadge compact/>}</h1>
             {artist.headline&&<p className="premium-site-signature">{artist.headline}</p>}
           </div>
           {artist.city&&<p className="premium-site-city"><MapPin size={16}/>{artist.city}</p>}
