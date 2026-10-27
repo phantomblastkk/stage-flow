@@ -58,3 +58,13 @@ Migrações aplicadas no QA: `supabase/venue_approval_workflow_migration.sql` e 
 - Instalada no QA a migração `supabase/venue_pending_content_isolation_migration.sql`: a função `stage_venue_can_manage` só permite editar a programação de casas **aprovadas, ativas e oficiais**; `stage_venue_media_can_upload` também exige aprovação antes de qualquer upload de `logo`, `cover`, `gallery` ou `flyer`. A administração global ainda pode revisar uma sugestão e editar o cadastro básico antes da aprovação.
 - Uma segunda transação de QA, revertida integralmente, confirmou que até o administrador global recebe bloqueio para programação/mídia de casas pendentes; após aprovar a mesma casa, as permissões de edição e mídia ficam disponíveis.
 - **Pendente de teste visual:** login como administrador/gestor real, upload de uma imagem JPG/PNG/WebP de até 5 MB, confirmação da exibição no calendário e na galeria pública, navegação pelo celular. Sem contas reais e acesso HTTP autorizado ao deployment, CI e simulações SQL não comprovam upload de arquivos ponta a ponta.
+
+
+## Divulgação do primeiro show e recuperação do flyer (27/10/2026)
+
+- Em `/admin/casas/[id]/programacao`, shows já publicados oferecem **Ver show publicado** e **Copiar link**. O link usa `/casa/<slug>?mes=AAAA-MM&show=<uuid>` e aponta para o mês correto.
+- Na página pública `/casa/[slug]`, abrir esse link seleciona o mês e abre os detalhes do show, **somente se a apresentação estiver na lista de eventos publicados retornada pelo RPC público**. Links para rascunhos, shows cancelados e IDs inválidos não expõem o conteúdo privado.
+- O modal de apresentação pública também oferece **Copiar link deste show**.
+- No formulário administrativo, um show novo **ou um rascunho previamente salvo** com flyer selecionado segue a ordem: gravar como rascunho, vincular a imagem e só então publicar. Isso permite repetir o upload de imagem se a primeira tentativa falhar, sem criar apresentação duplicada.
+- Arquivos selecionados podem continuar visíveis no formulário após falha de upload; o usuário pode marcar a apresentação como `Publicado` e salvar novamente. A foto precisa existir no storage e passar pela validação de caminhos da casa para ser associada.
+- A verificação automatizada testa a ordem de operações e os caminhos da interface. Um teste de upload de arquivo JPG/PNG/WebP com uma sessão humana autenticada no navegador continua necessário. Links diretos a shows não substituem permissão administrativa para alterar conteúdo.
