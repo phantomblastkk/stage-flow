@@ -189,6 +189,11 @@ export default function MyShowsPage(){
       </>}
     </div>:null}
     <div className="show-history-actions">
+      {r.event_status!=="cancelled"&&<Link className="btn btn-quiet"
+        href={"/eventos/operacao?evento="+encodeURIComponent(r.event_id)}>
+        <Clock3 size={15}/> {r.kind==="organized"?"Operação e checklist":"Horários do show"}
+      </Link>}
+
       {r.event_status!=="cancelled"&&new Date(r.starts_at)<=new Date()&&
         (!r.performed||r.manual_confirmed&&r.event_status!=="completed")&&
         <button type="button" className="btn btn-quiet" disabled={!!busy}
