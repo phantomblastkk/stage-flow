@@ -74,7 +74,7 @@ test("musicians can register for free without singer invitations or compulsory W
  assert.doesNotMatch(signup,/Esta confirmação é obrigatória/);
  assert.match(signup,/required=\{whatsappConsent\}/);
  assert.match(premium,/Recursos Pro do perfil único de cantor/);
- assert.match(premium,/A publicação das opções pagas exige autorização da conta/);
+ assert.match(premium,/a publicação das opções pagas exige autorização da conta/);
  assert.match(premium,/a cobrança ainda não estão ativados/);
 });
 
