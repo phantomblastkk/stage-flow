@@ -1,0 +1,12 @@
+.signup-hybrid-confirm{
+  display:flex;align-items:flex-start;gap:12px;
+  border:1px solid #a887c5;border-radius:13px;
+  background:linear-gradient(120deg,#3c2a52,#272036);
+  padding:16px;margin:12px 0 14px;color:#f4e7ff;
+  cursor:pointer
+}
+.signup-hybrid-confirm input{flex:none;accent-color:#ad86d7;width:19px;height:19px;margin:3px 0 0}
+.signup-hybrid-confirm span{display:grid;gap:6px;min-width:0}
+.signup-hybrid-confirm strong{font-size:13px;line-height:1.4;color:#fff}
+.signup-hybrid-confirm small{font-size:12px;line-height:1.7;color:#dfcfe9}
+.signup-hybrid-confirm:focus-within{outline:3px solid #d5b3f2;outline-offset:3px}
