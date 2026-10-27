@@ -1,6 +1,7 @@
 import { createHash, timingSafeEqual } from "node:crypto";
 import { NextRequest, NextResponse } from "next/server";
 import { parseAsaasPaymentEvent } from "@/lib/asaas-webhook";
+import { createClient } from "@supabase/supabase-js";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -37,7 +38,30 @@ export async function POST(request: NextRequest) {
   const event = parseAsaasPaymentEvent(payload);
   if (!event) return NextResponse.json({ error: "unsupported_event" }, { status: 422 });
 
-  // The future queue must atomically store event.id as a unique key before 200.
-  // No persistence is connected: explicitly refuse instead of losing the event.
-  return NextResponse.json({ error: "storage_not_configured" }, { status: 503 });
+  // Payments are not enabled. Only the QA environment may receive sandbox events.
+  if (process.env.NEXT_PUBLIC_STAGE_FLOW_ENV !== "homologation") {
+    return NextResponse.json({ error: "sandbox_only" }, { status: 503 });
+  }
+  const url = process.env.NEXT_PUBLIC_SUPABASE_URL;
+  const key = process.env.SUPABASE_SERVICE_ROLE_KEY;
+  if (!url || !key || !url.startsWith("https://zycuprhymoukhnuamtit.supabase.co")) {
+    return NextResponse.json({ error: "storage_not_configured" }, { status: 503 });
+  }
+  try {
+    const admin = createClient(url, key, {
+      auth: { autoRefreshToken: false, persistSession: false }
+    });
+    const { error } = await admin.from("stage_asaas_webhook_inbox").upsert({
+      event_id: event.id,
+      event_type: event.event,
+      payment_id: event.payment.id,
+      subscription_id: event.payment.subscription,
+      payment_status: event.payment.status
+    }, { onConflict: "event_id", ignoreDuplicates: true });
+    if (error) return NextResponse.json({ error: "storage_unavailable" }, { status: 503 });
+    // 200 only after durable insert or verified duplicate; never grants Pro.
+    return NextResponse.json({ received: true }, { status: 200 });
+  } catch {
+    return NextResponse.json({ error: "storage_unavailable" }, { status: 503 });
+  }
 }
