@@ -43,3 +43,21 @@ test("legacy lemon accent colors are replaced in key Stage Flow experiences",()=
   }
   assert.match(load("app/globals.css"),/--accent-solid:#7142D8/i);
 });
+
+
+test("site navigation does not flash login during auth rehydration",()=>{
+ const homeActions=load("components/home-auth-actions.tsx");
+ const login=load("app/login/page.tsx");
+ const dashboard=load("app/painel/page.tsx");
+ assert.match(homeActions,/useState<boolean\|null>\(null\)/);
+ assert.match(homeActions,/if\(signedIn===null\)/);
+ assert.match(homeActions,/Minha conta/);
+ assert.match(homeActions,/window\.addEventListener\("focus",onFocus\)/);
+ assert.match(login,/checkingSession/);
+ assert.match(login,/Verificando sua sessão do Stage Flow/);
+ assert.match(dashboard,/if \(userError\)/);
+ assert.match(dashboard,/if \(session\)/);
+ assert.match(dashboard,/Sua conta não foi desconectada/);
+ assert.match(dashboard,/<Link className="btn btn-quiet" href="\/"\>/);
+ assert.doesNotMatch(homeActions,/auth\.signOut\(/);
+});
