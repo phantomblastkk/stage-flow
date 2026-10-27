@@ -34,7 +34,7 @@ export function getStageFlowOrigin():string {
 }
 
 export function publicProUrl(username:string):string{
-  return getStageFlowOrigin()+"/pro/"+encodeURIComponent(username);
+  return getStageFlowOrigin()+"/"+encodeURIComponent(username);
 }
 
 export async function getPublishedProSite(username:string):Promise<PublicProSite|null>{
@@ -76,6 +76,6 @@ export function getPublicArtistImageUrl(site:PublicProSite):string|null{
 export function publicArtistDescription(site:PublicProSite):string{
   const artist=site.artist;
   const candidate=(artist?.headline||artist?.bio||"").replace(/\s+/g," ").trim();
-  if(!candidate)return "Conheça a música, os vídeos e a agenda de shows deste artista no Stage Flow Pro.";
+  if(!candidate)return "Conheça o trabalho, as redes sociais e a agenda deste artista no Stage Flow.";
   return candidate.length>160?candidate.slice(0,157).trimEnd()+"…":candidate;
 }
