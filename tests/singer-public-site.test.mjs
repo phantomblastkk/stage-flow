@@ -64,3 +64,19 @@ test("search and social metadata for the singer use only public server functions
 test("main and develop require manual Vercel deployments",()=>{
  assert.deepEqual(config.git.deploymentEnabled,{develop:false,main:false});
 });
+
+test("published musician portfolios have their own safe share metadata",()=>{
+ const musicianMetadata=source("app/musico/[slug]/layout.tsx");
+ const musicianPage=source("app/musico/[slug]/page.tsx");
+ assert.match(musicianPage,/stage_public_musician_portfolio/);
+ assert.match(musicianMetadata,/stage_public_musician_portfolio/);
+ assert.match(musicianMetadata,/createClient\(endpoint, anon/);
+ assert.match(musicianMetadata,/if \(musician\.slug !== slug/);
+ assert.match(musicianMetadata,/index: false, follow: false, noarchive: true/);
+ assert.match(musicianMetadata,/NEXT_PUBLIC_STAGE_FLOW_ENV === "homologation"/);
+ assert.match(musicianMetadata,/alternates: \{ canonical \}/);
+ assert.match(musicianMetadata,/openGraph:/);
+ assert.match(musicianMetadata,/twitter:/);
+ assert.match(musicianMetadata,/safePublicImage/);
+ assert.doesNotMatch(musicianMetadata,/SERVICE_ROLE|stage_my_musician_portfolio|stage_my_account_identity/);
+});
