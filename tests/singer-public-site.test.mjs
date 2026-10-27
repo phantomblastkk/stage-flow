@@ -24,8 +24,8 @@ test("the public singer @ is the shared Pro-style design, whether free or entitl
  assert.match(shared,/stage_public_artist_accepts_bookings/);
  assert.match(shared,/setProUnlocked\(false\)/);
  assert.match(shared,/setProUnlocked\(true\)/);
- assert.match(shared,/proUnlocked\?\s*"Recursos Pro ativos":"Perfil público gratuito"/);
- assert.match(shared,/Seu site já tem o visual profissional do StageFlow/);
+ assert.match(shared,/proUnlocked\?"Recursos Pro publicados":proEligible\?"Pro liberado/);
+ assert.match(shared,/Seu Pro já está liberado/);
 });
 
 test("free singer Pro features are deliberately blurred but no private content is fetched",()=>{
