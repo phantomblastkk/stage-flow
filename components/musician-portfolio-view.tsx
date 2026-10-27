@@ -1,14 +1,16 @@
 "use client";
 
-import type { CSSProperties } from "react";
+import {useEffect,useState,type CSSProperties} from "react";
 import {
   ArrowDownRight, ArrowRight, ArrowUpRight, BadgeCheck, BriefcaseBusiness,
   CheckCircle2, Clock3, ExternalLink, Headphones, Instagram, MapPin, Mic2,
-  Music2, Play, Share2, Sparkles, Wallet, Youtube
+  Music2, Play, Share2, Sparkles, Wallet, Youtube, MessageCircle, CalendarCheck2
 } from "lucide-react";
 import "./musician-portfolio-polish.css";
 import StageVerifiedBadge from "@/components/stage-verified-badge";
 import {distinctPublicBiography} from "@/lib/profile-presentation";
+import {publicInstagramProfile} from "@/lib/artist-social";
+import {whatsappBookingUrl,type PublicBookingContact} from "@/lib/booking-contact";
 
 export type MusicianTheme = "midnight" | "ivory" | "stage";
 export type MusicianAccent = "lime" | "violet" | "coral" | "cyan" | "gold";
@@ -86,9 +88,12 @@ function youTubeId(link: string): string | null {
   } catch { return null; }
 }
 
-type Props = { portfolio: MusicianPortfolio; preview?: boolean; onShare?: () => void; instanceId?: string; verified?: boolean };
+type Props = { portfolio: MusicianPortfolio; preview?: boolean; onShare?: () => void; instanceId?: string; verified?: boolean; bookingContact?:PublicBookingContact|null };
 
-export default function MusicianPortfolioView({ portfolio, preview = false, onShare, instanceId, verified = false }: Props) {
+export default function MusicianPortfolioView({ portfolio, preview = false, onShare, instanceId, verified = false, bookingContact=null }: Props) {
+  const [playingVideo,setPlayingVideo]=useState<string|null>(null);
+  const [photoBroken,setPhotoBroken]=useState(false);
+  useEffect(()=>{setPhotoBroken(false);},[portfolio.avatar_url]);
   const theme: MusicianTheme = musicianThemes.some(t => t.value === portfolio.theme)
     ? portfolio.theme : "midnight";
   // Legacy lime portfolios remain valid in storage, but never render neon green.
@@ -108,9 +113,10 @@ export default function MusicianPortfolioView({ portfolio, preview = false, onSh
   const extra = Array.isArray(portfolio.additional_media_urls) ? portfolio.additional_media_urls : [];
   const workLinks = Array.from(new Set([portfolio.media_url, ...extra]
     .map(link => safeHttps(link))
-    .filter((url): url is string => Boolean(url)))).slice(0, 3);
+    .filter((url): url is string => Boolean(url)))).slice(0, 5);
+  const instagram=publicInstagramProfile(portfolio.instagram_url);
   const socials = [
-    { url: safeHttps(portfolio.instagram_url), label: "Instagram", Icon: Instagram },
+    { url: instagram?.url||null, label: "Instagram", Icon: Instagram },
     { url: safeHttps(portfolio.youtube_url), label: "YouTube", Icon: Youtube },
     { url: safeHttps(portfolio.spotify_url), label: "Spotify", Icon: Headphones }
   ].filter((item): item is { url: string; label: string; Icon: typeof Instagram } => Boolean(item.url));
@@ -118,8 +124,13 @@ export default function MusicianPortfolioView({ portfolio, preview = false, onSh
   const biography=distinctPublicBiography(portfolio.headline,portfolio.bio);
   const experience = Number.isInteger(portfolio.experience_years) && portfolio.experience_years! >= 0
     ? portfolio.experience_years : null;
-  const hasPhoto = Boolean(safeHttps(portfolio.avatar_url));
+  const hasPhoto = Boolean(safeHttps(portfolio.avatar_url))&&!photoBroken;
   const hasBanner = Boolean(safeHttps(portfolio.cover_url));
+  const directBooking=bookingContact?.mode==="whatsapp"
+    ?whatsappBookingUrl(bookingContact.phone,bookingContact.greeting,portfolio.name)
+    :bookingContact?.mode==="instagram"?instagram?.url||null
+    :bookingContact===null?instagram?.url||null:null;
+  const bookingLabel=bookingContact?.mode==="whatsapp"?"Contratar pelo WhatsApp":"Chamar o músico";
   const suffix = instanceId || portfolio.slug || "preview";
   const workAnchor = "mp-trabalhos-" + suffix;
   const sectionAnchor = (section: string) => "mp-" + section + "-" + suffix;
@@ -143,7 +154,7 @@ export default function MusicianPortfolioView({ portfolio, preview = false, onSh
         <div className="mp-identity">
           <div className="mp-avatar">
             {hasPhoto
-              ? <img src={portfolio.avatar_url!} alt={"Foto de " + portfolio.name} loading="lazy"/>
+              ? <img src={portfolio.avatar_url!} alt={"Foto de " + portfolio.name} loading="lazy" onError={()=>setPhotoBroken(true)}/>
               : <span>{initials(portfolio.name)}</span>}
           </div>
           <div className="mp-identity-copy">
@@ -160,6 +171,11 @@ export default function MusicianPortfolioView({ portfolio, preview = false, onSh
         </div>
         <div className="mp-hero-footer">
           <div className="mp-hero-buttons">
+            {!preview&&directBooking&&<a className="mp-action-booking" href={directBooking}
+              target="_blank" rel="noopener noreferrer">
+              {bookingContact?.mode==="whatsapp"?<MessageCircle size={18}/>:<CalendarCheck2 size={18}/>}
+              {bookingLabel} <ArrowUpRight size={16}/>
+            </a>}
             {workLinks.length > 0 && <a href={"#" + workAnchor} className="mp-action-primary">
               <Play size={16} fill="currentColor"/> Ouvir meu trabalho <ArrowDownRight size={16}/>
             </a>}
@@ -183,6 +199,7 @@ export default function MusicianPortfolioView({ portfolio, preview = false, onSh
         <a href={"#" + sectionAnchor("instrumentos")}>Instrumentos</a>
         {workLinks.length > 0 && <a href={"#" + workAnchor}>Trabalhos</a>}
         {highlights.length > 0 && <a href={"#" + sectionAnchor("trajetoria")}>Trajetória</a>}
+        {(directBooking||preview)&&<a href={"#"+sectionAnchor("contratar")}>Contratar</a>}
       </nav>
 
       <section className="mp-intro-row" id={sectionAnchor("sobre")}>
@@ -229,10 +246,13 @@ export default function MusicianPortfolioView({ portfolio, preview = false, onSh
         </div>
         <div className="mp-instrument-grid">
           {(instruments.length ? instruments : ["Instrumento principal"]).map((name,index) =>
-            <div className="mp-instrument-card" key={name + index}>
+            <div className={"mp-instrument-card"+(index===0?" is-primary":"")} key={name + index}>
+              <span className="mp-instrument-icon"><Music2 size={23}/></span>
+              <span className="mp-instrument-name">
+                <small>{index===0?"MEU INSTRUMENTO PRINCIPAL":"OUTRO INSTRUMENTO"}</small>
+                <strong>{name}</strong>
+              </span>
               <span className="mp-instrument-index">{String(index + 1).padStart(2, "0")}</span>
-              <strong>{name}</strong>
-              <Music2 size={19}/>
             </div>)}
         </div>
         {performances.length > 0 && <div className="mp-formats">
@@ -267,26 +287,38 @@ export default function MusicianPortfolioView({ portfolio, preview = false, onSh
         </div>
         {workLinks.length > 0 ? <div className="mp-work-grid">
           {workLinks.map((url,index) => {
-            const id = youTubeId(url);
-            return <a key={url} className="mp-work-card" href={url}
-              target="_blank" rel="noopener noreferrer"
-              onClick={preview ? event => event.preventDefault() : undefined}
-              aria-label={"Abrir apresentação " + (index+1) + " em nova aba"}>
+            const id=youTubeId(url);
+            const playing=id&&playingVideo===id;
+            return <div key={url} className="mp-work-card">
               <div className="mp-work-thumb">
-                {id ? <img src={"https://i.ytimg.com/vi/" + id + "/hqdefault.jpg"}
-                  alt={"Miniatura da apresentação " + (index + 1)} loading="lazy"/> :
-                  <div className="mp-work-art"><Music2 size={38}/></div>}
-                <span className="mp-work-play">{id ? <Play size={20} fill="currentColor"/> :
-                  <ExternalLink size={20}/>}</span>
+                {playing?
+                  <iframe
+                    title={"Apresentação "+(index+1)+" de "+portfolio.name}
+                    src={"https://www.youtube-nocookie.com/embed/"+id+"?autoplay=1"}
+                    allow="accelerometer; autoplay; encrypted-media; gyroscope; picture-in-picture"
+                    allowFullScreen loading="lazy" referrerPolicy="strict-origin-when-cross-origin"/>:
+                  id?<button type="button" className="mp-work-preview-trigger"
+                    onClick={()=>setPlayingVideo(id)} aria-label={"Reproduzir vídeo "+(index+1)+" sem sair do portfólio"}>
+                    <img src={"https://i.ytimg.com/vi/"+id+"/hqdefault.jpg"}
+                      alt={"Miniatura da apresentação "+(index+1)} loading="lazy"/>
+                    <span className="mp-work-play"><Play size={23} fill="currentColor"/></span>
+                  </button>:
+                  <a href={url} className="mp-work-preview-trigger" target="_blank"
+                    rel="noopener noreferrer" onClick={preview?e=>e.preventDefault():undefined}>
+                    <span className="mp-work-art"><Music2 size={38}/></span>
+                    <span className="mp-work-play"><ExternalLink size={20}/></span>
+                  </a>}
               </div>
-              <div className="mp-work-card-bottom">
+              <a className="mp-work-card-bottom" href={url} target="_blank"
+                rel="noopener noreferrer" onClick={preview?e=>e.preventDefault():undefined}
+                aria-label={"Abrir apresentação "+(index+1)+" em nova aba"}>
                 <div>
-                  <small>{id ? "VÍDEO NO YOUTUBE" : "PORTFÓLIO EXTERNO"}</small>
-                  <strong>Apresentação {String(index + 1).padStart(2,"0")}</strong>
+                  <small>{id?"VÍDEO · ASSISTA AQUI":"TRABALHO EXTERNO"}</small>
+                  <strong>{index===0?"Apresentação em destaque":"Apresentação "+String(index+1).padStart(2,"0")}</strong>
                 </div>
                 <ArrowUpRight size={19}/>
-              </div>
-            </a>;
+              </a>
+            </div>;
           })}
         </div> : <div className="mp-work-empty">
           <Play size={19}/> {preview
@@ -294,6 +326,21 @@ export default function MusicianPortfolioView({ portfolio, preview = false, onSh
             : "Vídeos e apresentações serão adicionados em breve."}
         </div>}
       </section>
+
+      {(directBooking||preview)&&<section className="mp-booking-section" id={sectionAnchor("contratar")}>
+        <span className="mp-booking-symbol"><MessageCircle size={26}/></span>
+        <div className="mp-booking-copy">
+          <span className="mp-section-kicker">PARCERIAS & OPORTUNIDADES</span>
+          <h2>Vamos tocar <span>juntos?</span></h2>
+          <p>Convide este músico para shows, gravações e eventos pelo contato que ele escolheu disponibilizar.</p>
+        </div>
+        {!preview&&directBooking&&<a href={directBooking}
+          className="mp-action-booking" target="_blank" rel="noopener noreferrer">
+          {bookingContact?.mode==="whatsapp"?<MessageCircle size={17}/>:<Instagram size={17}/>}
+          {bookingLabel} <ArrowUpRight size={16}/>
+        </a>}
+        {preview&&<span className="mp-booking-preview-note">Configure seu contato de contratação no editor para liberar o botão público.</span>}
+      </section>}
 
       {socials.length > 0 && <section className="mp-social-section">
         <div>
@@ -304,7 +351,7 @@ export default function MusicianPortfolioView({ portfolio, preview = false, onSh
           {socials.map(({url,label,Icon}) => <a key={label} href={url}
             target="_blank" rel="noopener noreferrer"
               onClick={preview ? event => event.preventDefault() : undefined}>
-            <Icon size={20}/><span>{label}</span><ArrowUpRight size={16}/>
+            <Icon size={20}/><span>{label==="Instagram"&&instagram?instagram.handle:label}</span><ArrowUpRight size={16}/>
           </a>)}
         </div>
       </section>}
