@@ -115,8 +115,10 @@ test("owner-only shortcut and a safe post-login return to the private dashboard"
  const login=read("app/login/page.tsx");
  assert.match(panel,/stage_owner_admin_status/);
  assert.match(panel,/setIsOwnerAdmin\(!ownerAccessError&&ownerAccess===true\)/);
- assert.match(panel,/if \(isOwnerAdmin\) primary\.unshift/);
- assert.match(panel,/href:"\/admin\/central"/);
+  const navigation=read("src/domains/navigation/workspace-navigation.ts");
+  assert.match(panel,/isOwnerAdmin,/);
+  assert.match(navigation,/role.isOwnerAdmin/);
+  assert.match(navigation,/admin\\/central/);
  assert.doesNotMatch(panel,/localStorage\.getItem\("isAdmin"\)|user\.email\s*===\s*"[^"]+"/);
  assert.match(page,/router\.replace\("\/login\?next=%2Fadmin%2Fcentral"\)/);
  assert.match(page,/if\(sessionError\)\{/);
