@@ -45,7 +45,7 @@ export default function DashboardAccountMenu({
       document.removeEventListener("keydown",onEscape);
     };
   },[open]);
-  const initials=displayName.trim().split(/\\s+/).slice(0,2).map(part=>part[0]||"").join("").toLocaleUpperCase("pt-BR")||"SF";
+  const initials=displayName.trim().split(/\s+/).slice(0,2).map(part=>part[0]||"").join("").toLocaleUpperCase("pt-BR")||"SF";
   const portrait=avatarUrl&&!imageBroken
     ?<img src={avatarUrl} alt="" loading="eager" onError={()=>setImageBroken(true)}/>
     :initials;
