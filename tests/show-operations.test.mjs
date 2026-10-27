@@ -71,7 +71,7 @@ test("show operations UI links calendar, recurring dates, history, and existing 
  assert.match(page,/stage_show_ops_close/);
  assert.match(page,/<EventBudgetPanel eventId=\{eventId\}\/>/);
  assert.match(page,/can_edit/);
- assert.match(page,/Fechamento pós-show/);
+ assert.match(page,/Encerramento pós-show/);
  assert.match(agenda,/\/eventos\/operacao\?evento=/);
  assert.match(recurring,/\/eventos\/operacao\?evento=/);
  assert.match(history,/\/eventos\/operacao\?evento=/);
