@@ -112,7 +112,7 @@ function monthCells(month: Date): (Date | null)[] {
   ];
 }
 
-export default function SiteProfissionalPreview({ active = true }: { active?: boolean }) {
+export default function SiteProfissionalPreview({ active = true, onEditData }: { active?: boolean; onEditData?: () => void }) {
   const router = useRouter();
   const [artist, setArtist] = useState<ArtistPreview | null>(null);
   const [events, setEvents] = useState<PublicShow[]>([]);
@@ -314,7 +314,8 @@ export default function SiteProfissionalPreview({ active = true }: { active?: bo
   return <div className="premium-preview-app singer-pro-embedded">
     <div className="premium-preview-toolbar">
       <span className="premium-preview-label"><LockKeyhole size={15}/> MESMO PERFIL PÚBLICO · PRÉVIA PRIVADA DAS OPÇÕES PRO</span>
-      <Link href="/meu-perfil-artistico?aba=dados" className="premium-preview-back">Editar dados do perfil <ArrowUpRight size={15}/></Link>
+      <Link href="/meu-perfil-artistico?aba=dados" className="premium-preview-back"
+        onClick={onEditData ? event => { event.preventDefault(); onEditData(); } : undefined}>Editar dados do perfil <ArrowUpRight size={15}/></Link>
     </div>
 
     {problem && <div className="premium-preview-problem" role="alert">{problem}</div>}
@@ -323,7 +324,8 @@ export default function SiteProfissionalPreview({ active = true }: { active?: bo
       <Mic2 size={28}/>
       <h1>A personalização do seu perfil começa aqui.</h1>
       <p>Configure os dados do seu perfil de cantor antes de experimentar a personalização.</p>
-      <Link href="/meu-perfil-artistico" className="btn btn-primary">Configurar meu perfil <ArrowRight size={16}/></Link>
+      <Link href="/meu-perfil-artistico" className="btn btn-primary"
+        onClick={onEditData ? event => { event.preventDefault(); onEditData(); } : undefined}>Configurar meu perfil <ArrowRight size={16}/></Link>
     </div> : <>
       <section className="premium-design-editor" aria-label="Personalização Pro do perfil de cantor">
         <div className="premium-design-heading">
@@ -615,7 +617,8 @@ export default function SiteProfissionalPreview({ active = true }: { active?: bo
           <p className="premium-preview-protection"><LockKeyhole size={16}/> Não há cobrança automática. Desativar a publicação Pro não despublica o perfil gratuito.</p>
           <p>Os contatos enviados pelo perfil público ficam na sua <Link href="/meu-perfil-artistico/solicitacoes" style={{ color: "#d8c0ff", textDecoration: "underline" }}>caixa privada de pedidos de contratação</Link>.</p>
         </div>
-        <Link href="/meu-perfil-artistico?aba=dados" className="btn btn-quiet">Editar dados e publicação <ArrowUpRight size={15}/></Link>
+        <Link href="/meu-perfil-artistico?aba=dados" className="btn btn-quiet"
+          onClick={onEditData ? event => { event.preventDefault(); onEditData(); } : undefined}>Editar dados e publicação <ArrowUpRight size={15}/></Link>
       </section>
     </>}
   </div>;
