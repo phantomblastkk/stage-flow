@@ -348,6 +348,8 @@ export default function VenueProgrammingWorkspace({mode}: {mode: "admin" | "part
     }catch(e){setError(e instanceof Error?e.message:"Não foi possível atualizar a sugestão.");}
     finally{setSuggestionBusy(null);}
   }
+  const publishedCount=shows.filter(x=>x.status==="published").length;
+  const publishedFlyers=shows.filter(x=>x.status==="published"&&!!x.flyer_path).length;
   const currentFlyer=shows.find(x=>x.id===showForm.id)?.flyer_path;
   return <main className="venue-program-page"><div className="container">
     <nav className="nav">
@@ -377,6 +379,53 @@ export default function VenueProgrammingWorkspace({mode}: {mode: "admin" | "part
         </div>
         {error&&<div className="venue-program-alert" role="alert">{error}</div>}
         {success&&<div className="venue-program-success" role="status">{success}</div>}
+        <section className="venue-program-launch-guide" aria-label="Preparar página pública da casa">
+          <header>
+            <div>
+              <span className="eyebrow"><CheckCircle2 size={14}/> CASA APROVADA</span>
+              <h2>Prepare a página da casa</h2>
+              <p>O perfil oficial já está disponível. Complete os conteúdos e confira como a programação aparece para o público.</p>
+            </div>
+            {publicSlug&&<Link className="btn btn-quiet" href={"/casa/"+publicSlug}
+              target="_blank" rel="noopener noreferrer">
+              <ExternalLink size={15}/> Visualizar página
+            </Link>}
+          </header>
+          <div className="venue-program-launch-steps">
+            <div>
+              <span className="venue-program-step-number">1</span>
+              <strong>Identidade visual</strong>
+              <p>Logotipo, capa, descrição e contatos da casa.</p>
+              {mode==="admin"?
+                <Link href="/admin/casas">Editar cadastro da casa</Link>:
+                <small>Solicite alterações ao administrador StageFlow.</small>}
+            </div>
+            <div>
+              <span className="venue-program-step-number">2</span>
+              <strong>{publishedCount} {publishedCount===1?"show publicado":"shows publicados"}</strong>
+              <p>Rascunhos não aparecem no calendário público.</p>
+              <button type="button" onClick={()=>{setTab("agenda");newShow();}}>
+                <Plus size={13}/> Cadastrar show
+              </button>
+            </div>
+            <div>
+              <span className="venue-program-step-number">3</span>
+              <strong>{publishedFlyers} {publishedFlyers===1?"flyer público":"flyers públicos"}</strong>
+              <p>O flyer aparece com o show publicado e no catálogo do mês.</p>
+              <button type="button" onClick={()=>setTab("agenda")}>
+                <ImagePlus size={13}/> Gerenciar flyers
+              </button>
+            </div>
+            <div>
+              <span className="venue-program-step-number">4</span>
+              <strong>{photos.length} {photos.length===1?"foto cadastrada":"fotos cadastradas"}</strong>
+              <p>Mostre os ambientes da casa na galeria pública.</p>
+              <button type="button" onClick={()=>setTab("galeria")}>
+                <Images size={13}/> Adicionar fotos
+              </button>
+            </div>
+          </div>
+        </section>
         {tab==="agenda"&&<div className="venue-program-overview">
           <span><strong>{shows.filter(x=>x.status==="published").length}</strong> shows publicados</span>
           <span><strong>{shows.filter(x=>x.status==="draft").length}</strong> rascunhos</span>
