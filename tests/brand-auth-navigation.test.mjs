@@ -62,7 +62,11 @@ test("site navigation does not flash login during auth rehydration",()=>{
  assert.match(dashboard,/if \(userError\)/);
  assert.match(dashboard,/if \(session\)/);
  assert.match(dashboard,/Sua conta não foi desconectada/);
- assert.match(dashboard,/<Link className="btn btn-quiet" href="\/"\>/);
+ assert.match(dashboard,/<DashboardAccountMenu/);
+ const accountMenu=load("components/dashboard-account-menu.tsx");
+ assert.match(accountMenu,/href="\/"\>/);
+ assert.match(accountMenu,/href="\/minha-conta\?aba=privacidade"/);
+ assert.match(accountMenu,/onSignOut\(\)/);
  assert.doesNotMatch(homeActions,/auth\.signOut\(/);
 });
 
