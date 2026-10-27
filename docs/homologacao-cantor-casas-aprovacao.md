@@ -89,3 +89,13 @@ Migrações aplicadas no QA: `supabase/venue_approval_workflow_migration.sql` e 
 - O painel bloqueia troca de casa enquanto ocorre uma operação de salvamento ou upload para evitar que o arquivo seja associado ao cadastro errado.
 - Teste visual recomendado: com uma conta administradora QA, abra uma casa já aprovada, selecione uma capa, confirme que o perfil público **não muda antes de clicar em Confirmar envio**, confirme a imagem e confira sua aparição na página pública. Repita com logotipo no celular, teste um arquivo maior que 5 MB e uma imagem inválida. Não faça upload de imagens privadas ou de produção durante o teste.
 - CI e validações estáticas verificam a nova prévia e o fluxo de confirmação. Um upload real com uma conta administrativa pelo navegador permanece pendente até que o acesso automatizado autorizado à Vercel QA esteja disponível.
+
+
+## Página oficial: endereço, contatos, compartilhamento e metadados (27/10/2026)
+
+- A página pública de uma casa **aprovada e oficial** exibe ações de **Ver programação**, **Mapa**, **WhatsApp** (se cadastrado), **Compartilhar perfil** e **Copiar link**. O endereço é exibido junto de cidade/UF quando disponível; o Google Maps abre uma busca pelos dados públicos, não uma geolocalização inventada.
+- Se o endereço completo não estiver preenchido, a ação passa a ser **Ver cidade no mapa**, com alerta de que a localização exata não foi informada. Se nem cidade/UF estiverem disponíveis, o link de mapa é omitido.
+- WhatsApp só recebe número formado por 10 a 15 dígitos. Instagram e WhatsApp só são exibidos quando fornecidos na ficha pública; caso contrário, o visitante vê que ainda não há canais de contato cadastrados.
+- O compartilhamento usa a API nativa do celular (`navigator.share`) e oferece cópia do link. Se o navegador bloquear a área de transferência, um campo de URL selecionável permite copiar manualmente. Cancelar o compartilhamento não produz alterações.
+- Uma `generateMetadata` em `app/casa/[slug]/layout.tsx` gera título e descrição, além de imagem Open Graph/Twitter a partir da **capa oficial** (ou do logotipo quando a capa estiver ausente), **somente** se `stage_public_venue` retornar uma casa publicada. Perfis inexistentes têm metadados neutros e `noindex`. No ambiente de homologação, **todas** essas páginas usam `noindex`.
+- Os dados utilizados já existem na RPC pública: nenhuma migração, nova permissão ou chave privilegiada foi necessária. A verificação de publicações com URLs reais e a conferência visual do cartão em WhatsApp/Instagram permanecem pendentes por exigirem acesso externo autorizado e contas reais.
