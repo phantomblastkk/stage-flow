@@ -125,12 +125,19 @@ export default function ProSitePublicationControls({
         <h2>Um perfil, mais possibilidades.</h2>
         <p>Seu perfil gratuito já tem um endereço público. Escolha quando aplicar o visual e as galerias Pro a essa mesma página.</p>
       </div>
-      <span className={"pro-publish-status"+(info?.published?" is-live":"")}>
-        {info?.published?<><CheckCircle2 size={15}/> PUBLICADO</>:
-          <><LockKeyhole size={15}/> NÃO PUBLICADO</>}
+      <span className={"pro-publish-status"+(info?.published?" is-live":info?.entitled?" is-entitled":"")}>
+        {info?.published?<><CheckCircle2 size={15}/> PRO PUBLICADO</>:
+          info?.entitled?<><Crown size={15}/> PRO LIBERADO · PUBLICAÇÃO PENDENTE</>:
+          <><LockKeyhole size={15}/> PRO NÃO LIBERADO</>}
       </span>
     </div>
 
+    {!loading&&info?.entitled&&!info.published&&
+      <p className="pro-publish-ready-notice"><Crown size={19}/>
+        Seu acesso Pro já está ativo! Para que o novo visual, as fotos e os vídeos apareçam ao público,
+        salve seu design e clique em <strong>Ativar recursos Pro</strong> abaixo. A publicação é sua escolha,
+        e seu perfil gratuito continua no ar enquanto isso.
+      </p>}
     {loading?<p className="pro-publish-loading">
       <LoaderCircle size={16}/> Verificando disponibilidade da publicação...
     </p>:!info?<div className="pro-publish-setup-error" role="alert">
