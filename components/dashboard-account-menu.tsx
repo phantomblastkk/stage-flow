@@ -10,6 +10,7 @@ import "./dashboard-account-menu.css";
 
 type Props={
   displayName:string;
+  avatarUrl?:string|null;
   isSinger:boolean;
   isMusician:boolean;
   isOwnerAdmin:boolean;
@@ -18,9 +19,11 @@ type Props={
 };
 
 export default function DashboardAccountMenu({
-  displayName,isSinger,isMusician,isOwnerAdmin,signingOut,onSignOut
+  displayName,avatarUrl,isSinger,isMusician,isOwnerAdmin,signingOut,onSignOut
 }:Props){
   const [open,setOpen]=useState(false);
+  const [imageBroken,setImageBroken]=useState(false);
+  useEffect(()=>{setImageBroken(false);},[avatarUrl]);
   const wrapper=useRef<HTMLDivElement>(null);
   const trigger=useRef<HTMLButtonElement>(null);
   const menuId=useId();
@@ -42,13 +45,16 @@ export default function DashboardAccountMenu({
       document.removeEventListener("keydown",onEscape);
     };
   },[open]);
-  const initials=displayName.trim().split(/\s+/).slice(0,2).map(part=>part[0]||"").join("").toLocaleUpperCase("pt-BR")||"SF";
+  const initials=displayName.trim().split(/\\s+/).slice(0,2).map(part=>part[0]||"").join("").toLocaleUpperCase("pt-BR")||"SF";
+  const portrait=avatarUrl&&!imageBroken
+    ?<img src={avatarUrl} alt="" loading="eager" onError={()=>setImageBroken(true)}/>
+    :initials;
   return <div className="dashboard-profile-menu" ref={wrapper}>
     <button type="button" ref={trigger} className="dashboard-profile-trigger"
       aria-haspopup="true" aria-expanded={open} aria-controls={menuId}
       aria-label="Abrir menu do meu perfil"
       onClick={()=>setOpen(value=>!value)}>
-      <span className="dashboard-profile-avatar" aria-hidden="true">{initials}</span>
+      <span className="dashboard-profile-avatar" aria-hidden="true">{portrait}</span>
       <span className="dashboard-profile-trigger-name">
         <strong>Meu perfil</strong>
         <small>{displayName||"Minha conta"}</small>
@@ -57,7 +63,7 @@ export default function DashboardAccountMenu({
     </button>
     {open&&<div id={menuId} className="dashboard-profile-dropdown" aria-label="Menu da conta">
       <div className="dashboard-profile-summary">
-        <span className="dashboard-profile-summary-avatar" aria-hidden="true">{initials}</span>
+        <span className="dashboard-profile-summary-avatar" aria-hidden="true">{portrait}</span>
         <div><strong>{displayName||"Minha conta"}</strong><small>Central da sua conta StageFlow</small></div>
       </div>
       <div className="dashboard-profile-group">
