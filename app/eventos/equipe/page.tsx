@@ -108,7 +108,7 @@ export default function ShowLineupPage(){
  },[slots,unassigned]);
  const closed=!info||info.event_status==="cancelled"||info.event_status==="completed"||
    new Date(info.event_starts_at).getTime()<=Date.now();
- async function run(task:()=>Promise<{data:any;error:any}>,done:(data:any)=>string){
+ async function run(task:()=>PromiseLike<{data:any;error:any}>,done:(data:any)=>string){
   if(busy||!id)return;
   setBusy(true);setError("");setNotice("");
   try{
