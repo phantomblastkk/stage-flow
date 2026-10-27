@@ -358,7 +358,7 @@ export default function PublicSingerSite(){
               <p>{instagram?"Siga o artista para ver bastidores, novidades e próximas apresentações.":"O artista ainda não informou um Instagram público."}</p>
               {instagram&&<a href={instagram.url} target="_blank" rel="noopener noreferrer">
                 Abrir Instagram <ArrowUpRight size={15}/>
-              </a>}}
+              </a>}
             </div>
           </section>}
 
