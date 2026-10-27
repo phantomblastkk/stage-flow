@@ -141,7 +141,7 @@ export default function ProSitePublicationControls({
           <div><span>{info.entitled?<CheckCircle2 size={16}/>:<LockKeyhole size={16}/>}</span>
             <div><strong>Acesso ao site Pro</strong>
               <small>{info.entitled?"Habilitado para sua conta.":
-                "Ainda não habilitado. A autorização é gerenciada pelo Stage Flow."}</small>
+                "Recurso incluído nos planos pagos de cantores. A contratação online ainda não está disponível."}</small>
             </div>
           </div>
           <div><span>{info.profile_public&&info.username?<CheckCircle2 size={16}/>:<LockKeyhole size={16}/>}</span>
@@ -160,8 +160,7 @@ export default function ProSitePublicationControls({
           </div>
         </div>
         {!info.entitled&&<p className="pro-publish-entitlement-note">
-          <Crown size={15}/> O Stage Flow ainda não realiza cobrança automática do adicional Pro.
-          O acesso precisa ser autorizado administrativamente; salvar o rascunho não libera o site.
+          <Crown size={15}/> <LockKeyhole size={15}/> Site profissional, personalização Pro e subdomínio estarão incluídos nos planos pagos de cantores. A cobrança online e o subdomínio ainda não estão ativos. Por enquanto, a publicação exige autorização do Stage Flow; seu perfil gratuito permanece disponível.
         </p>}
         <p className="pro-publish-privacy"><ShieldCheck size={15}/>
           Só o conteúdo escolhido para a publicação fica acessível. Convites, negociações,
