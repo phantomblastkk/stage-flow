@@ -90,3 +90,39 @@ test("plans keep core Stage Flow free and singer Pro gated without checkout",()=
  assert.match(publish,/ProFeatureLock title="Portfólio profissional Pro"/);
  assert.match(publish,/!info.entitled/);
 });
+
+test("signed-in musicians open invitation links without seeing a second signup form",()=>{
+ const signup=load("app/cadastro/page.tsx");
+ assert.match(signup,/const \[checkingSession, setCheckingSession\] = useState\(true\)/);
+ assert.match(signup,/auth\.getUser\(\)/);
+ assert.ok(signup.includes('window.location.replace(code'));
+ assert.ok(signup.includes('"/convite?codigo=" + encodeURIComponent(code)'));
+ assert.ok(signup.includes('if (checkingSession) return'));
+ assert.match(signup,/Verificando sua sessão do Stage Flow/);
+});
+
+test("temporary auth errors in invitation inbox do not silently sign out musicians",()=>{
+ const invites=load("app/meus-convites/page.tsx");
+ assert.ok(invites.includes("if (authError) {"));
+ assert.ok(invites.includes("await supabase.auth.getSession()"));
+ assert.ok(invites.includes("if (session) {"));
+ assert.ok(invites.includes("Sua conta não foi desconectada"));
+ assert.ok(invites.includes("setWhatsappLoading(false)"));
+ assert.doesNotMatch(invites,/auth\.signOut\(/);
+});
+
+test("new application routes are reserved for singer usernames in both frontend and SQL",()=>{
+ const signup=load("app/cadastro/page.tsx");
+ const migration=load("supabase/artist_reserved_route_slugs_migration.sql");
+ const routes=[
+  "assinatura","conversas","financeiro","homologacao","locais",
+  "meu-desempenho","meus-shows","minha-disponibilidade",
+  "notificacoes","parceiros","pro","shows-recorrentes"
+ ];
+ for(const route of routes){
+  assert.ok(signup.includes('"'+route+'"'),"signup lacks reserved slug "+route);
+  assert.ok(migration.includes("'"+route+"'"),"database lacks reserved slug "+route);
+ }
+ assert.match(migration,/stage_protect_reserved_artist_usernames/);
+ assert.match(migration,/before insert or update of username on public\.profiles/);
+});
