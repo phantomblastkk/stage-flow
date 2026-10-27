@@ -55,6 +55,8 @@ jobs:
         run: npm run test:recurring-shows
       - name: Verify show roster and audited replacements
         run: npm run test:show-team-lineup
+      - name: Verify internal notifications and recipient isolation
+        run: npm run test:notifications
       - name: Check TypeScript
         run: npx tsc --noEmit
       - name: Build Next.js
