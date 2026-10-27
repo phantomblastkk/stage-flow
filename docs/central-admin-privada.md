@@ -25,7 +25,9 @@ on conflict(profile_id) do nothing;
 
 Para transferir a posse, execute essa operação manualmente sob conta privilegiada, revogando a antiga autorização e concedendo-a à identidade correta. Não implemente fluxo de autoconcessão no navegador. Ative MFA na conta proprietária e cuide da recuperação da conta. Um JWT de proprietário comprometido ainda poderia operar dentro das permissões da sessão.
 
-**Homologação QA (27/10/2026):** a migração foi aplicada exclusivamente no Supabase `zycuprhymoukhnuamtit`. Foi possível habilitar o proprietário do QA porque o ambiente isolado já tinha exatamente um perfil e um administrador de casas pré-existente; a operação exigiu o marcador `ISOLATED_STAGE_FLOW_HOMOLOGATION_ONLY`. Isso **não identifica nem configura o proprietário em produção**.
+**Homologação QA (27/10/2026):** a migração foi validada no Supabase de testes `zycuprhymoukhnuamtit`, com a identidade administradora do próprio QA e testes transacionais revertidos.
+
+**Produção oficial (27/10/2026):** após autorização do proprietário, a migração `stage_owner_admin_hub` foi aplicada no Supabase oficial `bmudkggwjybyjuhgefvw`. A autorização exclusiva foi vinculada à **única conta preexistente de administrador de casas com e-mail confirmado**; nenhum outro proprietário recebeu acesso. Os RPCs foram testados com identidade proprietária e conta não autorizada, inclusive sob o papel PostgreSQL `authenticated`, verificando listagens, ordenação, aprovação, selos, RLS e revogação. Os testes de escrita foram executados com `ROLLBACK`, sem alterar os perfis ou as casas reais. Nenhuma verificação foi concedida por padrão.
 
 ## Funcionalidades
 
@@ -57,6 +59,9 @@ Aprovações e selos exigem confirmação na interface e são sempre verificados
 - Testes estáticos: `node --test tests/owner-admin-hub.test.mjs`.
 - Workflow `Stage Flow • Integration and build` executa os testes, TypeScript e build sem fazer deploy.
 - Testes de integração QA executados em transação com `ROLLBACK`, incluindo proprietário e intruso, ordenação, concessão/revogação, rejeição de acesso direto às tabelas e publicação de casa após aprovação.
-- Homologação pode ser atualizada separadamente. Não migrar, cadastrar o proprietário nem publicar a central em produção sem aprovação expressa e verificação da identidade real do proprietário.
+- A migração e a concessão única ao proprietário já foram aplicadas em produção sob autorização expressa. Para próximas mudanças em banco ou contas, exigir autorização específica e verificar a identidade novamente.
+- Desenvolvimento e testes automatizados passam a ocorrer diretamente na `main`. Os três workflows GitHub só executam testes/build/um banco PostgreSQL temporário, sem publicar.
+- `vercel.json` mantém `git.deploymentEnabled.main=false` e `develop=false`; o projeto Vercel oficial continua com **Ignored Build Step** bloqueando deploy automático. Para publicar novos commits, é necessária autorização manual separada.
+- A área privada é acessível em `/admin/central`. O painel `/painel` só exibe o atalho administrativo se o RPC de autorização retornar `true`; o login aceita exclusivamente `next=/admin/central` como retorno especial (sem redirecionamento aberto).
 
 **Não divulgar UUID, e-mail, chaves, nem lista de usuários em logs públicos.**
