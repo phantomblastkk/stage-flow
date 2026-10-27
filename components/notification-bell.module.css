@@ -29,3 +29,16 @@
 .feedback{display:flex;align-items:center;gap:9px;margin:0;padding:20px 17px;font-size:11px;color:#dbc2f6;line-height:1.6}
 .dropdown :is(button,a):focus-visible,.wrapper>button:focus-visible{outline:2px solid #d0b6ff;outline-offset:-2px}
 @media(max-width:560px){.dropdown{position:fixed;top:76px;right:16px;max-height:calc(100dvh - 90px)}.feed{max-height:min(360px,55dvh)}.triggerText{display:none}}
+
+
+/* Stable, high-contrast pending-notification count; never clears on opening the bell alone. */
+.wrapper>button:has(.counter){border-color:#9e76c4}
+.counter{
+ position:absolute;top:-9px;right:-8px;
+ min-width:22px;height:22px;padding:0 5px;
+ border:2px solid #1b1630;background:#bb6ff2;color:#140c22;
+ box-shadow:0 2px 13px #9b55d266;font-size:10px;font-weight:950;
+ font-variant-numeric:tabular-nums;line-height:1
+}
+.wrapper>button:focus-visible{outline:3px solid #d8b3ff;outline-offset:3px}
+@media(max-width:560px){.counter{top:-8px;right:-5px}}
