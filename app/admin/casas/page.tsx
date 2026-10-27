@@ -234,7 +234,7 @@ export default function AdminCasasPage() {
   async function reviewVenue(decision:"approved"|"rejected") {
     if (!form.id || form.approval_status!=="pending" || reviewing) return;
     if (!window.confirm(decision==="approved"
-      ? "Aprovar esta casa e disponibilizá-la no catálogo? O perfil oficial ainda precisará ser configurado."
+      ? "Aprovar esta casa e publicar automaticamente o perfil oficial? Uma URL exclusiva será criada. Os flyers e fotos poderão ser adicionados após a aprovação."
       : "Rejeitar esta sugestão? Ela continuará registrada, mas não ficará pública.")) return;
     setReviewing(true);setError("");setNotice("");
     try {
@@ -242,10 +242,10 @@ export default function AdminCasasPage() {
         p_venue_id:form.id,p_decision:decision
       });
       if(error)throw error;
-      if(data!==decision)throw Error(data==="already_reviewed"?"Esta solicitação já foi analisada. Atualize a lista.":"Não foi possível concluir a análise.");
+      if(data!==decision)throw Error(data==="already_reviewed"?"Esta solicitação já foi analisada. Atualize a lista.":data==="duplicate_slug"?"Não foi possível reservar a URL pública. Tente novamente ou solicite revisão técnica.":"Não foi possível concluir a análise.");
       await refresh(form.id);
       setNotice(decision==="approved"
-        ? "Casa aprovada no catálogo. Agora configure a página oficial, URL e identidade visual, se necessário."
+        ? "Casa aprovada! O perfil oficial e a URL foram criados. Você já pode adicionar logotipo, capa, programação, fotos e flyers."
         : "Solicitação rejeitada. Nenhuma página pública foi criada.");
     }catch(err){setError(err instanceof Error?err.message:"Falha na análise.");}
     finally{setReviewing(false);}
@@ -378,7 +378,7 @@ export default function AdminCasasPage() {
             </div>
             {form.id && form.approval_status==="pending"&&<div className="venue-admin-review" role="group" aria-label="Analisar sugestão de casa">
               <strong>Cadastro aguardando aprovação</strong>
-              <p>Enviada por um usuário do StageFlow. Enquanto estiver pendente, esta casa não possui página pública, URL, logotipo, fotos ou flyers. Analise a solicitação antes de publicar.</p>
+              <p>Enviada por um usuário do StageFlow. Enquanto estiver pendente, esta casa não possui página pública, URL, logotipo, fotos ou flyers. Ao aprovar, o sistema cria automaticamente o perfil oficial e seu endereço público.</p>
               <div className="venue-admin-review-actions">
                 <button type="button" className="btn btn-primary" disabled={reviewing||saving} onClick={()=>void reviewVenue("approved")}><CheckCircle2 size={16}/>{reviewing?"Analisando...":"Aprovar casa"}</button>
                 <button type="button" className="btn btn-quiet" disabled={reviewing||saving} onClick={()=>void reviewVenue("rejected")}>Rejeitar sugestão</button>
