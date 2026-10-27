@@ -401,10 +401,14 @@ export default function MeuPerfilArtistico() {
           </section>
           <section className="feature">
           <div className="eyebrow"><span className="dot"/> RECURSO PROFISSIONAL</div>
-          <h2 style={{ fontSize: 22, marginTop: 19 }}>Site profissional Pro</h2>
-          <p>Seu site profissional com tema exclusivo, galeria de fotos e vídeos, agenda e pedidos de contratação já pode ser publicado no endereço <strong style={{ color: "var(--text)" }}>/pro/{config.username || "seuusuario"}</strong>, quando o acesso Pro for habilitado para sua conta. O subdomínio personalizado será configurado em uma etapa separada.</p>
+          <h2 style={{ fontSize: 22, marginTop: 19 }}>Seu perfil já tem visual profissional</h2>
+          <p>Seu endereço público é <strong style={{ color: "var(--text)" }}>/{config.username || "seuusuario"}</strong>, com o mesmo visual do site Pro. Agenda, apresentação e contatos permanecem gratuitos. Galerias, temas exclusivos e destaques ficam bloqueados até a assinatura Pro ser habilitada.</p>
+          {config.username&&savedPublished&&<Link href={"/"+encodeURIComponent(config.username)} target="_blank" rel="noopener noreferrer"
+            className="btn btn-quiet" style={{marginTop:12,width:"100%",justifyContent:"center"}}>
+            <ExternalLink size={16}/> Ver meu perfil público <ArrowUpRight size={14}/>
+          </Link>}
           <Link href="/meu-perfil-artistico/site-profissional" className="btn btn-primary" style={{ marginTop: 16, width: "100%", justifyContent: "center" }}>
-            <Globe2 size={17}/> Configurar e publicar meu site Pro <ArrowUpRight size={15}/>
+            <Globe2 size={17}/> Personalizar recursos Pro <ArrowUpRight size={15}/>
           </Link>
           <p style={{ color: "var(--muted)", fontSize: 12, lineHeight: 1.6, marginTop: 10 }}>
             Editor privado. A publicação é manual e exige acesso Pro autorizado. Não há cobrança automática.
