@@ -1,0 +1,11 @@
+/* Keep the notifications and profile button visible on mobile dashboards. */
+.dashboard-account-actions{display:flex;align-items:center;justify-content:flex-end;gap:9px;flex-wrap:wrap;min-width:0}
+.dashboard-account-actions>.btn{min-height:41px;white-space:nowrap;font-size:12px}
+@media(max-width:650px){
+ .dashboard-account-actions{flex:1;justify-content:flex-end;gap:7px}
+ .dashboard-account-actions>.btn{padding:9px 10px;font-size:11px}
+}
+@media(max-width:440px){
+ .dashboard-account-actions{width:100%;justify-content:flex-start}
+ .dashboard-account-actions>a[href="/minha-conta"]{order:-1}
+}

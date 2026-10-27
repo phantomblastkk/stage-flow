@@ -11,6 +11,7 @@ import {
 import type { LucideIcon } from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
 import NotificationBell from "@/components/notification-bell";
+import "./painel-account-actions.css";
 
 type ArtistKind = "lead" | "support";
 type Profile = {
@@ -18,6 +19,8 @@ type Profile = {
   role: "musician" | "producer";
   is_artist: boolean;
   is_producer: boolean;
+  is_singer: boolean;
+  is_musician: boolean;
   artist_kind?: ArtistKind | null;
   display_name: string;
   username: string | null;
@@ -74,7 +77,7 @@ export default function Dashboard() {
       setEmail(user.email ?? "");
       const { data, error } = await supabase
         .from("profiles")
-        .select("id, role, is_artist, is_producer, display_name, username, city, is_public")
+        .select("id, role, is_artist, is_producer, is_singer, is_musician, display_name, username, city, is_public")
         .eq("id", user.id)
         .maybeSingle();
 
@@ -117,6 +120,9 @@ export default function Dashboard() {
 
   async function changeExperience(kind: ArtistKind) {
     if (!profile?.is_artist || changingKind || profile.artist_kind === kind) return;
+    if ((kind==="lead"&&!profile.is_singer)||(kind==="support"&&!profile.is_musician)) {
+      router.push("/minha-conta");return;
+    }
     setChangingKind(true);
     setMessage("");
     setMessageError(false);
@@ -152,9 +158,11 @@ export default function Dashboard() {
     </p>
   </div></main>;
 
-  const kind: ArtistKind = profile?.artist_kind === "support" ? "support" : "lead";
-  const isSupport = profile?.is_artist && kind === "support";
-  const isLead = profile?.is_artist && kind === "lead";
+  const kind: ArtistKind = profile?.is_singer && !profile?.is_musician ? "lead"
+    : profile?.is_musician && !profile?.is_singer ? "support"
+    : profile?.artist_kind === "support" ? "support" : "lead";
+  const isSupport = Boolean(profile?.is_musician && kind === "support");
+  const isLead = Boolean(profile?.is_singer && kind === "lead");
   const roleLabel = !profile ? "Conta"
     : isSupport ? "Músico de apoio" + (profile.is_producer ? " + Produtor" : "")
     : isLead ? "Cantor / artista" + (profile.is_producer ? " + Produtor" : "")
@@ -262,6 +270,11 @@ export default function Dashboard() {
     label: "ACESSO DA CASA"
   });
   primary.unshift({
+    href:"/minha-conta",title:"Meu perfil e minhas funções",icon:UserRound,
+    description:"Veja suas páginas públicas de cantor e músico, edite seu nome e escolha as funções da conta.",
+    label:"IDENTIDADE"
+  });
+  primary.unshift({
     href:"/notificacoes",title:"Central de notificações",icon:Bell,
     description:"Novos convites, propostas, mensagens, confirmações e cancelamentos, com contador de avisos não lidos.",
     label:"CAIXA DE ENTRADA"
@@ -274,7 +287,11 @@ export default function Dashboard() {
       { href: "/meu-perfil-artistico/solicitacoes", title: "Pedidos de contratação", description: "Veja contatos enviados pela sua página pública de artista.", icon: Inbox }
     );
   }
-  if (isLead) {
+  if (isSupport && profile?.is_singer) secondary.push({
+    href:"/meu-perfil-artistico", title:"Editar meu perfil de cantor",
+    description:"Sua página artística continua disponível nesta conta.",icon:Mic2
+  });
+  if (isLead && profile?.is_musician) {
     secondary.push(
       { href: "/meus-convites", title: "Convites para tocar", description: "Cantores também podem participar de outros shows.", icon: Bell },
       { href: "/meu-portfolio", title: "Portfólio simples de músico", description: "Use também sua vitrine de instrumentista.", icon: Guitar },
@@ -287,7 +304,7 @@ export default function Dashboard() {
     description: "Conheça o próximo espaço para descobrir talentos. O catálogo ainda não foi lançado.",
     icon: Search
   });
-  if (profile?.is_artist && profile.username && profile.is_public) {
+  if (profile?.is_singer && profile.username && profile.is_public) {
     secondary.push({
       href: "/" + profile.username, title: "Abrir minha página @" + profile.username,
       description: "Veja o seu perfil gratuito como o público vê.", icon: UserRound
@@ -297,8 +314,9 @@ export default function Dashboard() {
   return <main><div className="container" style={{ paddingBottom: 60 }}>
     <nav className="nav">
       <Link className="brand" href="/"><span className="brand-mark">S</span> stage flow</Link>
-      <div style={{ display: "flex", gap: 10, alignItems: "center" }}>
+      <div className="dashboard-account-actions">
         <NotificationBell/>
+        <Link className="btn btn-quiet" href="/minha-conta" aria-label="Meu perfil e minhas funções"><UserRound size={16}/> Meu perfil</Link>
         <Link className="btn btn-quiet" href="/"><ArrowLeft size={15}/> Site</Link>
         <button className="btn btn-quiet" onClick={() => void handleSignOut()} disabled={signingOut}>
           <LogOut size={15}/>{signingOut ? "Saindo..." : "Sair"}
@@ -332,14 +350,15 @@ export default function Dashboard() {
         <p>Escolha quais ferramentas aparecem primeiro. Pode mudar quando quiser, sem perder dados.</p>
       </div>
       <div className="dashboard-experience-actions">
-        <button type="button" className="dashboard-experience-choice" aria-pressed={kind === "lead"}
+        {profile.is_singer&&<button type="button" className="dashboard-experience-choice" aria-pressed={kind === "lead"}
           disabled={changingKind} onClick={() => void changeExperience("lead")}>
           <Mic2 size={17}/> Cantor / artista {kind === "lead" && <Check size={15}/>}
-        </button>
-        <button type="button" className="dashboard-experience-choice" aria-pressed={kind === "support"}
+        </button>}
+        {profile.is_musician&&<button type="button" className="dashboard-experience-choice" aria-pressed={kind === "support"}
           disabled={changingKind} onClick={() => void changeExperience("support")}>
           <Guitar size={17}/> Músico de apoio {kind === "support" && <Check size={15}/>}
-        </button>
+        </button>}
+        {(!profile.is_singer||!profile.is_musician)&&<Link className="btn btn-quiet" href="/minha-conta">Ativar outra função</Link>}
       </div>
     </section>}
 

@@ -1,0 +1,29 @@
+
+.account-page{padding-bottom:65px}
+.account-loading{min-height:75vh;display:flex;align-items:center;justify-content:center;gap:12px;color:var(--muted)}
+.account-header{padding:37px 0 25px}
+.account-header .eyebrow{display:flex;align-items:center;gap:8px}
+.account-header h1{font-size:clamp(33px,5vw,48px);margin:12px 0}
+.account-header>p{max-width:700px;color:var(--muted);font-size:14px;line-height:1.7}
+.account-layout{display:grid;gap:22px}
+.account-section{padding:22px;border:1px solid var(--line);border-radius:18px;background:var(--panel)}
+.account-section h2{font-size:clamp(19px,3vw,25px);margin:0 0 17px}
+.account-role-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:14px}
+.account-role-card{border:1px solid var(--line);border-radius:15px;background:#201a30;padding:19px;display:flex;flex-direction:column;gap:13px;min-width:0}
+.account-role-heading{display:flex;align-items:center;gap:12px;color:#d9befd}
+.account-role-heading h3{margin:0;color:#fff;font-size:16px}
+.account-role-heading small{display:block;margin-top:4px;color:#cbb7e1;font-size:12px}
+.account-role-card>p{color:#c5b4d9;font-size:13px;line-height:1.7;margin:0;flex:1}
+.account-role-actions{display:flex;flex-wrap:wrap;align-items:center;gap:10px}
+.account-role-actions .btn{justify-content:center;font-size:12px;min-height:43px}
+.account-role-unpublished{font-size:12px;color:#dac6ed;border:1px dashed #6b548d;border-radius:10px;padding:10px}
+.account-producer,.account-note{display:flex;align-items:flex-start;gap:9px;font-size:12px;color:var(--muted);line-height:1.7;margin:17px 0 0}
+.account-note svg,.account-producer svg{flex:none;margin-top:2px}
+.account-form{max-width:640px;display:grid;gap:12px}
+.account-form>label{font-weight:800;font-size:13px;margin-top:8px}
+.account-form input{width:100%;border:1px solid var(--line);background:#1b1828;color:var(--text);border-radius:11px;padding:13px 14px;font-size:14px;min-height:46px}
+.account-form input:disabled{opacity:.6;cursor:not-allowed}
+.account-form small{font-size:12px;color:var(--muted);line-height:1.6}
+.account-form .btn{justify-self:start;min-height:44px;margin-top:8px}
+@media(max-width:770px){.account-role-grid{grid-template-columns:1fr}.account-section{padding:15px}.account-role-card{padding:16px}}
+@media(max-width:440px){.account-role-actions{display:grid;grid-template-columns:1fr}.account-role-actions .btn{width:100%}.account-form .btn{width:100%;justify-content:center}}
