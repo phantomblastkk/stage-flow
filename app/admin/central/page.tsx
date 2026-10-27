@@ -88,7 +88,7 @@ export default function CentralAdministrativa(){
     const {data:{user},error:sessionError}=await db.auth.getUser();
     if(!active)return;
     if(sessionError)throw sessionError;
-    if(!user){router.replace("/login");return;}
+    if(!user){router.replace("/login?next=%2Fadmin%2Fcentral");return;}
     const {data,error}=await db.rpc("stage_owner_admin_status");
     if(!active)return;
     if(error)throw error;
