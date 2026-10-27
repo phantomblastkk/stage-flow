@@ -112,7 +112,7 @@ function monthCells(month: Date): (Date | null)[] {
   ];
 }
 
-export default function SiteProfissionalPreview() {
+export default function SiteProfissionalPreview({ active = true }: { active?: boolean }) {
   const router = useRouter();
   const [artist, setArtist] = useState<ArtistPreview | null>(null);
   const [events, setEvents] = useState<PublicShow[]>([]);
@@ -225,6 +225,18 @@ export default function SiteProfissionalPreview() {
     void load();
     return () => { active = false; };
   }, [router]);
+
+  // The same profile may have been edited on the free-data tab while this
+  // editor stays mounted. Refresh owner-only identity when revisiting Pro,
+  // without resetting the unsaved Pro theme, sections or gallery draft.
+  useEffect(() => {
+    if (!active || loading) return;
+    let current = true;
+    void createClient().rpc("stage_my_artist_page").then(({ data, error }) => {
+      if (current && !error && data) setArtist(data as ArtistPreview);
+    });
+    return () => { current = false; };
+  }, [active, loading]);
 
   const datesWithShows = useMemo(() => new Set(events.map(e => showCode(e.starts_at))), [events]);
   const selectedShows = selectedDate ? events.filter(e => showCode(e.starts_at) === selectedDate) : events;
@@ -398,6 +410,7 @@ export default function SiteProfissionalPreview() {
       </section>
       <PremiumGalleryEditor gallery={gallery}/>
       <ProSitePublicationControls
+        active={active}
         unsaved={unsaved} draftReady={draftReady}
         galleryBusy={gallery.busy} galleryLoading={gallery.loading}
       />
