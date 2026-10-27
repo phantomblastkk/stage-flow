@@ -263,6 +263,8 @@ test("new public shows with a selected flyer wait for media attachment before pu
 
 test("approved house editing has publication guide and scoped public preview",()=>{
   const editor=read("components/venue-programming-workspace.tsx");
+  assert.ok(editor.includes('mode==="admin"&&house.approval_status!=="approved"'));
+  assert.ok(editor.includes('Esta casa ainda não possui perfil oficial ativo e aprovado.'));
   assert.ok(editor.includes('aria-label="Preparar página pública da casa"'));
   assert.ok(editor.includes('mode==="admin"?'));
   assert.ok(editor.includes('href="/admin/casas"'));
