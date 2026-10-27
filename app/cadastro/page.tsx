@@ -9,7 +9,7 @@ const reservedArtistUsernames = new Set([
   "admin", "api", "auth", "artista", "artistas", "cadastro", "configuracoes",
   "convite", "convites", "dashboard", "entrar", "equipes", "eventos",
   "login", "logout", "marketplace", "meu-perfil", "meu-perfil-artistico",
-  "meu-portfolio", "meus-convites", "musico", "musicos", "painel", "planos",
+  "meu-portfolio", "meus-convites", "minha-conta", "musico", "musicos", "painel", "planos",
   "assinatura", "conversas", "financeiro", "homologacao", "locais",
   "meu-desempenho", "meus-shows", "minha-disponibilidade",
   "notificacoes", "parceiros", "pro", "shows-recorrentes",
