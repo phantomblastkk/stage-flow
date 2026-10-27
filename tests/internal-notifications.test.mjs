@@ -132,7 +132,7 @@ test("inbox opens urgent briefing even if marking read fails or session refresh 
  assert.match(page,/authClient\.auth\.getSession\(\)/);
  assert.match(page,/Sua conta não foi desconectada/);
  assert.match(page,/if\(!user\)\{router\.replace\("\/login"\);return;\}/);
- assert.match(page,/if\(!item\.read_at\)\{\s*try\{await mark\(\[item\.id\]\);\}catch\{/);
+ assert.match(page,/if\(!item\.read_at\)\{\s*try\{\s*await mark\(\[item\.id\]\);/);
  assert.match(page,/router\.push\(destination\(item\)\)/);
  assert.match(page,/Mark-as-read failures must not block/);
 });
