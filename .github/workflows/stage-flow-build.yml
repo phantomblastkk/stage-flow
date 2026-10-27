@@ -61,6 +61,8 @@ jobs:
         run: npm run test:show-operations
       - name: Verify show briefing notifications and isolation
         run: npm run test:show-operations-alerts
+      - name: Verify Asaas webhook safety contracts
+        run: node --test tests/asaas-contract.test.mjs
       - name: Check TypeScript
         run: npx tsc --noEmit
       - name: Build Next.js
