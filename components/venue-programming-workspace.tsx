@@ -582,7 +582,7 @@ export default function VenueProgrammingWorkspace({mode}: {mode: "admin" | "part
                 {pendingFlyer&&<div className="venue-program-pending-flyer">
                   {pendingFlyerPreview&&<img className="venue-program-flyer-preview"
                     src={pendingFlyerPreview} alt="Prévia local do flyer selecionado"
-                    onError={()=>setError("Não foi possível abrir a imagem. Escolha outro arquivo JPG, PNG ou WebP.")}/>}
+                    onError={()=>{setPendingFlyer(null);setError("Não foi possível abrir a imagem. Escolha outro arquivo JPG, PNG ou WebP.");}}/>}
                   <span>Selecionado: <strong>{pendingFlyer.name}</strong>
                     <small>{(pendingFlyer.size/1024/1024).toFixed(2)} MB · Prévia antes do envio</small>
                   </span>
