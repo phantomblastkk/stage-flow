@@ -105,3 +105,23 @@ test("bell opens a five-item preview and keeps full inbox available",()=>{
  assert.match(css,/max-height/);
  assert.doesNotMatch(bell,/service_role|WHATSAPP_CLOUD_ACCESS_TOKEN|\.from\("stage_internal_notifications"\)/);
 });
+
+
+test("notification links focus the invitation belonging to the signed-in musician",()=>{
+ const invites=read("app/meus-convites/page.tsx");
+ assert.match(page,/\/meus-convites\?convite=/);
+ assert.match(bell,/\/meus-convites\?convite=/);
+ assert.match(page,/encodeURIComponent\(n\.source_id\)/);
+ assert.match(bell,/encodeURIComponent\(item\.source_id\)/);
+ assert.match(page,/\^\[0-9a-f\]\{8\}/);
+ assert.match(bell,/\^\[0-9a-f\]\{8\}/);
+ assert.match(invites,/focusedFromNotification = useRef\(false\)/);
+ assert.match(invites,/invites\.some\(invite => invite\.id === id\)/);
+ assert.match(invites,/setFilter\("all"\)/);
+ assert.match(invites,/getElementById\("convite-" \+ id\)/);
+ assert.match(invites,/scrollIntoView\(\{ behavior: "smooth", block: "center" \}\)/);
+ assert.match(invites,/tabIndex=\{-1\}/);
+ assert.match(invites,/highlightedInvite === invite\.id/);
+ assert.match(invites,/stage_my_invitations/);
+ assert.doesNotMatch(page,/source_id\)\+"https?:/);
+});
