@@ -48,7 +48,7 @@ export default function PlanosPage() {
         <ul style={{listStyle:"none",padding:0,display:"grid",gap:12,margin:"22px 0"}}>
           {professional.map(item=><li key={item} style={{display:"flex",alignItems:"flex-start",gap:9}}><LockKeyhole size={17} style={{flexShrink:0,color:"var(--accent-solid)"}}/>{item}</li>)}
         </ul>
-        <Link className="btn btn-quiet" href="/meu-perfil-artistico/site-profissional" style={{width:"100%",justifyContent:"center"}}>Conhecer a prévia Pro <ArrowRight size={16}/></Link>
+        <Link className="btn btn-quiet" href="/assinatura" style={{width:"100%",justifyContent:"center"}}>Assinar versão Pro <ArrowRight size={16}/></Link>
         <p style={{fontSize:12,marginTop:15}}>A prévia exige uma conta de cantor. Não há checkout, assinatura automática nem provisionamento de subdomínio nesta fase.</p>
       </article>
     </section>
