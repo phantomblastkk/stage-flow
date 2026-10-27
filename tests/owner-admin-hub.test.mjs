@@ -107,3 +107,35 @@ test("public verification badge only appears when public RPC confirms a publishe
  assert.match(read("components/public-singer-site.tsx"),/verified&&<StageVerifiedBadge compact\/>/);
  assert.match(read("app/casa/[slug]/page.tsx"),/verified&&<StageVerifiedBadge compact\/>/);
 });
+
+
+test("owner-only shortcut and a safe post-login return to the private dashboard",()=>{
+ const panel=read("app/painel/page.tsx");
+ const login=read("app/login/page.tsx");
+ assert.match(panel,/stage_owner_admin_status/);
+ assert.match(panel,/setIsOwnerAdmin\(!ownerAccessError&&ownerAccess===true\)/);
+ assert.match(panel,/if \(isOwnerAdmin\) primary\.unshift/);
+ assert.match(panel,/href:"\/admin\/central"/);
+ assert.doesNotMatch(panel,/localStorage\.getItem\("isAdmin"\)|user\.email\s*===\s*"[^"]+"/);
+ assert.match(page,/router\.replace\("\/login\?next=%2Fadmin%2Fcentral"\)/);
+ assert.match(login,/get\("next"\) === "\/admin\/central"/);
+ assert.match(login,/postLoginDestination\(\)/);
+ assert.doesNotMatch(login,/location\.href\s*=\s*new URLSearchParams/);
+});
+
+test("main is the only active CI branch; commits never auto-deploy",()=>{
+ for(const filename of [
+  "stage-flow-build.yml","venue-security.yml","venue-staging-db.yml"
+ ]){
+  const yml=read(".github/workflows/"+filename);
+  assert.match(yml,/branches: \[main\]/);
+  assert.doesNotMatch(yml,/branches: \[develop\]/);
+  assert.doesNotMatch(yml,/vercel\s+deploy|supabase\s+db\s+push|\bdeploy-to-production\b/i);
+ }
+ const vercel=JSON.parse(read("vercel.json"));
+ assert.equal(vercel.git.deploymentEnabled.main,false);
+ assert.equal(vercel.git.deploymentEnabled.develop,false);
+ const policy=read("AGENTS.md");
+ assert.match(policy,/branch `main`/);
+ assert.match(policy,/NUNCA habilite deploy automático/);
+});
