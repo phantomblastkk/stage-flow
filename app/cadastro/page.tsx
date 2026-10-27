@@ -29,6 +29,29 @@ export default function CadastroPage() {
       setPartnerOnboarding(true);
     }
   }, []);
+  const [checkingSession, setCheckingSession] = useState(true);
+  useEffect(() => {
+    // An existing musician account can open a singer's invitation directly.
+    // The invitation is a shortcut, never a prerequisite for free signup.
+    let active = true;
+    async function checkSession() {
+      try {
+        const { data, error } = await createClient().auth.getUser();
+        if (active && !error && data.user) {
+          const code = new URLSearchParams(window.location.search).get("convite");
+          window.location.replace(code
+            ? "/convite?codigo=" + encodeURIComponent(code)
+            : "/painel");
+          return;
+        }
+      } catch {
+        // Keep the signup form available when verification is temporarily offline.
+      }
+      if (active) setCheckingSession(false);
+    }
+    void checkSession();
+    return () => { active = false; };
+  }, []);
   const [isProducer, setIsProducer] = useState(false);
   const [partnerOnboarding, setPartnerOnboarding] = useState(false);
   const isArtist = artistKind !== "none";
@@ -90,6 +113,12 @@ export default function CadastroPage() {
       setMessage(err instanceof Error ? err.message : "Não foi possível criar a conta. Confira os dados e tente novamente.");
     } finally { setBusy(false); }
   }
+
+  if (checkingSession) return <main className="auth-wrap">
+    <div className="container" style={{ minHeight: "60vh", display: "grid", placeItems: "center", textAlign: "center" }}>
+      <p style={{ color: "var(--muted)" }}>Verificando sua sessão do Stage Flow...</p>
+    </div>
+  </main>;
 
   return <main className="auth-wrap">
     <aside className="auth-aside"><Link className="brand" href="/"><span className="brand-mark">S</span> stage flow</Link><div><div className="eyebrow">SEU PRÓXIMO CAPÍTULO</div><h1>Mais organização. <span className="accent">Mais palco.</span></h1><p className="tagline">Uma conta para organizar shows, receber convites e aproximar músicos e produtores.</p></div><Link href="/" className="fine"><ArrowLeft size={14} style={{display:"inline",verticalAlign:"middle"}}/> Voltar ao início</Link></aside>
