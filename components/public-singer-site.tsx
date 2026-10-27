@@ -6,13 +6,14 @@ import { useParams } from "next/navigation";
 import {
   ArrowLeft, ArrowRight, ArrowUpRight, CalendarDays, CheckCircle2,
   ChevronLeft, ChevronRight, Copy, Instagram, LoaderCircle,
-  MapPin, Mic2, Music2, PlayCircle, Share2, Youtube, LockKeyhole, Crown
+  MapPin, Mic2, Music2, PlayCircle, Share2, Youtube, LockKeyhole, Crown, MessageCircle
 } from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
 import StageVerifiedBadge from "@/components/stage-verified-badge";
 import {useStageVerified} from "@/lib/use-stage-verified";
 import {distinctPublicBiography} from "@/lib/profile-presentation";
 import {publicInstagramProfile} from "@/lib/artist-social";
+import {whatsappBookingUrl,type PublicBookingContact} from "@/lib/booking-contact";
 import ProShowCards from "@/app/meu-perfil-artistico/site-profissional/pro-show-cards";
 import ArtistBookingForm from "@/components/artist-booking-form";
 import {
@@ -121,6 +122,7 @@ export default function PublicSingerSite(){
   const [loading,setLoading]=useState(true);
   const [proUnlocked,setProUnlocked]=useState(false);
   const [proEligible,setProEligible]=useState(false);
+  const [bookingContact,setBookingContact]=useState<PublicBookingContact|null|undefined>(undefined);
   const [error,setError]=useState("");
   const [copied,setCopied]=useState(false);
   const [month,setMonth]=useState(()=>new Date(
@@ -217,6 +219,21 @@ export default function PublicSingerSite(){
     };
   },[username]);
 
+  useEffect(()=>{
+    let active=true;
+    if(!username){setBookingContact(null);return;}
+    setBookingContact(undefined);
+    void (async()=>{
+      const {data,error}=await createClient().rpc("stage_public_booking_contact",{
+        p_kind:"singer",p_slug:username
+      });
+      if(!active)return;
+      setBookingContact(!error&&data&&typeof data.mode==="string"
+        ?data as PublicBookingContact:null);
+    })();
+    return()=>{active=false};
+  },[username]);
+
   const design=useMemo(()=>safeDesign(data?.design || {
     theme:"midnight",accent:"violet",
     section_order:sectionIds,visible_sections:sectionIds
@@ -233,6 +250,13 @@ export default function PublicSingerSite(){
   const artist=data?.artist;
   const biography=artist?distinctPublicBiography(artist.headline,artist.bio):"";
   const instagram=publicInstagramProfile(artist?.instagram_url);
+  const contactMode=bookingContact?.mode;
+  const contactHref=contactMode==="whatsapp"
+    ?whatsappBookingUrl(bookingContact?.phone,bookingContact?.greeting||"",artist?.name||"")
+    :contactMode==="instagram"?instagram?.url||null
+    :bookingContact===null&&!artist?.bookings_enabled?instagram?.url||null:null;
+  const contactIsForm=contactMode==="form"||(bookingContact===null&&Boolean(artist?.bookings_enabled));
+  const contactTitle=contactMode==="whatsapp"?"Contratar pelo WhatsApp":contactMode==="instagram"?"Chamar no Instagram":"Contrate o cantor";
   function imageUrl(path:string|null|undefined){
     return path?createClient().storage.from("stage-artist-public")
       .getPublicUrl(path).data.publicUrl:"";
@@ -320,9 +344,13 @@ export default function PublicSingerSite(){
               href={artist.spotify_url} aria-label="Spotify"><Music2 size={19}/></a>}
           </div>
           <div className="premium-site-actions">
-            {design.visible_sections.includes("contact")&&artist.bookings_enabled&&
-              <a className="premium-site-main-action" href="#premium-contato">
-                <Mic2 size={17}/> Solicitar contratação <ArrowUpRight size={16}/>
+            {design.visible_sections.includes("contact")&&(contactHref||contactIsForm)&&
+              <a className="premium-site-main-action"
+                href={contactHref||"#premium-contato"}
+                target={contactHref?"_blank":undefined}
+                rel={contactHref?"noopener noreferrer":undefined}>
+                {contactMode==="whatsapp"?<MessageCircle size={17}/>:contactMode==="instagram"?<Instagram size={17}/>:<Mic2 size={17}/>}
+                {contactHref?contactTitle:"Contrate o cantor"} <ArrowUpRight size={16}/>
               </a>}
             {design.visible_sections.includes("agenda")&&
               <a className="premium-site-secondary-action" href="#premium-agenda">
@@ -477,18 +505,18 @@ export default function PublicSingerSite(){
               <div className="premium-site-contact-icon"><Mic2 size={27}/></div>
               <div>
                 <h2>Leve {artist.name} para seu evento.</h2>
-                <p>{artist.bookings_enabled
-                  ?"Envie uma solicitação e o artista poderá retornar seu contato."
+                <p>{contactHref
+                  ?"Converse diretamente pelo canal de contratação escolhido pelo artista."
+                  :contactIsForm?"Envie uma solicitação privada e o cantor poderá retornar seu contato."
                   :"Para informações sobre apresentações, acompanhe as redes oficiais."}</p>
               </div>
-              {!artist.bookings_enabled&&artist.instagram_url&&
-                <a className="premium-site-main-action"
-                  target="_blank" rel="noopener noreferrer"
-                  href={artist.instagram_url}>
-                  <Instagram size={16}/> Instagram <ArrowUpRight size={15}/>
+              {contactHref&&<a className="premium-site-main-action"
+                  target="_blank" rel="noopener noreferrer" href={contactHref}>
+                  {contactMode==="whatsapp"?<MessageCircle size={16}/>:<Instagram size={16}/>}
+                  {contactTitle} <ArrowUpRight size={15}/>
                 </a>}
             </div>
-            {artist.bookings_enabled&&
+            {contactIsForm&&
               <div className="pro-public-booking">
                 <ArtistBookingForm username={artist.username} artistName={artist.name}/>
               </div>}
