@@ -1,0 +1,68 @@
+/* A single editing workspace for singer data and optional Pro features. */
+.singer-unified-editor{
+  min-height:100vh;
+  background:radial-gradient(ellipse 75% 390px at 50% 0%,#32234d40,transparent 80%);
+}
+.singer-editor-intro{padding:40px 0 25px;max-width:900px}
+.singer-editor-intro h1{
+  margin:15px 0;font-size:clamp(32px,5vw,50px);
+  font-weight:900;letter-spacing:-.055em;line-height:1.12
+}
+.singer-editor-intro .lead{max-width:730px;line-height:1.8}
+.singer-editor-tabs{
+  display:grid;grid-template-columns:1fr 1fr;gap:10px;
+  padding:6px;border:1px solid #473c65;border-radius:18px;
+  background:#17192b;margin-bottom:16px
+}
+.singer-editor-tabs button{
+  display:flex;align-items:center;justify-content:center;gap:10px;
+  min-height:58px;padding:13px 17px;border:1px solid transparent;
+  color:#c6c3d6;background:transparent;cursor:pointer;
+  border-radius:13px;font:800 13px "Manrope",sans-serif;
+  transition:background .18s,border-color .18s,color .18s
+}
+.singer-editor-tabs button span{
+  font:800 9px "Manrope",sans-serif;letter-spacing:.05em;
+  color:#c9b9ef;border:1px solid #5e4b83;border-radius:99px;padding:5px 8px;
+  white-space:nowrap
+}
+.singer-editor-tabs button:hover{background:#26233d;color:#fff}
+.singer-editor-tabs button.is-active{
+  color:#fff;background:linear-gradient(120deg,#4d3483,#30284c);
+  border-color:#775da7;box-shadow:0 6px 20px #0003
+}
+.singer-editor-tabs button:focus-visible{
+  outline:3px solid #bba3fc;outline-offset:2px
+}
+.singer-editor-canonical{
+  display:flex;align-items:center;gap:10px;flex-wrap:wrap;
+  padding:13px 16px;margin-bottom:23px;
+  border:1px solid #4b466b;border-radius:13px;
+  background:#222039;color:#cbd4e7;font-size:12px;line-height:1.6
+}
+.singer-editor-canonical>svg{color:#bf9cff;flex:none}
+.singer-editor-canonical strong{font-weight:800;color:#f7f1ff}
+.singer-editor-canonical a{margin-left:auto;display:flex;align-items:center;gap:7px;color:#d9c7ff;font-weight:800}
+.singer-editor-pro-panel{min-width:0}
+.singer-editor-pro-panel .premium-preview-app{
+  margin:0 auto;border-radius:20px;
+  border:1px solid #453956;background:#101424;
+  overflow:hidden
+}
+.singer-editor-pro-panel .premium-preview-toolbar{
+  border-radius:0
+}
+.singer-editor-pro-panel .premium-preview-upgrade{margin-bottom:0}
+.singer-editor-pro-panel .premium-preview-label{overflow-wrap:anywhere}
+@media(max-width:700px){
+  .singer-editor-intro{padding:24px 0 19px}
+  .singer-editor-tabs{gap:5px;padding:4px}
+  .singer-editor-tabs button{flex-direction:column;gap:6px;text-align:center;font-size:11px;padding:12px 8px}
+  .singer-editor-tabs button span{font-size:8px}
+  .singer-editor-canonical{padding:12px}
+  .singer-editor-canonical a{margin-left:0;width:100%}
+  .singer-editor-pro-panel .premium-preview-app{border-radius:13px}
+}
+@media(prefers-reduced-motion:reduce){
+  .singer-editor-tabs button{transition:none}
+}
