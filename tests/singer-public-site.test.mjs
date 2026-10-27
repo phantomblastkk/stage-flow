@@ -167,3 +167,32 @@ test("switching singer editor tabs refreshes eligibility and preserves the Pro d
  assert.match(publication,/useEffect\(\(\)=>\{if\(active\)void load\(\);\},\[active\]\)/);
  assert.doesNotMatch(publication,/setInfo\(\{entitled:true/);
 });
+
+
+test("singer headline is written once in the autograph area, not repeated in the introduction",()=>{
+ const presentation=source("lib/profile-presentation.ts");
+ const editor=source("app/meu-perfil-artistico/page.tsx");
+ assert.match(presentation,/export function distinctPublicBiography/);
+ assert.match(presentation,/normalizeProfileCopy\(text\) === normalizeProfileCopy\(signature\)/);
+ assert.match(presentation,/toLocaleLowerCase\("pt-BR"\)/);
+ assert.match(shared,/distinctPublicBiography\(artist\.headline,artist\.bio\)/);
+ assert.match(shared,/className="premium-site-signature"/);
+ assert.match(shared,/className="premium-site-intro">\{biography/);
+ assert.match(shared,/MINHA HISTÓRIA/);
+ assert.match(shared,/<p>\{biography\|\|/);
+ assert.doesNotMatch(shared,/artist\.bio\|\|artist\.headline/);
+ assert.doesNotMatch(shared,/artist\.headline\|\|"Conheça meu trabalho/);
+ assert.match(style,/\.premium-site-signature::before/);
+ assert.match(style,/\.premium-site-signature::after/);
+ assert.match(editor,/Frase de assinatura/);
+ assert.match(editor,/Aparece apenas uma vez/);
+ assert.match(editor,/artist-free-editor-preview-signature/);
+});
+
+test("musician bio is distinct from its featured headline",()=>{
+ const musician=source("components/musician-portfolio-view.tsx");
+ const musicianCss=source("components/musician-portfolio-polish.css");
+ assert.match(musician,/distinctPublicBiography\(portfolio\.headline,portfolio\.bio\)/);
+ assert.match(musician,/mp-description">\{biography \|\|/);
+ assert.match(musicianCss,/scroll-snap-type:x proximity/);
+});
