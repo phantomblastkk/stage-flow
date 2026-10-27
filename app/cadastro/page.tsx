@@ -56,6 +56,7 @@ export default function CadastroPage() {
     return () => { active = false; };
   }, []);
   const [isProducer, setIsProducer] = useState(false);
+  const [alsoMusician,setAlsoMusician] = useState(false);
   const [partnerOnboarding, setPartnerOnboarding] = useState(false);
   const isArtist = artistKind !== "none";
   const [displayName, setDisplayName] = useState("");
@@ -92,6 +93,7 @@ export default function CadastroPage() {
             is_artist: inviteCode ? true : isArtist,
             is_producer: inviteCode ? false : isProducer,
             artist_kind: inviteCode ? "support" : isArtist ? artistKind : null,
+            is_musician: Boolean(inviteCode) || (artistKind==="support") || (artistKind==="lead"&&alsoMusician),
             display_name: displayName.trim(),
             whatsapp_phone: needsMusicianPhone ? internationalPhone : null,
             whatsapp_opt_in: needsMusicianPhone && whatsappConsent,
@@ -148,6 +150,11 @@ export default function CadastroPage() {
             <small>{artistKind === "none" ? "✓ Selecionado" : "Selecionar"}</small>
           </button>
         </div>
+        {artistKind==="lead"&&<label className="signup-producer-add">
+          <input type="checkbox" checked={alsoMusician} onChange={e=>setAlsoMusician(e.target.checked)}/>
+          <span><strong>Também sou músico</strong><small>Libera meu portfólio de músico, convites para tocar e as funções de instrumentista nesta conta. Meu perfil de cantor continua separado.</small></span>
+          <CheckCircle2 size={18} color={alsoMusician ? "#C0A7FF" : "#657083"}/>
+        </label>}
         {isArtist && <label className="signup-producer-add">
           <input type="checkbox" checked={isProducer} onChange={e => setIsProducer(e.target.checked)}/>
           <span><strong>Também organizo ou contrato shows</strong><small>Ativa as ferramentas de produtor nesta mesma conta.</small></span>
@@ -156,7 +163,7 @@ export default function CadastroPage() {
       </div>}
       <form onSubmit={handleSubmit}>
         <div className="field"><label htmlFor="name">Nome {inviteCode ? "profissional" : artistKind === "none" ? "do produtor ou empresa" : artistKind === "lead" ? "artístico" : "completo ou profissional"}</label><input id="name" autoComplete="name" value={displayName} onChange={e=>setDisplayName(e.target.value)} placeholder={artistKind === "none" ? "Ex.: Produções Vitória" : artistKind === "support" || inviteCode ? "Ex.: João Oliveira" : "Ex.: Cantor Sousa"} required /></div>
-        {artistKind === "lead"&&!inviteCode&&<div className="field"><label htmlFor="slug">Seu @ artístico (grátis)</label><input id="slug" value={username} onChange={e=>setUsername(e.target.value.toLowerCase().replace(/[^a-z0-9-]/g,""))} placeholder="cantorsousa" pattern="[a-z0-9-]{3,30}" minLength={3} maxLength={30} required /><span className="field-help">Você poderá publicar stageflow.com/{username || "seuusuario"} no domínio oficial. O site completo com subdomínio é um adicional pago, separado do perfil gratuito.</span></div>}
+        {artistKind === "lead"&&!inviteCode&&<div className="field"><label htmlFor="slug">Seu @ artístico (grátis)</label><input id="slug" value={username} onChange={e=>setUsername(e.target.value.toLowerCase().replace(/[^a-z0-9-]/g,""))} placeholder="cantorsousa" pattern="[a-z0-9-]{3,30}" minLength={3} maxLength={30} required /><span className="field-help">Você poderá publicar sua página /{username || "seuusuario"}. Nome e @ podem ser alterados uma vez a cada 60 dias. O site completo com subdomínio é um adicional pago, separado do perfil gratuito.</span></div>}
         {(isArtist || Boolean(inviteCode)) && <>
           <div className="field">
             <label htmlFor="whatsapp">Seu WhatsApp com DDD (opcional)</label>
