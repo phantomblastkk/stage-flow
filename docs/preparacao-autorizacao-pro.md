@@ -31,3 +31,14 @@ A tentativa de criar a migração Pro pelo conector foi bloqueada pela configura
 - O endpoint ainda depende de `ASAAS_WEBHOOK_AUTH_TOKEN` e `SUPABASE_SERVICE_ROLE_KEY` configurados **apenas** no servidor QA; nunca enviar essas chaves pelo chat, commitar ou expor via NEXT_PUBLIC.
 - O site QA continua sem publicação deste código mais recente. Não configurar webhook real até haver deploy QA, credenciais de sandbox e teste de entrega/duplicata.
 - Para registrar sucesso, o endpoint faz upsert com `ignoreDuplicates: true`, preservando o primeiro evento recebido. O processamento idempotente posterior e a validação da titularidade da assinatura seguem pendentes.
+
+
+## Teste de entrada do webhook no Sandbox (próxima etapa)
+
+- Script `scripts/asaas-sandbox-smoke.mjs` prepara um evento artificial `PAYMENT_CREATED` com IDs únicos; **não cria cobranças nem autoriza Pro**.
+- Só aceita a URL de homologação `stage-flow-homologacao.vercel.app` e recusa outros hosts.
+- Sem credenciais, testa que a rota não aceita chamadas sem autenticação (HTTP 401 ou 503).
+- Com `SANDBOX_WEBHOOK_TEST_TOKEN` de teste, verifica armazenamento e reentrega duplicada; o token precisa coincidir com `ASAAS_WEBHOOK_AUTH_TOKEN` configurado apenas no ambiente QA.
+- **Não executar o teste autenticado enquanto a versão atual não estiver implantada na Vercel QA.** Nunca usar token de produção.
+- O teste valida recebimento idempotente, mas **não demonstra confirmação de pagamentos**. A vinculação entre assinatura, titularidade e recurso Pro segue pendente.
+- CI testa o contrato estático do script, não envia tráfego nem eventos para o banco.
