@@ -11,6 +11,7 @@ import {
 import { createClient } from "@/lib/supabase/client";
 import StageVerifiedBadge from "@/components/stage-verified-badge";
 import {useStageVerified} from "@/lib/use-stage-verified";
+import {distinctPublicBiography} from "@/lib/profile-presentation";
 import ProShowCards from "@/app/meu-perfil-artistico/site-profissional/pro-show-cards";
 import ArtistBookingForm from "@/components/artist-booking-form";
 import {
@@ -223,6 +224,7 @@ export default function PublicSingerSite(){
   const currentShows=selectedDay?
     events.filter(e=>showCode(e.starts_at)===selectedDay):events;
   const artist=data?.artist;
+  const biography=artist?distinctPublicBiography(artist.headline,artist.bio):"";
   function imageUrl(path:string|null|undefined){
     return path?createClient().storage.from("stage-artist-public")
       .getPublicUrl(path).data.publicUrl:"";
@@ -287,9 +289,9 @@ export default function PublicSingerSite(){
             {artist.headline&&<p className="premium-site-signature">{artist.headline}</p>}
           </div>
           {artist.city&&<p className="premium-site-city"><MapPin size={16}/>{artist.city}</p>}
-          <p className="premium-site-intro">{artist.bio?.trim()
-            ?artist.bio.length>320?artist.bio.slice(0,317)+"…":artist.bio
-            :artist.headline||"Conheça meu trabalho, minhas músicas e minhas apresentações."}</p>
+          <p className="premium-site-intro">{biography
+            ?biography.length>210?biography.slice(0,207)+"…":biography
+            :"Conheça os shows, o repertório e as novidades deste artista."}</p>
           <div className="premium-site-socials">
             {artist.instagram_url&&<a target="_blank" rel="noopener noreferrer"
               href={artist.instagram_url} aria-label="Instagram"><Instagram size={19}/></a>}
@@ -329,7 +331,7 @@ export default function PublicSingerSite(){
                 {String(design.section_order.indexOf("about")+1).padStart(2,"0")} / MINHA HISTÓRIA
               </span>
               <h2>Sobre <em>o artista.</em></h2>
-              <p>{artist.bio||artist.headline||"Minha história musical."}</p>
+              <p>{biography||"Este artista está preparando sua história musical. Enquanto isso, descubra as próximas apresentações e entre em contato para saber mais."}</p>
             </div>
             <div className="premium-site-summary">
               <span className="premium-site-summary-icon"><Mic2 size={22}/></span>
