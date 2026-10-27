@@ -508,3 +508,35 @@
   border-radius:9px;font-size:12px;min-width:0
 }
 .mp-public-manual-share input:focus-visible{outline:2px solid #c6a6fd}
+
+/* Polished musician identity, quick links, and legible mobile cards. */
+.mp-polished .mp-overline{letter-spacing:.16em;font-weight:800}
+.mp-polished .mp-headline{font-size:clamp(14px,1.6vw,17px);max-width:58ch;color:#e1d7ef;line-height:1.65}
+.mp-polished .mp-hero-meta{margin-top:18px}
+.mp-polished .mp-hero-meta>span{border-radius:999px;padding:8px 12px}
+.mp-polished .mp-section-nav{scroll-snap-type:x proximity}
+.mp-polished .mp-section-nav a{scroll-snap-align:start}
+.mp-polished .mp-section-nav a:hover{text-decoration-color:var(--mp-accent)}
+.mp-polished .mp-instrument-card,.mp-polished .mp-profile-facts>div,.mp-polished .mp-career-list>div{
+  transition:border-color .16s,background .16s
+}
+.mp-polished .mp-instrument-card:hover,
+.mp-polished .mp-career-list>div:hover{
+  border-color:color-mix(in srgb,var(--mp-accent),transparent 64%);
+  background:color-mix(in srgb,var(--mp-accent),transparent 95%)
+}
+.mp-polished .mp-work-card{overflow:hidden;border-radius:17px}
+.mp-polished .mp-work-card:hover{border-color:color-mix(in srgb,var(--mp-accent),transparent 45%)}
+.mp-polished .mp-description{line-height:1.95;font-size:clamp(13px,1.3vw,15px)}
+.mp-polished .mp-section-nav a{min-height:52px}
+.mp-polished.mp-theme-ivory .mp-headline{color:#51485b}
+@media(max-width:520px){
+ .mp-polished .mp-hero{padding:25px 18px}
+ .mp-polished .mp-hero-meta{gap:7px}
+ .mp-polished .mp-hero-meta>span{font-size:11px}
+ .mp-polished .mp-section-nav{scroll-padding-inline:17px}
+}
+@media(prefers-reduced-motion:reduce){
+ .mp-polished .mp-instrument-card,.mp-polished .mp-profile-facts>div,
+ .mp-polished .mp-career-list>div{transition:none}
+}
