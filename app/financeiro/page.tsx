@@ -63,14 +63,14 @@ export default function Financeiro(){
   if(authError||!user){router.replace("/login");return;}
   const [ownerResult,historyResult,profileResult]=await Promise.all([
    db.rpc("stage_finance_organizer_overview"),db.rpc("stage_my_show_history"),
-   db.from("profiles").select("is_artist,artist_kind").eq("id",user.id).maybeSingle()
+   db.from("profiles").select("is_artist,artist_kind,username").eq("id",user.id).maybeSingle()
   ]);
   if(ownerResult.error)throw ownerResult.error;
   if(historyResult.error)throw historyResult.error;
   if(!Array.isArray(ownerResult.data)||!Array.isArray(historyResult.data))
    throw Error("O financeiro retornou dados inesperados.");
   if(profileResult.error)throw profileResult.error;
-  const isSinger=profileResult.data?.is_artist===true&&profileResult.data?.artist_kind==="lead";
+  const isSinger=profileResult.data?.is_artist===true&&(profileResult.data?.artist_kind==="lead"||(profileResult.data?.artist_kind==null&&Boolean(profileResult.data?.username)));
   if(isSinger){
    const {data:entitlement,error:entitlementError}=await db.rpc("stage_my_pro_site_publication");
    setReportAccess(!entitlementError&&entitlement?.entitled===true);
@@ -255,10 +255,10 @@ export default function Financeiro(){
       <strong>{r.title}</strong><small>{new Date(r.starts_at).toLocaleString("pt-BR",{dateStyle:"medium",timeStyle:"short"})} · Organizador</small>
       </div><span className="finance-event-total">{r.gross_revenue===null?"Receita não informada":cash(r.gross_revenue)}</span></div>
      <p>Recebido {cash(r.received)} · Despesas extras {cash(r.expense_total)} · Cachês acordados {cash(r.musician_agreed)} · Pagos à banda {cash(r.musician_paid)}</p>
-     <p>Resultado líquido previsto: <strong>{r.gross_revenue===null?"A definir":cash(val(r.gross_revenue)-val(r.expense_total)-val(r.musician_agreed))}</strong>
+     {reportAccess&&<p>Resultado líquido previsto: <strong>{r.gross_revenue===null?"A definir":cash(val(r.gross_revenue)-val(r.expense_total)-val(r.musician_agreed))}</strong>
       {r.gross_revenue===null||val(r.musician_unpriced)>0?" (parcial: valores pendentes)":""}
       {" · "}A receber: <strong>{r.gross_revenue===null?"A definir":cash(Math.max(0,val(r.gross_revenue)-val(r.received)))}</strong>
-      {" · "}A pagar: <strong>{cash(Math.max(0,val(r.expense_total)-val(r.expense_paid))+Math.max(0,val(r.musician_agreed)-val(r.musician_paid)))}</strong></p>
+      {" · "}A pagar: <strong>{cash(Math.max(0,val(r.expense_total)-val(r.expense_paid))+Math.max(0,val(r.musician_agreed)-val(r.musician_paid)))}</strong></p>}
      <button className="btn btn-quiet" type="button" aria-expanded={expanded===r.event_id}
        onClick={()=>void openTeam(r.event_id)}><PencilLine size={15}/>
        {expanded===r.event_id?"Fechar lançamento":"Editar financeiro e pagamentos"}</button>
@@ -283,7 +283,7 @@ export default function Financeiro(){
       <div className="finance-event-top"><div><strong>{r.title}</strong>
        <small>{new Date(r.starts_at).toLocaleDateString("pt-BR")} · Participação como músico</small></div>
        <span className="finance-event-total">{cash(r.personal_fee)}</span></div>
-      <p>Resultado estimado: <strong>{r.personal_fee===null?"A definir":cash(val(r.personal_fee)-val(r.personal_expenses))}</strong>{" · "}A receber: <strong>{r.personal_fee===null?"A definir":cash(Math.max(0,val(r.personal_fee)-val(r.personal_received)))}</strong></p>
+      {reportAccess&&<p>Resultado estimado: <strong>{r.personal_fee===null?"A definir":cash(val(r.personal_fee)-val(r.personal_expenses))}</strong>{" · "}A receber: <strong>{r.personal_fee===null?"A definir":cash(Math.max(0,val(r.personal_fee)-val(r.personal_received)))}</strong></p>}
       <p>Recebido pessoal {r.has_financial_record?cash(r.personal_received):"Não lançado"}
         {" · "}Despesas pessoais {r.has_financial_record?cash(r.personal_expenses):"Não lançadas"}</p>
       <Link className="btn btn-quiet" href="/meus-shows"><PencilLine size={14}/> Registrar meu recebimento</Link>
