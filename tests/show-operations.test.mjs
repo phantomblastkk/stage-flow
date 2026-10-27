@@ -78,3 +78,36 @@ test("show operations UI links calendar, recurring dates, history, and existing 
  assert.match(panel,/stage_my_event_budget/);
  assert.doesNotMatch(page,/SUPABASE_SERVICE_ROLE_KEY|WHATSAPP_CLOUD_ACCESS_TOKEN/);
 });
+
+
+test("day-of-show mobile overview uses only authorized briefing fields",()=>{
+ const css=read("app/eventos/operacao/operacao.css");
+ const source=fn("stage_show_ops_overview");
+ assert.match(page,/!owner&&<section className="ops-day-quick"/);
+ assert.match(page,/id="dia-do-show" aria-labelledby="ops-day-title"/);
+ assert.match(page,/Dia do show, sem correria/);
+ assert.match(page,/Chegada da equipe/);
+ assert.match(page,/Passagem de som/);
+ assert.match(page,/Abertura das portas/);
+ assert.match(page,/Início da apresentação/);
+ assert.match(page,/Local informado/);
+ assert.match(page,/Ponto de encontro/);
+ assert.match(page,/Contato no local/);
+ assert.match(page,/endereço completo não está disponível/i);
+ assert.match(page,/\/notificacoes/);
+ assert.match(page,/async function updateDayBriefing\(\)/);
+ assert.match(page,/await refresh\(eventId\)/);
+ assert.match(page,/navigator\.clipboard\.writeText\(lines\.join\("\\n"\)\)/);
+ assert.match(page,/copying\|\|quickRefreshing|quickRefreshing\|\|copying/);
+ const copied=page.slice(page.indexOf("async function copyDayBriefing()"),page.indexOf("const tasks=data?.tasks||[]"));
+ assert.match(copied,/event\.title/);
+ assert.match(copied,/info\.contact_name/);
+ assert.match(copied,/info\.equipment_plan/);
+ assert.doesNotMatch(copied,/private_details|backstage_notes|closing_notes|fee_amount|expense|stage_finance/i);
+ assert.match(source,/i\.status='accepted'/);
+ assert.match(source,/v_tasks:='\[\]'::jsonb/);
+ assert.match(source,/else null end/);
+ assert.match(css,/\.ops-day-quick/);
+ assert.match(css,/@media\(max-width:570px\)/);
+ assert.match(css,/\.ops-day-actions \.btn/);
+});
