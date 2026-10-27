@@ -2,7 +2,7 @@ name: Stage Flow • Integration and build
 
 on:
   push:
-    branches: [develop]
+    branches: [main]
     paths:
       - "app/**"
       - "components/**"
@@ -23,7 +23,7 @@ permissions:
   contents: read
 
 concurrency:
-  group: stage-flow-build-develop
+  group: stage-flow-build-main
   cancel-in-progress: true
 
 jobs:
@@ -36,7 +36,7 @@ jobs:
       NEXT_PUBLIC_SUPABASE_URL: "https://example.supabase.co"
       NEXT_PUBLIC_SUPABASE_ANON_KEY: "build-time-placeholder-not-a-real-secret"
     steps:
-      - name: Checkout develop
+      - name: Checkout main
         uses: actions/checkout@v4
       - name: Setup Node
         uses: actions/setup-node@v4
