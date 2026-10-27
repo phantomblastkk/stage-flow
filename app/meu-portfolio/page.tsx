@@ -15,6 +15,7 @@ import MusicianPortfolioView, {
 } from "@/components/musician-portfolio-view";
 import "./musician-portfolio-editor.css";
 import MarketplaceMusicianSettings from "@/components/marketplace-musician-settings";
+import BookingContactSettings from "@/components/booking-contact-settings";
 
 type EditorPortfolio = MusicianPortfolio & { is_published: boolean };
 
@@ -583,6 +584,9 @@ export default function MeuPortfolioDeMusico() {
               <span className="field-help">Esses links e os vídeos ficarão públicos apenas quando você publicar o portfólio.</span>
             </div>
           </section>
+
+          <BookingContactSettings kind="musician"
+            instagramConfigured={Boolean(portfolio.instagram_url)}/>
 
           <section className="mp-editor-panel">
             <h2>Seu cachê público</h2>
