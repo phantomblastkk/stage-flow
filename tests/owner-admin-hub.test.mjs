@@ -114,7 +114,7 @@ test("owner-only shortcut and a safe post-login return to the private dashboard"
  const panel=read("app/painel/page.tsx");
  const login=read("app/login/page.tsx");
  assert.match(panel,/stage_owner_admin_status/);
- assert.match(panel,/setIsOwnerAdmin\(!ownerAccessError&&ownerAccess===true\)/);
+  assert.match(panel,/setIsOwnerAdmin\\(!ownerResult.error&&ownerResult.data===true\\)/);
   const navigation=read("src/domains/navigation/workspace-navigation.ts");
   assert.match(panel,/isOwnerAdmin,/);
   assert.match(navigation,/role.isOwnerAdmin/);
