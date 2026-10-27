@@ -133,3 +133,21 @@ test("musician showcase has calm colors, safe previews, and a real full-screen e
  assert.match(editorCss,/\.mp-preview-dialog/);
  assert.match(musicianCss,/@media\(max-width:520px\)/);
 });
+
+test("free singer chosen accent applies to the one shared public design",()=>{
+ assert.match(shared,/palette\.includes\(artist\.accent as Accent\)/);
+ assert.match(shared,/accent:palette\.includes/);
+ const freeEditor=source("app/meu-perfil-artistico/page.tsx");
+ assert.match(freeEditor,/\["lime", "Rosa", "#e6a3c8"\]/);
+ const themes=source("app/meu-perfil-artistico/site-profissional/premium-preview.css");
+ assert.match(themes,/\.premium-site-lime\{--pro-accent:#e6a3c8/);
+});
+
+test("public musician sharing falls back to a selectable URL when clipboard is blocked",()=>{
+ const publicMusician=source("app/musico/[slug]/page.tsx");
+ const css=source("components/musician-portfolio-polish.css");
+ assert.match(publicMusician,/setManualUrl\(url\)/);
+ assert.match(publicMusician,/id="mp-manual-share" readOnly/);
+ assert.match(publicMusician,/event\.currentTarget\.select\(\)/);
+ assert.match(css,/\.mp-public-manual-share input:focus-visible/);
+});
