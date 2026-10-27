@@ -7,6 +7,7 @@ import { useParams } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
 import { trackPublicPortfolioView } from "@/lib/musician-metrics";
 import MusicianPortfolioView, { MusicianPortfolio } from "@/components/musician-portfolio-view";
+import {useStageVerified} from "@/lib/use-stage-verified";
 
 export default function PortfolioMusicoPublico() {
   const { slug } = useParams<{ slug: string }>();
@@ -15,6 +16,7 @@ export default function PortfolioMusicoPublico() {
   const [error, setError] = useState("");
   const [copied, setCopied] = useState(false);
   const [manualUrl, setManualUrl] = useState("");
+  const verified=useStageVerified("musician",slug,Boolean(portfolio));
 
   useEffect(() => {
     let active = true;
@@ -81,7 +83,7 @@ export default function PortfolioMusicoPublico() {
       <Link className="btn btn-primary" style={{ marginTop: 16 }} href="/">Voltar ao Stage Flow</Link>
     </section>
     : <div className="mp-public-wrap">
-      <MusicianPortfolioView portfolio={portfolio} onShare={() => void sharePortfolio()}/>
+      <MusicianPortfolioView portfolio={portfolio} verified={verified} onShare={() => void sharePortfolio()}/>
       {copied && <p role="status" style={{ fontSize: 12, color: "var(--lime)", marginTop: 13, display: "flex", alignItems: "center", gap: 6 }}><Copy size={14}/> Link copiado!</p>}
       {error && <p role="alert" style={{ fontSize: 12, color: "#ffb5b5", marginTop: 13 }}>{error}</p>}
       {manualUrl && <div className="mp-public-manual-share">
