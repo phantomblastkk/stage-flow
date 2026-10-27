@@ -30,35 +30,32 @@ function PartnerLogo({ venue }: { venue: PartnerVenue }) {
 
 export default function HomePartnerVenues() {
   const [venues, setVenues] = useState<PartnerVenue[]>([]);
+  const [ready,setReady]=useState(false);
 
   useEffect(() => {
     let active = true;
     async function load() {
       try {
-        const { data, error } = await createClient()
-          .from("venues")
-          .select("id,name,slug,logo_path")
-          .eq("active", true)
-          .eq("is_official", true)
-          .eq("is_partner", true)
-          .not("slug", "is", null)
-          .order("name", { ascending: true })
-          .limit(12);
+        const { data, error } = await createClient().rpc("stage_public_partner_venues",{
+          p_limit:12
+        });
         if (error) throw error;
-        if (active) setVenues((data || []).filter(
+        if (active) setVenues(((Array.isArray(data)?data:[]) as PartnerVenue[]).filter(
           (item): item is PartnerVenue => Boolean(item.id && item.name && item.slug &&
             /^[a-z0-9]+(?:-[a-z0-9]+)*$/.test(item.slug))
         ));
       } catch {
         // A home segue utilizável mesmo quando o módulo de casas não está habilitado.
         if (active) setVenues([]);
+      }finally{
+        if(active)setReady(true);
       }
     }
     void load();
     return () => { active = false; };
   }, []);
 
-  if (!venues.length) return null;
+  if(!ready)return null;
 
   return <section className="home-partners" aria-labelledby="home-partners-title">
     <div className="home-partners-heading">
@@ -68,7 +65,12 @@ export default function HomePartnerVenues() {
         <p>Espaços que fazem a música acontecer. Conheça as casas e acompanhe a programação de cada uma.</p>
       </div>
     </div>
-    <div className="home-partners-grid">
+    {venues.length===0?<div className="home-partner-empty">
+      <Building2 size={28} aria-hidden="true"/>
+      <div><strong>Nossos próximos palcos parceiros vêm aí.</strong>
+       <p>As casas aparecem aqui quando seu perfil oficial está aprovado, publicado e marcado como parceiro pelo StageFlow.</p>
+      </div>
+    </div>:<div className="home-partners-grid">
       {venues.map(venue => <Link className="home-partner-card"
         href={"/casa/" + venue.slug} key={venue.id}
         aria-label={"Conhecer a programação de " + venue.name}>
@@ -76,6 +78,6 @@ export default function HomePartnerVenues() {
         <span className="home-partner-name">{venue.name}</span>
         <span className="home-partner-arrow"><ArrowUpRight size={18} aria-hidden="true"/></span>
       </Link>)}
-    </div>
+    </div>}
   </section>;
 }
