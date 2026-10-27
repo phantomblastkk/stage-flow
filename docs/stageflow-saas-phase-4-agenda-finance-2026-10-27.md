@@ -49,19 +49,34 @@ A instalação dessa função no banco oficial continua dependendo de release au
 - TypeScript e build Next.js locais aprovados.
 - `tests/browser/agenda-finance.mjs`: navegador em 360/768/1280px com API inteiramente simulada, cadastro/erro de datas, cancelamento de exclusão, filtros, isolamento de respostas de equipe e convite → aceite → agenda. Screenshots e log anexados ao CI. O script recusa configuração de Supabase real.
 - `.github/workflows/agenda-isolation.yml`: PostgreSQL 17 descartável, migrações reais de convites/cachês/agenda, terceiros sem acesso, bloqueio por cachê pendente, aceite, ausência de duplicação e revogação após cancelamento. Fixtures guardadas por marcador de banco descartável, com ROLLBACK.
-- O Chromium não pôde ser baixado neste host; a execução real do navegador fica a cargo do GitHub Actions. Conferir os resultados dos workflows do commit antes de considerar o navegador aprovado.
+- O Chromium não pôde ser baixado neste host; a execução real foi realizada e aprovada no GitHub Actions em 360, 768 e 1280px. As capturas de 360px foram baixadas e inspecionadas; nenhuma rolagem horizontal foi detectada nos testes.
 
 Limites: fixtures do navegador não validam Auth/PostgREST de uma conta real de QA.
 O Postgres descartável usa shim de Auth e uma cadeia mínima de migrações, sem os
 triggers completos de notificações da homologação. A consulta de QA comprova grants
 e isolamento negativo; não certifica sozinha o fluxo completo com sessões reais.
 
+## Evidência de entrega
+
+Implementação: `f9423732a7016750726ed9d35e7ae274eaad3c26`.
+
+Todos os workflows desse commit passaram:
+- [Build, testes e navegador](https://github.com/phantomblastkk/stage-flow/actions/runs/40597492777).
+- [PostgreSQL descartável: convite, cachê e agenda](https://github.com/phantomblastkk/stage-flow/actions/runs/40597492749).
+- [Isolamento de casas existente](https://github.com/phantomblastkk/stage-flow/actions/runs/40597492771).
+- [Contratos de segurança existentes](https://github.com/phantomblastkk/stage-flow/actions/runs/40597492736).
+- [Seis screenshots e log do servidor](https://github.com/phantomblastkk/stage-flow/actions/runs/40597492777/artifacts/12777581748), retenção de sete dias.
+
+No build local, a rota Agenda passou de aproximadamente 16,8kB para 15,8kB de
+código específico após adiar o editor de flyer. O Financeiro incorpora componentes
+compartilhados e ficou em 9,66kB; isso não é uma prova de melhoria de latência.
+Não foram executados testes de carga.
+
 ## Continuidade
 
-1. Conferir os dois workflows desta parte e os screenshots de 360px.
-2. Testar com sessões Auth de músico e organizador de QA, incluindo notificações.
-3. A Agenda ainda carrega o histórico existente: separar consultas por intervalo e
+1. Testar com sessões Auth de músico e organizador de QA, incluindo notificações.
+2. A Agenda ainda carrega o histórico existente: separar consultas por intervalo e
    paginar listas/RPCs antes de alegar adequação para 100 mil contas.
-4. Extrair serviços de billing e revisar paginação/performance do Financeiro.
-5. Consolidar contexto de conta do shell e páginas legadas, preservando autorização
+3. Extrair serviços de billing e revisar paginação/performance do Financeiro.
+4. Consolidar contexto de conta do shell e páginas legadas, preservando autorização
    no banco e invalidando os dados ao trocar de conta.
