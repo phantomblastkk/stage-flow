@@ -161,6 +161,10 @@ export default function EventosPage() {
         style={{display:"inline-flex",alignItems:"center",gap:8,fontSize:12}}>
         <ImagePlus size={16}/>{openFlyerEventId===event.id?"Fechar flyer":"Flyer para Instagram/WhatsApp"}
        </button>
+       <Link className="btn btn-quiet" style={{fontSize:12}}
+         href={"/eventos/operacao?evento="+encodeURIComponent(event.id)}>
+         <Check size={15}/> Operação e checklist
+       </Link>
        {event.id===spotlightEventId&&<span style={{fontSize:11,color:"var(--muted)"}}>
         Organize músicos e confira os cachês sem publicar este show.
        </span>}
@@ -187,6 +191,10 @@ export default function EventosPage() {
       {(show.venue||show.city)&&<span style={{display:"block",marginTop:5}}><MapPin size={12} style={{display:"inline",verticalAlign:"middle"}}/> {[show.venue,show.city].filter(Boolean).join(" · ")}</span>}
       <span style={{display:"block",marginTop:5}}>Organização: {show.organizer_name}</span>
       <span className="event-pill" style={{display:"inline-block",marginTop:7,color:show.event_status==="cancelled"?"#ffb5b5":"#d3c9ff"}}>{show.event_status==="cancelled"?"Cancelado pelo organizador":"Participação confirmada"}</span>
+       {show.event_status!=="cancelled"&&<Link href={"/eventos/operacao?evento="+encodeURIComponent(show.event_id)}
+         className="btn btn-quiet" style={{display:"inline-flex",marginTop:9,fontSize:11}}>
+         <Clock3 size={14}/> Horários e briefing
+       </Link>}
      </div>
     </article>)}
    </div>}
