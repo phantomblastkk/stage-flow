@@ -175,3 +175,28 @@ Execute `supabase/musician_portfolio_complete_migration.sql` no Supabase SQL Edi
 - O marketplace não foi lançado e segue em **Em breve**.
 
 Ver [docs/publicacao-site-pro-cantor.md](./publicacao-site-pro-cantor.md) para instalação, regras, liberação administrativa e checklist de testes.
+
+
+## Decisão atualizada de monetização e entrada gratuita (27/10/2026)
+
+Esta decisão substitui quaisquer menções anteriores a cobrança do marketplace, assinatura obrigatória de músicos ou cobrança avulsa de subdomínio:
+
+- **Músico de apoio:** cadastro livre pela entrada do site, sem convite; portfólio, marketplace, disponibilidade, propostas, convites, chat, agenda e financeiro gratuitos.
+- **Cantor/artista:** conta, perfil público com @, agenda, equipe, contratação, convites, chat e financeiro gratuitos. Recursos de apresentação profissional avançada pertencem aos **planos pagos exclusivos de cantores**.
+- **Produtor/contratante:** conta e gestão de shows, equipes, convites, contratações e ferramentas operacionais gratuitas.
+- **Convite do cantor:** apenas atalho de vínculo com um show, nunca pré-requisito para criar a conta ou ter portfólio.
+- **WhatsApp:** contato opcional; mensagens internas independem de consentimento para WhatsApp.
+- **Planos pagos do cantor:** site Pro, personalização avançada, galeria profissional e subdomínio fazem parte do pacote contratado. Não cobrar subdomínio como extra avulso por padrão.
+- **Segurança:** a publicação Pro deve continuar condicionada à autorização no servidor; cadeados e avisos na interface não são mecanismos de cobrança nem autorização.
+- **A implementar antes da venda:** definição dos planos e preços, checkout, webhooks de pagamento, estado de assinatura verificável no servidor, provisionamento de subdomínios e regras de cancelamento. Nenhuma cobrança automática foi habilitada por esta decisão.
+
+
+## Refinamento: relatórios e portfólio do cantor no Pro (27/10/2026)
+
+- Acesso **gratuito** de cantores, músicos de apoio e produtores: cadastro, convites, agenda, negociação, chat, lançamento manual de receitas e despesas, controle básico de recebimentos e pagamentos.
+- No **Pro do cantor**: análises financeiras consolidadas por período e categoria, exportação CSV detalhada e indicadores analíticos por apresentação; site profissional e recursos avançados de portfólio artístico (temas/layouts especiais, galeria e destaques).
+- O cantor conserva sua página gratuita com @, bio, cidade, redes e apresentações públicas, independentemente da assinatura.
+- O portfólio completo do **músico de apoio** e seus recursos gratuitos não são afetados.
+- O frontend consulta a autorização existente `stage_my_pro_site_publication` para exibir as ferramentas analíticas do cantor. Por segurança, isso é **apenas uma trava visual**: as funções de leitura existentes (`stage_finance_organizer_overview`, `stage_my_show_history`) ainda enviam dados de que é possível recomputar relatórios. Portanto, a exclusividade dos relatórios **não está pronta para cobrança**.
+- **Antes de comercializar**, criar endpoint/RPC seguro de relatórios Pro com verificação no banco de `stage_pro_site_is_entitled(auth.uid())`, separar os dados necessários aos lançamentos gratuitos dos relatórios analíticos e testar permissões; nunca considerar apenas a checagem React como controle de acesso.
+- Preços, checkout, subdomínio e planos finais permanecem pendentes; nada nesta alteração constitui cobrança ou migração de produção.

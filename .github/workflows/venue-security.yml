@@ -1,0 +1,31 @@
+name: Stage Flow • Venue security checks
+
+on:
+  push:
+    branches: [develop]
+    paths:
+      - "supabase/venue_*.sql"
+      - "app/parceiros/**"
+      - "app/admin/casas/**"
+      - "app/painel/page.tsx"
+      - "components/venue-programming-workspace.tsx"
+      - "tests/venue-partner-security.test.mjs"
+      - "package.json"
+      - ".github/workflows/venue-security.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  security-contracts:
+    name: Security contracts (no deployment)
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+      - name: Static tenant isolation and RLS contract checks
+        run: node --test tests/venue-partner-security.test.mjs

@@ -578,3 +578,22 @@ body{accent-color:var(--accent-solid)}
 .btn-primary:focus-visible{outline-color:#D1C0FF}
 input[type="checkbox"],input[type="radio"]{accent-color:var(--accent-solid)}
 .mp-editor-stickybar{background:#161529F2}
+
+/* Stage Flow · Casas parceiras na vitrine da home (somente casas oficiais publicadas). */
+.home-partners{margin:4px 0 26px;padding:30px 0 37px;border-top:1px solid #46345f66;border-bottom:1px solid #46345f66}
+.home-partners-heading{display:flex;justify-content:space-between;align-items:flex-end;gap:18px;margin-bottom:22px}
+.home-partners-heading .home-kicker{display:inline-flex;align-items:center;gap:7px}
+.home-partners-heading h2{font:800 clamp(23px,3.4vw,35px)/1.15 Manrope,sans-serif;letter-spacing:-1.2px;margin:13px 0 8px}
+.home-partners-heading h2 span{color:var(--accent)}
+.home-partners-heading p{color:var(--muted);font-size:13px;line-height:1.7;max-width:610px;margin:0}
+.home-partners-grid{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:12px}
+.home-partner-card{min-width:0;display:flex;align-items:center;gap:13px;padding:14px;border:1px solid #46385e;border-radius:17px;background:linear-gradient(135deg,#1c1931,#151425);transition:transform .2s,border-color .2s,box-shadow .2s}
+.home-partner-card:hover{transform:translateY(-3px);border-color:#9875ef;box-shadow:0 15px 35px #08030e88}
+.home-partner-card:focus-visible{outline:2px solid var(--accent);outline-offset:3px}
+.home-partner-logo{width:66px;height:66px;flex:none;display:grid;place-items:center;overflow:hidden;background:#26203c;border:1px solid #554172;border-radius:14px;color:#c8b0ff}
+.home-partner-logo img{display:block;width:100%;height:100%;object-fit:contain;padding:5px}
+.home-partner-name{min-width:0;flex:1;font:800 12px/1.5 Manrope,sans-serif;overflow-wrap:anywhere}
+.home-partner-arrow{color:var(--accent);flex:none;align-self:flex-start}
+@media(max-width:1080px){.home-partners-grid{grid-template-columns:repeat(3,minmax(0,1fr))}}
+@media(max-width:730px){.home-partners-grid{grid-template-columns:repeat(2,minmax(0,1fr))}.home-partner-card{padding:12px}.home-partner-logo{width:56px;height:56px}}
+@media(max-width:480px){.home-partners{padding:23px 0 28px}.home-partners-grid{grid-template-columns:1fr}.home-partner-card{padding:12px 14px}.home-partner-logo{width:60px;height:60px}.home-partner-name{font-size:14px}}

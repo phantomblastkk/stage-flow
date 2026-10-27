@@ -1,0 +1,9 @@
+.stage-pro-locked{position:relative;isolation:isolate;overflow:hidden;border:1px solid var(--line);border-radius:20px;min-height:270px;background:var(--panel,#151520)}
+.stage-pro-locked-preview{filter:blur(13px);opacity:.42;pointer-events:none;user-select:none;transform:scale(1.025);max-height:350px;overflow:hidden}
+.stage-pro-locked-overlay{position:absolute;inset:0;z-index:2;display:flex;align-items:center;justify-content:center;flex-direction:column;gap:12px;text-align:center;padding:28px;background:linear-gradient(180deg,rgba(12,10,22,.48),rgba(12,10,22,.85));color:#fff}
+.stage-pro-locked-overlay strong{font-size:clamp(18px,3vw,24px)}
+.stage-pro-locked-overlay p{max-width:420px;color:#ede6ff;font-size:14px;line-height:1.55;margin:0}
+.stage-pro-locked-overlay small{color:#bcb2d1;font-size:11px}
+.stage-pro-locked-icon{display:grid;place-items:center;width:50px;height:50px;border-radius:50%;border:1px solid #a785e5;background:#302044}
+.stage-pro-locked-overlay .btn{display:inline-flex;align-items:center;gap:8px;justify-content:center}
+@media(max-width:480px){.stage-pro-locked-overlay{padding:14px;gap:9px}.stage-pro-locked-overlay p{font-size:12px}}

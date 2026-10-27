@@ -598,8 +598,8 @@ export default function SiteProfissionalPreview() {
         <div className="premium-preview-upgrade-icon"><Crown size={22}/></div>
         <div>
           <span>UM PASSO ALÉM DO PERFIL GRATUITO</span>
-          <h2>Seu site Pro já pode ser publicado.</h2>
-          <p>O site profissional agora pode funcionar publicamente no endereço <strong>/pro/{artist.username || "seuusuario"}</strong>, quando o artista tiver acesso Pro autorizado e clicar em Publicar. Tema, galeria, agenda e contratação usam somente os dados divulgados.</p>
+          <h2><LockKeyhole size={20} style={{display:"inline",verticalAlign:"middle",marginRight:8}}/> Recursos Pro do cantor · incluídos nos planos pagos</h2>
+          <p>Seu perfil artístico comum, agenda, convites e contratações continuam gratuitos. Nos planos pagos do cantor estarão incluídos o site profissional, temas e personalizações avançadas, galeria Pro e subdomínio personalizado. Você pode preparar a prévia; a publicação Pro depende de autorização da conta. O subdomínio e a cobrança ainda não estão ativados.</p><p>Quando autorizado, o site Pro pode ser publicado em <strong>/pro/{artist.username || "seuusuario"}</strong>. O subdomínio será configurado posteriormente como benefício do plano, sem cobrança avulsa nesta fase.</p>
           <p className="premium-preview-protection"><LockKeyhole size={16}/> Não há cobrança automática ou subdomínio ativo nesta fase. Seu perfil gratuito continua independente.</p>
           <p>Os contatos enviados pela página gratuita ficam na sua <Link href="/meu-perfil-artistico/solicitacoes" style={{ color: "#d8c0ff", textDecoration: "underline" }}>caixa privada de pedidos de contratação</Link>.</p>
         </div>

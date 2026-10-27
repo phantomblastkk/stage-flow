@@ -65,3 +65,7 @@ drop trigger if exists protect_profile_access_fields_trigger on public.profiles;
 create trigger protect_profile_access_fields_trigger
   before update on public.profiles
   for each row execute procedure public.protect_profile_access_fields();
+
+-- Funções de trigger não devem estar expostas como RPCs aos clientes.
+revoke execute on function public.handle_new_user() from public,anon,authenticated;
+revoke execute on function public.protect_profile_access_fields() from public,anon,authenticated;

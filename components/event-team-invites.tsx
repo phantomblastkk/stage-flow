@@ -230,6 +230,11 @@ export default function EventTeamInvites({ eventId, eventTitle, eventStatus }: P
         </div>
       </form>}
 
+      <Link className="event-team-tracking" href={"/eventos/equipe?evento=" + encodeURIComponent(eventId)}>
+        <Users size={17}/>
+        Gerenciar escala, confirmações e substituições deste show
+        <ArrowRight size={16}/>
+      </Link>
       <Link className="event-team-tracking" href={"/convites?evento=" + encodeURIComponent(eventId)}>
         <ShieldCheck size={17}/>
         Ver convites deste show e negociar cachês privados

@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { ArrowLeft, CalendarDays, Check, CheckCircle2, Clock3, LoaderCircle, MapPin, MessageCircle, Music2, X } from "lucide-react";
@@ -37,7 +37,10 @@ export default function MeusConvitesPage() {
   const [invites, setInvites] = useState<Invite[]>([]);
   const [loading, setLoading] = useState(true);
   const [processingId, setProcessingId] = useState<string | null>(null);
+  const [feeFocus, setFeeFocus] = useState({ invitationId: "", request: 0 });
   const [filter, setFilter] = useState<Filter>("all");
+  const [highlightedInvite, setHighlightedInvite] = useState("");
+  const focusedFromNotification = useRef(false);
   const [feedback, setFeedback] = useState("");
   const [isError, setIsError] = useState(false);
   const [whatsappPhone, setWhatsappPhone] = useState("");
@@ -50,7 +53,17 @@ export default function MeusConvitesPage() {
   const reload = useCallback(async () => {
     const supabase = createClient();
     const { data: { user }, error: authError } = await supabase.auth.getUser();
-    if (authError || !user) {
+    if (authError) {
+      // A network validation error must not discard a session.
+      const { data: { session } } = await supabase.auth.getSession();
+      if (session) {
+        setIsError(true);
+        setFeedback("Não foi possível validar sua sessão agora. Sua conta não foi desconectada. Confira a conexão e tente novamente.");
+        setLoading(false);
+        return;
+      }
+    }
+    if (!user) {
       router.replace("/login");
       return;
     }
@@ -73,8 +86,16 @@ export default function MeusConvitesPage() {
     let active = true;
     async function loadWhatsAppPreferences() {
       const supabase = createClient();
-      const { data: authData } = await supabase.auth.getUser();
-      if (!active || !authData.user) return;
+      const { data: authData, error: authError } = await supabase.auth.getUser();
+      if (!active) return;
+      if (authError || !authData.user) {
+        setWhatsappLoading(false);
+        if (authError) {
+          setWhatsappError(true);
+          setWhatsappMessage("Não foi possível consultar suas preferências de WhatsApp agora. Tente novamente mais tarde.");
+        }
+        return;
+      }
       const { data, error } = await supabase.rpc("stage_my_whatsapp_preference");
       if (!active) return;
       if (error) {
@@ -135,6 +156,21 @@ export default function MeusConvitesPage() {
     setWhatsappSaving(false);
   }
 
+  useEffect(() => {
+    if (loading || focusedFromNotification.current) return;
+    const id = new URLSearchParams(window.location.search).get("convite") || "";
+    if (!/^[0-9a-f]{8}(?:-[0-9a-f]{4}){3}-[0-9a-f]{12}$/i.test(id)) return;
+    if (!invites.some(invite => invite.id === id)) return;
+    focusedFromNotification.current = true;
+    setFilter("all");
+    setHighlightedInvite(id);
+    window.requestAnimationFrame(() => {
+      const target = document.getElementById("convite-" + id);
+      target?.scrollIntoView({ behavior: "smooth", block: "center" });
+      target?.focus({ preventScroll: true });
+    });
+  }, [invites, loading]);
+
   const pendingCount = invites.filter((invite) => invite.status === "pending").length;
   const acceptedCount = invites.filter((invite) => invite.status === "accepted").length;
   const filtered = useMemo(() => filter === "all" ? invites : invites.filter((invite) => invite.status === filter), [invites, filter]);
@@ -159,8 +195,12 @@ export default function MeusConvitesPage() {
       setFeedback(data === "accepted" ? "Presença confirmada! O organizador poderá acompanhar sua resposta." : "Convite recusado. Sua resposta foi registrada.");
     } else {
       setIsError(true);
+      if (data === "fee_pending") {
+        // Open only the private negotiation associated with this invitation.
+        setFeeFocus((prev) => ({ invitationId: invite.id, request: prev.request + 1 }));
+      }
       setFeedback(data === "fee_pending"
-        ? "Existe uma proposta de cachê aguardando acordo. Combine o valor na seção Cachê e propostas privadas antes de confirmar o show."
+        ? "Antes de confirmar sua presença, resolva a proposta de cachê. Abrimos a negociação deste show logo abaixo."
         : data === "already_responded" ? "Esse convite já foi respondido. Atualize a página para conferir."
         : "Não foi possível responder a esse convite. Atualize a página e tente novamente.");
     }
@@ -211,7 +251,10 @@ export default function MeusConvitesPage() {
 
     <div style={{ display: "grid", gap: 16, maxWidth: 800 }}>
       {filtered.map((invite) => (
-        <article key={invite.id} className="feature" style={{ padding: "22px 20px" }}>
+        <article key={invite.id} id={"convite-" + invite.id} tabIndex={-1} className="feature"
+          style={{ padding: "22px 20px", scrollMarginTop: 24,
+            outline: highlightedInvite === invite.id ? "2px solid var(--accent-solid)" : undefined,
+            outlineOffset: highlightedInvite === invite.id ? 4 : undefined }}>
           <div style={{ display: "flex", justifyContent: "space-between", flexWrap: "wrap", gap: 10, alignItems: "center", marginBottom: 12 }}>
             <span style={{ fontSize: 12, color: "var(--muted)" }}>Convite de <strong style={{ color: "var(--text)" }}>{invite.organizer_name}</strong></span>
             <span style={{
@@ -229,7 +272,11 @@ export default function MeusConvitesPage() {
             {invite.message && <p style={{ margin: "8px 0", overflowWrap: "anywhere", color: "var(--text)" }}><strong>Recado:</strong> {invite.message}</p>}
           </div>
 
-          <FeeNegotiation invitationId={invite.id} perspective="musician" onChanged={() => void reload()}/>
+          <FeeNegotiation invitationId={invite.id} perspective="musician" onChanged={() => void reload()}
+            openRequest={feeFocus.invitationId === invite.id ? feeFocus.request : 0}
+            invitationStatus={invite.status}
+            onConfirmParticipation={invite.status === "pending" ? () => void respond(invite, true) : undefined}
+            confirmingParticipation={processingId === invite.id}/>
 
           {invite.status === "pending" && <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit,minmax(150px,1fr))", gap: 10, marginTop: 22 }}>
             <button type="button" className="btn btn-primary" disabled={Boolean(processingId)} onClick={() => void respond(invite, true)}>
@@ -240,7 +287,7 @@ export default function MeusConvitesPage() {
             </button>
           </div>}
 
-          {invite.status === "accepted" && <div style={{ marginTop: 18, display: "grid", gap: 10 }}><p style={{ display: "flex", alignItems: "center", gap: 8, margin: 0, fontSize: 13, color: "var(--lime)" }}><CheckCircle2 size={17}/> Sua participação está confirmada.</p><Link className="btn btn-quiet" href="/eventos" style={{ justifyContent: "center" }}><CalendarDays size={16}/> Ver show na minha agenda</Link></div>}
+          {invite.status === "accepted" && <div style={{ marginTop: 18, display: "grid", gap: 10 }}><p style={{ display: "flex", alignItems: "center", gap: 8, margin: 0, fontSize: 13, color: "var(--lime)" }}><CheckCircle2 size={17}/> Sua participação está confirmada.</p><Link className="btn btn-quiet" href="/eventos" style={{ justifyContent: "center" }}><CalendarDays size={16}/> Ver show na minha agenda</Link><Link className="btn btn-quiet" href={"/eventos/operacao?evento="+encodeURIComponent(invite.event_id)} style={{ justifyContent: "center" }}><Music2 size={16}/> Ver briefing e logística do show</Link></div>}
           {invite.status === "declined" && <p style={{ display: "flex", alignItems: "center", gap: 8, margin: "18px 0 0", fontSize: 13, color: "var(--muted)" }}><Clock3 size={16}/> Você recusou este convite.</p>}
         </article>
       ))}

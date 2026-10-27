@@ -5,7 +5,7 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import {
   ArrowLeft, CheckCircle2, Clock3, LoaderCircle, Music2,
-  Pencil, Plus, RefreshCw, Send, Trash2, UserPlus, Users, ArrowRight
+  Pencil, Plus, RefreshCw, Send, Trash2, UserPlus, Users, ArrowRight, CalendarDays
 } from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
 
@@ -359,7 +359,7 @@ export default function EquipesPage() {
       <h1 style={{ fontSize: "clamp(34px,5vw,46px)", marginBottom: 12 }}>
         Minhas <span className="accent">equipes.</span>
       </h1>
-      <p className="lead">Salve a formação da banda uma vez e reutilize nos próximos shows. Cada músico recebe seu próprio convite e negocia o cachê em particular.</p>
+      <p className="lead">Salve a formação da banda uma vez e reutilize nos próximos shows. Cada músico recebe seu próprio convite e negocia o cachê em particular.</p><Link className="btn btn-quiet" href="/shows-recorrentes" style={{marginTop:14}}><CalendarDays size={15}/> Usar equipe em shows recorrentes</Link>
       {events.find(event => event.id === eventId) && <div className="coming" style={{ maxWidth: 840, marginTop: 16 }}>
         <strong>Show selecionado:</strong> {events.find(event => event.id === eventId)?.title}. Escolha uma equipe abaixo e confirme o envio dos convites somente quando estiver pronto.
         <Link href={"/convites?evento=" + encodeURIComponent(eventId)} className="btn btn-quiet" style={{ marginTop: 12 }}>

@@ -4,12 +4,13 @@ import { useEffect, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import {
-  ArrowLeft, ArrowRight, Bell, CalendarDays, Check, Guitar,
+  ArrowLeft, ArrowRight, Bell, CalendarDays, Check, Guitar, Building2,
   LoaderCircle, LogOut, Mic2, Music2, Settings2,
   UserRound, Users, Inbox, Search, ChartNoAxesCombined, Globe2
 } from "lucide-react";
 import type { LucideIcon } from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
+import NotificationBell from "@/components/notification-bell";
 
 type ArtistKind = "lead" | "support";
 type Profile = {
@@ -41,6 +42,7 @@ export default function Dashboard() {
   const [messageError, setMessageError] = useState(false);
   const [signingOut, setSigningOut] = useState(false);
   const [changingKind, setChangingKind] = useState(false);
+  const [partnerHouseCount, setPartnerHouseCount] = useState(0);
 
   useEffect(() => {
     let active = true;
@@ -50,7 +52,21 @@ export default function Dashboard() {
       const { data: { user }, error: userError } = await supabase.auth.getUser();
       if (!active) return;
 
-      if (userError || !user) {
+      if (userError) {
+        // A transient validation/network error must not be mistaken for sign-out.
+        // Never sign out or discard an existing local session here.
+        const {data:{session}}=await supabase.auth.getSession();
+        if (!active) return;
+        if (session) {
+          setMessageError(true);
+          setMessage("Não foi possível validar a sessão agora. Sua conta não foi desconectada. Confira a conexão e atualize a página.");
+          setLoading(false);
+          return;
+        }
+        router.replace("/login");
+        return;
+      }
+      if (!user) {
         router.replace("/login");
         return;
       }
@@ -86,6 +102,11 @@ export default function Dashboard() {
           }
         }
         setProfile({ ...data, artist_kind: kind } as Profile);
+        // O portal de parceiros e opcional e nao interfere no painel atual.
+        const {data: partnerData}=await supabase.rpc("stage_venue_partner_access");
+        if (!active) return;
+        const available=partnerData as {status?:string;items?:unknown[]} | null;
+        if (available?.status==="ok") setPartnerHouseCount(available.items?.length||0);
       }
       setLoading(false);
     }
@@ -205,6 +226,46 @@ export default function Dashboard() {
     ];
   }
 
+  if (profile?.is_artist) primary.splice(0,0,{
+    href: "/minha-disponibilidade", title: "Minha disponibilidade", icon: CalendarDays,
+    description: "Bloqueie datas, cadastre bandas fixas e identifique conflitos com shows aceitos.",
+    label: "AGENDA INTELIGENTE"
+  });
+  primary.splice(1,0,{
+    href: "/eventos", title: "Operação dos shows", icon: CalendarDays,
+    description: "Acesse cada apresentação para organizar checklist, horários, transporte, equipamentos e encerramento.",
+    label: "DIA DO SHOW"
+  });
+  primary.splice(1,0,{
+    href: "/shows-recorrentes", title: "Shows recorrentes", icon: Music2,
+    description: "Crie temporadas semanais, gere apresentações em rascunho e reutilize equipes fixas sem refazer cada show.",
+    label: "PROGRAMAÇÃO SEMANAL"
+  });
+  primary.splice(0,0,{
+    href: "/conversas", title: "Conversas e contratações", icon: Inbox,
+    description: "Converse com músicos ou contratantes, consulte disponibilidade e acompanhe propostas.",
+    label: "CHAT INTERNO"
+  });
+  primary.splice(2,0,{
+    href: "/financeiro", title: "Central financeira", icon: ChartNoAxesCombined,
+    description: "Receitas brutas, cachês, transporte, despesas, valores pagos e relatório por show e por mês.",
+    label: "CONTROLE OPCIONAL"
+  });
+  primary.splice(1,0,{
+    href: "/meus-shows", title: "Meus shows e histórico", icon: CalendarDays,
+    description: "Reveja apresentações realizadas, confirme participações e acompanhe seus relatórios financeiros opcionais.",
+    label: "HISTÓRICO E FINANCEIRO"
+  });
+  if (partnerHouseCount > 0) primary.unshift({
+    href: "/parceiros", title: "Minhas casas parceiras", icon: Building2,
+    description: "Gerencie shows, flyers, fotos e sugestões das casas autorizadas para você.",
+    label: "ACESSO DA CASA"
+  });
+  primary.unshift({
+    href:"/notificacoes",title:"Central de notificações",icon:Bell,
+    description:"Novos convites, propostas, mensagens, confirmações e cancelamentos, com contador de avisos não lidos.",
+    label:"CAIXA DE ENTRADA"
+  });
   const secondary: Shortcut[] = [];
   if (isSupport) {
     secondary.push(
@@ -237,6 +298,7 @@ export default function Dashboard() {
     <nav className="nav">
       <Link className="brand" href="/"><span className="brand-mark">S</span> stage flow</Link>
       <div style={{ display: "flex", gap: 10, alignItems: "center" }}>
+        <NotificationBell/>
         <Link className="btn btn-quiet" href="/"><ArrowLeft size={15}/> Site</Link>
         <button className="btn btn-quiet" onClick={() => void handleSignOut()} disabled={signingOut}>
           <LogOut size={15}/>{signingOut ? "Saindo..." : "Sair"}

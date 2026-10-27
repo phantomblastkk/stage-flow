@@ -27,7 +27,7 @@
  display:flex;align-items:flex-start;gap:12px;padding:17px;
  background:#1b2835;border:1px solid #46566d;border-radius:13px;cursor:pointer
 }
-.mp-market-join input{width:17px;height:17px;accent-color:#bde390;margin-top:3px;flex:none}
+.mp-market-join input{width:17px;height:17px;accent-color:#9975E8;margin-top:3px;flex:none}
 .mp-market-join>span{display:flex;flex-direction:column;gap:7px;min-width:0}
 .mp-market-join strong{font-size:13px;line-height:1.6}
 .mp-market-join small{font-size:11px;line-height:1.8;color:#b5c4d5}
@@ -44,7 +44,7 @@
  background:#121e2d;border:1px solid #455671;border-radius:10px;
  padding:12px 13px;color:#e8ecf6;font:500 12px "DM Sans",sans-serif
 }
-.mp-market-availability-control select:focus,.mp-market-add-date input:focus{border-color:#b9da9e}
+.mp-market-availability-control select:focus,.mp-market-add-date input:focus{border-color:#B697F2}
 .mp-market-availability-control small,.mp-market-date-section p{
  font-size:10px;line-height:1.75;color:#a2b6ca;margin:0
 }
@@ -69,8 +69,8 @@
 .mp-market-controls{display:flex;align-items:center;flex-wrap:wrap;gap:15px;margin-top:5px}
 .mp-market-save{
  display:inline-flex;gap:8px;align-items:center;justify-content:center;
- background:#c5e79f;color:#1b261c;font:800 12px "Manrope",sans-serif;
- border:1px solid #c5e79f;border-radius:10px;padding:12px 17px;cursor:pointer
+ background:#7142D8;color:#FFFFFF;font:800 12px "Manrope",sans-serif;
+ border:1px solid #7142D8;border-radius:10px;padding:12px 17px;cursor:pointer
 }
 .mp-market-save:disabled{opacity:.55;cursor:not-allowed}
 .mp-market-link{color:#c2d5e7;font-size:11px;font-weight:800}

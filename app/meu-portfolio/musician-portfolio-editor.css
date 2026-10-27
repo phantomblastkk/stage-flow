@@ -60,7 +60,7 @@
 .mp-reach-eyebrow{
   display:inline-flex;align-items:center;gap:8px;
   font:900 10px "Manrope",sans-serif;
-  letter-spacing:.1em;color:#c9e6b4;
+  letter-spacing:.1em;color:#D0BBFF;
 }
 .mp-reach-link h2{
   font:800 clamp(16px,2.4vw,22px)/1.4 "Manrope",sans-serif;
@@ -72,10 +72,10 @@
 .mp-reach-button{
   display:inline-flex;align-items:center;justify-content:center;gap:9px;
   padding:12px 15px;text-decoration:none;
-  color:#1c281e;background:#c6e69f;border:1px solid #c6e69f;
+  color:#FFFFFF;background:#7142D8;border:1px solid #7142D8;
   border-radius:10px;font:800 11px "Manrope",sans-serif;
 }
-.mp-reach-button:hover{background:#d9f3bb}
+.mp-reach-button:hover{background:#8754DF}
 @media(max-width:650px){
   .mp-reach-link{padding:17px 14px}
   .mp-reach-button{width:100%}

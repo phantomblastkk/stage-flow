@@ -1,0 +1,73 @@
+import { createHash, timingSafeEqual } from "node:crypto";
+import { NextRequest, NextResponse } from "next/server";
+import { parseAsaasPaymentEvent } from "@/lib/asaas-webhook";
+import { createClient } from "@supabase/supabase-js";
+
+export const runtime = "nodejs";
+export const dynamic = "force-dynamic";
+
+function sameSecret(received: string, expected: string): boolean {
+  const a = createHash("sha256").update(received).digest();
+  const b = createHash("sha256").update(expected).digest();
+  return timingSafeEqual(a, b);
+}
+
+export async function POST(request: NextRequest) {
+  // Never acknowledge a webhook until durable, idempotent storage exists.
+  // Asaas retries non-2xx responses; no payments or Pro access are granted here.
+  const token = process.env.ASAAS_WEBHOOK_AUTH_TOKEN;
+  if (!token || token.length < 32 || token.length > 255 || /\s/.test(token)) {
+    return NextResponse.json({ error: "not_configured" }, { status: 503 });
+  }
+  const received = request.headers.get("asaas-access-token") ?? "";
+  if (!received || !sameSecret(received, token)) {
+    return NextResponse.json({ error: "unauthorized" }, { status: 401 });
+  }
+  const length = Number(request.headers.get("content-length") ?? 0);
+  if (!Number.isFinite(length) || length > 65536) {
+    return NextResponse.json({ error: "payload_too_large" }, { status: 413 });
+  }
+  let payload: unknown;
+  try {
+    const raw = await request.text();
+    if (raw.length > 65536) return NextResponse.json({ error: "payload_too_large" }, { status: 413 });
+    payload = JSON.parse(raw);
+  } catch {
+    return NextResponse.json({ error: "invalid_json" }, { status: 400 });
+  }
+  const event = parseAsaasPaymentEvent(payload);
+  if (!event) return NextResponse.json({ error: "unsupported_event" }, { status: 422 });
+
+  // Payments are not enabled. Only the QA environment may receive sandbox events.
+  if (process.env.NEXT_PUBLIC_STAGE_FLOW_ENV !== "homologation") {
+    return NextResponse.json({ error: "sandbox_only" }, { status: 503 });
+  }
+  const url = process.env.NEXT_PUBLIC_SUPABASE_URL;
+  const anonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
+  const ingestToken = process.env.STAGE_ASAAS_INGEST_TOKEN;
+  if (url !== "https://zycuprhymoukhnuamtit.supabase.co" ||
+      !anonKey || !ingestToken || !/^[a-f0-9]{64}$/.test(ingestToken)) {
+    return NextResponse.json({ error: "storage_not_configured" }, { status: 503 });
+  }
+  try {
+    const db = createClient(url, anonKey, {
+      auth: { autoRefreshToken: false, persistSession: false }
+    });
+    const { data, error } = await db.rpc("stage_asaas_ingest_verified_event", {
+      p_ingest_token: ingestToken,
+      p_event_id: event.id,
+      p_event_type: event.event,
+      p_payment_id: event.payment.id,
+      p_subscription_id: event.payment.subscription,
+      p_payment_status: event.payment.status
+    });
+    if (error || (data !== "stored" && data !== "duplicate")) {
+      // Never acknowledge before the database confirms durable receipt.
+      return NextResponse.json({ error: "storage_unavailable" }, { status: 503 });
+    }
+    // Acknowledgment is NOT payment verification and never unlocks Pro.
+    return NextResponse.json({ received: true, duplicate: data === "duplicate" }, { status: 200 });
+  } catch {
+    return NextResponse.json({ error: "storage_unavailable" }, { status: 503 });
+  }
+}

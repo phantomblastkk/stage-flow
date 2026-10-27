@@ -1,0 +1,69 @@
+name: Stage Flow • Integration and build
+
+on:
+  push:
+    branches: [develop]
+    paths:
+      - "app/**"
+      - "components/**"
+      - "lib/**"
+      - "middleware.ts"
+      - "next.config.ts"
+      - "tsconfig.json"
+      - "package.json"
+      - "tests/**"
+      - "supabase/venue_*.sql"
+      - ".github/workflows/stage-flow-build.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: stage-flow-build-develop
+  cancel-in-progress: true
+
+jobs:
+  validate:
+    name: Compile and integration validation (no deploy)
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    env:
+      NEXT_TELEMETRY_DISABLED: "1"
+      NEXT_PUBLIC_SUPABASE_URL: "https://example.supabase.co"
+      NEXT_PUBLIC_SUPABASE_ANON_KEY: "build-time-placeholder-not-a-real-secret"
+    steps:
+      - name: Checkout develop
+        uses: actions/checkout@v4
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+      - name: Install dependencies
+        run: npm install --no-audit --no-fund
+      - name: Verify venue authorization contracts
+        run: npm run test:venue-security
+      - name: Verify show history and finance isolation
+        run: npm run test:show-history
+      - name: Verify chat and finance contracts
+        run: npm run test:chat-finance
+      - name: Verify hiring proposal permissions
+        run: npm run test:hiring-proposals
+      - name: Verify musician calendar and conflicts
+        run: npm run test:musician-availability
+      - name: Verify recurring show drafts and team invitations
+        run: npm run test:recurring-shows
+      - name: Verify show roster and audited replacements
+        run: npm run test:show-team-lineup
+      - name: Verify internal notifications and recipient isolation
+        run: npm run test:notifications
+      - name: Verify show operations and participant briefing
+        run: npm run test:show-operations
+      - name: Verify show briefing notifications and isolation
+        run: npm run test:show-operations-alerts
+      - name: Verify Asaas webhook safety contracts
+        run: node --test tests/asaas-contract.test.mjs
+      - name: Check TypeScript
+        run: npx tsc --noEmit
+      - name: Build Next.js
+        run: npm run build

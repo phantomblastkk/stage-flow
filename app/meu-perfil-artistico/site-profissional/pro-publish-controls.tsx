@@ -7,6 +7,7 @@ import {
   LockKeyhole, Rocket, ShieldCheck, Unplug, RefreshCw
 } from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
+import ProFeatureLock from "@/components/pro-feature-lock";
 import "./pro-publish-controls.css";
 
 type Publication = {
@@ -141,7 +142,7 @@ export default function ProSitePublicationControls({
           <div><span>{info.entitled?<CheckCircle2 size={16}/>:<LockKeyhole size={16}/>}</span>
             <div><strong>Acesso ao site Pro</strong>
               <small>{info.entitled?"Habilitado para sua conta.":
-                "Ainda não habilitado. A autorização é gerenciada pelo Stage Flow."}</small>
+                "Recurso incluído nos planos pagos de cantores. A contratação online ainda não está disponível."}</small>
             </div>
           </div>
           <div><span>{info.profile_public&&info.username?<CheckCircle2 size={16}/>:<LockKeyhole size={16}/>}</span>
@@ -159,10 +160,12 @@ export default function ProSitePublicationControls({
             </div>
           </div>
         </div>
-        {!info.entitled&&<p className="pro-publish-entitlement-note">
-          <Crown size={15}/> O Stage Flow ainda não realiza cobrança automática do adicional Pro.
-          O acesso precisa ser autorizado administrativamente; salvar o rascunho não libera o site.
-        </p>}
+        {!info.entitled&&<ProFeatureLock title="Portfólio profissional Pro" description="Libere layouts especiais, galeria de destaques, publicação profissional e subdomínio incluso no plano do cantor.">
+          <div className="pro-publish-checklist">
+            <div><span><Crown size={16}/></span><div><strong>Site e portfólio profissionais</strong><small>Temas, galeria e publicação</small></div></div>
+            <div><span><Globe2 size={16}/></span><div><strong>Subdomínio do artista</strong><small>Incluído no plano Pro</small></div></div>
+          </div>
+        </ProFeatureLock>}
         <p className="pro-publish-privacy"><ShieldCheck size={15}/>
           Só o conteúdo escolhido para a publicação fica acessível. Convites, negociações,
           contatos recebidos e dados financeiros permanecem privados.

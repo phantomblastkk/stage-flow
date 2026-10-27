@@ -7,7 +7,26 @@ import { createClient } from "@/lib/supabase/client";
 
 export default function LoginPage() {
   const [inviteCode, setInviteCode] = useState("");
-  useEffect(() => { setInviteCode(new URLSearchParams(window.location.search).get("convite") || ""); }, []);
+  const [checkingSession,setCheckingSession] = useState(true);
+  useEffect(() => {
+    const code=new URLSearchParams(window.location.search).get("convite") || "";
+    setInviteCode(code);
+    // During auth verification, never render a password form to someone
+    // already logged in. The login page is not a logout action.
+    let active=true;
+    async function check(){
+      try{
+        const {data,error}=await createClient().auth.getUser();
+        if(active&&!error&&data.user){
+          window.location.replace(code?"/convite?codigo="+encodeURIComponent(code):"/painel");
+          return;
+        }
+      }catch{/* On network failure show the form without signing anyone out. */}
+      if(active)setCheckingSession(false);
+    }
+    void check();
+    return()=>{active=false};
+  }, []);
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [busy, setBusy] = useState(false);
@@ -27,6 +46,12 @@ export default function LoginPage() {
       setMessage(err instanceof Error ? err.message : "Não foi possível entrar. Confira os dados e tente novamente.");
     } finally { setBusy(false); }
   }
+
+  if(checkingSession)return <main className="auth-wrap">
+    <div className="container" style={{minHeight:"60vh",display:"grid",placeItems:"center",textAlign:"center"}}>
+      <p style={{color:"var(--muted)"}}>Verificando sua sessão do Stage Flow...</p>
+    </div>
+  </main>;
 
   return <main className="auth-wrap">
     <aside className="auth-aside"><Link className="brand" href="/"><span className="brand-mark">S</span> stage flow</Link><div><div className="eyebrow">BEM-VINDO DE VOLTA</div><h1>Sua próxima apresentação começa <span className="accent">aqui.</span></h1><p className="tagline">Entre para acompanhar sua agenda musical, seus convites e as novidades da plataforma.</p></div><Link href="/" className="fine"><ArrowLeft size={14} style={{display:"inline",verticalAlign:"middle"}}/> Voltar ao início</Link></aside>

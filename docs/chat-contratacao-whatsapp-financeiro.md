@@ -1,0 +1,110 @@
+# Stage Flow — chat de contratação + avisos WhatsApp + central financeira
+
+## Situação e isolamento
+- Código na branch `develop`; **nenhum merge para `main`**.
+- Banco homologação `zycuprhymoukhnuamtit` recebeu as migrações abaixo; não foi aplicado no banco oficial.
+- Marketplace público permanece na página **Em breve**. O chat começa no catálogo **/marketplace/preview** quando um músico elegível é aberto.
+- Rota `/conversas` é a caixa de entrada dos dois participantes. `/financeiro` é o painel geral pessoal. Ambos estão ligados em `/painel`.
+- O chat usa atualização a cada ~8 segundos quando uma conversa está aberta e ~22 segundos para atualizar a lista. **Não usa push**, e não depende de Apple/Google Store.
+- Não apresenta o número pessoal do músico no chat; a API WhatsApp manda apenas um aviso genérico para voltar ao Stage Flow.
+
+## Ordem das migrações de QA
+1. Migrações normais de perfil/agenda/eventos/convites.
+2. `private_fee_negotiations_migration.sql`, `event_financial_summary_migration.sql`, `event_revenue_expenses_migration.sql`, `show_history_reports_migration.sql`.
+3. `hiring_chat_whatsapp_migration.sql`.
+4. `finance_dashboard_migration.sql`.
+
+No QA, todos os requisitos e as migrações 3 e 4 foram executados. `stage_hiring_control.released` permanece **false**; uma única conta administrativa foi cadastrada em `stage_hiring_access` para iniciar chats de teste. Só a conta do músico destinatário pode responder sobre disponibilidade. **Não alterar o flag `released` até o marketplace ser lançado.**
+
+### Fluxo de contratação
+- No preview do marketplace, abrir o card e clicar **Conversar e consultar disponibilidade**. Filtro de data selecionado é encaminhado ao chat. Se houver evento selecionado, ele também fica vinculado.
+- Quem iniciou a conversa escreve uma mensagem sobre data e cachê. O músico responde na conversa e pode marcar **Disponível / Indisponível / A combinar**.
+- O botão de convite existente continua sendo a próxima etapa formal, separada da negociação por chat. O chat **não reserva automaticamente a data**, não gera contrato e não marca pagamento.
+- Conversas são privadas e paginadas a 200 mensagens recentes por vez. O banco limita novas conversas a 15/dia/conta e mensagens a 20/min/conta.
+- Ambas as partes precisam ter conta para receber/enviar. Um gerente de casa pode abrir chats como qualquer usuário permitido, mas a permissão de administrador da casa **não concede** acesso a conversas alheias.
+- Depois do teste com a primeira conta, criar **uma segunda conta Auth legítima de músico na homologação** para completar um teste de envio, recebimento, disponibilidade e isolamento. Não criar contas fictícias por SQL direto no Auth nem permitir que contas de teste acessem produção.
+
+### Segurança e privacidade
+- `stage_hiring_start`, `stage_hiring_list`, `stage_hiring_messages`, `stage_hiring_send` validam `auth.uid()` no banco; nenhuma tabela do chat concede acesso direto aos usuários ou visitantes.
+- `stage_hiring_whatsapp_preferences` armazena número + consentimento *só para avisos do chat*. Nunca expõe esse telefone por RPC ao contratante. Consentimento é revogável, desligado por padrão.
+- Outbox limita avisos por conversa/destinatário a 1/10 min e mensagens pendentes vencem em 20 min. Não envia retroativamente avisos velhos quando a API for conectada.
+- Mensagens do usuário não são inseridas no template WhatsApp; o aviso contém somente texto genérico.
+- **Não usar `NEXT_PUBLIC_` para tokens Meta ou Supabase service-role.**
+
+## Ativação futura da API oficial WhatsApp Cloud (NÃO ativada agora)
+É necessária uma conta empresarial Meta com WhatsApp Business Platform configurada, número remetente vinculado, token com permissão, consentimento dos destinatários e **template previamente aprovado pela Meta** (modelo sem variáveis, como `stage_flow_nova_mensagem`, idioma `pt_BR`, categoria aprovada conforme o conteúdo de utilidade). A API não manda mensagens livres fora da janela de atendimento de 24 horas.
+
+Rota servidor: `GET /api/stage-chat/whatsapp-dispatch`, exigindo `Authorization: Bearer <cron-secret>`. Sem configuração retorna apenas `disabled`.
+
+Criar as seguintes **variáveis de ambiente do servidor do projeto Vercel correto**, quando for conectar:
+
+```env
+STAGE_CHAT_WHATSAPP_ENABLED=false
+STAGE_CHAT_CRON_SECRET=<segredo_longo_aleatorio>
+SUPABASE_SERVICE_ROLE_KEY=<chave_privada_do_SUPABASE_DESTE_AMBIENTE>
+WHATSAPP_CLOUD_ACCESS_TOKEN=<token_oficial_Meta>
+WHATSAPP_CLOUD_PHONE_NUMBER_ID=<id_numero_remetente>
+WHATSAPP_CLOUD_TEMPLATE_NAME=stage_flow_nova_mensagem
+WHATSAPP_GRAPH_API_VERSION=v26.0
+```
+
+**Jamais commitar valores reais.** A URL pública do Supabase `NEXT_PUBLIC_SUPABASE_URL` já faz parte do ambiente do site. Escolher nomes/idioma exatamente iguais ao template aprovado e não supor que o nome do exemplo já está cadastrado.
+
+Depois:
+1. Validar com destinatários de teste que deram consentimento, número no formato internacional, templates aprovados e política do WhatsApp.
+2. Configurar Cron na Vercel para chamar a rota **GET** com segredo; a frequência pode ser a cada 1–5 minutos conforme o plano, respeitando limites e preço por mensagem.
+3. Somente então mudar `STAGE_CHAT_WHATSAPP_ENABLED=true` em homologação e validar fila, erros, custos e desativação do consentimento.
+4. O retorno `accepted_by_provider` significa que a Cloud API aceitou a requisição, **não** que o aparelho recebeu ou leu. Webhooks de entrega/erro, métricas e política de retenção podem ser incluídos antes de produção.
+
+Sem API Meta conectada não haverá alertas WhatsApp automáticos; chat e preferências continuam funcionando no navegador.
+
+## Central financeira `/financeiro`
+- Reutiliza `stage_event_budget` para receita contratada/recebida; `stage_event_expenses` para transporte, alimentação, equipamento, equipe externa e outras despesas; e `stage_fee_negotiations` para cachês da banda.
+- `stage_finance_musician_payments` anota valores que o **organizador declarou ter pago** a cada músico com convite aceito; a função de gravação exige `auth.uid() = events.producer_id` e não permite pagar acima do cachê registrado.
+- Participações como músico continuam usando os lançamentos pessoais de `stage_show_participation_finance` da tela `/meus-shows`; cada pessoa enxerga os próprios valores, não a folha da banda.
+- Cartões: receita bruta contratada, recebido manualmente, despesas, cachês acordados, saldo de caixa registrado e **resultado líquido estimado**. Com valores desconhecidos há aviso de totais parciais. O saldo de caixa não é extrato bancário nem comprova pagamento.
+- Filtros por ano, mês, papel. Resumo mensal baseado na **data do show**, não na data do recebimento. Categorias de custo com barras, detalhes por show e exportação CSV com sanitização para evitar fórmulas em planilhas.
+- Clique **Editar financeiro e pagamentos** para abrir o `EventBudgetPanel` existente e registrar quanto a equipe recebeu (controle manual). Use **Atualizar** após editar receitas/despesas se os cartões estiverem com cache.
+- Shows cancelados não entram nos totais. Páginas de casas parceiras continuam com calendário, não recebem essa central financeira.
+
+## Etapa seguinte — propostas formais pelo chat
+
+Nova migração em homologação: `supabase/hiring_formal_proposals_migration.sql` (executar **depois** de `hiring_chat_whatsapp_migration.sql` e `private_fee_negotiations_migration.sql`). Já aplicada no Supabase QA. **Não executar em produção.**
+
+O módulo `components/hiring-proposals.tsx` aparece dentro de `/conversas`, por conversa:
+
+- O **contratante** cria uma proposta com show, dia, horário, local, cidade, cachê opcional e detalhes (ex.: transporte, repertório ou chegada). Se a conversa tem um show vinculado, o formulário preenche automaticamente nome, data, horário, cidade e local via `stage_hiring_proposal_prefill`. Aplicar também `supabase/hiring_formal_proposals_prefill_migration.sql` após a migração de propostas. Com uma proposta pendente, não envia outra até retirá-la ou o músico responder. O histórico não é apagado.
+- O **músico** aceita ou recusa, sem que a resposta inicial de disponibilidade seja confundida com aceite contratual.
+- Se for aceita, a função privada `stage_hiring_proposal_decide` cria um evento **rascunho e não público** (quando a conversa ainda não estava ligada a um evento) e um convite **aceito**, tudo na mesma transação. Se o evento original já estiver cadastrado, usa aquele evento sem duplicá-lo. Impede novo convite se já houver convite ao mesmo músico para aquele evento.
+- Cachê acertado é registrado em `invitations.fee_amount` e `stage_fee_negotiations.agreed_amount`, alimentando agenda, histórico e relatórios existentes. Se o cachê ficou em branco, segue "a combinar"; o sistema não inventa preço.
+- Recusas e retiradas mantêm histórico e permitem renegociar com nova proposta. Confirmação não transfere dinheiro, não é assinatura de contrato e não confirma pagamento.
+- A função bloqueia alterações de terceiros, propostas para eventos de outra conta, envio com data passada ou fora do limite e alterações após resposta.
+- A fila privada de WhatsApp recebe o aviso genérico pelo mesmo chat, apenas quando o destinatário concedeu consentimento; **não envia nada de verdade até a API ser habilitada**.
+- Ainda **não existe verificação automática de conflitos de agenda em horários sobrepostos** ou bloqueio garantido de datas. Antes do lançamento precisaremos decidir regras para turnos, deslocamento, reservas e cancelamento de convites aceitos.
+- Testes automatizados em `npm run test:hiring-proposals` incluídos no CI. Teste real entre duas contas fica para a rodada de homologação integrada, conforme o plano.
+
+## Agenda inteligente do músico — próxima etapa do protótipo
+
+Módulo `/minha-disponibilidade` para músicos e cantores, com atalho em `/painel`. Implantado **somente** no projeto Supabase de homologação `zycuprhymoukhnuamtit`.
+
+Migrações novas (ordem obrigatória, depois do chat e das propostas):
+1. `supabase/musician_smart_schedule_migration.sql`
+2. `supabase/musician_schedule_proposal_guard_migration.sql`
+
+- Cadastro privado de **bloqueio de dia inteiro** ou **intervalo de horas** em data única.
+- Compromissos semanais: dia da semana, horário, nome privado da banda e vigência com início e término (até 366 dias); permite modificar excluindo e cadastrando novamente.
+- Calendário exibe marcações próprias e shows do histórico de convites aceitos/eventos organizados, sem revelar títulos de bandas a outros usuários.
+- `stage_musician_schedule_check` compara compromissos manuais e semanais, convites aceitos, eventos próprios e propostas pendentes. Respostas: `free`, `busy`, `possible_conflict` (não confirmado), `invalid` e `forbidden`. Contratante só pode consultar um músico quando ambos participam de uma conversa privada, sem títulos ou detalhes de compromissos.
+- Conflitos de compromissos/bloqueios confirmados **impedem enviar ou aceitar uma nova proposta pelo chat**; possíveis conflitos apenas alertam. Ao aceitar, a operação usa lock transacional por músico e consulta novamente antes de criar convite/evento, para evitar duas propostas concorrentes aceitas na mesma janela.
+- **Limite atual importante:** sem `ends_at` no show, a consulta estima duração de 4 horas. Não há ainda janela de deslocamento, exceções semanais personalizadas, turnos que atravessam a madrugada nem bloqueio automático de todas as demais rotas antigas de aceite de convites. Horários e disponibilidade devem ser confirmados diretamente antes de formalizar.
+- O formulário da proposta agora tem botão **Verificar conflito antes de enviar** com resultados resumidos (não expõe locais, nomes de bandas nem a agenda pessoal).
+- Se o marketplace privado for instalado futuramente, a consulta também considera datas em `stage_marketplace_musician_settings.blocked_dates`. Na homologação, o marketplace não foi lançado.
+- Os testes de regras e permissões podem ser rodados em `npm run test:musician-availability` e foram ligados ao CI. Verificação SQL transacional de bloqueio manual, recorrência, remoção e isolamento também executada no QA, com `ROLLBACK`.
+- Não publicar a agenda individual como pública sem consentimento adicional e revisão de privacidade.
+
+## Checklist de publicação QA
+1. `npm run test:venue-security`, `npm run test:show-history`, `npm run test:chat-finance`, `npx tsc --noEmit`, `npm run build`.
+2. Vercel de homologação: publicar o último commit `develop` (publicação automática desativada), mantendo `NEXT_PUBLIC_STAGE_FLOW_ENV=homologation`.
+3. Testar: login → `/conversas` → cadastro WhatsApp opt-in/off → conversa com segunda conta → responder disponibilidade → somente participantes visualizam mensagens.
+4. Testar `/financeiro`: show próprio → preencher valor contratado e gasto Transporte → registrar recebido → registrar pagamento do músico aceito → conferir resultado mensal/CSV e privacidade de outra conta.
+5. Não habilitar fornecedor WhatsApp com segredo antes do teste explícito; não publicar marketplace nem aplicar migrações de QA no banco oficial.

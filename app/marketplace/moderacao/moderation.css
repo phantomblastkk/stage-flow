@@ -5,7 +5,7 @@
 .market-mod-nav>a:last-child{display:flex;align-items:center;gap:8px;color:#c5d3e5;font-size:11px;font-weight:800;text-decoration:none}
 .market-mod-header{display:flex;align-items:start;justify-content:space-between;gap:18px;flex-wrap:wrap;padding:49px 0 20px}
 .market-mod-header>div{flex:1;max-width:680px}
-.market-mod-header>div>span{display:inline-flex;align-items:center;gap:8px;color:#c1dca8;font-size:10px;font-weight:900;letter-spacing:.13em}
+.market-mod-header>div>span{display:inline-flex;align-items:center;gap:8px;color:#C0A7FF;font-size:10px;font-weight:900;letter-spacing:.13em}
 .market-mod-header h1{font:900 clamp(30px,4.5vw,49px)/1.18 "Manrope",sans-serif;letter-spacing:-.055em;margin:14px 0}
 .market-mod-header h1 em{font-style:normal;color:#d7b4ed}
 .market-mod-header p{font-size:13px;color:#b0c0d3;line-height:1.8;margin:0}
@@ -24,7 +24,7 @@
 .market-mod-empty{min-height:240px;display:flex;align-items:center;justify-content:center;flex-direction:column;gap:10px;border:1px dashed #465972;background:#1c2838;border-radius:14px;color:#a9bcd3;font-size:12px;text-align:center;padding:20px}
 .market-mod-empty h2{margin:0;font:800 19px "Manrope",sans-serif;color:#e2ebf6}
 .market-mod-empty p{margin:0;line-height:1.7}
-.market-mod-empty svg{color:#b5d89f}
+.market-mod-empty svg{color:#BDA5F2}
 .market-mod-list{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:13px}
 .market-mod-item{min-width:0;background:#1a2839;border:1px solid #3b4c63;border-radius:14px;padding:19px;display:flex;flex-direction:column;gap:10px}
 .market-mod-item-top{display:flex;align-items:center;flex-wrap:wrap;gap:6px}
@@ -48,7 +48,7 @@
 .market-mod-form label{font-size:11px;font-weight:800;color:#d9e5f1}
 .market-mod-form select,.market-mod-form textarea{width:100%;background:#101e2b;border:1px solid #495b71;color:#e9f0f7;border-radius:9px;padding:10px 11px;font:500 12px "DM Sans",sans-serif;min-width:0}
 .market-mod-form textarea{resize:vertical;line-height:1.7}
-.market-mod-form button{display:inline-flex;align-items:center;justify-content:center;gap:8px;align-self:flex-end;border:1px solid #b9df9e;background:#b9df9e;color:#17241a;padding:11px 13px;border-radius:9px;font-size:11px;font-weight:900;cursor:pointer;margin-top:3px}
+.market-mod-form button{display:inline-flex;align-items:center;justify-content:center;gap:8px;align-self:flex-end;border:1px solid #7142D8;background:#7142D8;color:#FFFFFF;padding:11px 13px;border-radius:9px;font-size:11px;font-weight:900;cursor:pointer;margin-top:3px}
 .market-mod-form button:disabled{opacity:.45;cursor:not-allowed}
 .market-mod-pagination{display:flex;align-items:center;justify-content:space-between;gap:9px;margin:20px 0}
 .market-mod-pagination button{display:inline-flex;gap:7px;align-items:center;background:#27364d;border:1px solid #53627a;color:#e4ebf5;border-radius:9px;padding:11px;font-size:11px;cursor:pointer}
@@ -57,7 +57,7 @@
 .market-mod-footer{display:flex;gap:8px;align-items:start;color:#97acc0;border-top:1px solid #34445a;margin-top:30px;padding-top:20px;font-size:10px;line-height:1.8}
 .market-mod-footer svg{flex:none}
 .market-mod-gate{min-height:65vh;background:#101722;color:#ecf2fb;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:20px;gap:14px;text-align:center}
-.market-mod-gate>svg{color:#b8da9d}
+.market-mod-gate>svg{color:#BDA5F2}
 .market-mod-gate h1{font:900 28px "Manrope",sans-serif;margin:0}
 .market-mod-gate p{max-width:460px;color:#b1c1d3;line-height:1.8;font-size:12px}
 @media(max-width:780px){.market-mod-list{grid-template-columns:1fr}}
