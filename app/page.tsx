@@ -1,5 +1,6 @@
 import Link from "next/link";
 import HomePartnerVenues from "@/components/home-partner-venues";
+import HomeVerifiedArtists from "@/components/home-verified-artists";
 import HomeAuthActions from "@/components/home-auth-actions";
 import {
   ArrowRight, ArrowUpRight, BadgeCheck, CalendarDays, Check,
@@ -79,6 +80,7 @@ export default function Home() {
       </section>
 
       <HomePartnerVenues/>
+      <HomeVerifiedArtists/>
 
       <section id="recursos" className="home-resource-section">
         <div className="home-section-heading">
