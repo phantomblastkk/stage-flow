@@ -30,9 +30,10 @@ O teste ponta a ponta com duas contas reais ainda requer duas contas verificadas
 4. A casa **não** tem página em `/casa/[slug]`, URL, logo, capa, programação ou flyers enquanto pendente; o banco impõe essa regra.
 5. Administrador global, cadastrado em `stage_venue_admins`, revisa a casa e clica em **Aprovar casa** ou **Rejeitar sugestão**.
 6. **Aprovação:** cria **automaticamente** a página oficial da casa com URL única `/casa/<slug-gerado>`, habilita o catálogo, o calendário e a estrutura para adicionar flyers, fotos, logo e capa. A galeria e a programação iniciam vazias; somente o administrador (ou um gestor posteriormente autorizado) pode enviar e publicar esses conteúdos.
-7. **Rejeição:** registro permanece para auditoria, oculto do catálogo e sem página.
-8. Sem login, enviar sugestão deve retornar `login_required`; aprovar deve retornar `forbidden`.
-9. Inspeção da tabela `venues`: não pode haver registro não aprovado com `active=true`, `is_official=true`, `is_partner=true`, slug ou logo/capa.
+7. O cantor que sugeriu a casa vê seu status e, depois da aprovação, um link para a URL pública em **Minhas solicitações**. A função `stage_venue_my_submissions` só retorna slug de casa aprovada, ativa e oficial.
+8. **Rejeição:** registro permanece para auditoria, oculto do catálogo e sem página.
+9. Sem login, enviar sugestão deve retornar `login_required`; aprovar deve retornar `forbidden`.
+10. Inspeção da tabela `venues`: não pode haver registro não aprovado com `active=true`, `is_official=true`, `is_partner=true`, slug ou logo/capa.
 
 Migrações aplicadas no QA: `supabase/venue_approval_workflow_migration.sql` e `supabase/venue_approval_official_profile_migration.sql` (com correção do gerador SQL). As três casas legadas foram preservadas como aprovadas. Nenhuma casa fictícia ficou cadastrada após o teste.
 
@@ -45,3 +46,5 @@ Migrações aplicadas no QA: `supabase/venue_approval_workflow_migration.sql` e 
 - O catálogo antigo poderia receber diretamente registros enviados por usuários autenticados. A migração revoga privilégios de inserção e exige RPC segura com limite de sugestões.
 - Administradores do StageFlow podem criar um estabelecimento diretamente, pois o seu próprio cadastro é uma ação administrativa aprovada.
 - Não considerar o teste de interface concluído apenas por CI/deploy ou simulação transacional bem-sucedidos. Login com duas contas, upload de imagens/flyers e navegação mobile ainda precisam de teste real no QA.
+
+**Extensão de QA aplicada:** `supabase/venue_approved_submitter_links_migration.sql` mostra a URL oficial somente na lista de sugestões da própria conta, após aprovação.
