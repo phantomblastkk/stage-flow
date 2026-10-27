@@ -70,8 +70,8 @@ test("finance controls require ownership and never move money",()=>{
  assert.match(money,/Exportar CSV/);
  assert.match(money,/Resultado líquido estimado/);
  assert.match(money,/safeCsvCell/);
- assert.match(dashboard,/href: "\/financeiro"/);
- assert.match(dashboard,/href: "\/conversas"/);
+  assert.match(read("src/domains/navigation/workspace-navigation.ts"),/\/financeiro/);
+  assert.match(read("src/domains/navigation/workspace-navigation.ts"),/\/conversas/);
 });
 
 test("monthly finance compares projected net and actual cash without assuming payment",()=>{
