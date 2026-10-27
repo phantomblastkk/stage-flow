@@ -313,7 +313,7 @@ export default function SiteProfissionalPreview() {
       <p>Configure os dados do seu perfil de cantor antes de experimentar a personalização.</p>
       <Link href="/meu-perfil-artistico" className="btn btn-primary">Configurar meu perfil <ArrowRight size={16}/></Link>
     </div> : <>
-      <section className="premium-design-editor" aria-label="Personalização do site profissional">
+      <section className="premium-design-editor" aria-label="Personalização Pro do perfil de cantor">
         <div className="premium-design-heading">
           <div>
             <span className="premium-design-eyebrow"><Palette size={15}/> VISUAL E RECURSOS DO MESMO PERFIL</span>
@@ -404,7 +404,7 @@ export default function SiteProfissionalPreview() {
       <div className={"premium-site premium-theme-" + draft.theme + " premium-site-" + draft.accent}>
         <header className="premium-site-nav">
           <Link href="/" className="premium-site-brand"><span className="premium-site-signal"><Music2 size={20}/></span> STAGE FLOW</Link>
-          <nav aria-label="Seções do site profissional">
+          <nav aria-label="Seções do perfil de cantor">
             {visibleOrder.map(section =>
               <a href={sectionAnchor[section]} key={section}>
                 {SECTION_LABELS[section]}
@@ -433,7 +433,7 @@ export default function SiteProfissionalPreview() {
             {artist.city && <p className="premium-site-city"><MapPin size={16}/> {artist.city}</p>}
             <p className="premium-site-intro">{artist.bio?.trim()
               ? artist.bio.length > 320 ? artist.bio.slice(0, 317) + "…" : artist.bio
-              : "Apresente ao público a sua identidade musical, suas experiências e o que torna cada show especial. Complete a biografia no editor gratuito para atualizar esta prévia."}</p>
+              : "Apresente ao público a sua identidade musical, suas experiências e o que torna cada show especial. Complete a biografia na aba Dados e publicação para atualizar esta prévia."}</p>
 
             <div className="premium-site-socials">
               {artist.instagram_url && <a href={artist.instagram_url} target="_blank" rel="noopener noreferrer" aria-label="Instagram"><Instagram size={19}/></a>}
@@ -466,7 +466,7 @@ export default function SiteProfissionalPreview() {
           <div>
             <span className="premium-site-section-overline">{String(draft.section_order.indexOf("about") + 1).padStart(2,"0")} / A HISTÓRIA POR TRÁS DO SOM</span>
             <h2>Sobre <em>o artista.</em></h2>
-            <p>{artist.bio || "Sua biografia ficará aqui. Escreva sua trajetória na página gratuita de cantor para ver como ela aparece no site profissional."}</p>
+            <p>{artist.bio || "Sua biografia ficará aqui. Escreva sua trajetória na aba Dados e publicação para atualizar este mesmo perfil."}</p>
           </div>
           <div className="premium-site-summary">
             <span className="premium-site-summary-icon"><Mic2 size={22}/></span>
@@ -583,7 +583,7 @@ export default function SiteProfissionalPreview() {
               </Link>
             : artist.instagram_url
               ? <a href={artist.instagram_url} target="_blank" rel="noopener noreferrer" className="premium-site-main-action"><Instagram size={17}/> Falar pelo Instagram <ArrowUpRight size={16}/></a>
-              : <span className="premium-site-contact-pending"><LockKeyhole size={16}/> Publique sua página gratuita para receber pedidos</span>}
+              : <span className="premium-site-contact-pending"><LockKeyhole size={16}/> Publique o perfil na aba Dados para receber pedidos</span>}
         </section>}
         </div>
 
@@ -600,7 +600,7 @@ export default function SiteProfissionalPreview() {
           <h2><LockKeyhole size={20} style={{display:"inline",verticalAlign:"middle",marginRight:8}}/> Recursos Pro do perfil único de cantor</h2>
           <p>Agenda, apresentação, redes sociais e contatos continuam gratuitos. Os recursos Pro acrescentam temas especiais e galerias ao mesmo perfil público. Você pode preparar o rascunho; a publicação das opções pagas exige autorização da conta. O subdomínio e a cobrança ainda não estão ativados.</p><p>Quando autorizado, os recursos Pro aparecem no seu endereço único <strong>/{artist.username || "seuusuario"}</strong>. O link antigo com /pro/ apenas redireciona para esse perfil.</p>
           <p className="premium-preview-protection"><LockKeyhole size={16}/> Não há cobrança automática. Desativar a publicação Pro não despublica o perfil gratuito.</p>
-          <p>Os contatos enviados pela página gratuita ficam na sua <Link href="/meu-perfil-artistico/solicitacoes" style={{ color: "#d8c0ff", textDecoration: "underline" }}>caixa privada de pedidos de contratação</Link>.</p>
+          <p>Os contatos enviados pelo perfil público ficam na sua <Link href="/meu-perfil-artistico/solicitacoes" style={{ color: "#d8c0ff", textDecoration: "underline" }}>caixa privada de pedidos de contratação</Link>.</p>
         </div>
         <Link href="/meu-perfil-artistico?aba=dados" className="btn btn-quiet">Editar dados e publicação <ArrowUpRight size={15}/></Link>
       </section>
