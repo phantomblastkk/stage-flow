@@ -80,3 +80,10 @@ test("published musician portfolios have their own safe share metadata",()=>{
  assert.match(musicianMetadata,/safePublicImage/);
  assert.doesNotMatch(musicianMetadata,/SERVICE_ROLE|stage_my_musician_portfolio|stage_my_account_identity/);
 });
+
+test("singer URL helpers use the one canonical free-and-Pro public path",()=>{
+ const helpers=source("lib/pro-site-public.ts");
+ assert.match(helpers,/return getStageFlowOrigin\(\)\+"\/"\+encodeURIComponent\(username\)/);
+ assert.doesNotMatch(helpers,/getStageFlowOrigin\(\)\+"\/pro\/"/);
+ assert.doesNotMatch(helpers,/agenda de shows deste artista no Stage Flow Pro/);
+});
