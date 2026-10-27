@@ -50,6 +50,8 @@ export default function CasaPublicaPage() {
   const [focusedShow,setFocusedShow] = useState<HouseShow|null>(null);
   const [linkedShow,setLinkedShow] = useState<{id:string;month:string}|null>(null);
   const [shareStatus,setShareStatus] = useState("");
+  const [profileShareStatus,setProfileShareStatus] = useState("");
+  const [profileCopyFallback,setProfileCopyFallback] = useState("");
   const [focusedPhoto,setFocusedPhoto] = useState<Gallery|null>(null);
   const [suggestOpen,setSuggestOpen] = useState(false);
   const [artist,setArtist] = useState("");
@@ -171,6 +173,45 @@ export default function CasaPublicaPage() {
     }
   }
 
+  const venueLocation=venue?[venue.address,venue.city,venue.state]
+    .filter((part):part is string=>typeof part==="string"&&part.trim().length>0)
+    .join(", "):"";
+  const venueMapsUrl=venueLocation
+    ?"https://www.google.com/maps/search/?api=1&query="+encodeURIComponent(venueLocation)
+    :null;
+  const venueWhatsapp=venue?.whatsapp?.replace(/\D/g,"")||"";
+  const venueWhatsappUrl=/^[0-9]{10,15}$/.test(venueWhatsapp)
+    ?"https://wa.me/"+venueWhatsapp:null;
+  function venueProfileUrl(){
+    return venue?new URL("/casa/"+venue.slug,window.location.origin).toString():null;
+  }
+  async function copyVenueProfile(){
+    const url=venueProfileUrl();
+    if(!url)return;
+    try{
+      if(!navigator.clipboard?.writeText)throw new Error("Clipboard unavailable");
+      await navigator.clipboard.writeText(url);
+      setProfileCopyFallback("");
+      setProfileShareStatus("Link do perfil da casa copiado.");
+    }catch{
+      setProfileCopyFallback(url);
+      setProfileShareStatus("Selecione e copie o endereço abaixo.");
+    }
+  }
+  async function shareVenueProfile(){
+    const url=venueProfileUrl();
+    if(!url||!venue)return;
+    if(!navigator.share){await copyVenueProfile();return;}
+    try{
+      await navigator.share({title:venue.name,text:"Conheça a programação de "+venue.name+" no StageFlow.",url});
+      setProfileShareStatus("Compartilhamento concluído.");
+      setProfileCopyFallback("");
+    }catch(err){
+      if(err instanceof Error&&err.name==="AbortError")return;
+      setProfileShareStatus("Não foi possível compartilhar. Você pode copiar o link.");
+    }
+  }
+
   const visible=useMemo(()=>events.filter(e=>day===null||venueDayOfMonth(e.starts_at)===day),
     [events,day]);
   const flyers=useMemo(()=>visible.filter(e=>!!e.flyer_path),[visible]);
@@ -252,6 +293,32 @@ export default function CasaPublicaPage() {
               {venue.address?" — "+venue.address:""}</p>
           </div>
         </section>
+        <section className="venue-public-action-bar" aria-label="Contatos e compartilhamento do perfil">
+          <div className="venue-public-action-primary">
+            <a href="#house-calendar" className="venue-public-action-main"><CalendarDays size={17}/> Ver programação</a>
+            {venueMapsUrl&&<a href={venueMapsUrl} target="_blank" rel="noopener noreferrer"
+              className="venue-public-action-secondary">
+              <MapPin size={17}/> {venue.address?.trim()?"Ver endereço no mapa":"Ver cidade no mapa"}
+              <ExternalLink size={13}/>
+            </a>}
+            {venueWhatsappUrl&&<a href={venueWhatsappUrl} target="_blank" rel="noopener noreferrer"
+              className="venue-public-action-secondary"><MessageCircle size={17}/> WhatsApp</a>}
+          </div>
+          <div className="venue-public-action-share">
+            <button type="button" onClick={()=>void shareVenueProfile()}>
+              <Share2 size={16}/> Compartilhar perfil
+            </button>
+            <button type="button" onClick={()=>void copyVenueProfile()}>
+              <Copy size={16}/> Copiar link
+            </button>
+          </div>
+          {(profileShareStatus||profileCopyFallback)&&<div className="venue-public-share-feedback" role="status">
+            {profileShareStatus&&<span>{profileShareStatus}</span>}
+            {profileCopyFallback&&<input type="text" readOnly value={profileCopyFallback}
+              aria-label="Endereço público do perfil da casa para copiar"
+              onFocus={event=>event.currentTarget.select()}/>}
+          </div>}
+        </section>
 
         {featured&&<VenueFeaturedEvent show={featured} houseName={venue.name}
           onOpen={setFocusedShow} onGoToCalendar={goToShow}/>}
@@ -303,13 +370,28 @@ export default function CasaPublicaPage() {
             <section className="venue-public-section">
               <h2>Sobre a casa</h2>
               <p>{venue.description||"Explore os shows e conheça a programação deste espaço."}</p>
+              <div className="venue-public-contact-details" id="house-contact">
+                <h3><MapPin size={16}/> Localização e contato</h3>
+                {venueLocation?<p>{venueLocation}</p>:
+                  <p>Endereço e localização ainda não informados.</p>}
+                {venueMapsUrl&&<a href={venueMapsUrl} target="_blank" rel="noopener noreferrer">
+                  <MapPin size={16}/> {venue.address?.trim()?"Buscar endereço no Google Maps":"Consultar cidade no Google Maps"}
+                  <ExternalLink size={13}/>
+                </a>}
+                {!venue.address?.trim()&&venueMapsUrl&&<small>
+                  A localização exata da casa ainda não foi informada. A busca abre somente a cidade.
+                </small>}
+              </div>
               <div className="venue-public-links">
                 {venue.instagram_url&&<a href={venue.instagram_url} target="_blank" rel="noopener noreferrer">
                   <Instagram size={17}/> Instagram <ExternalLink size={14}/></a>}
-                {venue.whatsapp&&<a href={"https://wa.me/"+venue.whatsapp.replace(/\D/g,"")}
+                {venueWhatsappUrl&&<a href={venueWhatsappUrl}
                   target="_blank" rel="noopener noreferrer">
-                  <MessageCircle size={17}/> WhatsApp <ExternalLink size={14}/></a>}
+                  <MessageCircle size={17}/> Falar pelo WhatsApp <ExternalLink size={14}/></a>}
               </div>
+              {!venue.instagram_url&&!venueWhatsappUrl&&<p className="venue-public-no-contact">
+                Esta casa ainda não cadastrou canais públicos de contato.
+              </p>}
             </section>
 
             <section className="venue-public-section venue-public-suggest">
