@@ -178,7 +178,7 @@ test("artist venue suggestions remain private until explicit global admin approv
   assert.match(guard,/new\.logo_path:=null/);
   assert.match(review,/if not public\.stage_venue_is_admin\(\)/);
   assert.match(review,/v_status<>'pending'/);
-  assert.match(review,/p_decision in \('approved','rejected'\)/);
+  assert.match(review,/p_decision not in \('approved','rejected'\)/);
   assert.match(review,/is_official=false,is_partner=false/);
   assert.match(mine,/submitted_by=auth\.uid\(\)/);
   assert.match(approval,/grant execute on function public\.stage_venue_submit\(text,bigint,text\) to authenticated/);
