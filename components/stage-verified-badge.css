@@ -1,0 +1,13 @@
+.sf-verified{
+ display:inline-flex;align-items:center;gap:6px;flex:0 0 auto;
+ border-radius:99px;padding:5px 9px;
+ border:1px solid rgba(113,172,255,.36);
+ background:rgba(39,82,150,.23);color:#baddff;
+ font:800 10px/1.35 "Manrope",sans-serif;
+ vertical-align:middle;white-space:nowrap;max-width:100%
+}
+.sf-verified>svg{fill:#358ce8;stroke:#e3f3ff;flex:none;filter:drop-shadow(0 1px 3px #2566a850)}
+.sf-verified-compact{font-size:9px;padding:4px 7px}
+.sf-verified-compact svg{width:17px;height:17px}
+.mp-shell.mp-theme-ivory .sf-verified{background:#e5f0ff;border-color:#7ba7ec;color:#204d85}
+@media(max-width:500px){.sf-verified{white-space:normal;line-height:1.4}}
