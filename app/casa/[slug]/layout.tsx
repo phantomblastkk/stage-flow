@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import { createClient } from "@supabase/supabase-js";
+import {getStageFlowOrigin} from "@/lib/pro-site-public";
 
 type PublicVenue = {
   slug: string;
@@ -54,10 +55,14 @@ export async function generateMetadata({
       ? supabase.storage.from("stage-venue-media").getPublicUrl(imagePath).data.publicUrl
       : null;
 
+    const origin=getStageFlowOrigin();
+    const canonical=origin+"/casa/"+encodeURIComponent(slug);
     return {
+      metadataBase:new URL(origin),
       title, description,
+      alternates:{canonical},
       openGraph: {
-        type: "website", title, description, siteName: "Stage Flow",
+        type: "website", title, description, url:canonical,locale:"pt_BR",siteName: "Stage Flow",
         ...(imageUrl ? {images:[{url:imageUrl,alt:"Imagem oficial de "+venue.name}]}:{})
       },
       twitter: {
