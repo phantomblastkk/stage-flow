@@ -66,3 +66,27 @@
 @media(prefers-reduced-motion:reduce){
   .singer-editor-tabs button{transition:none}
 }
+
+/* The live singer preview uses exactly the same signature hierarchy as public pages. */
+.singer-unified-editor .artist-free-editor-preview-info .artist-free-editor-preview-signature{
+  position:relative;
+  color:var(--artist-free-accent,#bba5f1);
+  font-family:"Great Vibes","Brush Script MT",cursive;
+  font-size:clamp(23px,2.8vw,30px);
+  font-weight:400;
+  letter-spacing:.015em;
+  line-height:1.3;
+  margin:7px 0 0;
+  padding:0 0 8px 19px;
+  overflow-wrap:anywhere;
+}
+.singer-unified-editor .artist-free-editor-preview-signature::before{
+  content:"";position:absolute;top:52%;left:0;width:12px;height:2px;
+  border-radius:3px;background:var(--artist-free-accent,#bba5f1)
+}
+.singer-unified-editor .artist-free-editor-preview-info .artist-free-editor-preview-city{
+  color:#b8b7c9;font:600 12px "Manrope",sans-serif;letter-spacing:.01em;margin:6px 0 0
+}
+.singer-unified-editor .artist-free-editor-preview-info{
+  padding-bottom:18px
+}
