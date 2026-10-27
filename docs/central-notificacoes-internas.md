@@ -35,4 +35,14 @@ Nenhuma notificação exibe o WhatsApp, telefone, email ou o cachê de outro mú
 - Teste QA transacional realizado com duas contas de exemplo: convite novo, aceito, recusado, cancelado, proposta recebida/aceita, duas mensagens de chat agrupadas, leitura, contador, isolamento entre contas e acesso RPC anônimo negado. `ROLLBACK` no final; nenhum registro de teste persistido.
 - **Pendência para homologação integrada:** navegar com duas contas reais e conferir chegada das notificações, deep links, marcação como lida, acessibilidade no mobile e tempos percebidos.
 - Notificações não implicam aceite, pagamento, entrega de WhatsApp ou push. A estrutura futura da Meta continua **desligada** por padrão.
-- A Vercel de homologação precisa receber manualmente o último commit aprovado em `develop`. A produção e o marketplace público não foram alterados.
+- Todo desenvolvimento agora é feito diretamente na branch `main`. O CI continua sem publicar; homologação e produção só recebem deploy manual mediante solicitação.
+
+
+## Avisos de cortesia Pro e contador (27/10/2026)
+
+- Migração incremental: `supabase/stage_pro_courtesy_notifications_migration.sql` (depende do módulo Pro e da central de notificações).
+- A concessão manual existente cria uma notificação privada `pro_courtesy_granted` no mesmo commit da permissão; a revogação cria `pro_courtesy_revoked`. A função do banco usa trigger `AFTER INSERT OR DELETE` em `stage_pro_site_access`, sem manipular cobranças ou a assinatura.
+- O assinante recebe o alerta na campainha e na página de notificações. O link de concessão abre `/meu-perfil-artistico?aba=pro`, onde o cantor escolhe quando publicar. O encerramento encaminha a `/minha-conta?aba=cantor`.
+- O contador mostra **avisos não lidos**, não quantidade de itens na página. Abrir a campainha não marca tudo como lido; cada aviso só sai da contagem depois de abrir ou marcar como lido. Há atualização periódica e no retorno à aba.
+- Concessões anteriores à migração recebem um aviso inicial apenas se ainda estiverem ativas (sem modificar a permissão). A restrição de unicidade impede duplicação; futuras reativações recolocam um aviso como não lido.
+- Notificações não enviam WhatsApp, push ou e-mails externos. Testes de concessão/revogação em QA foram executados em transações revertidas, sem concessões persistentes.
