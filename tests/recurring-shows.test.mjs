@@ -55,5 +55,5 @@ test("existing teams require explicit confirmed invitations per occurrence",()=>
  assert.match(page,/window\.confirm\(/);
  assert.match(page,/Nenhum músico foi convidado automaticamente/);
  assert.match(page,/shows-recorrentes\.css/);
- assert.match(dashboard,/href: "\/shows-recorrentes"/);
+  assert.match(read("src/domains/navigation/workspace-navigation.ts"),/\/shows-recorrentes/);
 });
