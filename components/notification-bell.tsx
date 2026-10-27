@@ -40,7 +40,9 @@ function destination(item: NotificationPreview) {
       : "/conversas";
   }
   if (item.event_code === "invite_received" || item.event_code === "invite_cancelled") {
-    return "/meus-convites";
+    return /^[0-9a-f]{8}(?:-[0-9a-f]{4}){3}-[0-9a-f]{12}$/i.test(item.source_id)
+      ? "/meus-convites?convite=" + encodeURIComponent(item.source_id)
+      : "/meus-convites";
   }
   return item.event_id
     ? "/convites?evento=" + encodeURIComponent(item.event_id)
