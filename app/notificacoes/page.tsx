@@ -73,8 +73,13 @@ export default function NotificationsPage(){
   let alive=true;setLoading(true);
   async function boot(){
    try{
-    const {data:{user},error:authError}=await createClient().auth.getUser();
-    if(authError||!user){router.replace("/login");return;}
+    const authClient=createClient();
+    const {data:{user},error:authError}=await authClient.auth.getUser();
+    if(authError){
+     const {data:{session}}=await authClient.auth.getSession();
+     if(session)throw Error("Não foi possível validar sua sessão agora. Sua conta não foi desconectada; tente novamente.");
+    }
+    if(!user){router.replace("/login");return;}
     await refresh(filter);
    }catch(e){if(alive)setError(e instanceof Error?e.message:"Falha ao carregar.");}
    finally{if(alive)setLoading(false);}
@@ -109,7 +114,11 @@ export default function NotificationsPage(){
  async function open(item:Notice){
   if(busy)return;setBusy(true);setError("");setNotice("");
   try{
-   if(!item.read_at){await mark([item.id]);}
+   if(!item.read_at){
+    try{await mark([item.id]);}catch{
+     // Mark-as-read failures must not block the musician from the event briefing.
+    }
+   }
    router.push(destination(item));
   }catch(e){setError(e instanceof Error?e.message:"Não foi possível abrir.");setBusy(false);}
  }
