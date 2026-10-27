@@ -82,3 +82,14 @@ test("monthly finance compares projected net and actual cash without assuming pa
  assert.match(money,/Saldo de caixa registrado/);
  assert.match(money,/m\.hasMissing\?"Parcial/);
 });
+
+test("financial overview includes outstanding receivables and unpaid commitments",()=>{
+ assert.match(money,/const pendingReceivables=/);
+ assert.match(money,/Math\.max\(0,val\(r\.gross_revenue\)-val\(r\.received\)\)/);
+ assert.match(money,/Math\.max\(0,val\(r\.personal_fee\)-val\(r\.personal_received\)\)/);
+ assert.match(money,/const pendingExpenses=/);
+ assert.match(money,/const pendingFees=/);
+ assert.match(money,/A receber \(estimado\)/);
+ assert.match(money,/Compromissos a pagar/);
+ assert.match(money,/pendingIncomplete\?"Parcial/);
+});
