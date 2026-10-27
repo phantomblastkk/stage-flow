@@ -12,6 +12,7 @@ import styles from "./notification-bell.module.css";
 
 type NotificationPreview = {
   id: string;
+  source_id: string;
   source_type: "invitation" | "proposal" | "conversation" | "operations";
   event_code: string;
   event_id: string | null;
