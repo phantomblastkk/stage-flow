@@ -29,15 +29,19 @@ O teste ponta a ponta com duas contas reais ainda requer duas contas verificadas
 3. Quem cadastrou vê o andamento apenas da própria sugestão. A solicitação vai para a lista administrativa de `/admin/casas`.
 4. A casa **não** tem página em `/casa/[slug]`, URL, logo, capa, programação ou flyers enquanto pendente; o banco impõe essa regra.
 5. Administrador global, cadastrado em `stage_venue_admins`, revisa a casa e clica em **Aprovar casa** ou **Rejeitar sugestão**.
-6. **Aprovação:** torna a casa utilizável no catálogo, **não cria página pública automaticamente**. O administrador deve definir o slug e habilitar "Perfil oficial" antes de disponibilizar página, galeria e flyers.
+6. **Aprovação:** cria **automaticamente** a página oficial da casa com URL única `/casa/<slug-gerado>`, habilita o catálogo, o calendário e a estrutura para adicionar flyers, fotos, logo e capa. A galeria e a programação iniciam vazias; somente o administrador (ou um gestor posteriormente autorizado) pode enviar e publicar esses conteúdos.
 7. **Rejeição:** registro permanece para auditoria, oculto do catálogo e sem página.
 8. Sem login, enviar sugestão deve retornar `login_required`; aprovar deve retornar `forbidden`.
 9. Inspeção da tabela `venues`: não pode haver registro não aprovado com `active=true`, `is_official=true`, `is_partner=true`, slug ou logo/capa.
 
-Migração de QA: `supabase/venue_approval_workflow_migration.sql`. Na implantação atual, as três casas legadas foram preservadas como aprovadas. Nenhuma nova casa pública foi criada.
+Migrações aplicadas no QA: `supabase/venue_approval_workflow_migration.sql` e `supabase/venue_approval_official_profile_migration.sql` (com correção do gerador SQL). As três casas legadas foram preservadas como aprovadas. Nenhuma casa fictícia ficou cadastrada após o teste.
+
+**Teste de integração SQL realizado em QA com ROLLBACK integral:** uma conta autenticada sem privilégios de administrador enviou duas sugestões, recebeu status `pending`, não conseguiu aprovar nem inserir diretamente no catálogo e viu somente suas solicitações. Reatribuída a permissão administrativa dentro da mesma transação, uma sugestão foi aprovada, gerando URL oficial e respostas válidas de `stage_public_venue`, `stage_venue_public_month` e `stage_venue_public_highlights`; outra foi rejeitada e continuou sem perfil. Repetição da aprovação foi negada. A transação foi inteiramente revertida, sem alterações persistentes em casas ou administradores.
+
+**Limite da validação:** foi um teste das permissões e das funções SQL simulando as duas identidades; não uma navegação real com duas contas, upload real de fotos/flyers ou inspeção visual mobile. Esses testes de interface permanecem pendentes.
 
 ## Observações
 - Os dados de casas públicas e suas agendas continuam separados de shows e finanças pessoais dos músicos.
 - O catálogo antigo poderia receber diretamente registros enviados por usuários autenticados. A migração revoga privilégios de inserção e exige RPC segura com limite de sugestões.
 - Administradores do StageFlow podem criar um estabelecimento diretamente, pois o seu próprio cadastro é uma ação administrativa aprovada.
-- Não considerar o teste manual concluído apenas por CI/deploy bem-sucedidos. Login de duas contas, upload de imagens e navegação mobile precisam de teste presencial no QA.
+- Não considerar o teste de interface concluído apenas por CI/deploy ou simulação transacional bem-sucedidos. Login com duas contas, upload de imagens/flyers e navegação mobile ainda precisam de teste real no QA.
