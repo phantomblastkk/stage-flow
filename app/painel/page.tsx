@@ -10,6 +10,7 @@ import {
 } from "lucide-react";
 import type { LucideIcon } from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
+import NotificationBell from "@/components/notification-bell";
 
 type ArtistKind = "lead" | "support";
 type Profile = {
@@ -241,6 +242,11 @@ export default function Dashboard() {
     description: "Gerencie shows, flyers, fotos e sugestões das casas autorizadas para você.",
     label: "ACESSO DA CASA"
   });
+  primary.unshift({
+    href:"/notificacoes",title:"Central de notificações",icon:Bell,
+    description:"Novos convites, propostas, mensagens, confirmações e cancelamentos, com contador de avisos não lidos.",
+    label:"CAIXA DE ENTRADA"
+  });
   const secondary: Shortcut[] = [];
   if (isSupport) {
     secondary.push(
@@ -273,6 +279,7 @@ export default function Dashboard() {
     <nav className="nav">
       <Link className="brand" href="/"><span className="brand-mark">S</span> stage flow</Link>
       <div style={{ display: "flex", gap: 10, alignItems: "center" }}>
+        <NotificationBell/>
         <Link className="btn btn-quiet" href="/"><ArrowLeft size={15}/> Site</Link>
         <button className="btn btn-quiet" onClick={() => void handleSignOut()} disabled={signingOut}>
           <LogOut size={15}/>{signingOut ? "Saindo..." : "Sair"}
