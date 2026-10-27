@@ -76,7 +76,7 @@ export default function Dashboard() {
       setEmail(user.email ?? "");
       const { data, error } = await supabase
         .from("profiles")
-        .select("id, role, is_artist, is_producer, is_singer, is_musician, display_name, username, city, is_public, artist_avatar_path")
+        .select("id, role, is_artist, is_producer, is_singer, is_musician, artist_kind, display_name, username, city, is_public, artist_avatar_path")
         .eq("id", user.id)
         .maybeSingle();
 
@@ -90,19 +90,10 @@ export default function Dashboard() {
       } else {
         // A consulta separada não interrompe o painel enquanto a nova
         // migração ainda não tiver sido executada pelo administrador.
-        let kind: ArtistKind | null = data.is_artist
-          ? (data.username ? "lead" : "support") : null;
-        if (data.is_artist) {
-          const { data: experience } = await supabase
-            .from("profiles")
-            .select("artist_kind")
-            .eq("id", user.id)
-            .maybeSingle();
-          if (!active) return;
-          if (experience?.artist_kind === "lead" || experience?.artist_kind === "support") {
-            kind = experience.artist_kind;
-          }
-        }
+        const kind: ArtistKind|null = data.is_artist
+          ? (data.artist_kind==="lead"||data.artist_kind==="support"
+             ? data.artist_kind : data.username?"lead":"support")
+          : null;
         setProfile({ ...data, artist_kind: kind } as Profile);
         // Publicly uploaded artist photo. Initials are only a fallback.
         const singerPath=data.artist_avatar_path;
@@ -127,16 +118,17 @@ export default function Dashboard() {
                 candidate.href:null);
           }catch{setMusicianPhoto(null);}
         }else setMusicianPhoto(null);
-        // O portal de parceiros e opcional e nao interfere no painel atual.
-        const {data: partnerData}=await supabase.rpc("stage_venue_partner_access");
-        if (!active) return;
-        const available=partnerData as {status?:string;items?:unknown[]} | null;
-        if (available?.status==="ok") setPartnerHouseCount(available.items?.length||0);
-        // Optional navigation only; every privileged action is independently
-        // authorized by its own RPC in the database.
-        const {data: ownerAccess,error:ownerAccessError}=await supabase.rpc("stage_owner_admin_status");
-        if (!active) return;
-        setIsOwnerAdmin(!ownerAccessError&&ownerAccess===true);
+        // Independent navigation permissions can be fetched concurrently;
+        // RPCs enforce server-side authorization regardless of visible links.
+        const [partnerResult,ownerResult]=await Promise.all([
+          supabase.rpc("stage_venue_partner_access"),
+          supabase.rpc("stage_owner_admin_status")
+        ]);
+        if(!active)return;
+        const partnerData=partnerResult.data as {status?:string;items?:unknown[]}|null;
+        if(!partnerResult.error&&partnerData?.status==="ok")
+          setPartnerHouseCount(partnerData.items?.length||0);
+        setIsOwnerAdmin(!ownerResult.error&&ownerResult.data===true);
       }
       setLoading(false);
     }
