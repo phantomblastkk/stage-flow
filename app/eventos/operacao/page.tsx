@@ -133,7 +133,8 @@ export default function OperationPage(){
  async function execute(
   key:string,
   rpc:()=>PromiseLike<{data:unknown;error:{message:string}|null}>,
-  success:string
+  success:string,
+  afterSuccess?:()=>void
  ){
   if(busy||!eventId)return;
   setBusy(key);setError("");setNotice("");
@@ -145,6 +146,7 @@ export default function OperationPage(){
    if(status!=="ok"&&status!=="saved"&&status!=="removed")throw Error(friendly(status));
    await refresh(eventId);
    setNotice(success);
+   afterSuccess?.();
   }catch(e){setError(e instanceof Error?e.message:"Erro ao salvar.");}
   finally{setBusy("");}
  }
@@ -171,8 +173,10 @@ export default function OperationPage(){
    p_event_id:eventId,p_task_id:task.id||null,p_category:task.category,
    p_title:task.title.trim(),p_notes:task.notes.trim()||null,
    p_responsible:task.responsible.trim()||null,p_due_at:due
-  }),task.id?"Atividade atualizada.":"Atividade adicionada.");
-  // Keep form open on error; successful refresh clears fields with explicit user action.
+  }),task.id?"Atividade atualizada.":"Atividade adicionada.",()=>{
+    setTask(emptyTask());
+    setTaskForm(false);
+  });
  }
  function toggleTask(item:Task){
   void execute(item.id,()=>createClient().rpc("stage_show_ops_task_toggle",{
