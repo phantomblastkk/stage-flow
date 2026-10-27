@@ -71,6 +71,17 @@ export default function AdminCasasPage() {
   const [saving, setSaving] = useState(false);
   const [reviewing, setReviewing] = useState(false);
   const [uploading, setUploading] = useState<"logo" | "cover" | null>(null);
+  const [pendingImages,setPendingImages] = useState<{logo:File|null;cover:File|null}>({logo:null,cover:null});
+  const [previewUrls,setPreviewUrls] = useState<{logo:string|null;cover:string|null}>({logo:null,cover:null});
+  useEffect(()=>{
+    const logo=pendingImages.logo?URL.createObjectURL(pendingImages.logo):null;
+    const cover=pendingImages.cover?URL.createObjectURL(pendingImages.cover):null;
+    setPreviewUrls({logo,cover});
+    return ()=>{
+      if(logo)URL.revokeObjectURL(logo);
+      if(cover)URL.revokeObjectURL(cover);
+    };
+  },[pendingImages]);
   const [notice, setNotice] = useState("");
   const [error, setError] = useState("");
   const [managers, setManagers] = useState<AssignedManager[]>([]);
@@ -97,10 +108,13 @@ export default function AdminCasasPage() {
     setCities((cityResult.data || []) as City[]);
     if (selectId) {
       const selected = rows.find((item) => item.id === selectId);
-      if (selected) setForm({ ...selected, address: selected.address || "",
+      if (selected) {
+        setPendingImages({logo:null,cover:null});
+        setForm({ ...selected, address: selected.address || "",
         description: selected.description || "", slug: selected.slug || "",
         instagram_url: selected.instagram_url || "", whatsapp: selected.whatsapp || "",
         logo_path: selected.logo_path || "", cover_path: selected.cover_path || "" });
+      }
     }
   }, []);
 
@@ -221,6 +235,7 @@ export default function AdminCasasPage() {
   ), [venues, query]);
 
   function edit(item: Venue) {
+    setPendingImages({logo:null,cover:null});
     setForm({ ...item, address: item.address || "", slug: item.slug || "",
       description: item.description || "", instagram_url: item.instagram_url || "",
       whatsapp: item.whatsapp || "", logo_path: item.logo_path || "",
@@ -271,6 +286,18 @@ export default function AdminCasasPage() {
     }
   }
 
+  function selectIdentityImage(kind:"logo"|"cover",file?:File){
+    if(!file)return;
+    if(!["image/jpeg","image/png","image/webp"].includes(file.type)
+      ||file.size===0||file.size>5*1024*1024){
+      setError("Use uma imagem JPG, PNG ou WebP de até 5 MB.");
+      setPendingImages(old=>({...old,[kind]:null}));
+      return;
+    }
+    setError("");setNotice("");
+    setPendingImages(old=>({...old,[kind]:file}));
+  }
+
   async function upload(kind: "logo" | "cover", file?: File) {
     if (!file) return;
     setError(""); setNotice("");
@@ -285,7 +312,7 @@ export default function AdminCasasPage() {
       "image/jpeg": "jpg", "image/png": "png", "image/webp": "webp"
     };
     const extension = extByType[file.type];
-    if (!extension || file.size > 5 * 1024 * 1024) {
+    if (!extension || file.size===0 || file.size > 5 * 1024 * 1024) {
       setError("Use uma imagem JPG, PNG ou WebP de até 5 MB.");
       return;
     }
@@ -305,6 +332,7 @@ export default function AdminCasasPage() {
       if (payload.status !== "ok") throw new Error(statusMessage(payload.status));
       setForm(patched);
       await refresh(form.id);
+      setPendingImages(old=>({...old,[kind]:null}));
       setNotice(kind === "logo" ? "Logotipo atualizado." : "Capa atualizada.");
     } catch (err) {
       setError(err instanceof Error ? err.message : "Falha ao enviar imagem.");
@@ -342,7 +370,7 @@ export default function AdminCasasPage() {
             <div className="venue-admin-list-head">
               <h2>Estabelecimentos</h2>
               <button className="btn btn-primary" type="button" onClick={() => {
-                setForm(blank()); setError(""); setNotice("");setManagerNeedsSignup(false);setManagerShareNotice("");setManagerNotice("");
+                setPendingImages({logo:null,cover:null});setForm(blank()); setError(""); setNotice("");setManagerNeedsSignup(false);setManagerShareNotice("");setManagerNotice("");
               }}><Plus size={15}/> Nova casa</button>
             </div>
             <div className="venue-admin-search"><Search size={17}/>
