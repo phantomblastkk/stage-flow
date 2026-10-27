@@ -80,7 +80,7 @@ language plpgsql
 set search_path = ''
 as $$
 begin
-  if auth.uid() is not null and auth.uid() = old.id then
+  if auth.uid() is not null and auth.uid() = old.id and current_user <> 'postgres' then
     if new.role is distinct from old.role
       or new.subscription_status is distinct from old.subscription_status
       or new.is_artist is distinct from old.is_artist
