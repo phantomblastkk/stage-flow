@@ -129,6 +129,10 @@ export default function Financeiro(){
   }
   return [...groups.values()].sort((a,b)=>b.key.localeCompare(a.key));
  },[visibleOwner,visibleMusician]);
+ const pendingReceivables=visibleOwner.reduce((n,r)=>n+Math.max(0,val(r.gross_revenue)-val(r.received)),0)+visibleMusician.reduce((n,r)=>n+Math.max(0,val(r.personal_fee)-val(r.personal_received)),0);
+ const pendingExpenses=visibleOwner.reduce((n,r)=>n+Math.max(0,val(r.expense_total)-val(r.expense_paid)),0);
+ const pendingFees=visibleOwner.reduce((n,r)=>n+Math.max(0,val(r.musician_agreed)-val(r.musician_paid)),0);
+ const pendingIncomplete=missingRevenue>0||unpriced>0;
  const months=Array.from(new Set([...organized,...participations].filter(r=>year==="all"||yearMonth(r.starts_at).startsWith(year)).map(r=>yearMonth(r.starts_at)))).sort().reverse();
 
  async function openTeam(id:string){
@@ -193,8 +197,10 @@ export default function Financeiro(){
     {[
      ["Receita bruta contratada",cash(gross),missingRevenue?"Valores faltando":""],
      ["Recebido registrado",cash(received),"Informado manualmente"],
+     ["A receber (estimado)",cash(pendingReceivables),pendingIncomplete?"Parcial: valores ainda não definidos":"Valores contratados ainda não recebidos"],
      ["Despesas dos shows",cash(extras+personalCost),"Custos previstos e pessoais"],
      ["Cachês acordados da equipe",cash(teamAgreed),"Custo de contratação"],
+     ["Compromissos a pagar",cash(pendingExpenses+pendingFees),"Despesas extras e cachês ainda não registrados como pagos"],
      ["Saldo de caixa registrado",cash(cashFlow),"Recebido − despesas pagas − cachês pagos"],
      ["Resultado líquido estimado",hasAny?cash(projected):"Sem dados",incomplete?"Parcial: há valores a definir":"Não é lucro bancário comprovado"]
     ].map(([title,value,note])=><div key={title} className="finance-kpi">
@@ -215,7 +221,7 @@ export default function Financeiro(){
      </div>
     </div>
     <div className="finance-panel"><h2><CalendarDays size={19}/> Por mês</h2>
-     <p>Compare o resultado estimado com o caixa registrado. Agrupamento pelo mês do show, não pelo dia do pagamento.</p>
+     <p>Compare o resultado estimado com o caixa registrado. Agrupamento pelo mês do show, não pelo dia do pagamento. Valores a receber e pagar são estimativas manuais, não cobranças automáticas.</p>
      {monthly.length?<div className="finance-month-list">{monthly.map(m=><div key={m.key} className="finance-month">
       <strong>{monthLabel(m.key)} <small>{m.count} shows</small></strong>
       <span>Receita informada {cash(m.gross)}</span><span>Recebido {cash(m.received)}</span>
