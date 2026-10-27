@@ -34,6 +34,7 @@ export default function ProSitePublicationControls({
   const [error,setError]=useState("");
   const [message,setMessage]=useState("");
   const [copied,setCopied]=useState(false);
+  const canonicalProfilePath=info?.username?"/"+encodeURIComponent(info.username):null;
 
   async function load(){
     setLoading(true);
@@ -77,7 +78,7 @@ export default function ProSitePublicationControls({
       "Publicar seu site Pro para qualquer pessoa acessar? Fotos e vídeos da galeria do rascunho serão incluídos nesta versão pública. Você poderá retirar o site do ar depois."
     ))return;
     if(!publish&&!window.confirm(
-      "Retirar seu site Pro do ar? O endereço público ficará indisponível, mas o rascunho, a galeria e seu perfil gratuito serão preservados."
+      "Desativar os recursos Pro publicados? Seu perfil de cantor continua no mesmo endereço com as funções pagas bloqueadas."
     ))return;
     setBusy(true);setError("");setMessage("");
     const {data,error:actionError}=await createClient().rpc(
@@ -99,15 +100,15 @@ export default function ProSitePublicationControls({
       setInfo(current=>current?{...current,published:publish}:current);
       setMessage(publish
         ?"Seu site Pro foi publicado! Compartilhe o novo endereço com seus fãs e contratantes."
-        :"Seu site Pro saiu do ar. O rascunho e o perfil gratuito foram preservados.");
+        :"A versão Pro foi retirada do ar. Seu perfil público continua disponível com funções Pro bloqueadas.");
     }
     setBusy(false);
   }
 
   async function copyLink(){
-    if(!info?.url_path)return;
+    if(!canonicalProfilePath)return;
     try{
-      await navigator.clipboard.writeText(window.location.origin+info.url_path);
+      await navigator.clipboard.writeText(window.location.origin+canonicalProfilePath);
       setCopied(true);
     }catch{
       setError("Não foi possível copiar automaticamente. Abra o endereço e copie pelo navegador.");
@@ -173,12 +174,12 @@ export default function ProSitePublicationControls({
       </div>
 
       <div className="pro-publish-action-area">
-        {info.url_path&&<div className="pro-publish-url">
-          <span>Endereço do seu site Pro</span>
-          <strong>{typeof window!=="undefined"?window.location.origin+info.url_path:info.url_path}</strong>
+        {canonicalProfilePath&&<div className="pro-publish-url">
+          <span>Endereço único do seu perfil de cantor</span>
+          <strong>{typeof window!=="undefined"?window.location.origin+canonicalProfilePath:canonicalProfilePath}</strong>
         </div>}
-        {info.published&&info.url_path&&<div className="pro-publish-links">
-          <Link href={info.url_path} target="_blank" rel="noopener noreferrer">
+        {info.published&&canonicalProfilePath&&<div className="pro-publish-links">
+          <Link href={canonicalProfilePath} target="_blank" rel="noopener noreferrer">
             <ExternalLink size={15}/> Abrir meu site
           </Link>
           <button type="button" onClick={()=>void copyLink()}>
@@ -197,7 +198,7 @@ export default function ProSitePublicationControls({
         </button>
         {info.published&&<button type="button" className="pro-publish-unpublish"
           disabled={busy} onClick={()=>void toggle(false)}>
-          <Unplug size={16}/> Retirar site Pro do ar
+          <Unplug size={16}/> Desativar versão Pro
         </button>}
         <small className="pro-publish-info-text">
           {info.published
