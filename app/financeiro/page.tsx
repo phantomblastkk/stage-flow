@@ -12,12 +12,18 @@ import type { Mode, Organized, Participation, TeamMember } from "@/src/domains/b
 import { buildFinanceReport } from "@/src/domains/billing/model/finance-report";
 import { buildFinanceCsv } from "@/src/domains/billing/model/finance-csv";
 import { formatCents as cash, formatAmount, formatAmountInput as inputValue, parseAmountInput as parseValue, financeMonthLabel as monthLabel } from "@/src/domains/billing/model/money";
+import { useAccount } from "@/src/domains/account/account-context";
 import "./financeiro.css";
 
 const EMPTY_REPORT=buildFinanceReport([],[],{mode:"all",year:"all",month:"all"});
 
 export default function Financeiro(){
  const router=useRouter();
+ const {snapshot:account}=useAccount();
+ const profile=account.profile;
+ const financeProfile=useMemo(()=>profile?{
+  id:profile.id,is_artist:profile.is_artist,artist_kind:profile.artist_kind,username:profile.username
+ }:undefined,[profile?.id,profile?.is_artist,profile?.artist_kind,profile?.username]);
  const [organized,setOrganized]=useState<Organized[]>([]);
  const [participations,setParticipations]=useState<Participation[]>([]);
  const [loading,setLoading]=useState(true);
@@ -42,12 +48,12 @@ export default function Financeiro(){
  const load=useCallback(async()=>{
   financeRequest.current?.abort();
   const request=new AbortController();financeRequest.current=request;
-  const result=await loadFinance(createClient(),request.signal);
+  const result=await loadFinance(createClient(),request.signal,financeProfile);
   if(request.signal.aborted)return;
   setReportAccess(result.reportAccess);setReportAccessReady(true);
   setCoverageLimited(result.coverageLimited);
   setOrganized(result.organized);setParticipations(result.participations);
- },[]);
+ },[financeProfile]);
  useEffect(()=>{
   let active=true;
   setLoading(true);setError("");

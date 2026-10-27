@@ -1,6 +1,11 @@
 # StageFlow — CTO: evolução SaaS, auditoria e roadmap
 **Data:** 27/10/2026 · **Branch exclusiva:** `main` · **Deploy automático:** bloqueado.
 
+**Checkpoint atual:** [Parte 7 — contexto de conta e troca de identidade](stageflow-saas-phase-7-account-context-2026-10-27.md).
+As seções abaixo registram a auditoria inicial. Consulte os relatórios das partes
+seguintes para as alterações incrementais e suas evidências; nesta etapa não
+houve acesso à homologação, banco remoto ou deploy.
+
 ## Decisões executadas
 O projeto é evoluído por **migração gradual por domínio**, não um rewrite de todas as páginas.
 A primeira entrega troca a vitrine de dezenas de atalhos por um dashboard operacional,

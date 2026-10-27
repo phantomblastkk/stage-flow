@@ -1,4 +1,4 @@
-/** Explicit opt-in: never wrap public profiles, auth, admin or the existing dashboard. */
+/** Frame titles only. The boundary handles the dashboard provider and public marketplace exception. */
 export const workspaceRoutes = [
   ["/eventos", "Agenda"],
   ["/meus-shows", "Histórico de shows"],

@@ -9,6 +9,7 @@ import {
   Mail,Mic2,Save,Shield,ShieldCheck,Sparkles,UserRound,X
 } from "lucide-react";
 import {createClient} from "@/lib/supabase/client";
+import {useAccount} from "@/src/domains/account/account-context";
 import "./minha-conta.css";
 
 type AccountIdentity={
@@ -47,6 +48,7 @@ function tabFromUrl():AccountTab {
 
 export default function MinhaConta(){
  const router=useRouter();
+ const {refresh:refreshAccount}=useAccount();
  const [account,setAccount]=useState<AccountIdentity|null>(null);
  const [activeTab,setActiveTab]=useState<AccountTab>("inicio");
  const [name,setName]=useState("");
@@ -135,6 +137,7 @@ export default function MinhaConta(){
      flash(rpcError?.message||errors[String(data)]||"Não foi possível salvar.",true);
    }else{
      await load();
+     await refreshAccount();
      flash(data==="saved"
        ?"Alterações salvas! O prazo de 60 dias é independente para o nome e para o @."
        :"Nenhuma alteração necessária.");
@@ -183,6 +186,7 @@ export default function MinhaConta(){
    }else{
      setPendingRole(null);setConfirmationText("");setConfirmationChecked(false);
      await load();
+     await refreshAccount();
      flash(role==="musician"
        ?"Função de músico ativada. Agora você pode editar e publicar seu portfólio."
        :"Função de cantor ativada. Escolha seu @ e prepare sua página artística.");

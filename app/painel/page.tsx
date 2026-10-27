@@ -2,134 +2,52 @@
 
 import { useEffect, useState } from "react";
 import {useRouter} from "next/navigation";
-import {Check,Guitar,LayoutDashboard,LoaderCircle,Mic2,Settings2} from "lucide-react";
+import {Check,Guitar,LayoutDashboard,Mic2,Settings2} from "lucide-react";
 import WorkspaceSidebar from "@/src/domains/navigation/components/workspace-sidebar";
 import WorkspaceOverview from "@/src/domains/dashboard/components/workspace-overview";
 import { createClient } from "@/lib/supabase/client";
 import NotificationBell from "@/components/notification-bell";
 import DashboardAccountMenu from "@/components/dashboard-account-menu";
+import { useAccount } from "@/src/domains/account/account-context";
 import "./painel-account-actions.css";
 
 type ArtistKind = "lead" | "support";
-type Profile = {
-  id: string;
-  role: "musician" | "producer";
-  is_artist: boolean;
-  is_producer: boolean;
-  is_singer: boolean;
-  is_musician: boolean;
-  artist_kind?: ArtistKind | null;
-  display_name: string;
-  username: string | null;
-  city: string | null;
-  is_public: boolean;
-  artist_avatar_path?:string|null;
-};
-
 export default function Dashboard() {
   const router = useRouter();
-  const [profile, setProfile] = useState<Profile | null>(null);
+  const {snapshot:account,refresh:refreshAccount}=useAccount();
+  const profile=account.profile;
+  const email=account.user?.email||"";
+  const {isOwnerAdmin,partnerHouseCount}=account.permissions;
   const [singerPhoto,setSingerPhoto]=useState<string|null>(null);
   const [musicianPhoto,setMusicianPhoto]=useState<string|null>(null);
-  const [email, setEmail] = useState("");
-  const [loading, setLoading] = useState(true);
   const [message, setMessage] = useState("");
   const [messageError, setMessageError] = useState(false);
   const [signingOut, setSigningOut] = useState(false);
   const [changingKind, setChangingKind] = useState(false);
-  const [partnerHouseCount, setPartnerHouseCount] = useState(0);
-  const [isOwnerAdmin, setIsOwnerAdmin] = useState(false);
 
-  useEffect(() => {
-    let active = true;
-    const supabase = createClient();
-
-    async function loadDashboard() {
-      const { data: { user }, error: userError } = await supabase.auth.getUser();
-      if (!active) return;
-
-      if (userError) {
-        // A transient validation/network error must not be mistaken for sign-out.
-        // Never sign out or discard an existing local session here.
-        const {data:{session}}=await supabase.auth.getSession();
-        if (!active) return;
-        if (session) {
-          setMessageError(true);
-          setMessage("Não foi possível validar a sessão agora. Sua conta não foi desconectada. Confira a conexão e atualize a página.");
-          setLoading(false);
-          return;
-        }
-        router.replace("/login");
-        return;
-      }
-      if (!user) {
-        router.replace("/login");
-        return;
-      }
-
-      setEmail(user.email ?? "");
-      const { data, error } = await supabase
-        .from("profiles")
-        .select("id, role, is_artist, is_producer, is_singer, is_musician, artist_kind, display_name, username, city, is_public, artist_avatar_path")
-        .eq("id", user.id)
-        .maybeSingle();
-
-      if (!active) return;
-      if (error) {
-        setMessageError(true);
-        setMessage("Não conseguimos carregar seu perfil. Confira se as migrações do Supabase foram executadas.");
-      } else if (!data) {
-        setMessageError(true);
-        setMessage("Sua conta está autenticada, mas o perfil não foi encontrado. Saia e entre novamente; se continuar, avise para corrigirmos.");
-      } else {
-        // A consulta separada não interrompe o painel enquanto a nova
-        // migração ainda não tiver sido executada pelo administrador.
-        const kind: ArtistKind|null = data.is_artist
-          ? (data.artist_kind==="lead"||data.artist_kind==="support"
-             ? data.artist_kind : data.username?"lead":"support")
-          : null;
-        setProfile({ ...data, artist_kind: kind } as Profile);
-        // Publicly uploaded artist photo. Initials are only a fallback.
-        const singerPath=data.artist_avatar_path;
-        if(data.is_singer&&singerPath&&
-          new RegExp("^"+user.id+"/[0-9a-f-]{36}\\.(jpg|png|webp)$","i").test(singerPath)){
-          setSingerPhoto(supabase.storage.from("stage-artist-public")
-            .getPublicUrl(singerPath).data.publicUrl);
-        }else setSingerPhoto(null);
-        if(data.is_musician){
-          // The private owner-only RPC returns the public avatar the musician
-          // explicitly uploaded in the portfolio editor.
-          const {data:portfolioData}=await supabase.rpc("stage_my_musician_portfolio");
-          if(!active)return;
-          const url=(portfolioData as {avatar_url?:string|null}|null)?.avatar_url;
-          const safePrefix=new URL(supabase.storage.from("stage-musician-media")
-            .getPublicUrl(user.id+"/placeholder.png").data.publicUrl);
-          try{
-            const candidate=url?new URL(url):null;
-            setMusicianPhoto(candidate&&candidate.protocol==="https:"&&
-              candidate.origin===safePrefix.origin&&
-              candidate.pathname.startsWith(safePrefix.pathname.replace("placeholder.png",""))?
-                candidate.href:null);
-          }catch{setMusicianPhoto(null);}
-        }else setMusicianPhoto(null);
-        // Independent navigation permissions can be fetched concurrently;
-        // RPCs enforce server-side authorization regardless of visible links.
-        const [partnerResult,ownerResult]=await Promise.all([
-          supabase.rpc("stage_venue_partner_access"),
-          supabase.rpc("stage_owner_admin_status")
-        ]);
-        if(!active)return;
-        const partnerData=partnerResult.data as {status?:string;items?:unknown[]}|null;
-        if(!partnerResult.error&&partnerData?.status==="ok")
-          setPartnerHouseCount(partnerData.items?.length||0);
-        setIsOwnerAdmin(!ownerResult.error&&ownerResult.data===true);
-      }
-      setLoading(false);
+  useEffect(()=>{
+    if(!profile||!account.user)return;
+    const user=account.user,data=profile,supabase=createClient();
+    const request=new AbortController();
+    setSingerPhoto(null);setMusicianPhoto(null);
+    const singerPath=data.artist_avatar_path;
+    if(data.is_singer&&singerPath&&new RegExp("^"+user.id+"/[0-9a-f-]{36}\\.(jpg|png|webp)$","i").test(singerPath))
+      setSingerPhoto(supabase.storage.from("stage-artist-public").getPublicUrl(singerPath).data.publicUrl);
+    async function musicianAvatar(){
+      if(!data.is_musician)return;
+      const {data:portfolioData}=await supabase.rpc("stage_my_musician_portfolio").abortSignal(request.signal);
+      if(request.signal.aborted)return;
+      const url=(portfolioData as {avatar_url?:string|null}|null)?.avatar_url;
+      const safePrefix=new URL(supabase.storage.from("stage-musician-media").getPublicUrl(user.id+"/placeholder.png").data.publicUrl);
+      try{
+        const candidate=url?new URL(url):null;
+        setMusicianPhoto(candidate&&candidate.protocol==="https:"&&candidate.origin===safePrefix.origin&&
+          candidate.pathname.startsWith(safePrefix.pathname.replace("placeholder.png",""))?candidate.href:null);
+      }catch{setMusicianPhoto(null);}
     }
-
-    void loadDashboard();
-    return () => { active = false; };
-  }, [router]);
+    void musicianAvatar().catch(()=>{});
+    return()=>request.abort();
+  },[profile?.id,profile?.is_singer,profile?.is_musician,profile?.artist_avatar_path,account.user?.id]);
 
   async function changeExperience(kind: ArtistKind) {
     if (!profile?.is_artist || changingKind || profile.artist_kind === kind) return;
@@ -145,11 +63,9 @@ export default function Dashboard() {
     );
     if (error || data !== "saved") {
       setMessageError(true);
-      setMessage(error?.message
-        ? "Não foi possível trocar de visualização. Execute artist_account_experience_migration.sql no Supabase. " + error.message
-        : "Não foi possível mudar a experiência. Confira suas permissões.");
+      setMessage("Não foi possível mudar a experiência. Tente novamente.");
     } else {
-      setProfile(previous => previous ? { ...previous, artist_kind: kind } : null);
+      await refreshAccount();
       setMessage("Seu painel agora prioriza as ferramentas de " +
         (kind === "lead" ? "cantor/artista principal." : "músico de apoio.") +
         " Seus dados e permissões foram preservados.");
@@ -158,18 +74,14 @@ export default function Dashboard() {
   }
 
   async function handleSignOut() {
-    setSigningOut(true);
-    const supabase = createClient();
-    await supabase.auth.signOut();
-    router.replace("/login");
-    router.refresh();
+    setSigningOut(true);setMessage("");
+    try{
+      const {error}=await createClient().auth.signOut();
+      if(error)throw error;
+      router.replace("/login");router.refresh();
+    }catch{setMessageError(true);setMessage("Não foi possível sair da conta. Tente novamente.");}
+    finally{setSigningOut(false);}
   }
-
-  if (loading) return <main><div className="container" style={{ minHeight: "100vh", display: "grid", placeItems: "center" }}>
-    <p style={{ color: "var(--muted)", display: "flex", alignItems: "center", gap: 10 }}>
-      <LoaderCircle size={18}/> Carregando seu Stage Flow...
-    </p>
-  </div></main>;
 
   const kind: ArtistKind = profile?.is_singer && !profile?.is_musician ? "lead"
     : profile?.is_musician && !profile?.is_singer ? "support"

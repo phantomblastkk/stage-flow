@@ -20,14 +20,18 @@ server.stdout.on("data", data => { serverLog += data; });
 server.stderr.on("data", data => { serverLog += data; });
 let browser;
 const userId = "aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa";
+const otherUserId = "bbbbbbbb-bbbb-4bbb-8bbb-bbbbbbbbbbbb";
+const otherEventId = "88888888-8888-4888-8888-888888888888";
 const firstId = "11111111-1111-4111-8111-111111111111";
 const secondId = "22222222-2222-4222-8222-222222222222";
 const guestId = "33333333-3333-4333-8333-333333333333";
 const invitationId = "44444444-4444-4444-8444-444444444444";
 const user = { id: userId, aud: "authenticated", role: "authenticated", email: "musician@example.test", created_at: "2026-01-01T00:00:00Z", app_metadata: {}, user_metadata: {} };
 const encoded = value => Buffer.from(JSON.stringify(value)).toString("base64url");
-const token = encoded({ alg: "HS256", typ: "JWT" }) + "." + encoded({ sub: userId, role: "authenticated", exp: 4102444800 }) + ".fixture";
-const session = { access_token: token, refresh_token: "fixture-refresh", token_type: "bearer", expires_in: 3600, expires_at: 4102444800, user };
+const sessionFor = id => ({ access_token: encoded({ alg: "HS256", typ: "JWT" }) + "." + encoded({ sub: id, role: "authenticated", exp: 4102444800 }) + ".fixture",
+  refresh_token: "fixture-refresh", token_type: "bearer", expires_in: 3600, expires_at: 4102444800,
+  user: { ...user, id, email: id === userId ? user.email : "producer@example.test" } });
+const session = sessionFor(userId);
 const initialEvents = () => [firstId, secondId].map((id, index) => ({ id, title: index ? "Segundo show" : "ShowComNomeMuitoLongoSemEspaços".repeat(4), description: "Detalhes do show de teste", venue: "Local de teste", city: "São Paulo", starts_at: "2026-11-01T23:00:00Z", ends_at: null, status: "draft", show_publicly: false }));
 const moreEvents = () => Array.from({ length: 20 }, (_, index) => ({ ...initialEvents()[1], id: `60000000-0000-4000-8000-${String(index + 1).padStart(12, "0")}`, title: "Show adicional " + (index + 1), starts_at: index >= 18 ? "2026-11-25T23:00:00Z" : "2026-11-01T23:00:00Z" }));
 function filtered(rows, url) {
@@ -47,15 +51,27 @@ const guest = { event_id: guestId, title: "Participação aceita de teste", venu
 async function setup(width) {
   const context = await browser.newContext({ viewport: { width, height: 900 }, timezoneId: "America/Sao_Paulo" });
   await context.addCookies([{ name: "sb-example-auth-token", value: "base64-" + encoded(session), url: origin, sameSite: "Lax" }]);
-  const state = { events: [...initialEvents(), ...moreEvents(), { ...initialEvents()[1], id: "77777777-7777-4777-8777-777777777777", title: "Show de dezembro", starts_at: "2026-12-02T23:00:00Z" }], accepted: false, failAgenda: false, failFinance: false, invalidFinance: false, writes: [] };
+  const state = { events: [...initialEvents(), ...moreEvents(), { ...initialEvents()[1], id: "77777777-7777-4777-8777-777777777777", title: "Show de dezembro", starts_at: "2026-12-02T23:00:00Z" }], accepted: false, failAgenda: false, failFinance: false, invalidFinance: false, writes: [],
+    reads: new Map(), adminA: false, financeDelay: null, delayedFinanceStarted: 0, delayedFinanceCompleted: 0 };
   await context.route(api + "/**", async route => {
     const request = route.request();
     const url = new URL(request.url());
     const body = request.postDataJSON();
+    const jwt = request.headers().authorization?.split(" ")[1]?.split(".")[1];
+    const actor = jwt ? JSON.parse(Buffer.from(jwt, "base64url").toString()).sub : null;
     let result = [], status = 200;
     const rpc = url.pathname.split("/").at(-1);
-    if (url.pathname === "/auth/v1/user") result = user;
-    else if (url.pathname.endsWith("/profiles")) result = { id: userId, display_name: "Teste", is_singer: false, is_musician: true, is_producer: true, is_artist: false };
+    const readKey = actor + ":" + rpc;
+    state.reads.set(readKey, (state.reads.get(readKey) ?? 0) + 1);
+    if (url.pathname === "/auth/v1/user") {
+      assert.ok(actor === userId || actor === otherUserId, "Auth must carry a synthetic user token");
+      result = sessionFor(actor).user;
+    } else if (url.pathname.endsWith("/profiles")) {
+      assert.equal(url.searchParams.get("id"), "eq." + actor, "profile read must match the authenticated account");
+      result = { id: actor, role: actor === userId ? "musician" : "producer", display_name: actor === userId ? "Teste" : "Outra conta",
+        is_singer: false, is_musician: actor === userId, is_producer: true, is_artist: actor === userId,
+        artist_kind: actor === userId ? "support" : null, username: null, city: null, is_public: false, artist_avatar_path: null };
+    }
     else if (url.pathname.endsWith("/events")) {
       if (request.method() === "POST") {
         assert.equal(body.producer_id, userId);
@@ -72,11 +88,14 @@ async function setup(width) {
       else if(url.searchParams.has("id")) result = state.events.find(event=>event.id===url.searchParams.get("id").slice(3)) ?? null;
       else result = filtered(state.events,url);
     } else if (rpc === "stage_venue_partner_access") result = { status: "ok", items: [] };
-    else if (rpc === "stage_owner_admin_status") result = false;
+    else if (rpc === "stage_owner_admin_status") result = actor === userId && state.adminA;
+    else if (rpc === "stage_workspace_overview") result = { status: "ok", metrics: { shows_week: 0, pending_invites: 0, unread_conversations: 0, pending_contacts: 0, received_month: 0 }, upcoming: [], activity: [], updated_at: "2026-11-01T15:00:00Z" };
     else if (rpc === "stage_accepted_shows") result = filtered(state.accepted ? [guest] : [],url);
     else if (rpc === "stage_finance_organizer_overview") {
+      const pending = actor === userId ? state.financeDelay : null;
+      if (pending) { state.delayedFinanceStarted++;await pending;state.delayedFinanceCompleted++; }
       if (state.failFinance) { status = 503; result = { message: "Fixture unavailable" }; }
-      else result = initialEvents().map(event => ({ event_id: event.id, title: event.title, starts_at: event.starts_at, event_status: event.status, gross_revenue: state.invalidFinance ? "invalid" : 3000, received: 1500, expense_total: 100, expense_paid: 50, musician_agreed: 800, musician_paid: 400, musician_unpriced: 0, transport_total: 100 }));
+      else result = (actor === otherUserId ? [{ ...initialEvents()[1], id: otherEventId, title: "Show exclusivo da conta B" }] : initialEvents()).map(event => ({ event_id: event.id, title: event.title, starts_at: event.starts_at, event_status: event.status, gross_revenue: state.invalidFinance ? "invalid" : 3000, received: 1500, expense_total: 100, expense_paid: 50, musician_agreed: 800, musician_paid: 400, musician_unpriced: 0, transport_total: 100 }));
     } else if (rpc === "stage_finance_event_team") {
       await delay(body.p_event_id === firstId ? 350 : 20);
       result = { status: "ok", items: [{ invitation_id: invitationId, musician_name: body.p_event_id === firstId ? "Equipe A" : "Equipe B", fee: 400, paid_amount: 0 }] };
@@ -95,6 +114,10 @@ async function setup(width) {
 }
 async function noHorizontalOverflow(page, label) {
   assert.ok(await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth + 1), label + " overflows horizontally");
+}
+async function until(predicate) {
+  for (let attempt = 0; attempt < 100; attempt++) { if (predicate()) return;await delay(25); }
+  throw Error("Timed out waiting for synthetic account request");
 }
 
 try {
@@ -202,6 +225,71 @@ try {
       throw error;
     } finally { await context.close(); }
   }
+  const { context, page, state, errors } = await setup(360);
+  let releaseFinance;
+  try {
+    state.adminA = true;
+    const reads = (id, name) => state.reads.get(id + ":" + name) ?? 0;
+    await page.goto(origin + "/financeiro");
+    await page.getByRole("region", { name: "Resumo financeiro" }).waitFor();
+    await page.getByRole("link", { name: "Abrir agenda", exact: true }).click();
+    await page.locator(".agenda-event-list").first().waitFor();
+    await page.getByRole("link", { name: "Voltar ao painel", exact: true }).click();
+    await page.getByRole("heading", { name: "Olá, Teste!", exact: true }).waitFor();
+    await page.getByRole("link", { name: "Ver financeiro", exact: true }).first().click();
+    await page.getByRole("region", { name: "Resumo financeiro" }).waitFor();
+    for (const name of ["profiles", "stage_owner_admin_status", "stage_venue_partner_access"])
+      assert.equal(reads(userId, name), 1, name + " should be shared across client navigation");
+    assert.ok(await page.locator('a[href="/admin/central"]').count() > 0);
+    await page.getByRole("button", { name: "Editar financeiro e pagamentos", exact: true }).first().click();
+    await page.getByLabel("Valor pago a Equipe A", { exact: true }).fill("123,45");
+    state.financeDelay = new Promise(resolve => { releaseFinance = resolve; });
+    await page.locator(".finance-toolbar").getByRole("button", { name: "Atualizar", exact: true }).click();
+    await until(() => state.delayedFinanceStarted === 1);
+
+    // Same storage key and payload as Supabase Auth's real cross-tab BroadcastChannel.
+    // The message only invalidates; getUser must then verify the new cookie's identity.
+    const otherTab = await context.newPage();
+    await otherTab.goto(origin + "/marketplace");
+    const nextSession = sessionFor(otherUserId);
+    await context.addCookies([{ name: "sb-example-auth-token", value: "base64-" + encoded(nextSession), url: origin, sameSite: "Lax" }]);
+    await otherTab.evaluate(value => {
+      const channel = new BroadcastChannel("sb-example-auth-token");
+      channel.postMessage({ event: "SIGNED_IN", session: value });channel.close();
+    }, nextSession);
+    await page.getByText("Show exclusivo da conta B", { exact: true }).waitFor();
+    assert.equal(await page.locator(".finance-event-detail").count(), 0, "old expanded form must be cleared");
+    assert.equal(await page.locator('a[href="/admin/central"]').count(), 0, "old admin presentation must be cleared");
+    releaseFinance();
+    await until(() => state.delayedFinanceCompleted === 1);
+    await delay(150);
+    assert.equal(await page.getByText(initialEvents()[0].title, { exact: true }).count(), 0);
+    assert.equal(await page.getByText("Show exclusivo da conta B", { exact: true }).count(), 1);
+    assert.equal(reads(otherUserId, "profiles"), 1);
+    await page.getByRole("button", { name: "Editar financeiro e pagamentos", exact: true }).click();
+    assert.equal(await page.getByLabel("Valor pago a Equipe B", { exact: true }).inputValue(), "0,00");
+    await noHorizontalOverflow(page, "account switch 360");
+    await page.screenshot({ path: "test-results/account-switch-360.png", fullPage: true });
+
+    await context.clearCookies();
+    await otherTab.evaluate(() => {
+      const channel = new BroadcastChannel("sb-example-auth-token");
+      channel.postMessage({ event: "SIGNED_OUT", session: null });channel.close();
+    });
+    await page.waitForURL(origin + "/login");
+    await page.getByLabel("E-mail", { exact: true }).waitFor();
+    assert.equal(await page.locator(".finance-event").count(), 0);
+    const privateReads = [...state.reads].filter(([key]) => /:(profiles|stage_owner_admin_status|stage_venue_partner_access)$/.test(key));
+    await page.goto(origin + "/marketplace");
+    await page.getByText("Em breve", { exact: true }).waitFor();
+    assert.deepEqual([...state.reads].filter(([key]) => /:(profiles|stage_owner_admin_status|stage_venue_partner_access)$/.test(key)), privateReads,
+      "public marketplace must not query private account data");
+    assert.deepEqual(errors, [], "account scenario browser errors");
+    console.log("PASS shared account: one profile/permission read across SPA navigation, cross-tab identity/logout, stale finance response and draft isolation, public marketplace without private queries");
+  } catch (error) {
+    await page.screenshot({ path: "test-results/failure-account.png", fullPage: true }).catch(() => {});
+    throw error;
+  } finally { releaseFinance?.();await context.close(); }
 } finally {
   await browser?.close();
   server.kill("SIGTERM");

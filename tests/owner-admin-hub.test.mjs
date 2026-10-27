@@ -113,8 +113,10 @@ test("public verification badge only appears when public RPC confirms a publishe
 test("owner-only shortcut and a safe post-login return to the private dashboard",()=>{
  const panel=read("app/painel/page.tsx");
  const login=read("app/login/page.tsx");
- assert.match(panel,/stage_owner_admin_status/);
-  assert.ok(panel.includes("setIsOwnerAdmin(!ownerResult.error&&ownerResult.data===true)"));
+ const store=read("src/domains/account/account-store.ts");
+ assert.match(store,/stage_owner_admin_status/);
+ assert.match(store,/isOwnerAdmin: !owner.error && owner.data === true/);
+ assert.match(panel,/account.permissions/);
   const navigation=read("src/domains/navigation/workspace-navigation.ts");
   assert.match(panel,/isOwnerAdmin,/);
   assert.match(navigation,/role.isOwnerAdmin/);

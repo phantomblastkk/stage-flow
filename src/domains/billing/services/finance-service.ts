@@ -1,4 +1,5 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
+import type { AccountProfile } from "../../account/account-types";
 import type { Organized, Participation, TeamMember } from "../types";
 
 type BillingClient = Pick<SupabaseClient, "auth" | "from" | "rpc">;
@@ -16,12 +17,14 @@ async function currentUser(db: BillingClient, signal?: AbortSignal) {
 }
 
 /** RPCs retain ownership/financial authorization. Never sum a single UI page as a total. */
-export async function loadFinance(db: BillingClient, signal: AbortSignal) {
+export async function loadFinance(db: BillingClient, signal: AbortSignal, accountProfile?: Pick<AccountProfile, "id" | "is_artist" | "artist_kind" | "username">) {
   const user = await currentUser(db, signal);
+  if (accountProfile && accountProfile.id !== user.id) throw new Error("Sua conta mudou. Atualize o financeiro.");
   const [ownerResult, historyResult, profileResult] = await Promise.all([
     db.rpc("stage_finance_organizer_overview").abortSignal(signal),
     db.rpc("stage_my_show_history").abortSignal(signal),
-    db.from("profiles").select("is_artist,artist_kind,username").eq("id", user.id).abortSignal(signal).maybeSingle(),
+    accountProfile ? Promise.resolve({ data: accountProfile, error: null })
+      : db.from("profiles").select("is_artist,artist_kind,username").eq("id", user.id).abortSignal(signal).maybeSingle(),
   ]);
   signal.throwIfAborted();
   if (ownerResult.error || historyResult.error || !Array.isArray(ownerResult.data) || !Array.isArray(historyResult.data))

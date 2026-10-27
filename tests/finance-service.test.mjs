@@ -91,3 +91,13 @@ test("temporary Auth failures are distinct from a missing session", async () => 
   const missing = fixture({}, { data: { user: null }, error: { name: "AuthSessionMissingError" } });
   await assert.rejects(loadFinance(missing.db, new AbortController().signal), FinanceSessionRequired);
 });
+
+test("shared account profile avoids a duplicate profile request but is bound to a freshly validated identity", async () => {
+  const {db,calls}=fixture();
+  const result=await loadFinance(db,new AbortController().signal,{id,...basicProfile});
+  assert.equal(result.ownerId,id);assert.equal(calls.length,2);
+  assert.ok(calls.every(call=>call.name!=="profiles"));
+  const mismatch=fixture();
+  await assert.rejects(loadFinance(mismatch.db,new AbortController().signal,{id:"bbbbbbbb-bbbb-4bbb-8bbb-bbbbbbbbbbbb",...basicProfile}),/Sua conta mudou/);
+  assert.equal(mismatch.calls.length,0);
+});

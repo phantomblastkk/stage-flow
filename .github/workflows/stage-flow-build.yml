@@ -76,8 +76,8 @@ jobs:
         run: node --test tests/owner-admin-hub.test.mjs
       - name: Verify new SaaS navigation, dashboard, security, mobile UI and SEO contracts
         run: node --test tests/workspace-saas.test.mjs tests/workspace-saas-part2.test.mjs tests/workspace-navigation-routes.test.mjs tests/home-pro-notifications.test.mjs tests/artist-booking-musician-refresh.test.mjs
-      - name: Verify agenda services through PostgREST request builder
-        run: node --test tests/agenda-service.test.mjs tests/finance-service.test.mjs tests/finance-report.test.mjs
+      - name: Verify shared accounts and agenda/finance services through PostgREST request builder
+        run: node --test tests/account-store.test.mjs tests/agenda-service.test.mjs tests/finance-service.test.mjs tests/finance-report.test.mjs
       - name: Check TypeScript
         run: npx tsc --noEmit
       - name: Build Next.js
