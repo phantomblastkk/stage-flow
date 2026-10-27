@@ -125,3 +125,14 @@ test("notification links focus the invitation belonging to the signed-in musicia
  assert.match(invites,/stage_my_invitations/);
  assert.doesNotMatch(page,/source_id\)\+"https?:/);
 });
+
+
+test("inbox opens urgent briefing even if marking read fails or session refresh is transient",()=>{
+ assert.match(page,/authClient\.auth\.getUser\(\)/);
+ assert.match(page,/authClient\.auth\.getSession\(\)/);
+ assert.match(page,/Sua conta não foi desconectada/);
+ assert.match(page,/if\(!user\)\{router\.replace\("\/login"\);return;\}/);
+ assert.match(page,/if\(!item\.read_at\)\{\s*try\{await mark\(\[item\.id\]\);\}catch\{/);
+ assert.match(page,/router\.push\(destination\(item\)\)/);
+ assert.match(page,/Mark-as-read failures must not block/);
+});
