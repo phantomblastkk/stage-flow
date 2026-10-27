@@ -118,6 +118,9 @@ test("owner-only shortcut and a safe post-login return to the private dashboard"
  assert.match(panel,/href:"\/admin\/central"/);
  assert.doesNotMatch(panel,/localStorage\.getItem\("isAdmin"\)|user\.email\s*===\s*"[^"]+"/);
  assert.match(page,/router\.replace\("\/login\?next=%2Fadmin%2Fcentral"\)/);
+ assert.match(page,/if\(sessionError\)\{/);
+ assert.match(page,/db\.auth\.getSession\(\)/);
+ assert.match(page,/if\(session\)throw sessionError/);
  assert.match(login,/get\("next"\) === "\/admin\/central"/);
  assert.match(login,/postLoginDestination\(\)/);
  assert.doesNotMatch(login,/location\.href\s*=\s*new URLSearchParams/);
