@@ -12,11 +12,16 @@ export function useStageVerified(kind:PublicKind,slug:string|undefined,enabled:b
   let active=true;
   setVerified(false);
   if(!enabled||!slug)return ()=>{active=false;};
-  void createClient().rpc("stage_public_verified",{
-   p_kind:kind,p_slug:slug
-  }).then(({data,error})=>{
-   if(active)setVerified(!error&&data===true);
-  }).catch(()=>{if(active)setVerified(false);});
+  void (async()=>{
+   try{
+    const {data,error}=await createClient().rpc("stage_public_verified",{
+     p_kind:kind,p_slug:slug
+    });
+    if(active)setVerified(!error&&data===true);
+   }catch{
+    if(active)setVerified(false);
+   }
+  })();
   return ()=>{active=false;};
  },[kind,slug,enabled]);
  return verified;
