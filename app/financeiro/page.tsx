@@ -163,14 +163,14 @@ export default function Financeiro(){
   finally{setBusy(null);}
  }
  function exportCsv(){
-  const lines=[["Data","Tipo","Show","Local","Receita contratada","Recebido manual","Custo extra","Custo músicos acordado","Custo músicos pago","Despesas pagas"]];
+  const lines=[["Data","Tipo","Show","Local","Receita contratada","Recebido manual","A receber estimado","Custo extra","Custo músicos acordado","Custo músicos pago","Despesas pagas","Compromissos a pagar","Resultado líquido previsto","Saldo de caixa registrado","Valores incompletos"]];
   for(const r of visibleOwner)lines.push([r.starts_at,"Organizador",r.title,r.venue||r.city||"",
-   r.gross_revenue??"",r.received,r.expense_total,r.musician_agreed,r.musician_paid,r.expense_paid].map(String));
+   r.gross_revenue??"",r.received,r.gross_revenue===null?"":Math.max(0,val(r.gross_revenue)-val(r.received)),r.expense_total,r.musician_agreed,r.musician_paid,r.expense_paid,Math.max(0,val(r.expense_total)-val(r.expense_paid))+Math.max(0,val(r.musician_agreed)-val(r.musician_paid)),r.gross_revenue===null?"":val(r.gross_revenue)-val(r.expense_total)-val(r.musician_agreed),val(r.received)-val(r.expense_paid)-val(r.musician_paid),r.gross_revenue===null||val(r.musician_unpriced)>0?"Sim":"Não"].map(String));
   for(const r of visibleMusician)lines.push([r.starts_at,"Músico",r.title,r.venue||r.city||"",
-   r.personal_fee??"",r.personal_received??"",r.personal_expenses??"",0,0,r.personal_expenses??0].map(String));
+   r.personal_fee??"",r.personal_received??"",r.personal_fee===null?"":Math.max(0,val(r.personal_fee)-val(r.personal_received)),r.personal_expenses??"",0,0,r.personal_expenses??0,0,r.personal_fee===null?"":val(r.personal_fee)-val(r.personal_expenses),val(r.personal_received)-val(r.personal_expenses),r.personal_fee===null?"Sim":"Não"].map(String));
   const csv="\ufeff"+lines.map(row=>row.map(safeCsvCell).join(";")).join("\r\n");
   const url=URL.createObjectURL(new Blob([csv],{type:"text/csv;charset=utf-8"}));
-  const a=document.createElement("a");a.href=url;a.download="stage-flow-financeiro.csv";a.click();URL.revokeObjectURL(url);
+  const a=document.createElement("a");a.href=url;a.download="stage-flow-financeiro-detalhado.csv";a.click();URL.revokeObjectURL(url);
  }
  return <main className="finance-page"><div className="container">
   <nav className="nav"><Link className="brand" href="/"><span className="brand-mark">S</span> stage flow</Link>
@@ -240,6 +240,10 @@ export default function Financeiro(){
       <strong>{r.title}</strong><small>{new Date(r.starts_at).toLocaleString("pt-BR",{dateStyle:"medium",timeStyle:"short"})} · Organizador</small>
       </div><span className="finance-event-total">{r.gross_revenue===null?"Receita não informada":cash(r.gross_revenue)}</span></div>
      <p>Recebido {cash(r.received)} · Despesas extras {cash(r.expense_total)} · Cachês acordados {cash(r.musician_agreed)} · Pagos à banda {cash(r.musician_paid)}</p>
+     <p>Resultado líquido previsto: <strong>{r.gross_revenue===null?"A definir":cash(val(r.gross_revenue)-val(r.expense_total)-val(r.musician_agreed))}</strong>
+      {r.gross_revenue===null||val(r.musician_unpriced)>0?" (parcial: valores pendentes)":""}
+      {" · "}A receber: <strong>{r.gross_revenue===null?"A definir":cash(Math.max(0,val(r.gross_revenue)-val(r.received)))}</strong>
+      {" · "}A pagar: <strong>{cash(Math.max(0,val(r.expense_total)-val(r.expense_paid))+Math.max(0,val(r.musician_agreed)-val(r.musician_paid)))}</strong></p>
      <button className="btn btn-quiet" type="button" aria-expanded={expanded===r.event_id}
        onClick={()=>void openTeam(r.event_id)}><PencilLine size={15}/>
        {expanded===r.event_id?"Fechar lançamento":"Editar financeiro e pagamentos"}</button>
@@ -264,6 +268,7 @@ export default function Financeiro(){
       <div className="finance-event-top"><div><strong>{r.title}</strong>
        <small>{new Date(r.starts_at).toLocaleDateString("pt-BR")} · Participação como músico</small></div>
        <span className="finance-event-total">{cash(r.personal_fee)}</span></div>
+      <p>Resultado estimado: <strong>{r.personal_fee===null?"A definir":cash(val(r.personal_fee)-val(r.personal_expenses))}</strong>{" · "}A receber: <strong>{r.personal_fee===null?"A definir":cash(Math.max(0,val(r.personal_fee)-val(r.personal_received)))}</strong></p>
       <p>Recebido pessoal {r.has_financial_record?cash(r.personal_received):"Não lançado"}
         {" · "}Despesas pessoais {r.has_financial_record?cash(r.personal_expenses):"Não lançadas"}</p>
       <Link className="btn btn-quiet" href="/meus-shows"><PencilLine size={14}/> Registrar meu recebimento</Link>
