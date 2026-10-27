@@ -23,6 +23,7 @@ function WorkspaceLink({item,path,onNavigate}:{item:WorkspaceNavItem;path:string
 export default function WorkspaceSidebar({role}:{role:WorkspaceRole}){
  const path=usePathname();
  const [mobileOpen,setMobileOpen]=useState(false);
+ const [expanded,setExpanded]=useState<Record<string,boolean>>({});
  const toggle=useRef<HTMLButtonElement>(null);
  const groups=workspaceNavigation(role);
  useEffect(()=>{
@@ -46,8 +47,14 @@ export default function WorkspaceSidebar({role}:{role:WorkspaceRole}){
   <nav className="sf-workspace-group-list" aria-label="Navegação do StageFlow">
    <WorkspaceLink item={homeItem} path={path} onNavigate={()=>setMobileOpen(false)}/>
    {groups.map(group=><details className="sf-workspace-group" key={group.title}
-     defaultOpen={group.items.some(x=>path===x.href.split("?")[0]||
-      path.startsWith(x.href.split("?")[0]+"/"))||group.title==="Agenda"}>
+     open={expanded[group.title]??(group.items.some(x=>path===x.href.split("?")[0]||
+      path.startsWith(x.href.split("?")[0]+"/"))||group.title==="Agenda")}
+     onToggle={event=>{
+      const opened=event.currentTarget.open;
+      setExpanded(previous=>previous[group.title]===opened?previous:{
+       ...previous,[group.title]:opened
+      });
+     }}>
     <summary><group.icon size={17} aria-hidden="true"/>
      <span>{group.title}</span><ChevronDown size={15} className="sf-workspace-chevron"/></summary>
     <div className="sf-workspace-group-items">
