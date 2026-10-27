@@ -81,6 +81,13 @@ export default function MyShowsPage(){
     (view==="all"||r.kind===view)&&
     (year==="all"||monthKey(r.starts_at).startsWith(year))
   ),[rows,year,view]);
+  // The history RPC already returns only the signed-in user's own shows
+  // and accepted participations. Show upcoming ones before the past archive.
+  const upcoming=useMemo(()=>scoped.filter(r=>
+    r.event_status!=="cancelled"&&r.event_status!=="completed"&&
+    new Date(r.starts_at).getTime()>Date.now()
+  ).sort((a,b)=>new Date(a.starts_at).getTime()-new Date(b.starts_at).getTime())
+   .slice(0,6),[scoped]);
   const past=useMemo(()=>scoped.filter(r=>new Date(r.starts_at).getTime()<=Date.now()),[scoped]);
   const performed=past.filter(r=>r.performed&&r.event_status!=="cancelled");
   const unconfirmed=past.filter(r=>!r.performed&&r.event_status!=="cancelled");
@@ -265,6 +272,37 @@ export default function MyShowsPage(){
     </div>
     {loading?<div className="feature"><LoaderCircle size={18}/> Carregando seus registros...</div>:
       pane==="history"?<>
+        {upcoming.length>0&&<section className="show-history-upcoming" aria-label="Próximas apresentações">
+          <div className="show-history-upcoming-head">
+            <div>
+              <span className="eyebrow"><Clock3 size={14}/> PRÓXIMAS APRESENTAÇÕES</span>
+              <h2>Seus próximos shows</h2>
+              <p>Convites aceitos e shows que você organiza. Consulte o briefing antes de sair para a apresentação.</p>
+            </div>
+            <Link className="btn btn-quiet" href="/notificacoes"><RefreshCw size={15}/> Avisos de mudanças</Link>
+          </div>
+          <div className="show-history-upcoming-list">
+            {upcoming.map((r,index)=><article className="show-history-upcoming-card" key={r.kind+":"+r.record_id}>
+              <div className="show-history-upcoming-label">
+                <span>{index===0?"Próximo show":r.kind==="organized"?"Show organizado":"Participação confirmada"}</span>
+                <span>{r.kind==="organized"?"Organizador":"Músico convidado"}</span>
+              </div>
+              <h3>{r.title}</h3>
+              <p className="show-history-meta"><CalendarDays size={15}/>{date(r.starts_at)}</p>
+              {(r.venue||r.city)&&<p className="show-history-meta"><MapPin size={15}/>{[r.venue,r.city].filter(Boolean).join(" · ")}</p>}
+              {r.kind==="participation"&&r.organizer_name&&<p className="show-history-meta">Organização: {r.organizer_name}</p>}
+              <div className="show-history-upcoming-actions">
+                <Link className="btn btn-primary" href={"/eventos/operacao?evento="+encodeURIComponent(r.event_id)}>
+                  <Clock3 size={15}/> Ver horários e briefing
+                </Link>
+                {r.kind==="participation"&&<Link className="btn btn-quiet" href="/meus-convites">
+                  <Guitar size={15}/> Meu convite
+                </Link>}
+              </div>
+            </article>)}
+          </div>
+          <p className="show-history-upcoming-tip"><ShieldCheck size={15}/> Alterações de horários e logística podem gerar avisos na Central de Notificações. Não são enviados SMS ou WhatsApp automáticos.</p>
+        </section>}
         <div className="show-history-kpis">
           <span><CheckCircle2 size={18}/><strong>{performed.length}</strong> realizados</span>
           <span><Clock3 size={18}/><strong>{unconfirmed.length}</strong> a confirmar</span>
