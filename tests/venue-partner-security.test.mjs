@@ -153,3 +153,43 @@ test("no deployment is enabled for develop",()=>{
   const cfg=JSON.parse(read("vercel.json"));
   assert.equal(cfg.git?.deploymentEnabled?.develop,false);
 });
+
+
+test("artist venue suggestions remain private until explicit global admin approval",()=>{
+  const approval=read("supabase/venue_approval_workflow_migration.sql");
+  const suggestion=read("app/locais/page.tsx");
+  const admin=read("app/admin/casas/page.tsx");
+  const review=sqlFunction(approval,"stage_venue_admin_review");
+  const submit=sqlFunction(approval,"stage_venue_submit");
+  const mine=sqlFunction(approval,"stage_venue_my_submissions");
+  const guard=sqlFunction(approval,"stage_venue_enforce_approval");
+  assert.match(approval,/add column if not exists approval_status text not null default 'pending'/);
+  assert.match(approval,/stage_venue_unapproved_not_public/);
+  assert.match(approval,/active=false and is_official=false and is_partner=false/);
+  assert.match(approval,/slug is null and logo_path is null and cover_path is null/);
+  assert.match(approval,/revoke insert \(name,address,city_id,submitted_by\) on public\.venues from authenticated/);
+  assert.match(submit,/auth\.uid\(\) is null/);
+  assert.match(submit,/stage_venue_submit/);
+  assert.match(submit,/active,approval_status/);
+  assert.match(submit,/false,'pending'/);
+  assert.match(submit,/where submitted_by=auth\.uid\(\)/);
+  assert.match(guard,/new\.approval_status:='pending'/);
+  assert.match(guard,/new\.is_official:=false/);
+  assert.match(guard,/new\.logo_path:=null/);
+  assert.match(review,/if not public\.stage_venue_is_admin\(\)/);
+  assert.match(review,/v_status<>'pending'/);
+  assert.match(review,/p_decision in \('approved','rejected'\)/);
+  assert.match(review,/is_official=false,is_partner=false/);
+  assert.match(mine,/submitted_by=auth\.uid\(\)/);
+  assert.match(approval,/grant execute on function public\.stage_venue_submit\(text,bigint,text\) to authenticated/);
+  assert.match(approval,/grant execute on function public\.stage_venue_admin_review\(uuid,text\) to authenticated/);
+  assert.match(suggestion,/\.rpc\("stage_venue_submit"/);
+  assert.match(suggestion,/\.rpc\("stage_venue_my_submissions"/);
+  assert.doesNotMatch(suggestion,/\.from\("venues"\)\.insert/);
+  assert.match(suggestion,/Aguardando análise/);
+  assert.match(admin,/\.rpc\("stage_venue_admin_review"/);
+  assert.match(admin,/onClick=\{\(\)=>void reviewVenue\("approved"\)\}/);
+  assert.match(admin,/onClick=\{\(\)=>void reviewVenue\("rejected"\)\}/);
+  assert.match(admin,/form\.approval_status!=="approved"/);
+  assert.match(admin,/Gerenciar programação, flyers e fotos/);
+});
