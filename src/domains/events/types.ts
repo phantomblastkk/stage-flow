@@ -42,3 +42,7 @@ export type EventDraft = {
   endsAt: string;
   publicly: boolean;
 };
+
+export type AgendaWindow = { from: string; to: string };
+export type AgendaCursor = { startsAt: string; id: string };
+export type AgendaSource = "owned" | "accepted";

@@ -2,30 +2,15 @@
 import { FormEvent, useCallback, useEffect, useMemo, useRef, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { ArrowLeft, ArrowRight, BarChart3, CalendarDays, CheckCircle2, CircleAlert, Download, LoaderCircle, LockKeyhole, PencilLine, RefreshCw, Save, Wallet } from "lucide-react";
+import { ArrowLeft, BarChart3, CalendarDays, CircleAlert, Download, LockKeyhole, PencilLine, RefreshCw, Save, Wallet } from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
 import EventBudgetPanel from "@/components/event-budget-panel";
 import ProFeatureLock from "@/components/pro-feature-lock";
 import { Button, EmptyState, LoadingState, StatCard } from "@/src/components/ui";
+import { FinanceSessionRequired, loadFinance, loadFinanceTeam, saveMusicianPayment } from "@/src/domains/billing/services/finance-service";
+import type { Mode, Organized, Participation, TeamMember } from "@/src/domains/billing/types";
 import "./financeiro.css";
 
-type Organized = {
- event_id:string;title:string;starts_at:string;venue:string|null;city:string|null;
- event_status:string;has_budget:boolean;gross_revenue:number|null;received:number;
- expense_total:number;expense_paid:number;transport_total:number;equipment_total:number;
- staff_total:number;food_total:number;other_total:number;
- musician_agreed:number;musician_paid:number;musician_unpriced:number;musician_unpaid_count:number;
-};
-type Participation = {
- kind:"participation";record_id:string;event_id:string;title:string;starts_at:string;
- venue:string|null;city:string|null;event_status:string;personal_fee:number|null;
- personal_received:number|null;personal_expenses:number|null;has_financial_record:boolean;
-};
-type TeamMember={
- invitation_id:string;musician_name:string;invitation_status:string;
- fee:number|null;fee_confirmed:boolean;paid_amount:number;
-};
-type Mode="all"|"organizer"|"musician";
 const money=new Intl.NumberFormat("pt-BR",{style:"currency",currency:"BRL"});
 const cash=(n:number|null|undefined)=>n==null?"A definir":money.format(Number(n));
 const val=(n:number|null|undefined)=>Number(n??0);
@@ -62,42 +47,34 @@ export default function Financeiro(){
  const [nonce,setNonce]=useState(0);
  const [reportAccess,setReportAccess]=useState(false);
  const [reportAccessReady,setReportAccessReady]=useState(false);
+ const [coverageLimited,setCoverageLimited]=useState(false);
+ const financeRequest=useRef<AbortController|null>(null);
  const load=useCallback(async()=>{
-  const db=createClient();
-  const {data:{user},error:authError}=await db.auth.getUser();
-  if(authError||!user){router.replace("/login");return;}
-  const [ownerResult,historyResult,profileResult]=await Promise.all([
-   db.rpc("stage_finance_organizer_overview"),db.rpc("stage_my_show_history"),
-   db.from("profiles").select("is_artist,artist_kind,username").eq("id",user.id).maybeSingle()
-  ]);
-  if(ownerResult.error)throw ownerResult.error;
-  if(historyResult.error)throw historyResult.error;
-  if(!Array.isArray(ownerResult.data)||!Array.isArray(historyResult.data))
-   throw Error("O financeiro retornou dados inesperados.");
-  if(profileResult.error)throw profileResult.error;
-  const isSinger=profileResult.data?.is_artist===true&&(profileResult.data?.artist_kind==="lead"||(profileResult.data?.artist_kind==null&&Boolean(profileResult.data?.username)));
-  if(isSinger){
-   const {data:entitlement,error:entitlementError}=await db.rpc("stage_my_pro_site_publication");
-   setReportAccess(!entitlementError&&entitlement?.entitled===true);
-  }else setReportAccess(true);
-  setReportAccessReady(true);
-  setOrganized(ownerResult.data as Organized[]);
-  setParticipations((historyResult.data as Participation[]).filter(r=>r.kind==="participation"));
- },[router]);
+  financeRequest.current?.abort();
+  const request=new AbortController();financeRequest.current=request;
+  const result=await loadFinance(createClient(),request.signal);
+  if(request.signal.aborted)return;
+  setReportAccess(result.reportAccess);setReportAccessReady(true);
+  setCoverageLimited(result.coverageLimited);
+  setOrganized(result.organized);setParticipations(result.participations);
+ },[]);
  useEffect(()=>{
   let active=true;
   setLoading(true);setError("");
-  void load().catch(e=>{if(active)setError(e instanceof Error?e.message:"Erro ao carregar o financeiro.");})
-   .finally(()=>{if(active)setLoading(false);});
-  return()=>{active=false};
- },[load,nonce]);
+  void load().catch(error=>{
+   if(!active||error?.name==="AbortError")return;
+   if(error instanceof FinanceSessionRequired)router.replace("/login");
+   else setError(error instanceof Error?error.message:"Erro ao carregar o financeiro.");
+  }).finally(()=>{if(active)setLoading(false);});
+  return()=>{active=false;financeRequest.current?.abort();};
+ },[load,nonce,router]);
  const years=useMemo(()=>[...new Set([...organized,...participations].map(r=>yearMonth(r.starts_at).slice(0,4)))].sort().reverse(),[organized,participations]);
- const visibleOwner=organized.filter(r=>r.event_status!=="cancelled" &&mode!=="musician"
+ const visibleOwner=useMemo(()=>organized.filter(r=>r.event_status!=="cancelled" &&mode!=="musician"
   &&(year==="all"||yearMonth(r.starts_at).startsWith(year))
-  &&(month==="all"||yearMonth(r.starts_at)===month));
- const visibleMusician=participations.filter(r=>r.event_status!=="cancelled"&&mode!=="organizer"
+  &&(month==="all"||yearMonth(r.starts_at)===month)),[organized,mode,year,month]);
+ const visibleMusician=useMemo(()=>participations.filter(r=>r.event_status!=="cancelled"&&mode!=="organizer"
   &&(year==="all"||yearMonth(r.starts_at).startsWith(year))
-  &&(month==="all"||yearMonth(r.starts_at)===month));
+  &&(month==="all"||yearMonth(r.starts_at)===month)),[participations,mode,year,month]);
  const ownerRevenue=visibleOwner.filter(r=>r.gross_revenue!==null).reduce((n,r)=>n+val(r.gross_revenue),0);
  const musicianRevenue=visibleMusician.filter(r=>r.personal_fee!==null).reduce((n,r)=>n+val(r.personal_fee),0);
  const received=visibleOwner.reduce((n,r)=>n+val(r.received),0)+
@@ -157,10 +134,8 @@ export default function Financeiro(){
   const request=new AbortController();teamRequest.current=request;
   setExpanded(id);setTeam([]);setTeamError("");setEditPaid({});setTeamLoading(true);
   try{
-   const {data,error:rpcError}=await createClient().rpc("stage_finance_event_team",{p_event_id:id}).abortSignal(request.signal);
+   const rows=await loadFinanceTeam(createClient(),id,request.signal);
    if(request.signal.aborted)return;
-   if(rpcError||data?.status!=="ok"||!Array.isArray(data.items))throw Error("Não foi possível carregar os pagamentos da equipe. Tente novamente.");
-   const rows=data.items as TeamMember[];
    setTeam(rows);setEditPaid(Object.fromEntries(rows.map(r=>[r.invitation_id,inputValue(r.paid_amount)])));
   }catch(e){if(!request.signal.aborted)setTeamError(e instanceof Error?e.message:"Não foi possível consultar a equipe.");}
   finally{if(!request.signal.aborted)setTeamLoading(false);}
@@ -171,15 +146,11 @@ export default function Financeiro(){
   if(amount===null){setTeamError("Valor inválido: use reais e até duas casas decimais.");return;}
   setBusy(invitationId);setTeamError("");setNotice("");
   try{
-   const {data,error:rpcError}=await createClient().rpc("stage_finance_save_musician_payment",{
-    p_invitation_id:invitationId,p_paid:amount
-   });
-   if(rpcError||data!=="saved")throw Error(data==="amount_exceeds_agreed"?
-    "O valor pago informado não pode superar o cachê acordado.":rpcError?.message||"Não foi possível salvar.");
+   await saveMusicianPayment(createClient(),invitationId,amount);
    setTeam(rows=>rows.map(r=>r.invitation_id===invitationId?{...r,paid_amount:amount}:r));
    setNotice("Pagamento registrado manualmente; nenhuma transferência foi realizada.");
-   await load();
-  }catch(err){setTeamError(err instanceof Error?err.message:"Erro ao salvar.");}
+   setNonce(value=>value+1);
+  }catch(err){if(err instanceof FinanceSessionRequired)router.replace("/login");else setTeamError(err instanceof Error?err.message:"Erro ao salvar.");}
   finally{setBusy(null);}
  }
  function exportCsv(){
@@ -215,10 +186,11 @@ export default function Financeiro(){
   </details>
   <div className="finance-toolbar">
    <button className="btn btn-quiet" type="button" disabled={loading} onClick={()=>setNonce(n=>n+1)}><RefreshCw size={15}/> Atualizar</button>
-   {reportAccess?<button className="btn btn-quiet" type="button" disabled={loading||Boolean(error)||!hasAny||!reportAccessReady} onClick={exportCsv}><Download size={15}/> Exportar CSV detalhado</button>:
+   {reportAccess?<button className="btn btn-quiet" type="button" disabled={loading||Boolean(error)||coverageLimited||!hasAny||!reportAccessReady} onClick={exportCsv}><Download size={15}/> Exportar CSV detalhado</button>:
     <Link className="btn btn-quiet" href="/planos"><LockKeyhole size={15}/> Exportação detalhada · Cantor Pro</Link>}
   </div>
   {loading?<LoadingState label="Carregando valores privados…"/>:error?<EmptyState title="Financeiro indisponível" description="Os valores não foram carregados. Tente novamente para consultar seu resumo." action={<Button onClick={()=>setNonce(n=>n+1)}>Tentar novamente</Button>}/>:<>
+   {coverageLimited&&<p className="finance-warning" role="status"><CircleAlert size={17}/>O histórico disponível atingiu o limite de shows recentes. Os totais podem não incluir períodos antigos; a exportação está pausada para evitar um relatório incompleto.</p>}
    <section className="finance-kpis" aria-label="Resumo financeiro">
     {[
      ["Recebido registrado",cash(received),"Informado manualmente"],

@@ -20,7 +20,6 @@ server.stdout.on("data", data => { serverLog += data; });
 server.stderr.on("data", data => { serverLog += data; });
 let browser;
 const userId = "aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa";
-const otherId = "bbbbbbbb-bbbb-4bbb-8bbb-bbbbbbbbbbbb";
 const firstId = "11111111-1111-4111-8111-111111111111";
 const secondId = "22222222-2222-4222-8222-222222222222";
 const guestId = "33333333-3333-4333-8333-333333333333";
@@ -30,12 +29,25 @@ const encoded = value => Buffer.from(JSON.stringify(value)).toString("base64url"
 const token = encoded({ alg: "HS256", typ: "JWT" }) + "." + encoded({ sub: userId, role: "authenticated", exp: 4102444800 }) + ".fixture";
 const session = { access_token: token, refresh_token: "fixture-refresh", token_type: "bearer", expires_in: 3600, expires_at: 4102444800, user };
 const initialEvents = () => [firstId, secondId].map((id, index) => ({ id, title: index ? "Segundo show" : "ShowComNomeMuitoLongoSemEspaços".repeat(4), description: "Detalhes do show de teste", venue: "Local de teste", city: "São Paulo", starts_at: "2026-11-01T23:00:00Z", ends_at: null, status: "draft", show_publicly: false }));
+const moreEvents = () => Array.from({ length: 20 }, (_, index) => ({ ...initialEvents()[1], id: `60000000-0000-4000-8000-${String(index + 1).padStart(12, "0")}`, title: "Show adicional " + (index + 1), starts_at: index >= 18 ? "2026-11-25T23:00:00Z" : "2026-11-01T23:00:00Z" }));
+function filtered(rows, url) {
+  const idKey = url.pathname.endsWith("/events") ? "id" : "event_id";
+  let result = rows.filter(row => url.searchParams.getAll("starts_at").every(filter => {
+    const value = Date.parse(filter.slice(filter.indexOf(".") + 1));
+    return filter.startsWith("gte.") ? Date.parse(row.starts_at) >= value : Date.parse(row.starts_at) < value;
+  }));
+  const cursor = url.searchParams.get("or")?.match(/starts_at.gt.([^,]+),and\(starts_at.eq.([^,]+),(?:id|event_id).gt.([0-9a-f-]+)\)/);
+  if (cursor) result = result.filter(row => Date.parse(row.starts_at) > Date.parse(cursor[1]) || (Date.parse(row.starts_at) === Date.parse(cursor[2]) && row[idKey] > cursor[3]));
+  result.sort((a, b) => Date.parse(a.starts_at) - Date.parse(b.starts_at) || a[idKey].localeCompare(b[idKey]));
+  const limit = Number(url.searchParams.get("limit") ?? result.length);
+  return result.slice(0, limit);
+}
 const guest = { event_id: guestId, title: "Participação aceita de teste", venue: "Palco de teste", city: "São Paulo", starts_at: "2026-11-02T23:00:00Z", ends_at: null, event_status: "published", organizer_name: "Organizador de teste" };
 
 async function setup(width) {
-  const context = await browser.newContext({ viewport: { width, height: 900 } });
+  const context = await browser.newContext({ viewport: { width, height: 900 }, timezoneId: "America/Sao_Paulo" });
   await context.addCookies([{ name: "sb-example-auth-token", value: "base64-" + encoded(session), url: origin, sameSite: "Lax" }]);
-  const state = { events: initialEvents(), accepted: false, failAgenda: false, failFinance: false, writes: [] };
+  const state = { events: [...initialEvents(), ...moreEvents(), { ...initialEvents()[1], id: "77777777-7777-4777-8777-777777777777", title: "Show de dezembro", starts_at: "2026-12-02T23:00:00Z" }], accepted: false, failAgenda: false, failFinance: false, writes: [] };
   await context.route(api + "/**", async route => {
     const request = route.request();
     const url = new URL(request.url());
@@ -48,18 +60,20 @@ async function setup(width) {
       if (request.method() === "POST") {
         assert.equal(body.producer_id, userId);
         state.writes.push(body);
-        state.events.push({ ...body, id: "55555555-5555-4555-8555-555555555555" });
-        result = null;
+        const created={ ...body, id: "55555555-5555-4555-8555-555555555555" };
+        state.events.push(created);
+        result = created;
       } else if (request.method() === "DELETE") {
         assert.equal(url.searchParams.get("producer_id"), "eq." + userId);
         const id = url.searchParams.get("id").slice(3);
         state.events = state.events.filter(event => event.id !== id);
         result = { id };
       } else if (state.failAgenda) { status = 503; result = { code: "unavailable", message: "Fixture unavailable" }; }
-      else result = state.events;
+      else if(url.searchParams.has("id")) result = state.events.find(event=>event.id===url.searchParams.get("id").slice(3)) ?? null;
+      else result = filtered(state.events,url);
     } else if (rpc === "stage_venue_partner_access") result = { status: "ok", items: [] };
     else if (rpc === "stage_owner_admin_status") result = false;
-    else if (rpc === "stage_accepted_shows") result = state.accepted ? [guest] : [];
+    else if (rpc === "stage_accepted_shows") result = filtered(state.accepted ? [guest] : [],url);
     else if (rpc === "stage_finance_organizer_overview") {
       if (state.failFinance) { status = 503; result = { message: "Fixture unavailable" }; }
       else result = initialEvents().map(event => ({ event_id: event.id, title: event.title, starts_at: event.starts_at, event_status: event.status, gross_revenue: 3000, received: 1500, expense_total: 100, expense_paid: 50, musician_agreed: 800, musician_paid: 400, musician_unpriced: 0, transport_total: 100 }));
@@ -74,6 +88,7 @@ async function setup(width) {
     catch (error) { if (!/closed|disposed|intercept|invalid/i.test(String(error))) throw error; }
   });
   const page = await context.newPage();
+  await page.clock.setFixedTime(new Date("2026-11-01T12:00:00-03:00"));
   const errors = [];
   page.on("pageerror", error => errors.push(error.message));
   return { context, page, state, errors };
@@ -98,6 +113,16 @@ try {
       await page.locator(".sf-workspace-route-ready").waitFor();
       await page.locator(".agenda-event-list").first().waitFor();
       assert.equal(await page.locator("#agenda-create-form").isVisible(), false);
+      assert.equal(await page.locator(".agenda-event-list").first().locator("article").count(),20);
+      await page.getByRole("button",{name:/^25 de novembro.*show próprio/}).waitFor();
+      await page.getByRole("button",{name:"Carregar mais shows próprios",exact:true}).click();
+      await page.getByText("22 shows próprios carregados neste período",{exact:true}).waitFor();
+      assert.equal(await page.getByRole("button",{name:"Carregar mais shows próprios",exact:true}).count(),0);
+      await page.getByRole("button",{name:"Próximo mês",exact:true}).click();
+      await page.getByText("Show de dezembro",{exact:true}).waitFor();
+      assert.equal(await page.locator(".agenda-event-list").first().locator("article").count(),1);
+      await page.getByRole("button",{name:"Mês anterior",exact:true}).click();
+      await page.getByText("20 shows próprios carregados neste período",{exact:true}).waitFor();
       await noHorizontalOverflow(page, "agenda " + width);
       await page.getByRole("button", { name: "Novo show", exact: true }).first().click();
       assert.equal(await page.locator("#event-title").evaluate(node => node === document.activeElement), true);
@@ -115,7 +140,7 @@ try {
       await page.getByRole("button", { name: "Excluir Novo show de teste", exact: true }).click();
       await page.getByRole("dialog").waitFor();
       await page.getByRole("dialog").getByRole("button", { name: "Cancelar", exact: true }).click();
-      assert.equal(state.events.length, 3);
+      assert.equal(state.events.length, 24);
       await page.evaluate(() => scrollTo(0, 0));
       await page.screenshot({ path: `test-results/agenda-${width}.png`, fullPage: true });
       await page.goto(origin + "/financeiro");
@@ -134,6 +159,10 @@ try {
       await noHorizontalOverflow(page, "finance editor " + width);
       await page.screenshot({ path: `test-results/finance-${width}.png`, fullPage: true });
       if (width === 360) {
+        const focusId=moreEvents().at(-1).id;
+        await page.goto(origin+"/eventos?evento="+focusId);
+        await page.locator("#stage-event-"+focusId).waitFor();
+        assert.equal(await page.locator("#stage-event-"+focusId).count(),1);
         await page.goto(origin + "/meus-convites");
         await page.getByRole("button", { name: /Aceitar/ }).first().click();
         await page.getByText(/Presença confirmada!/).waitFor();
@@ -142,14 +171,14 @@ try {
         state.failAgenda = true;
         await page.reload();
         await page.getByRole("alert").filter({ hasText: "Não foi possível carregar seus shows" }).waitFor();
-        assert.equal(await page.getByText("Sua agenda começa aqui", { exact: true }).count(), 0);
+        assert.equal(await page.getByText("Nenhum show próprio neste mês", { exact: true }).count(), 0);
         state.failFinance = true;
         await page.goto(origin + "/financeiro");
         await page.getByText("Financeiro indisponível", { exact: true }).waitFor();
         assert.equal(await page.locator('section[aria-label="Resumo financeiro"]').count(), 0);
       }
       assert.deepEqual(errors, [], "browser console errors");
-      console.log(`PASS ${width}px: agenda, creation validation, delete cancellation, finance filters and team response isolation`);
+      console.log(`PASS ${width}px: month/cursor pagination, deep links, agenda creation, finance filters and team response isolation`);
     } catch (error) {
       await page.screenshot({ path: `test-results/failure-${width}.png`, fullPage: true }).catch(() => {});
       throw error;

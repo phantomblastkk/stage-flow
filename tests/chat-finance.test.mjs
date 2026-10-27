@@ -9,6 +9,7 @@ const finance=read("supabase/finance_dashboard_migration.sql");
 const inbox=read("app/conversas/page.tsx");
 const catalog=read("components/marketplace-catalog.tsx");
 const money=read("app/financeiro/page.tsx");
+const billing=read("src/domains/billing/services/finance-service.ts");
 const worker=read("app/api/stage-chat/whatsapp-dispatch/route.ts");
 const dashboard=read("app/painel/page.tsx");
 function func(sql,name){
@@ -64,8 +65,8 @@ test("finance controls require ownership and never move money",()=>{
  assert.match(func(finance,"stage_finance_save_musician_payment"),/e\.producer_id=auth\.uid\(\)/);
  assert.match(func(finance,"stage_finance_event_team"),/producer_id=auth\.uid\(\)/);
  assert.doesNotMatch(finance,/\bpg_net\b|\bhttp_post\b/i);
- assert.match(money,/stage_finance_organizer_overview/);
- assert.match(money,/stage_my_show_history/);
+ assert.match(billing,/stage_finance_organizer_overview/);
+ assert.match(billing,/stage_my_show_history/);
  assert.match(money,/EventBudgetPanel/);
  assert.match(money,/Exportar CSV/);
  assert.match(money,/Resultado líquido estimado/);
@@ -111,13 +112,13 @@ test("advanced singer reports use Pro entitlement while core finances remain ava
  assert.match(plans,/Relatórios financeiros avançados do cantor/);
  assert.match(plans,/Controle financeiro básico por show/);
  assert.match(plans,/Galeria profissional, vídeos e destaques/);
- assert.match(money,/stage_my_pro_site_publication/);
- assert.match(money,/entitlement\?\.entitled===true/);
+ assert.match(billing,/stage_my_pro_site_publication/);
+ assert.match(billing,/entitlement\?\.entitled\s*===\s*true/);
  assert.match(money,/reportAccess\?<section className="finance-two">/);
  assert.match(money,/reportAccess&&<p>Resultado líquido previsto:/);
  assert.match(money,/reportAccess&&<p>Resultado estimado:/);
  assert.match(money,/href="\/planos"/);
- assert.match(money,/disabled=\{loading\|\|Boolean\(error\)\|\|!hasAny\|\|!reportAccessReady\}/);
+ assert.match(money,/disabled=\{loading\|\|Boolean\(error\)\|\|coverageLimited\|\|!hasAny\|\|!reportAccessReady\}/);
 });
 
 test("locked Pro modules show blurred preview and upgrade without hiding free accounting",()=>{

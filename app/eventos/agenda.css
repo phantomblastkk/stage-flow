@@ -45,3 +45,8 @@
  .agenda-page .section-heading{margin-bottom:18px}
  .agenda-page .section-heading h2{font-size:24px}
 }
+
+.agenda-pagination{display:flex;gap:12px;flex-wrap:wrap;align-items:center;justify-content:space-between;margin:0 0 24px}
+.agenda-pagination>span,.agenda-marker-note{font-size:12px;line-height:1.6;color:var(--sf-ui-muted)}
+.agenda-pagination>p{width:100%;color:var(--sf-ui-danger);font-size:12px}
+@media(max-width:600px){.agenda-pagination>.sf-ui-button{width:100%}}

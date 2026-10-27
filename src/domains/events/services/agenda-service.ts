@@ -1,5 +1,5 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
-import type { CitySuggestion, EventDraft, EventRow, GuestShow, VenueSuggestion } from "../types";
+import type { AgendaCursor, AgendaSource, AgendaWindow, CitySuggestion, EventDraft, EventRow, GuestShow, VenueSuggestion } from "../types";
 
 // The browser uses only its normal authenticated client; RLS is still authoritative.
 type AgendaClient = Pick<SupabaseClient, "auth" | "from" | "rpc">;
@@ -18,19 +18,101 @@ async function currentUser(db: AgendaClient, signal?: AbortSignal) {
   return user;
 }
 
-export async function loadAgenda(db: AgendaClient, signal: AbortSignal) {
+export const AGENDA_PAGE_SIZE = 20;
+const CALENDAR_MARKER_LIMIT = 500;
+const uuid = /^[0-9a-f]{8}(?:-[0-9a-f]{4}){3}-[0-9a-f]{12}$/i;
+
+/** Local calendar boundaries are converted to UTC once, including DST transitions. */
+export function agendaWindow(month: Date, day: string | null = null): AgendaWindow {
+  const year = month.getFullYear(), index = month.getMonth();
+  let from = new Date(year, index, 1), to = new Date(year, index + 1, 1);
+  if (day) {
+    if (!/^\d{4}-\d{2}-\d{2}$/.test(day)) throw new Error("Data inválida.");
+    const [y, m, d] = day.split("-").map(Number);
+    from = new Date(y, m - 1, d); to = new Date(y, m - 1, d + 1);
+    if (y !== year || m - 1 !== index || from.getDate() !== d) throw new Error("Data fora do mês selecionado.");
+  }
+  return { from: from.toISOString(), to: to.toISOString() };
+}
+
+function validateWindow(window: AgendaWindow) {
+  const length = Date.parse(window.to) - Date.parse(window.from);
+  if (!Number.isFinite(length) || length <= 0 || length > 32 * 86400000)
+    throw new Error("Selecione um período de até um mês.");
+}
+
+function pageQuery(db: AgendaClient, ownerId: string, window: AgendaWindow, source: AgendaSource, signal: AbortSignal, cursor?: AgendaCursor) {
+  validateWindow(window);
+  const idColumn = source === "owned" ? "id" : "event_id";
+  let query = source === "owned"
+    ? db.from("events").select(eventColumns).eq("producer_id", ownerId)
+    : db.rpc("stage_accepted_shows");
+  query = query.gte("starts_at", window.from).lt("starts_at", window.to);
+  if (cursor) {
+    const time = new Date(cursor.startsAt);
+    if (!uuid.test(cursor.id) || !/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}(?:\.\d{1,6})?(?:Z|[+-]\d{2}:\d{2})$/.test(cursor.startsAt) || !Number.isFinite(time.getTime())) throw new Error("Página inválida. Atualize a agenda.");
+    const date = cursor.startsAt; // Preserve PostgreSQL microseconds for stable pagination.
+    query = query.or(`starts_at.gt.${date},and(starts_at.eq.${date},${idColumn}.gt.${cursor.id})`);
+  }
+  return query.order("starts_at", { ascending: true }).order(idColumn, { ascending: true })
+    .limit(AGENDA_PAGE_SIZE + 1).abortSignal(signal);
+}
+
+function page<T extends EventRow | GuestShow>(rows: T[]) {
+  const items = rows.slice(0, AGENDA_PAGE_SIZE), last = items[items.length - 1];
+  const next = rows.length > AGENDA_PAGE_SIZE && last
+    ? { startsAt: last.starts_at, id: "id" in last ? last.id : last.event_id } : null;
+  return { items, next };
+}
+
+export async function loadAgenda(db: AgendaClient, signal: AbortSignal, window: AgendaWindow) {
   const user = await currentUser(db, signal);
   const [owned, accepted] = await Promise.all([
-    db.from("events").select(eventColumns).eq("producer_id", user.id)
-      .order("starts_at", { ascending: true }).order("id", { ascending: true }).abortSignal(signal),
-    db.rpc("stage_accepted_shows").abortSignal(signal),
+    pageQuery(db, user.id, window, "owned", signal),
+    pageQuery(db, user.id, window, "accepted", signal),
   ]);
   signal.throwIfAborted();
-  return {
-    ownerId: user.id,
-    events: !owned.error && Array.isArray(owned.data) ? owned.data as EventRow[] : null,
-    guestShows: !accepted.error && Array.isArray(accepted.data) ? accepted.data as GuestShow[] : null,
-  };
+  const ownPage = !owned.error && Array.isArray(owned.data) ? page(owned.data as EventRow[]) : null;
+  const guestPage = !accepted.error && Array.isArray(accepted.data) ? page(accepted.data as GuestShow[]) : null;
+  return { ownerId: user.id, events: ownPage?.items ?? null, guestShows: guestPage?.items ?? null,
+    ownNext: ownPage?.next ?? null, guestNext: guestPage?.next ?? null };
+}
+
+export async function loadMoreAgenda(db: AgendaClient, signal: AbortSignal, window: AgendaWindow, source: AgendaSource, cursor: AgendaCursor) {
+  const user = await currentUser(db, signal);
+  const result = await pageQuery(db, user.id, window, source, signal, cursor);
+  signal.throwIfAborted();
+  if (result.error || !Array.isArray(result.data)) throw new Error("Não foi possível carregar mais shows. Tente novamente.");
+  return { ownerId: user.id, ...page(result.data as (EventRow | GuestShow)[]) };
+}
+
+/** Minimal, bounded month markers are independent of the visible list's page/day. */
+export async function loadAgendaMarkers(db: AgendaClient, signal: AbortSignal, window: AgendaWindow) {
+  validateWindow(window);
+  const user = await currentUser(db, signal);
+  const [owned, accepted] = await Promise.all([
+    db.from("events").select("starts_at").eq("producer_id", user.id)
+      .gte("starts_at", window.from).lt("starts_at", window.to).order("starts_at").limit(CALENDAR_MARKER_LIMIT + 1).abortSignal(signal),
+    db.rpc("stage_accepted_shows").select("starts_at,event_status")
+      .gte("starts_at", window.from).lt("starts_at", window.to).neq("event_status", "cancelled")
+      .order("starts_at").limit(CALENDAR_MARKER_LIMIT + 1).abortSignal(signal),
+  ]);
+  signal.throwIfAborted();
+  if (owned.error || accepted.error || !Array.isArray(owned.data) || !Array.isArray(accepted.data))
+    throw new Error("As marcações do calendário estão indisponíveis. Consulte as listas de shows abaixo.");
+  return { ownerId: user.id, own: owned.data.slice(0, CALENDAR_MARKER_LIMIT).map(row => row.starts_at as string),
+    guest: accepted.data.slice(0, CALENDAR_MARKER_LIMIT).map(row => row.starts_at as string),
+    partial: owned.data.length > CALENDAR_MARKER_LIMIT || accepted.data.length > CALENDAR_MARKER_LIMIT };
+}
+
+export async function loadAgendaEvent(db: AgendaClient, signal: AbortSignal, eventId: string) {
+  if (!uuid.test(eventId)) throw new Error("Show inválido.");
+  const user = await currentUser(db, signal);
+  const { data, error } = await db.from("events").select(eventColumns)
+    .eq("id", eventId).eq("producer_id", user.id).abortSignal(signal).maybeSingle();
+  signal.throwIfAborted();
+  if (error || !data) throw new Error("Show não encontrado ou sem acesso.");
+  return data as EventRow;
 }
 
 /** Validate before any mutation. Identity is always taken from Auth, never the form. */
@@ -54,8 +136,9 @@ export function eventPayload(draft: EventDraft) {
 export async function saveEvent(db: AgendaClient, draft: EventDraft) {
   const payload = eventPayload(draft);
   const user = await currentUser(db);
-  const { error } = await db.from("events").insert({ ...payload, producer_id: user.id });
-  if (error) throw new Error("Não foi possível salvar o show. Tente novamente.");
+  const { data, error } = await db.from("events").insert({ ...payload, producer_id: user.id }).select(eventColumns).single();
+  if (error || !data) throw new Error("Não foi possível salvar o show. Tente novamente.");
+  return data as EventRow;
 }
 
 export async function removeEvent(db: AgendaClient, eventId: string) {

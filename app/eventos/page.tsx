@@ -7,8 +7,8 @@ import { createClient } from "@/lib/supabase/client";
 import EventTeamInvites from "@/components/event-team-invites";
 import dynamic from "next/dynamic";
 import { Button, Dialog, EmptyState, Input, LoadingState, StatusChip, Textarea } from "@/src/components/ui";
-import { AgendaSessionRequired, catalogAvailable, loadAgenda, removeEvent, saveEvent, searchCities, searchVenues } from "@/src/domains/events/services/agenda-service";
-import type { CitySuggestion, EventRow, GuestShow, VenueSuggestion } from "@/src/domains/events/types";
+import { AgendaSessionRequired, agendaWindow, catalogAvailable, loadAgenda, loadAgendaEvent, loadAgendaMarkers, loadMoreAgenda, removeEvent, saveEvent, searchCities, searchVenues } from "@/src/domains/events/services/agenda-service";
+import type { AgendaCursor, AgendaSource, CitySuggestion, EventRow, GuestShow, VenueSuggestion } from "@/src/domains/events/types";
 import "./agenda.css";
 
 const ShowFlyerManager = dynamic(() => import("./show-flyer-manager"), {
@@ -29,6 +29,7 @@ export default function EventosPage() {
  const [deleteTarget,setDeleteTarget]=useState<EventRow|null>(null);
  const loadRequest=useRef<AbortController|null>(null);
  const createTrigger=useRef<HTMLButtonElement>(null);
+ const focusScrolled=useRef<string|null>(null);
  const [loading,setLoading]=useState(true),[saving,setSaving]=useState(false),[ownerId,setOwnerId]=useState("");
  const [message,setMessage]=useState(""),[isError,setIsError]=useState(false);
  const [calendarMonth,setCalendarMonth]=useState(()=>new Date(new Date().getFullYear(),new Date().getMonth(),1));
@@ -42,16 +43,43 @@ export default function EventosPage() {
  const [citySuggestions,setCitySuggestions]=useState<CitySuggestion[]>([]);
  const [showVenueSuggestions,setShowVenueSuggestions]=useState(false),[showCitySuggestions,setShowCitySuggestions]=useState(false);
  const [catalogReady,setCatalogReady]=useState(false);
+ const [spotlightEvent,setSpotlightEvent]=useState<EventRow|null>(null);
+ const [ownNext,setOwnNext]=useState<AgendaCursor|null>(null),[guestNext,setGuestNext]=useState<AgendaCursor|null>(null);
+ const [ownMoreLoading,setOwnMoreLoading]=useState(false),[guestMoreLoading,setGuestMoreLoading]=useState(false);
+ const [ownMoreError,setOwnMoreError]=useState(""),[guestMoreError,setGuestMoreError]=useState("");
+ const ownMoreRequest=useRef<AbortController|null>(null),guestMoreRequest=useRef<AbortController|null>(null);
+ const [markers,setMarkers]=useState<{own:string[];guest:string[]}>({own:[],guest:[]});
+ const [markerMessage,setMarkerMessage]=useState("");
+ const [markerNonce,setMarkerNonce]=useState(0);
+ const monthRange=agendaWindow(calendarMonth);
+ const listRange=agendaWindow(calendarMonth,selectedDate);
+ const monthFrom=monthRange.from,monthTo=monthRange.to;
+ const listFrom=listRange.from,listTo=listRange.to;
+ function changeMonth(delta:number){
+  setSelectedDate(null);
+  setCalendarMonth(value=>new Date(value.getFullYear(),value.getMonth()+delta,1));
+ }
+ useEffect(()=>{
+  const request=new AbortController();setMarkers({own:[],guest:[]});setMarkerMessage("");
+  void loadAgendaMarkers(createClient(),request.signal,{from:monthFrom,to:monthTo}).then(result=>{
+   if(request.signal.aborted)return;
+   setMarkers({own:result.own,guest:result.guest});
+   if(result.partial)setMarkerMessage("Este mês tem muitos shows. Algumas marcações podem não aparecer; selecione a data para consultar a lista completa.");
+  }).catch(error=>{if(!request.signal.aborted&&!(error instanceof AgendaSessionRequired))setMarkerMessage(error instanceof Error?error.message:"Marcações indisponíveis.");});
+  return()=>request.abort();
+ },[monthFrom,monthTo,markerNonce]);
 
  const loadEvents=useCallback(async()=>{
-  loadRequest.current?.abort();
+  loadRequest.current?.abort();ownMoreRequest.current?.abort();guestMoreRequest.current?.abort();
+  setEvents([]);setGuestShows([]);setOwnNext(null);setGuestNext(null);
+  setOwnMoreError("");setGuestMoreError("");setOwnMoreLoading(false);setGuestMoreLoading(false);
   const request=new AbortController();
   loadRequest.current=request;
   setLoading(true);setAgendaError("");setGuestError("");
   try{
-   const result=await loadAgenda(createClient(),request.signal);
+   const result=await loadAgenda(createClient(),request.signal,{from:listFrom,to:listTo});
    if(request.signal.aborted)return;
-   setOwnerId(result.ownerId);
+   setOwnerId(result.ownerId);setOwnNext(result.ownNext);setGuestNext(result.guestNext);
    if(result.events)setEvents(result.events);
    else setAgendaError("Não foi possível carregar seus shows. Tente atualizar a agenda.");
    if(result.guestShows)setGuestShows(result.guestShows);
@@ -62,29 +90,60 @@ export default function EventosPage() {
    const text=error instanceof Error?error.message:"Não foi possível carregar a agenda. Tente novamente.";
    setAgendaError(text);setGuestError(text);
   }finally{if(!request.signal.aborted)setLoading(false);}
- },[router]);
- useEffect(()=>{void loadEvents();return()=>loadRequest.current?.abort();},[loadEvents]);
+ },[router,listFrom,listTo]);
+ useEffect(()=>{void loadEvents();return()=>{
+  loadRequest.current?.abort();ownMoreRequest.current?.abort();guestMoreRequest.current?.abort();
+ };},[loadEvents]);
+ async function loadMore(source:AgendaSource){
+  const own=source==="owned",cursor=own?ownNext:guestNext;
+  const ref=own?ownMoreRequest:guestMoreRequest;
+  if(!cursor||(own?ownMoreLoading:guestMoreLoading))return;
+  const request=new AbortController();ref.current?.abort();ref.current=request;
+  if(own){setOwnMoreLoading(true);setOwnMoreError("");}else{setGuestMoreLoading(true);setGuestMoreError("");}
+  try{
+   const result=await loadMoreAgenda(createClient(),request.signal,{from:listFrom,to:listTo},source,cursor);
+   if(request.signal.aborted)return;
+   if(result.ownerId!==ownerId){await loadEvents();return;}
+   if(own){
+    setEvents(rows=>{const ids=new Set(rows.map(row=>row.id));return [...rows,...(result.items as EventRow[]).filter(row=>!ids.has(row.id))];});
+    setOwnNext(result.next);
+   }else{
+    setGuestShows(rows=>{const ids=new Set(rows.map(row=>row.event_id));return [...rows,...(result.items as GuestShow[]).filter(row=>!ids.has(row.event_id))];});
+    setGuestNext(result.next);
+   }
+  }catch(error){
+   if(request.signal.aborted)return;
+   if(error instanceof AgendaSessionRequired){router.replace("/login");return;}
+   const message=error instanceof Error?error.message:"Não foi possível carregar mais shows.";
+   if(own)setOwnMoreError(message);else setGuestMoreError(message);
+  }finally{if(!request.signal.aborted){if(own)setOwnMoreLoading(false);else setGuestMoreLoading(false);}}
+ }
  useEffect(()=>{
   if(showCreateForm)document.getElementById("event-title")?.focus();
  },[showCreateForm]);
  const closeCreateForm=()=>{setShowCreateForm(false);createTrigger.current?.focus();};
  const closeDelete=useCallback(()=>{if(!deleting)setDeleteTarget(null);},[deleting]);
- // Um show vindo de um pedido de contratação pode ser aberto diretamente.
- // Lemos o parâmetro no cliente para não exigir Suspense/useSearchParams.
+ // A direct link is resolved independently of month and page, with owner scoping.
  useEffect(()=>{
   const eventId=new URLSearchParams(window.location.search).get("evento");
-  if(eventId&&/^[a-f0-9-]{36}$/i.test(eventId)){
-   setSpotlightEventId(eventId);
-   if(new URLSearchParams(window.location.search).get("equipe")==="1")
-    setOpenTeamEventId(eventId);
-  }
+  if(!eventId||!/^[0-9a-f]{8}(?:-[0-9a-f]{4}){3}-[0-9a-f]{12}$/i.test(eventId))return;
+  const request=new AbortController();setSpotlightEventId(eventId);
+  if(new URLSearchParams(window.location.search).get("equipe")==="1")setOpenTeamEventId(eventId);
+  void loadAgendaEvent(createClient(),request.signal,eventId).then(event=>{
+   if(request.signal.aborted)return;
+   setSpotlightEvent(event);setSelectedDate(null);
+   const date=new Date(event.starts_at);setCalendarMonth(new Date(date.getFullYear(),date.getMonth(),1));
+  }).catch(error=>{if(!request.signal.aborted){setIsError(true);setMessage(error instanceof Error?error.message:"Não foi possível abrir o show.");}});
+  return()=>request.abort();
  },[]);
  useEffect(()=>{
-  if(loading||!spotlightEventId||!events.some(event=>event.id===spotlightEventId))return;
-  document.getElementById("stage-event-"+spotlightEventId)?.scrollIntoView({
-   behavior:"smooth",block:"center"
-  });
- },[loading,spotlightEventId,events]);
+  if(loading||!spotlightEventId||(!events.some(event=>event.id===spotlightEventId)&&spotlightEvent?.id!==spotlightEventId))return;
+  if(focusScrolled.current===spotlightEventId)return;
+  const target=document.getElementById("stage-event-"+spotlightEventId);
+  if(!target)return;
+  focusScrolled.current=spotlightEventId;
+  target.scrollIntoView({behavior:"smooth",block:"center"});
+ },[loading,spotlightEventId,events,spotlightEvent]);
 
  useEffect(()=>{
   const request=new AbortController();
@@ -115,7 +174,10 @@ export default function EventosPage() {
   e.preventDefault();if(saving)return;
   setSaving(true);setMessage("");setIsError(false);
   try{
-   await saveEvent(createClient(),{title,description,venue,venueId:selectedVenueId,city,startsAt,endsAt,publicly});
+   const created=await saveEvent(createClient(),{title,description,venue,venueId:selectedVenueId,city,startsAt,endsAt,publicly});
+   setSpotlightEvent(created);setSpotlightEventId(created.id);setSelectedDate(null);
+   const date=new Date(created.starts_at);setCalendarMonth(new Date(date.getFullYear(),date.getMonth(),1));
+   setMarkerNonce(value=>value+1);
    setMessage("Evento salvo com sucesso!");
    setTitle("");setDescription("");setVenue("");setSelectedVenueId(null);setCity("");setStartsAt("");setEndsAt("");setPublicly(true);
    closeCreateForm();
@@ -131,6 +193,8 @@ export default function EventosPage() {
   try{
    await removeEvent(createClient(),deleteTarget.id);
    setEvents(rows=>rows.filter(item=>item.id!==deleteTarget.id));
+   if(spotlightEvent?.id===deleteTarget.id)setSpotlightEvent(null);
+   setMarkerNonce(value=>value+1);
    setDeleteTarget(null);setMessage("Evento excluído.");
   }catch(error){
    if(error instanceof AgendaSessionRequired)router.replace("/login");
@@ -141,11 +205,12 @@ export default function EventosPage() {
  const monthLabel=calendarMonth.toLocaleDateString("pt-BR",{month:"long",year:"numeric"});
  const firstWeekday=new Date(calendarMonth.getFullYear(),calendarMonth.getMonth(),1).getDay();
  const daysInMonth=new Date(calendarMonth.getFullYear(),calendarMonth.getMonth()+1,0).getDate();
- const ownShowDays=new Set(events.map(event=>dateOf(event.starts_at)));
- const guestShowDays=new Set(guestShows.filter(event=>event.event_status!=="cancelled").map(event=>dateOf(event.starts_at)));
+ const ownShowDays=new Set(markers.own.map(dateOf));
+ const guestShowDays=new Set(markers.guest.map(dateOf));
  const dateKey=(day:number)=>calendarMonth.getFullYear()+"-"+String(calendarMonth.getMonth()+1).padStart(2,"0")+"-"+String(day).padStart(2,"0");
- const visibleEvents=selectedDate?events.filter(event=>dateOf(event.starts_at)===selectedDate):events;
- const visibleGuestShows=selectedDate?guestShows.filter(event=>dateOf(event.starts_at)===selectedDate):guestShows;
+ const pin=spotlightEvent&&Date.parse(spotlightEvent.starts_at)>=Date.parse(listFrom)&&Date.parse(spotlightEvent.starts_at)<Date.parse(listTo)&&!events.some(event=>event.id===spotlightEvent.id)?spotlightEvent:null;
+ const visibleEvents=pin?[pin,...events]:events;
+ const visibleGuestShows=guestShows;
 
  return <main className="agenda-page"><div className="container">
   <nav className="nav"><Link className="brand" href="/"><span className="brand-mark">S</span> stage flow</Link><Link className="btn btn-quiet" href="/painel"><ArrowLeft size={15}/> Voltar ao painel</Link></nav>
@@ -177,18 +242,19 @@ export default function EventosPage() {
   <section className="feature agenda-calendar" aria-label="Calendário de shows">
    <div className="agenda-calendar-heading">
     <div><div className="eyebrow"><span className="dot"/> CALENDÁRIO</div><h2 aria-live="polite" style={{textTransform:"capitalize",margin:"8px 0 0"}}>{monthLabel}</h2></div>
-    <div style={{display:"flex",gap:8}}><button type="button" className="btn btn-quiet" aria-label="Mês anterior" onClick={()=>setCalendarMonth(new Date(calendarMonth.getFullYear(),calendarMonth.getMonth()-1,1))}><ChevronLeft size={18}/></button><button type="button" className="btn btn-quiet" aria-label="Próximo mês" onClick={()=>setCalendarMonth(new Date(calendarMonth.getFullYear(),calendarMonth.getMonth()+1,1))}><ChevronRight size={18}/></button></div>
+    <div style={{display:"flex",gap:8}}><button type="button" className="btn btn-quiet" aria-label="Mês anterior" onClick={()=>changeMonth(-1)}><ChevronLeft size={18}/></button><button type="button" className="btn btn-quiet" aria-label="Próximo mês" onClick={()=>changeMonth(1)}><ChevronRight size={18}/></button></div>
    </div>
    <div style={{display:"grid",gridTemplateColumns:"repeat(7,minmax(0,1fr))",gap:6,textAlign:"center",fontSize:12,color:"var(--muted)",marginBottom:8}}>{["Dom","Seg","Ter","Qua","Qui","Sex","Sáb"].map(day=><div key={day} style={{padding:"6px 0"}}>{day}</div>)}</div>
    <div style={{display:"grid",gridTemplateColumns:"repeat(7,minmax(0,1fr))",gap:6}}>
     {Array.from({length:firstWeekday},(_,i)=><div key={"empty-"+i} aria-hidden="true"/>)}
     {Array.from({length:daysInMonth},(_,i)=>{const day=i+1,key=dateKey(day),hasOwn=ownShowDays.has(key),hasGuest=guestShowDays.has(key),hasShow=hasOwn||hasGuest,selected=selectedDate===key;return <button type="button" key={key} onClick={()=>setSelectedDate(selected?null:key)} aria-pressed={selected} aria-label={day+" de "+monthLabel+(hasOwn?", show próprio":"")+(hasGuest?", participação confirmada":"")} style={{minHeight:58,padding:"7px 2px",borderRadius:10,border:selected?"1px solid var(--lime)":"1px solid var(--line)",background:selected?"#b997ee26":"var(--panel)",color:"var(--text)",display:"flex",flexDirection:"column",alignItems:"center",justifyContent:"center",gap:4,cursor:"pointer"}}><span>{day}</span>{hasShow&&<span style={{display:"flex",gap:3,alignItems:"center"}}>{hasOwn&&<Mic size={14} color="var(--sf-ui-brand)" aria-label="Show próprio"/>}{hasGuest&&<Users size={14} color="#a99bff" aria-label="Participação confirmada"/>}</span>}</button>})}
    </div>
+   {markerMessage&&<p role="status" className="agenda-marker-note">{markerMessage}</p>}
    {selectedDate&&<Button variant="ghost" onClick={()=>setSelectedDate(null)} className="agenda-clear-date">Limpar filtro de data</Button>}
-   <p style={{fontSize:12,color:"var(--muted)",marginBottom:0}}><Mic size={13} style={{display:"inline",verticalAlign:"middle"}} color="var(--sf-ui-brand)"/> Show próprio · <Users size={13} style={{display:"inline",verticalAlign:"middle"}} color="#a99bff"/> Participação confirmada. Toque na data para filtrar; toque de novo para mostrar todos.</p>
+   <p style={{fontSize:12,color:"var(--muted)",marginBottom:0}}><Mic size={13} style={{display:"inline",verticalAlign:"middle"}} color="var(--sf-ui-brand)"/> Show próprio · <Users size={13} style={{display:"inline",verticalAlign:"middle"}} color="#a99bff"/> Participação confirmada. Toque na data para filtrar; toque de novo para voltar ao mês.</p>
   </section>
-  <section className="section" style={{paddingTop:12}}><div className="section-heading"><h2><CalendarDays size={25} style={{display:"inline",verticalAlign:"middle"}}/> Shows próprios</h2><p>{selectedDate ? "Shows próprios do dia " + new Date(selectedDate+"T12:00:00").toLocaleDateString("pt-BR") : "Eventos criados por você, em ordem de data."}</p></div>
-   {loading?<LoadingState label="Carregando agenda…"/>:agendaError?<div className="coming agenda-error" role="alert">{agendaError}<Button variant="ghost" onClick={()=>void loadEvents()}>Tentar novamente</Button></div>:visibleEvents.length===0?<EmptyState title={selectedDate?"Nenhum show próprio nesta data":"Sua agenda começa aqui"} description="Cadastre um show para organizar sua equipe e seus horários." action={<Button onClick={()=>setShowCreateForm(true)}><Plus size={16}/> Novo show</Button>}/>:<div className="agenda-event-list">{visibleEvents.map(event=><article
+  <section className="section" style={{paddingTop:12}}><div className="section-heading"><h2><CalendarDays size={25} style={{display:"inline",verticalAlign:"middle"}}/> Shows próprios</h2><p>{selectedDate ? "Shows próprios do dia " + new Date(selectedDate+"T12:00:00").toLocaleDateString("pt-BR") : "Shows do mês selecionado, em ordem de data."}</p></div>
+   {loading?<LoadingState label="Carregando agenda…"/>:agendaError?<div className="coming agenda-error" role="alert">{agendaError}<Button variant="ghost" onClick={()=>void loadEvents()}>Tentar novamente</Button></div>:visibleEvents.length===0?<EmptyState title={selectedDate?"Nenhum show próprio nesta data":"Nenhum show próprio neste mês"} description="Cadastre um show para organizar sua equipe e seus horários." action={<Button onClick={()=>setShowCreateForm(true)}><Plus size={16}/> Novo show</Button>}/>:<div className="agenda-event-list">{visibleEvents.map(event=><article
     className="event"
     id={"stage-event-"+event.id}
     key={event.id}
@@ -200,7 +266,7 @@ export default function EventosPage() {
      borderRadius:12
     }}><div className="event-date"><div><strong>{new Date(event.starts_at).toLocaleDateString("pt-BR",{day:"2-digit"})}</strong><br/><span>{new Date(event.starts_at).toLocaleDateString("pt-BR",{month:"short"}).replace(".","").toUpperCase()}</span></div></div><div className="event-info"><strong>{event.title}</strong>{event.id===spotlightEventId&&
     <span style={{display:"block",color:"var(--lime)",fontSize:11,marginTop:5}}>
-     Show vinculado ao pedido de contratação · {event.status==="draft"?"rascunho privado":labels[event.status]}
+     Show em destaque · {event.status==="draft"?"rascunho privado":labels[event.status]}
     </span>}<span style={{display:"block",marginTop:5}}><Clock3 size={12} style={{display:"inline",verticalAlign:"middle"}}/> {formatDate(event.starts_at)}</span>{(event.venue||event.city)&&<span style={{display:"block",marginTop:5}}><MapPin size={12} style={{display:"inline",verticalAlign:"middle"}}/> {[event.venue,event.city].filter(Boolean).join(" · ")}</span>}{event.description&&<p style={{color:"var(--muted)",fontSize:13,margin:"8px 0"}}>{event.description}</p>}<StatusChip label={labels[event.status]} status={event.status==="cancelled"?"danger":event.status==="published"||event.status==="completed"?"success":"neutral"}/>
       <div className="agenda-event-actions">
        <button className={openTeamEventId===event.id?"btn btn-primary":"btn btn-quiet"} type="button"
@@ -228,6 +294,11 @@ export default function EventosPage() {
       {openFlyerEventId===event.id&&<ShowFlyerManager eventId={event.id} title={event.title}/>}
      </div><button aria-label={"Excluir "+event.title} title="Excluir evento" type="button" onClick={()=>setDeleteTarget(event)} className="btn btn-quiet agenda-delete"><Trash2 size={15}/></button></article>)}</div>}
   </section>
+  {!loading&&!agendaError&&<div className="agenda-pagination">
+   <span>{visibleEvents.length} shows próprios carregados neste período</span>
+   {ownMoreError&&<p role="alert">{ownMoreError}</p>}
+   {ownNext&&<Button variant="secondary" loading={ownMoreLoading} onClick={()=>void loadMore("owned")}>Carregar mais shows próprios</Button>}
+  </div>}
   <section className="section" style={{paddingTop:6}}>
    <div className="section-heading">
     <h2><Users size={25} style={{display:"inline",verticalAlign:"middle",color:"#a99bff"}}/> Participações em outros artistas</h2>
@@ -253,6 +324,11 @@ export default function EventosPage() {
     </article>)}
    </div>}
   </section>
+  {!loading&&!guestError&&<div className="agenda-pagination">
+   <span>{visibleGuestShows.length} participações carregadas neste período</span>
+   {guestMoreError&&<p role="alert">{guestMoreError}</p>}
+   {guestNext&&<Button variant="secondary" loading={guestMoreLoading} onClick={()=>void loadMore("accepted")}>Carregar mais participações</Button>}
+  </div>}
   <Dialog open={Boolean(deleteTarget)} onClose={closeDelete} title="Excluir show?"
    description={deleteTarget?.title} destructive confirmLabel="Excluir show" busy={deleting} onConfirm={()=>void deleteEvent()}>
    Essa ação remove o show e seus registros vinculados. Confira o evento antes de confirmar.
