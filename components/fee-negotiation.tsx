@@ -137,9 +137,9 @@ export default function FeeNegotiation({ invitationId, perspective, onChanged, o
   }
 
   const effectiveStatus = invitationStatus ?? data?.status;
-  const canOffer = effectiveStatus === "pending" && data?.agreed_amount == null
+  const canOffer = !!data && effectiveStatus === "pending" && data.agreed_amount == null
     && (!data.has_offer || !data.last_by_me);
-  const canAccept = effectiveStatus === "pending" && data?.agreed_amount == null
+  const canAccept = !!data && effectiveStatus === "pending" && data.agreed_amount == null
     && data.has_offer && !data.last_by_me;
 
   return <div ref={panelRef} style={{ marginTop: 12, borderTop: "1px solid var(--line)", paddingTop: 10 }}>
