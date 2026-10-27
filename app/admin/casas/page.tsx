@@ -109,7 +109,6 @@ export default function AdminCasasPage() {
     if (selectId) {
       const selected = rows.find((item) => item.id === selectId);
       if (selected) {
-        setPendingImages({logo:null,cover:null});
         setForm({ ...selected, address: selected.address || "",
         description: selected.description || "", slug: selected.slug || "",
         instagram_url: selected.instagram_url || "", whatsapp: selected.whatsapp || "",
@@ -235,6 +234,7 @@ export default function AdminCasasPage() {
   ), [venues, query]);
 
   function edit(item: Venue) {
+    if(uploading||saving||reviewing)return;
     setPendingImages({logo:null,cover:null});
     setForm({ ...item, address: item.address || "", slug: item.slug || "",
       description: item.description || "", instagram_url: item.instagram_url || "",
@@ -299,7 +299,7 @@ export default function AdminCasasPage() {
   }
 
   async function upload(kind: "logo" | "cover", file?: File) {
-    if (!file) return;
+    if (!file||uploading||saving) return;
     setError(""); setNotice("");
     if (!form.id) {
       setError("Salve o cadastro antes de enviar imagens.");
@@ -369,7 +369,7 @@ export default function AdminCasasPage() {
           <aside className="venue-admin-directory">
             <div className="venue-admin-list-head">
               <h2>Estabelecimentos</h2>
-              <button className="btn btn-primary" type="button" onClick={() => {
+              <button className="btn btn-primary" type="button" disabled={!!uploading||saving||reviewing} onClick={() => {
                 setPendingImages({logo:null,cover:null});setForm(blank()); setError(""); setNotice("");setManagerNeedsSignup(false);setManagerShareNotice("");setManagerNotice("");
               }}><Plus size={15}/> Nova casa</button>
             </div>
@@ -380,7 +380,7 @@ export default function AdminCasasPage() {
             <div className="venue-admin-items">
               {filtered.map((item) => <button type="button" key={item.id}
                 className={"venue-admin-item" + (form.id === item.id ? " selected" : "")}
-                onClick={() => edit(item)}>
+                onClick={() => edit(item)} disabled={!!uploading||saving||reviewing}>
                 <span className="venue-admin-item-mark"><Building2 size={21}/></span>
                 <span className="venue-admin-item-text">
                   <strong>{item.name}</strong>
