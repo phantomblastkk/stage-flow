@@ -42,7 +42,9 @@ export default function HiringConversations(){
   const {data,error:rpcError}=await createClient().rpc("stage_hiring_list");
   if(rpcError)throw rpcError;
   if(!Array.isArray(data))throw Error("Não foi possível abrir a lista de conversas.");
-  setThreads(data as Thread[]);
+  const result=data as Thread[];
+  setThreads(result);
+  return result;
  },[]);
  const loadMessages=useCallback(async(id:string)=>{
   const {data,error:rpcError}=await createClient().rpc("stage_hiring_messages",{p_thread_id:id});
@@ -64,9 +66,16 @@ export default function HiringConversations(){
     const db=createClient();
     const {data:{user}}=await db.auth.getUser();
     if(!user){router.replace("/login");return;}
-    await Promise.all([loadThreads(),loadPrefs()]);
+    const [openedThreads]=await Promise.all([loadThreads(),loadPrefs()]);
     if(!active)return;
     const query=new URLSearchParams(window.location.search);
+    const conversation=query.get("conversa");
+    if(conversation){
+      if(!/^[a-f0-9-]{36}$/i.test(conversation))throw Error("Conversa inválida.");
+      if(!openedThreads.some(item=>item.id===conversation))throw Error("Conversa não encontrada nesta conta.");
+      setActiveId(conversation);
+      await loadMessages(conversation);
+    }
     const musician=query.get("musico");
     const requestedDate=query.get("data")||null;
     const eventId=query.get("evento");
