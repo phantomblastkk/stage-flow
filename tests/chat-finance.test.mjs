@@ -142,3 +142,31 @@ test("subscription landing never creates payments and reads server-side entitlem
  assert.match(plan,/href="\/assinatura"/);
  assert.doesNotMatch(landing,/signUp\(|checkout\.sessions|stripe\.checkout|service_role/i);
 });
+
+test("musician fee negotiation leads to confirmation without bypassing financial approval",()=>{
+ const invites=read("app/meus-convites/page.tsx");
+ const negotiation=read("components/fee-negotiation.tsx");
+ const sql=read("supabase/private_fee_negotiations_migration.sql");
+ const respond=func(sql,"stage_respond_invite");
+ assert.match(respond,/if p_accept and exists/);
+ assert.match(respond,/f\.agreed_amount is null/);
+ assert.match(respond,/then return 'fee_pending'/);
+ assert.match(respond,/i\.musician_id = auth\.uid\(\)/);
+ assert.match(invites,/data === "fee_pending"/);
+ assert.match(invites,/setFeeFocus\(\(prev\) => \(\{ invitationId: invite\.id, request: prev\.request \+ 1 \}\)\)/);
+ assert.match(invites,/openRequest=\{feeFocus\.invitationId === invite\.id \? feeFocus\.request : 0\}/);
+ assert.match(invites,/invitationStatus=\{invite\.status\}/);
+ assert.match(invites,/onConfirmParticipation=\{invite\.status === "pending" \? \(\) => void respond\(invite, true\) : undefined\}/);
+ assert.match(negotiation,/useEffect\(\(\) => \{/);
+ assert.match(negotiation,/if \(openRequest <= 0\) return/);
+ assert.match(negotiation,/setExpanded\(true\)/);
+ assert.match(negotiation,/scrollIntoView/);
+ assert.match(negotiation,/data\.agreed_amount !== null && onConfirmParticipation/);
+ assert.match(negotiation,/Confirmar presença no show/);
+ assert.match(negotiation,/effectiveStatus === "pending"/);
+ assert.match(negotiation,/stage_fee_details/);
+ assert.match(negotiation,/stage_accept_fee/);
+ assert.doesNotMatch(invites,/\.from\("stage_fee_negotiations"\)/);
+ assert.doesNotMatch(negotiation,/\.from\("stage_fee_negotiations"\)/);
+ assert.match(invites,/\/eventos\/operacao\?evento=/);
+});
