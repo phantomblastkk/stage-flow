@@ -43,3 +43,14 @@ test("Asaas queue is private, duplicate-safe and does not grant paid access", ()
  assert.match(sql,/grant select,insert .* to service_role/);
  assert.doesNotMatch(sql,/update public\.profiles|stage_pro_site_access|subscription_status\s*=/);
 });
+
+test("sandbox smoke script cannot target production or create subscriptions", () => {
+ const smoke=readFileSync("scripts/asaas-sandbox-smoke.mjs","utf8");
+ assert.match(smoke,/stage-flow-homologacao\.vercel\.app/);
+ assert.match(smoke,/QA host required/);
+ assert.match(smoke,/crypto\.randomUUID\(\)/);
+ assert.match(smoke,/PAYMENT_CREATED/);
+ assert.match(smoke,/No authentication rejected/);
+ assert.match(smoke,/Duplicate sandbox event/);
+ assert.doesNotMatch(smoke,/PAYMENT_CONFIRMED|PAYMENT_RECEIVED|\/payments|\/subscriptions/);
+});
