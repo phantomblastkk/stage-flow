@@ -47,7 +47,10 @@ pagamentos continua sendo apenas o lançamento manual existente, validado no ser
 - TypeScript e build de produção locais verificados.
 - Testes de navegador ampliados em `tests/browser/agenda-finance.mjs`: 22 shows no mês mais outro em dezembro, paginação, troca de mês, link fora da primeira página, cadastro e Financeiro em 360/768/1280 px.
 - O navegador do CI usa somente API fictícia `example.supabase.co`, sem contas reais nem bancos remotos.
-- Conferir o workflow do commit desta parte para o resultado real dos testes de navegador.
+- CI aprovado no commit corretivo `707dda841cbe65206e82ec3046da25a88c131d84`, incluindo navegador nas três larguras e zero erros de hidratação.
+- [Workflow aprovado](https://github.com/phantomblastkk/stage-flow/actions/runs/40599934426).
+- [Seis screenshots e log do servidor](https://github.com/phantomblastkk/stage-flow/actions/runs/40599934426/artifacts/12779150249), com retenção de sete dias.
+- O primeiro teste com o relógio do navegador em novembro e o servidor em outubro detectou hidratação divergente no mês inicial. A correção mantém um carregamento determinístico no HTML inicial e define o calendário local após montar; a asserção de ausência de erros React foi mantida.
 
 ## Próxima parte
 
