@@ -175,3 +175,17 @@ Execute `supabase/musician_portfolio_complete_migration.sql` no Supabase SQL Edi
 - O marketplace não foi lançado e segue em **Em breve**.
 
 Ver [docs/publicacao-site-pro-cantor.md](./publicacao-site-pro-cantor.md) para instalação, regras, liberação administrativa e checklist de testes.
+
+
+## Decisão atualizada de monetização e entrada gratuita (27/10/2026)
+
+Esta decisão substitui quaisquer menções anteriores a cobrança do marketplace, assinatura obrigatória de músicos ou cobrança avulsa de subdomínio:
+
+- **Músico de apoio:** cadastro livre pela entrada do site, sem convite; portfólio, marketplace, disponibilidade, propostas, convites, chat, agenda e financeiro gratuitos.
+- **Cantor/artista:** conta, perfil público com @, agenda, equipe, contratação, convites, chat e financeiro gratuitos. Recursos de apresentação profissional avançada pertencem aos **planos pagos exclusivos de cantores**.
+- **Produtor/contratante:** conta e gestão de shows, equipes, convites, contratações e ferramentas operacionais gratuitas.
+- **Convite do cantor:** apenas atalho de vínculo com um show, nunca pré-requisito para criar a conta ou ter portfólio.
+- **WhatsApp:** contato opcional; mensagens internas independem de consentimento para WhatsApp.
+- **Planos pagos do cantor:** site Pro, personalização avançada, galeria profissional e subdomínio fazem parte do pacote contratado. Não cobrar subdomínio como extra avulso por padrão.
+- **Segurança:** a publicação Pro deve continuar condicionada à autorização no servidor; cadeados e avisos na interface não são mecanismos de cobrança nem autorização.
+- **A implementar antes da venda:** definição dos planos e preços, checkout, webhooks de pagamento, estado de assinatura verificável no servidor, provisionamento de subdomínios e regras de cancelamento. Nenhuma cobrança automática foi habilitada por esta decisão.
