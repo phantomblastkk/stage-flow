@@ -193,3 +193,33 @@ test("artist venue suggestions remain private until explicit global admin approv
   assert.match(admin,/form\.approval_status!=="approved"/);
   assert.match(admin,/Gerenciar programação, flyers e fotos/);
 });
+
+
+test("admin approval atomically publishes official venue URL; rejection stays private",()=>{
+ const approval=read("supabase/venue_approval_official_profile_migration.sql");
+ const review=sqlFunction(approval,"stage_venue_admin_review");
+ const page=read("app/admin/casas/page.tsx");
+ const publicRpc=sqlFunction(venueBase,"stage_public_venue");
+ const month=sqlFunction(venueBase,"stage_venue_public_month");
+ const highlights=sqlFunction(venueBase,"stage_venue_public_highlights");
+ assert.match(review,/if not public\.stage_venue_is_admin\(\)/);
+ assert.match(review,/where v\.id=p_venue_id for update/);
+ assert.match(review,/if v_status<>'pending' then return 'already_reviewed'/);
+ assert.match(review,/if p_decision='approved' then/);
+ assert.match(review,/replace\(p_venue_id::text,'-',''\)/);
+ assert.match(review,/approval_status='approved'/);
+ assert.match(review,/active=true,is_official=true,is_partner=false/);
+ assert.match(review,/slug=v_slug,logo_path=null,cover_path=null/);
+ assert.match(review,/approval_status='rejected'/);
+ assert.match(review,/active=false,is_official=false,is_partner=false/);
+ assert.match(review,/slug=null,logo_path=null,cover_path=null/);
+ assert.match(review,/revoke all on function public\.stage_venue_admin_review\(uuid,text\)/);
+ assert.match(review,/grant execute on function public\.stage_venue_admin_review\(uuid,text\)/);
+ assert.match(publicRpc,/v\.active and v\.is_official and v\.slug=p_slug/);
+ assert.match(month,/is_official and active/);
+ assert.match(highlights,/is_official and active/);
+ assert.match(page,/perfil oficial e a URL foram criados/);
+ assert.match(page,/perfil oficial e seu endereço público/);
+ assert.match(page,/form\.approval_status==="approved" && form\.is_official/);
+ assert.match(page,/form\.approval_status==="approved" && <div className="venue-admin-media/);
+});
