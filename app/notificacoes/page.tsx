@@ -11,7 +11,7 @@ import {
 import {createClient} from "@/lib/supabase/client";
 import "./notificacoes.css";
 
-type Kind="invitation"|"proposal"|"conversation";
+type Kind="invitation"|"proposal"|"conversation"|"operations";
 type Notice={
  id:string;source_type:Kind;source_id:string;event_code:string;
  event_id:string|null;thread_id:string|null;title:string;summary:string;
@@ -26,9 +26,11 @@ const categories:Record<string,string>={
  invite_received:"Convite",invite_accepted:"Confirmação",invite_declined:"Recusa",
  invite_cancelled:"Cancelamento",proposal_received:"Proposta",
  proposal_accepted:"Proposta aceita",proposal_declined:"Proposta recusada",
- proposal_withdrawn:"Proposta retirada",chat_message:"Mensagem"
+ proposal_withdrawn:"Proposta retirada",chat_message:"Mensagem",
+ show_briefing_changed:"Atualização da operação"
 };
 function destination(n:Notice){
+ if(n.source_type==="operations")return n.event_id?"/eventos/operacao?evento="+encodeURIComponent(n.event_id):"/eventos";
  if(n.source_type==="conversation"||n.source_type==="proposal"){
   return n.thread_id?"/conversas?conversa="+encodeURIComponent(n.thread_id):"/conversas";
  }
@@ -38,6 +40,7 @@ function destination(n:Notice){
  return n.event_id?"/convites?evento="+encodeURIComponent(n.event_id):"/convites";
 }
 function glyph(code:string){
+ if(code==="show_briefing_changed")return <Clock3 size={18}/>;
  if(code==="chat_message")return <MessageCircle size={18}/>;
  if(code==="invite_accepted"||code==="proposal_accepted")return <UserRoundCheck size={18}/>;
  if(code==="invite_declined"||code==="proposal_declined")return <UserRoundX size={18}/>;
