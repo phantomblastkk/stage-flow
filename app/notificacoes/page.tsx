@@ -6,12 +6,12 @@ import { useRouter } from "next/navigation";
 import {
  ArrowLeft, ArrowRight, Bell, BellRing, Check, CheckCheck,
  Clock3, Inbox, LoaderCircle, MessageCircle, RefreshCw, ShieldCheck,
- UserRoundCheck, UserRoundX, XCircle
+ UserRoundCheck, UserRoundX, XCircle, Gift, Crown
 } from "lucide-react";
 import {createClient} from "@/lib/supabase/client";
 import "./notificacoes.css";
 
-type Kind="invitation"|"proposal"|"conversation"|"operations";
+type Kind="invitation"|"proposal"|"conversation"|"operations"|"account";
 type Notice={
  id:string;source_type:Kind;source_id:string;event_code:string;
  event_id:string|null;thread_id:string|null;title:string;summary:string;
@@ -27,9 +27,12 @@ const categories:Record<string,string>={
  invite_cancelled:"Cancelamento",proposal_received:"Proposta",
  proposal_accepted:"Proposta aceita",proposal_declined:"Proposta recusada",
  proposal_withdrawn:"Proposta retirada",chat_message:"Mensagem",
- show_briefing_changed:"Atualização da operação"
+ show_briefing_changed:"Atualização da operação",
+ pro_courtesy_granted:"Cortesia Pro recebida",pro_courtesy_revoked:"Cortesia Pro encerrada"
 };
 function destination(n:Notice){
+ if(n.source_type==="account")return n.event_code==="pro_courtesy_granted"
+   ?"/meu-perfil-artistico?aba=pro":"/minha-conta?aba=cantor";
  if(n.source_type==="operations")return n.event_id?"/eventos/operacao?evento="+encodeURIComponent(n.event_id):"/eventos";
  if(n.source_type==="conversation"||n.source_type==="proposal"){
   return n.thread_id?"/conversas?conversa="+encodeURIComponent(n.thread_id):"/conversas";
@@ -41,6 +44,8 @@ function destination(n:Notice){
  return n.event_id?"/convites?evento="+encodeURIComponent(n.event_id):"/convites";
 }
 function glyph(code:string){
+ if(code==="pro_courtesy_granted")return <Gift size={18}/>;
+ if(code==="pro_courtesy_revoked")return <Crown size={18}/>;
  if(code==="show_briefing_changed")return <Clock3 size={18}/>;
  if(code==="chat_message")return <MessageCircle size={18}/>;
  if(code==="invite_accepted"||code==="proposal_accepted")return <UserRoundCheck size={18}/>;
@@ -115,7 +120,11 @@ export default function NotificationsPage(){
   if(busy)return;setBusy(true);setError("");setNotice("");
   try{
    if(!item.read_at){
-    try{await mark([item.id]);}catch{
+    try{
+     await mark([item.id]);
+     setNotifications(items=>items.map(n=>n.id===item.id?{...n,read_at:new Date().toISOString()}:n));
+     setUnread(count=>Math.max(0,count-1));
+    }catch{
      // Mark-as-read failures must not block the musician from the event briefing.
     }
    }
@@ -138,7 +147,7 @@ export default function NotificationsPage(){
   <header className="notifications-hero">
    <span className="eyebrow"><ShieldCheck size={14}/> AVISOS PRIVADOS · DENTRO DO SITE</span>
    <h1>Minhas <span className="accent">notificações.</span></h1>
-   <p>Convites, propostas, confirmações, recusas e novas mensagens em uma caixa de entrada organizada. Sem precisar do aplicativo.</p>
+   <p>Convites, propostas, mensagens e avisos de cortesia Pro em uma única caixa de entrada. O número na campainha desaparece quando você abre ou marca os avisos como lidos.</p>
    <div className="notifications-metrics">
     <span><Bell size={16}/><strong>{unread>99?"99+":unread}</strong> não lida{unread===1?"":"s"}</span>
     <span><Inbox size={16}/>{notifications.length} aviso{notifications.length===1?"":"s"} neste filtro</span>
