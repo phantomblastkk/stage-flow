@@ -2,7 +2,7 @@ name: Stage Flow • Isolated venue DB QA
 
 on:
   push:
-    branches: [develop]
+    branches: [main]
     paths:
       - "supabase/venue_*.sql"
       - "supabase/venues_*.sql"
@@ -16,7 +16,7 @@ permissions:
   contents: read
 
 concurrency:
-  group: stage-flow-venue-db-qa-develop
+  group: stage-flow-venue-db-qa-main
   cancel-in-progress: true
 
 jobs:
