@@ -59,7 +59,10 @@ menu/painel/Financeiro, sem alegar remoção de todas as consultas repetidas do 
 - O novo cenário exige uma única leitura de perfil e de cada permissão ao navegar Financeiro → Agenda → Painel → Financeiro, sem recarregar a página.
 - Simula troca de identidade e saída em outra aba pelo canal do Supabase. Verifica novo perfil, remoção de permissões anteriores, formulário limpo e rejeição de resposta financeira atrasada.
 - Verifica acesso ao marketplace público após sair, sem consultas privadas.
-- Execução do navegador no CI: pendente de publicação deste commit; registrar abaixo o resultado antes da entrega.
+- CI aprovado no commit `60c89c409c086a95ef9ff4a69dee6647b5db79ff`, incluindo build e os quatro cenários de navegador (três larguras e troca de conta).
+- [Workflow aprovado](https://github.com/phantomblastkk/stage-flow/actions/runs/40605474557).
+- [Sete screenshots e log do servidor](https://github.com/phantomblastkk/stage-flow/actions/runs/40605474557/artifacts/12780603276), retenção de sete dias.
+- [Diff completo dos 20 arquivos](https://github.com/phantomblastkk/stage-flow/commit/60c89c409c086a95ef9ff4a69dee6647b5db79ff).
 
 Somente fixtures sintéticas são usadas nos testes. Esse resultado não substitui
 testes com Auth/RLS reais nem uma avaliação de carga para 100 mil usuários.
