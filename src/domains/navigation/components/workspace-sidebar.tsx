@@ -25,23 +25,44 @@ export default function WorkspaceSidebar({role}:{role:WorkspaceRole}){
  const [mobileOpen,setMobileOpen]=useState(false);
  const [expanded,setExpanded]=useState<Record<string,boolean>>({});
  const toggle=useRef<HTMLButtonElement>(null);
+ const drawerRef=useRef<HTMLElement>(null);
+ const closeRef=useRef<HTMLButtonElement>(null);
  const groups=workspaceNavigation(role);
  useEffect(()=>{
   if(!mobileOpen)return;
   const old=document.body.style.overflow;
+  const previous=document.activeElement as HTMLElement|null;
   document.body.style.overflow="hidden";
+  closeRef.current?.focus();
   const onKey=(event:KeyboardEvent)=>{
-   if(event.key==="Escape"){setMobileOpen(false);toggle.current?.focus();}
+   if(event.key==="Escape"){
+    event.preventDefault();setMobileOpen(false);return;
+   }
+   if(event.key!=="Tab")return;
+   const controls=Array.from(drawerRef.current?.querySelectorAll<HTMLElement>(
+    'a[href],button:not([disabled]),summary,[tabindex="0"]'
+   )||[]).filter(element=>element.getClientRects().length>0);
+   if(!controls.length)return;
+   const first=controls[0],last=controls[controls.length-1];
+   if(event.shiftKey&&document.activeElement===first){
+    event.preventDefault();last.focus();
+   }else if(!event.shiftKey&&document.activeElement===last){
+    event.preventDefault();first.focus();
+   }
   };
   document.addEventListener("keydown",onKey);
-  return()=>{document.removeEventListener("keydown",onKey);document.body.style.overflow=old;};
+  return()=>{
+   document.removeEventListener("keydown",onKey);
+   document.body.style.overflow=old;
+   (toggle.current||previous)?.focus();
+  };
  },[mobileOpen]);
  const nav=<>
   <div className="sf-workspace-brand"><Link href="/painel" onClick={()=>setMobileOpen(false)}>
    <span className="sf-workspace-brand-mark">S</span>
    <span>stage <b>flow</b><small>SEU ESPAÇO DE TRABALHO</small></span>
   </Link>
-  <button className="sf-workspace-drawer-close" type="button" aria-label="Fechar menu"
+  <button ref={closeRef} className="sf-workspace-drawer-close" type="button" aria-label="Fechar menu"
    onClick={()=>setMobileOpen(false)}><PanelLeftClose size={20}/></button>
   </div>
   <nav className="sf-workspace-group-list" aria-label="Navegação do StageFlow">
@@ -68,7 +89,7 @@ export default function WorkspaceSidebar({role}:{role:WorkspaceRole}){
  const bottom=[
   homeItem,
   {label:"Agenda",href:"/eventos",icon:groups[0].icon},
-  {label:"Contratações",href:"/conversas",icon:groups[1].icon},
+  {label:"Contratações",href:role.isMusician?"/meus-convites":"/conversas",icon:groups[1].icon},
   {label:"Negócios",href:"/financeiro",icon:groups[2].icon},
   {label:"Conta",href:"/minha-conta",icon:groups[groups.length-1].icon}
  ];
@@ -82,7 +103,8 @@ export default function WorkspaceSidebar({role}:{role:WorkspaceRole}){
   {mobileOpen&&<div className="sf-workspace-mobile-overlay">
    <button type="button" aria-label="Fechar navegação" onClick={()=>setMobileOpen(false)}
     className="sf-workspace-overlay-backdrop"/>
-   <aside id="sf-workspace-mobile-drawer" className="sf-workspace-drawer">{nav}</aside>
+   <aside ref={drawerRef} id="sf-workspace-mobile-drawer" className="sf-workspace-drawer"
+    role="dialog" aria-modal="true" aria-label="Navegação do StageFlow">{nav}</aside>
   </div>}
   <nav className="sf-workspace-bottom-nav" aria-label="Acesso rápido no celular">
    {bottom.map(item=><WorkspaceLink item={item} key={item.href} path={path}/>)}
