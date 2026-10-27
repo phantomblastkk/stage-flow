@@ -25,6 +25,9 @@ test("login page does not ask for password when a user already has a valid sessi
   assert.match(login,/window\.location\.replace\(code\?"\/convite\?codigo="\+encodeURIComponent\(code\):"\/painel"\)/);
   assert.doesNotMatch(login,/if\(code\)\{setCheckingSession\(false\);return;\}/);
   assert.match(login,/signInWithPassword/);
+  const invitations=load("app/meus-convites/page.tsx");
+  assert.match(invitations,/\/eventos\/operacao\?evento=/);
+  assert.match(invitations,/Ver briefing e logística do show/);
 });
 
 test("legacy lemon accent colors are replaced in key Stage Flow experiences",()=>{
