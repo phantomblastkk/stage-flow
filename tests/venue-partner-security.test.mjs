@@ -407,3 +407,46 @@ test("venue image uploads remain scoped to the approved house and do not cross-e
  assert.match(admin,/if\(form\.approval_status!=="approved"\)/);
  assert.doesNotMatch(admin,/\.from\("venues"\)\.update\(/);
 });
+
+
+test("published venue pages provide clear contact, location and profile sharing actions",()=>{
+ const page=read("app/casa/[slug]/page.tsx");
+ const css=read("app/casa/[slug]/venue-public.css");
+ assert.match(page,/\.rpc\("stage_public_venue",\{p_slug:slug\}\)/);
+ assert.match(page,/const venueLocation=venue\?/);
+ assert.match(page,/venue\.address,venue\.city,venue\.state/);
+ assert.match(page,/https:\/\/www\.google\.com\/maps\/search\/\?api=1&query=/);
+ assert.match(page,/encodeURIComponent\(venueLocation\)/);
+ assert.match(page,/venue\.address\?\.trim\(\)\?"Ver endereço no mapa":"Ver cidade no mapa"/);
+ assert.match(page,/A localização exata da casa ainda não foi informada/);
+ assert.match(page,/https:\/\/wa\.me\//);
+ assert.match(page,/\/\^\[0-9\]\{10,15\}\$\/\.test\(venueWhatsapp\)/);
+ assert.match(page,/!venue\.instagram_url&&!venueWhatsappUrl/);
+ assert.match(page,/aria-label="Contatos e compartilhamento do perfil"/);
+ assert.match(page,/function venueProfileUrl\(\)/);
+ assert.match(page,/new URL\("\/casa\/"\+venue\.slug,window\.location\.origin\)/);
+ assert.match(page,/await navigator\.share\(\{title:venue\.name,/);
+ assert.match(page,/if\(!navigator\.share\)\{await copyVenueProfile\(\);return;\}/);
+ assert.match(page,/err\.name==="AbortError"/);
+ assert.match(page,/await navigator\.clipboard\.writeText\(url\)/);
+ assert.match(page,/profileCopyFallback&&<input type="text" readOnly/);
+ assert.match(page,/onFocus=\{event=>event\.currentTarget\.select\(\)\}/);
+ assert.match(css,/\.venue-public-action-bar/);
+ assert.match(css,/\.venue-public-contact-details/);
+ assert.match(css,/@media\(max-width:430px\)/);
+ assert.doesNotMatch(page,/\.from\("venues"\)/);
+});
+
+test("social previews are only generated for approved public venue RPC entries",()=>{
+ const metadata=read("app/casa/[slug]/layout.tsx");
+ assert.match(metadata,/export async function generateMetadata/);
+ assert.match(metadata,/params: Promise<\{slug:string\}>/);
+ assert.match(metadata,/\.rpc\("stage_public_venue", \{p_slug:slug\}\)/);
+ assert.match(metadata,/if \(error \|\| !venue \|\| venue\.slug !== slug \|\| !venue\.name\) return unavailable/);
+ assert.match(metadata,/openGraph:/);
+ assert.match(metadata,/summary_large_image/);
+ assert.match(metadata,/venue\.cover_path,venue\.logo_path/);
+ assert.match(metadata,/stage-venue-media/);
+ assert.match(metadata,/index:false,follow:false/);
+ assert.doesNotMatch(metadata,/SERVICE_ROLE|stage_venue_admin_list|stage_venue_calendar_admin_list/);
+});
