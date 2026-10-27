@@ -1,10 +1,10 @@
 "use client";
 
-import { ChangeEvent, FormEvent, useEffect, useState } from "react";
+import { ChangeEvent, FormEvent, useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import {
-  ArrowLeft, Check, CheckCircle2, Copy, ExternalLink, Eye, EyeOff,
+  ArrowLeft, Check, CheckCircle2, Copy, ExternalLink, Eye, EyeOff, X,
   ImagePlus, LoaderCircle, Palette, Save, Share2, SlidersHorizontal, Sparkles, Upload,
   BriefcaseBusiness, Clock3, Instagram, Youtube, Headphones, ListChecks, ChartNoAxesCombined, ArrowRight
 } from "lucide-react";
@@ -76,7 +76,18 @@ export default function MeuPortfolioDeMusico() {
   const [saving, setSaving] = useState(false);
   const [uploading, setUploading] = useState<"avatar" | "cover" | null>(null);
   const [previewTab, setPreviewTab] = useState(false);
+  const closePreviewRef = useRef<HTMLButtonElement>(null);
   const [copied, setCopied] = useState(false);
+
+  useEffect(() => {
+    if (!previewTab) return;
+    closePreviewRef.current?.focus();
+    const onEscape = (event: KeyboardEvent) => {
+      if (event.key === "Escape") setPreviewTab(false);
+    };
+    window.addEventListener("keydown", onEscape);
+    return () => window.removeEventListener("keydown", onEscape);
+  }, [previewTab]);
 
   function update<K extends keyof EditorPortfolio>(key: K, value: EditorPortfolio[K]) {
     setPortfolio(prev => ({ ...prev, [key]: value }));
@@ -107,7 +118,7 @@ export default function MeuPortfolioDeMusico() {
           instruments: row.instruments || [],
           genres: row.genres || [],
           theme: row.theme || "midnight",
-          accent: row.accent || "violet",
+          accent: row.accent === "lime" ? "violet" : row.accent || "violet",
           layout_style: row.layout_style || "spotlight",
           media_url: row.media_url || null,
           avatar_url: row.avatar_url || null,
@@ -443,7 +454,7 @@ export default function MeuPortfolioDeMusico() {
               <input id="portfolio-slug" value={portfolio.slug}
                 onChange={e => update("slug", e.target.value.toLowerCase().replace(/[^a-z0-9-]/g,""))}
                 minLength={3} maxLength={30} pattern="[a-z0-9-]{3,30}" placeholder="joao-cavaquinho" required/>
-              <span className="field-help">stage-flow-lemon.vercel.app/musico/{portfolio.slug || "seu-nome"}</span>
+              <span className="field-help">Seu endereço público será <strong>/musico/{portfolio.slug || "seu-nome"}</strong> no domínio do StageFlow.</span>
             </div>
             <div className="field">
               <label htmlFor="portfolio-headline">Frase de destaque</label>
@@ -581,7 +592,7 @@ export default function MeuPortfolioDeMusico() {
             <label style={{ display: "flex", alignItems: "flex-start", gap: 12, cursor: "pointer", padding: "12px 0" }}>
               <input type="checkbox" checked={portfolio.is_published}
                 onChange={e=>update("is_published",e.target.checked)}
-                style={{ marginTop: 5, accentColor: "var(--lime)", flexShrink: 0 }}/>
+                style={{ marginTop: 5, accentColor: "var(--accent)", flexShrink: 0 }}/>
               <span style={{ fontSize: 13, lineHeight: 1.6 }}>
                 <strong>Publicar meu portfólio</strong>
                 <span style={{ display: "block", color: "var(--muted)" }}>
@@ -620,14 +631,32 @@ export default function MeuPortfolioDeMusico() {
           <div className="mp-editor-title" style={{ margin: 0 }}><Sparkles size={17} color="#C0A7FF"/> Prévia em tempo real</div>
           <button type="button" className="btn btn-quiet" style={{ padding: "8px 11px", fontSize: 12 }}
             onClick={() => setPreviewTab(prev => !prev)}>
-            {previewTab ? "Ver compacta" : "Ver ampliada"}
+            {previewTab ? "Prévia aberta" : "Abrir tela cheia"}
           </button>
         </div>
-        <MusicianPortfolioView portfolio={effectivePreview} preview={!previewTab}/>
+        <MusicianPortfolioView portfolio={effectivePreview} preview instanceId="editor-compact"/>
         <p style={{ color: "var(--muted)", fontSize: 12, marginTop: 12, lineHeight: 1.6 }}>
           Esta é uma prévia local. Outras pessoas só verão suas alterações depois de salvar e publicar.
         </p>
       </aside>
     </div>
+    {previewTab && <div className="mp-preview-overlay">
+      <button type="button" className="mp-preview-backdrop"
+        aria-label="Fechar prévia" onClick={() => setPreviewTab(false)}/>
+      <section className="mp-preview-dialog" role="dialog" aria-modal="true" aria-label="Prévia ampliada do portfólio">
+        <header className="mp-preview-dialog-header">
+          <div>
+            <strong><Sparkles size={17}/> Seu portfólio em tela cheia</strong>
+            <small>Prévia das alterações ainda não publicadas</small>
+          </div>
+          <button type="button" ref={closePreviewRef} onClick={() => setPreviewTab(false)}>
+            <X size={18}/> Fechar
+          </button>
+        </header>
+        <div className="mp-preview-dialog-content">
+          <MusicianPortfolioView portfolio={effectivePreview} instanceId="editor-full"/>
+        </div>
+      </section>
+    </div>}
   </div></main>;
 }
