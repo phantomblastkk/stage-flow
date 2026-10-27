@@ -6,7 +6,7 @@ import {useRouter} from "next/navigation";
 import {
   Activity,ArrowDownToLine,ArrowLeft,ArrowRight,ArrowUpRight,
   BadgeCheck,Building2,CheckCircle2,ChevronLeft,ChevronRight,Clock3,
-  ExternalLink,FileClock,Filter,LoaderCircle,LockKeyhole,Mic2,
+  ExternalLink,FileClock,Filter,LoaderCircle,LockKeyhole,Mic2,Crown,Gift,
   Music2,RefreshCw,Search,ShieldCheck,ShieldX,Sparkles,Users2
 } from "lucide-react";
 import {createClient} from "@/lib/supabase/client";
@@ -15,6 +15,7 @@ import "./central.css";
 
 type Tab="overview"|"users"|"venues"|"history";
 type Kind="singer"|"musician"|"venue";
+type ProAccess={id:string;manual_granted:boolean;paid_entitled:boolean;effective_entitled:boolean};
 type Response<T>={status:string;items?:T[];total?:number;page?:number;page_size?:number};
 type Metrics={
  status:string;users_total:number;users_7d:number;users_30d:number;
@@ -33,7 +34,7 @@ type Venue={
  submitted_by_name:string|null;submitted_by_email:string|null;verified:boolean;
 };
 type ActivityRow={
- id:number;action:"verification_granted"|"verification_revoked"|"venue_approved"|"venue_rejected";
+ id:number;action:"verification_granted"|"verification_revoked"|"venue_approved"|"venue_rejected"|"pro_access_granted"|"pro_access_revoked";
  kind:Kind;target_id:string;happened_at:string;actor_name:string|null;
 };
 
@@ -46,7 +47,8 @@ const statusText:Record<string,string>={
 const kindText:Record<Kind,string>={singer:"Cantor",musician:"Músico",venue:"Casa"};
 const actionText:Record<ActivityRow["action"],string>={
  verification_granted:"Concedeu verificação",verification_revoked:"Retirou verificação",
- venue_approved:"Aprovou casa",venue_rejected:"Rejeitou casa"
+ venue_approved:"Aprovou casa",venue_rejected:"Rejeitou casa",
+  pro_access_granted:"Concedeu cortesia Pro",pro_access_revoked:"Retirou cortesia Pro"
 };
 
 function escapeCsv(value:unknown){
@@ -63,6 +65,8 @@ export default function CentralAdministrativa(){
  const [tab,setTab]=useState<Tab>("overview");
  const [metrics,setMetrics]=useState<Metrics|null>(null);
  const [users,setUsers]=useState<Account[]>([]);
+ const [proByUser,setProByUser]=useState<Record<string,ProAccess>>({});
+ const [proReady,setProReady]=useState(false);
  const [userCount,setUserCount]=useState(0);
  const [userPage,setUserPage]=useState(0);
  const [order,setOrder]=useState<"oldest"|"newest">("oldest");
@@ -125,9 +129,10 @@ export default function CentralAdministrativa(){
  useEffect(()=>{
   if(!authorized)return;
   let active=true;
-  setLoadingData(true);
+  setLoadingData(true);setProReady(false);setProByUser({});
   void(async()=>{
-   const {data,error}=await createClient().rpc("stage_owner_admin_users",{
+   const db=createClient();
+   const {data,error}=await db.rpc("stage_owner_admin_users",{
     p_order:order,p_search:search,p_page:userPage
    });
    if(!active)return;
@@ -136,7 +141,24 @@ export default function CentralAdministrativa(){
     setUsers([]);
    }else{
     const list=data as Response<Account>;
-    setUsers(list.items||[]);setUserCount(list.total||0);
+    const accounts=list.items||[];
+    setUsers(accounts);setUserCount(list.total||0);
+    if(accounts.length){
+     const {data:proData,error:proError}=await db.rpc("stage_owner_admin_pro_snapshot",{
+      p_ids:accounts.map(account=>account.id)
+     });
+     if(!active)return;
+     if(proError||!proData||proData.status!=="ok"||!Array.isArray(proData.items)){
+      setFeedbackError(true);
+      setFeedback("Não foi possível consultar as permissões Pro. Atualize a lista antes de conceder ou retirar acessos.");
+     }else{
+      const statuses=proData.items as ProAccess[];
+      setProByUser(Object.fromEntries(statuses.map(item=>[item.id,item])));
+      setProReady(true);
+     }
+    }else{
+     setProReady(true);
+    }
    }
    setLoadingData(false);
   })();
@@ -197,6 +219,35 @@ export default function CentralAdministrativa(){
   }finally{setBusy("");}
  }
 
+ async function setProAccess(user:Account,status:ProAccess){
+  if(busy||!proReady||!user.is_singer||(status.paid_entitled&&!status.manual_granted))return;
+  const removing=status.manual_granted;
+  const warning=removing
+   ?"Retirar a cortesia Pro de "+user.name+"? As galerias, temas e publicação Pro deixarão de ficar disponíveis se a pessoa não tiver uma assinatura ativa. A assinatura paga, se existir, NÃO será cancelada."
+   :"Conceder cortesia Pro gratuita a "+user.name+"? Isso libera os recursos Pro do perfil de cantor sem criar uma cobrança ou alterar o plano comercial.";
+  if(!window.confirm(warning))return;
+  setBusy("pro:"+user.id);setFeedback("");
+  try{
+   const {data,error}=await createClient().rpc("stage_owner_admin_set_pro_access",{
+    p_target_id:user.id,p_enabled:!removing
+   });
+   if(error||!["saved","unchanged","subscription_active"].includes(String(data))){
+    throw new Error(error?.message||
+      (data==="forbidden"?"Apenas o proprietário pode alterar cortesias Pro.":
+       data==="singer_required"?"O usuário precisa ter uma função ativa de cantor.":
+        "Não foi possível alterar o acesso Pro."));
+   }
+   setFeedbackError(false);
+   setFeedback(data==="unchanged"?"A permissão já estava atualizada.":
+     data==="subscription_active"?"A conta possui uma assinatura Pro ativa; não é possível cancelar esse acesso por cortesia.":
+     removing?"Cortesia Pro retirada. A assinatura paga, se houver, continua ativa.":
+             "Cortesia Pro concedida! O cantor já pode habilitar os recursos Pro e decidir o que publicar.");
+   reload();
+  }catch(err){
+   setFeedbackError(true);setFeedback(err instanceof Error?err.message:"Falha ao alterar cortesia Pro.");
+  }finally{setBusy("");}
+ }
+
  async function reviewVenue(venue:Venue,decision:"approved"|"rejected"){
   if(busy||venue.approval_status!=="pending")return;
   const verb=decision==="approved"?"APROVAR":"REJEITAR";
@@ -216,12 +267,13 @@ export default function CentralAdministrativa(){
  }
 
  function exportPage(){
-  if(!users.length)return;
-  const header=["ID","Nome","Email","Username","Cadastro","Cantor","Músico","Produtor","Plano","Verificado cantor","Verificado músico"];
+  if(!users.length||!proReady)return;
+  const header=["ID","Nome","Email","Username","Cadastro","Cantor","Músico","Produtor","Plano","Pro cortesia","Pro por assinatura","Pro ativo","Verificado cantor","Verificado músico"];
   const values=users.map(u=>[
    u.id,u.name,u.email,u.username,u.created_at,
    u.is_singer?"Sim":"Não",u.is_musician?"Sim":"Não",u.is_producer?"Sim":"Não",
-   u.plan_code,u.singer_verified?"Sim":"Não",u.musician_verified?"Sim":"Não"
+   u.plan_code,proByUser[u.id]?.manual_granted?"Sim":"Não",proByUser[u.id]?.paid_entitled?"Sim":"Não",
+   proByUser[u.id]?.effective_entitled?"Sim":"Não",u.singer_verified?"Sim":"Não",u.musician_verified?"Sim":"Não"
   ]);
   const csv="\uFEFF"+[header,...values].map(row=>row.map(escapeCsv).join(";")).join("\r\n");
   const url=URL.createObjectURL(new Blob([csv],{type:"text/csv;charset=utf-8"}));
