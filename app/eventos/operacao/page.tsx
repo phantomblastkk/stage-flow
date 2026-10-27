@@ -6,7 +6,7 @@ import { useRouter } from "next/navigation";
 import {
  ArrowLeft, CalendarDays, CheckCheck, CheckCircle2, ClipboardCheck,
  Clock3, CircleAlert, CircleCheck, FileText, LoaderCircle,
- MapPin, Plus, RefreshCw, Save, ShieldCheck, Trash2, Truck, Users,
+ MapPin, MessageCircle, Bell, Plus, RefreshCw, Save, ShieldCheck, Trash2, Truck, Users,
  Wallet, Wrench, X, RotateCcw
 } from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
@@ -90,6 +90,8 @@ export default function OperationPage(){
  const [task,setTask]=useState(emptyTask);
  const [taskForm,setTaskForm]=useState(false);
  const [financeOpen,setFinanceOpen]=useState(false);
+ const [quickRefreshing,setQuickRefreshing]=useState(false);
+ const [copying,setCopying]=useState(false);
 
  const refresh=useCallback(async(id:string)=>{
   const {data:next,error:rpcError}=await createClient().rpc(
@@ -195,6 +197,43 @@ export default function OperationPage(){
    p_event_id:eventId,p_notes:closing.trim()||null,p_reopen:reopen
   }),reopen?"Fechamento reaberto para revisão.":"Pós-show encerrado. O histórico e o financeiro continuam disponíveis.");
  }
+ async function updateDayBriefing(){
+  if(!eventId||quickRefreshing)return;
+  setQuickRefreshing(true);setError("");setNotice("");
+  try{
+   await refresh(eventId);
+   setNotice("Informações atualizadas. Consulte os horários e a logística abaixo.");
+  }catch(e){
+   setError(e instanceof Error?e.message:"Não foi possível atualizar o briefing.");
+  }finally{setQuickRefreshing(false);}
+ }
+ async function copyDayBriefing(){
+  if(!data||copying)return;
+  const event=data.event,info=data.briefing;
+  // Only the approved participant's logistical RPC fields are included.
+  // Never copy production tasks, private notes or financial information.
+  const lines=[
+   "StageFlow — Resumo do dia do show",
+   "Show: "+event.title,
+   "Início: "+humanDate(event.starts_at),
+   "Chegada: "+(info.arrival_at?humanDate(info.arrival_at):"A combinar"),
+   "Passagem de som: "+(info.soundcheck_at?humanDate(info.soundcheck_at):"A combinar"),
+   "Abertura das portas: "+(info.doors_at?humanDate(info.doors_at):"A combinar"),
+   "Local: "+([event.venue,event.city].filter(Boolean).join(" · ")||"A confirmar"),
+   "Ponto de encontro: "+(info.meeting_point||"A combinar"),
+   "Contato no local: "+(info.contact_name||"A combinar"),
+   "Transporte: "+(info.transport_plan||"A combinar"),
+   "Equipamentos: "+(info.equipment_plan||"A combinar")
+  ];
+  setCopying(true);setError("");setNotice("");
+  try{
+   if(!navigator.clipboard?.writeText)throw Error("Cópia não disponível neste navegador.");
+   await navigator.clipboard.writeText(lines.join("\\n"));
+   setNotice("Resumo do show copiado. Confira as notificações para eventuais alterações.");
+  }catch(e){
+   setError(e instanceof Error?e.message:"Não foi possível copiar o resumo.");
+  }finally{setCopying(false);}
+ }
  const tasks=data?.tasks||[];
  const total=data?.progress?.count||0;
  const done=data?.progress?.done||0;
@@ -230,6 +269,47 @@ export default function OperationPage(){
      <div><strong>{done}/{total}</strong><span>Tarefas realizadas</span></div>
      <div><strong>{data.progress?.overdue||0}</strong><span>Com prazo vencido</span></div>
      <div><strong>{data.private_details?.closed_at?"Encerrado":"Em andamento"}</strong><span>Fechamento operacional</span></div>
+    </section>}
+    {!owner&&<section className="ops-day-quick" id="dia-do-show" aria-labelledby="ops-day-title">
+     <header className="ops-day-top">
+      <div>
+       <span className="eyebrow"><ShieldCheck size={15}/> SEU BRIEFING CONFIRMADO</span>
+       <h2 id="ops-day-title">Dia do show, sem correria.</h2>
+       <p>O essencial para chegar preparado. Horários exibidos no fuso de Brasília.</p>
+      </div>
+      <div className="ops-day-actions">
+       <button type="button" className="btn btn-quiet" disabled={quickRefreshing||copying}
+        onClick={()=>void updateDayBriefing()}>
+        {quickRefreshing?<LoaderCircle size={15}/>:<RefreshCw size={15}/>}
+        {quickRefreshing?"Atualizando...":"Atualizar informações"}
+       </button>
+       <button type="button" className="btn btn-primary" disabled={quickRefreshing||copying}
+        onClick={()=>void copyDayBriefing()}>
+        {copying?<LoaderCircle size={15}/>:<ClipboardCheck size={15}/>}
+        {copying?"Copiando...":"Copiar resumo"}
+       </button>
+      </div>
+     </header>
+     <div className="ops-day-times" aria-label="Horários da apresentação">
+      <div><span>Chegada da equipe</span><strong>{data.briefing.arrival_at?humanDate(data.briefing.arrival_at):"A combinar"}</strong></div>
+      <div><span>Passagem de som</span><strong>{data.briefing.soundcheck_at?humanDate(data.briefing.soundcheck_at):"A combinar"}</strong></div>
+      <div><span>Abertura das portas</span><strong>{data.briefing.doors_at?humanDate(data.briefing.doors_at):"A combinar"}</strong></div>
+      <div><span>Início da apresentação</span><strong>{humanDate(data.event.starts_at)}</strong></div>
+     </div>
+     <div className="ops-day-details">
+      <div><strong><MapPin size={16}/> Local informado</strong>
+       <p>{[data.event.venue,data.event.city].filter(Boolean).join(" · ")||"Local a confirmar"}</p>
+       <small>O endereço completo não está disponível neste briefing. Confirme o acesso exato com a organização.</small>
+      </div>
+      <div><strong><Users size={16}/> Ponto de encontro</strong><p>{data.briefing.meeting_point||"A combinar"}</p></div>
+      <div><strong><MessageCircle size={16}/> Contato no local</strong><p>{data.briefing.contact_name||"A combinar"}</p></div>
+      <div><strong><Truck size={16}/> Transporte</strong><p>{data.briefing.transport_plan||"A combinar"}</p></div>
+      <div><strong><Wrench size={16}/> Equipamentos</strong><p>{data.briefing.equipment_plan||"A combinar"}</p></div>
+     </div>
+     <div className="ops-day-footer">
+      <p><ShieldCheck size={16}/> Apenas informações logísticas do seu convite aceito. Sem custos, cachês ou anotações privadas.</p>
+      <Link className="btn btn-quiet" href="/notificacoes"><Bell size={15}/> Ver notificações</Link>
+     </div>
     </section>}
     {!owner&&<p className="ops-privacy"><ShieldCheck size={17}/> Briefing da sua apresentação confirmada. As tarefas internas, custos e pagamentos do organizador são privados. Se os horários ou a logística mudarem, você receberá um aviso na Central de Notificações.</p>}
     {cancelled&&<p className="ops-privacy"><CircleAlert size={17}/> Show cancelado: informações preservadas apenas para consulta.</p>}
