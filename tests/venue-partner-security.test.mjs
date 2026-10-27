@@ -240,3 +240,39 @@ test("singer sees a public venue link only after approval",()=>{
  assert.match(page,/Aprovada — perfil oficial criado/);
  assert.doesNotMatch(page,/\.from\("venues"\)\.insert/);
 });
+
+
+test("new public shows with a selected flyer wait for media attachment before publication",()=>{
+  const editor=read("components/venue-programming-workspace.tsx");
+  const styles=read("app/admin/casas/[id]/programacao/programacao.css");
+  const stage=editor.indexOf('const publishAfterFlyer=!showForm.id && showForm.status==="published" && !!pendingFlyer;');
+  const draft=editor.indexOf('p_event:{...details,status:publishAfterFlyer?"draft":showForm.status}',stage);
+  const attach=editor.indexOf('await attachFlyer(result.id,pendingFlyer);',draft);
+  const publish=editor.indexOf('p_event:{...details,id:result.id,status:"published"}',attach);
+  assert.ok(stage>=0,"staged publication must be limited to a new show with pending flyer");
+  assert.ok(draft>stage,"new show must be saved as private draft first");
+  assert.ok(attach>draft,"flyer should be attached after the draft is created");
+  assert.ok(publish>attach,"public status must be requested only after flyer attachment");
+  assert.ok(editor.includes('status:publishAfterFlyer?"draft":prev.status'));
+  assert.ok(editor.includes('setError("O show foi salvo como rascunho, sem publicação pública.'));
+  assert.ok(editor.includes('if(!published){'));
+  assert.ok(editor.includes('Ao publicar um show novo com flyer, ele será mantido como rascunho'));
+  assert.match(styles,/\.venue-program-launch-guide/);
+  assert.match(styles,/@media\(max-width:560px\)/);
+});
+
+test("approved house editing has publication guide and scoped public preview",()=>{
+  const editor=read("components/venue-programming-workspace.tsx");
+  assert.ok(editor.includes('aria-label="Preparar página pública da casa"'));
+  assert.ok(editor.includes('mode==="admin"?'));
+  assert.ok(editor.includes('href="/admin/casas"'));
+  assert.ok(editor.includes('publicSlug&&<Link'));
+  assert.ok(editor.includes('href={"/casa/"+publicSlug}'));
+  assert.ok(editor.includes('publishedFlyers=shows.filter(x=>x.status==="published"&&!!x.flyer_path).length'));
+  assert.ok(editor.includes('onClick={()=>setTab("galeria")}'));
+  assert.ok(editor.includes('Rascunhos não aparecem no calendário público.'));
+  assert.ok(editor.includes('O flyer aparece com o show publicado'));
+  assert.match(editor,/stage_venue_calendar_admin_save/);
+  assert.match(editor,/stage_venue_gallery_admin_add/);
+  assert.doesNotMatch(editor,/\.from\("stage_venue_calendar_events"\)\.insert\(/);
+});
