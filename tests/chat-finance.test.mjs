@@ -10,6 +10,7 @@ const inbox=read("app/conversas/page.tsx");
 const catalog=read("components/marketplace-catalog.tsx");
 const money=read("app/financeiro/page.tsx");
 const billing=read("src/domains/billing/services/finance-service.ts");
+const csv=read("src/domains/billing/model/finance-csv.ts");
 const worker=read("app/api/stage-chat/whatsapp-dispatch/route.ts");
 const dashboard=read("app/painel/page.tsx");
 function func(sql,name){
@@ -70,26 +71,21 @@ test("finance controls require ownership and never move money",()=>{
  assert.match(money,/EventBudgetPanel/);
  assert.match(money,/Exportar CSV/);
  assert.match(money,/Resultado líquido estimado/);
- assert.match(money,/safeCsvCell/);
+ assert.match(money,/buildFinanceCsv/);
   assert.match(read("src/domains/navigation/workspace-navigation.ts"),/\/financeiro/);
   assert.match(read("src/domains/navigation/workspace-navigation.ts"),/\/conversas/);
 });
 
 test("monthly finance compares projected net and actual cash without assuming payment",()=>{
- assert.match(money,/projected:0,hasMissing:false/);
- assert.match(money,/x\.projected\+=val\(r\.gross_revenue\)-val\(r\.expense_total\)-val\(r\.musician_agreed\)/);
- assert.match(money,/x\.projected\+=val\(r\.personal_fee\)-val\(r\.personal_expenses\)/);
+ assert.match(money,/buildFinanceReport/);
+ assert.doesNotMatch(money,/\.reduce\(/);
  assert.match(money,/Resultado líquido previsto/);
  assert.match(money,/Saldo de caixa registrado/);
  assert.match(money,/m\.hasMissing\?"Parcial/);
 });
 
 test("financial overview includes outstanding receivables and unpaid commitments",()=>{
- assert.match(money,/const pendingReceivables=/);
- assert.match(money,/Math\.max\(0,val\(r\.gross_revenue\)-val\(r\.received\)\)/);
- assert.match(money,/Math\.max\(0,val\(r\.personal_fee\)-val\(r\.personal_received\)\)/);
- assert.match(money,/const pendingExpenses=/);
- assert.match(money,/const pendingFees=/);
+ assert.match(money,/pendingReceivables,pendingPayables,pendingIncomplete/);
  assert.match(money,/A receber \(estimado\)/);
  assert.match(money,/Compromissos a pagar/);
  assert.match(money,/pendingIncomplete\?"Parcial/);
@@ -101,10 +97,9 @@ test("per-show financial summaries and detailed CSV preserve unknown values",()=
  assert.match(money,/A receber: <strong>/);
  assert.match(money,/A pagar: <strong>/);
  assert.match(money,/stage-flow-financeiro-detalhado\.csv/);
- assert.match(money,/Compromissos a pagar","Resultado líquido previsto","Saldo de caixa registrado","Valores incompletos/);
- assert.match(money,/r\.gross_revenue===null\?"":/);
- assert.match(money,/r\.personal_fee===null\?"":/);
- assert.match(money,/safeCsvCell/);
+ assert.match(csv,/Compromissos a pagar.*Resultado líquido previsto.*Saldo de caixa registrado.*Valores incompletos/);
+ assert.match(csv,/value\.cents === null \? ""/);
+ assert.match(money,/buildFinanceCsv/);
 });
 
 test("advanced singer reports use Pro entitlement while core finances remain available",()=>{
@@ -118,7 +113,7 @@ test("advanced singer reports use Pro entitlement while core finances remain ava
  assert.match(money,/reportAccess&&<p>Resultado líquido previsto:/);
  assert.match(money,/reportAccess&&<p>Resultado estimado:/);
  assert.match(money,/href="\/planos"/);
- assert.match(money,/disabled=\{loading\|\|Boolean\(error\)\|\|coverageLimited\|\|!hasAny\|\|!reportAccessReady\}/);
+ assert.match(money,/disabled=\{loading\|\|Boolean\(visibleError\)\|\|coverageLimited\|\|!hasAny\|\|!reportAccessReady\}/);
 });
 
 test("locked Pro modules show blurred preview and upgrade without hiding free accounting",()=>{

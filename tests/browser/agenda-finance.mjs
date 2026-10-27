@@ -2,7 +2,7 @@
 // Does not authenticate real users, send notifications or access a remote database.
 import assert from "node:assert/strict";
 import { spawn } from "node:child_process";
-import { mkdir, writeFile } from "node:fs/promises";
+import { mkdir, readFile, writeFile } from "node:fs/promises";
 import { setTimeout as delay } from "node:timers/promises";
 import { chromium } from "playwright";
 
@@ -47,7 +47,7 @@ const guest = { event_id: guestId, title: "Participação aceita de teste", venu
 async function setup(width) {
   const context = await browser.newContext({ viewport: { width, height: 900 }, timezoneId: "America/Sao_Paulo" });
   await context.addCookies([{ name: "sb-example-auth-token", value: "base64-" + encoded(session), url: origin, sameSite: "Lax" }]);
-  const state = { events: [...initialEvents(), ...moreEvents(), { ...initialEvents()[1], id: "77777777-7777-4777-8777-777777777777", title: "Show de dezembro", starts_at: "2026-12-02T23:00:00Z" }], accepted: false, failAgenda: false, failFinance: false, writes: [] };
+  const state = { events: [...initialEvents(), ...moreEvents(), { ...initialEvents()[1], id: "77777777-7777-4777-8777-777777777777", title: "Show de dezembro", starts_at: "2026-12-02T23:00:00Z" }], accepted: false, failAgenda: false, failFinance: false, invalidFinance: false, writes: [] };
   await context.route(api + "/**", async route => {
     const request = route.request();
     const url = new URL(request.url());
@@ -76,7 +76,7 @@ async function setup(width) {
     else if (rpc === "stage_accepted_shows") result = filtered(state.accepted ? [guest] : [],url);
     else if (rpc === "stage_finance_organizer_overview") {
       if (state.failFinance) { status = 503; result = { message: "Fixture unavailable" }; }
-      else result = initialEvents().map(event => ({ event_id: event.id, title: event.title, starts_at: event.starts_at, event_status: event.status, gross_revenue: 3000, received: 1500, expense_total: 100, expense_paid: 50, musician_agreed: 800, musician_paid: 400, musician_unpriced: 0, transport_total: 100 }));
+      else result = initialEvents().map(event => ({ event_id: event.id, title: event.title, starts_at: event.starts_at, event_status: event.status, gross_revenue: state.invalidFinance ? "invalid" : 3000, received: 1500, expense_total: 100, expense_paid: 50, musician_agreed: 800, musician_paid: 400, musician_unpriced: 0, transport_total: 100 }));
     } else if (rpc === "stage_finance_event_team") {
       await delay(body.p_event_id === firstId ? 350 : 20);
       result = { status: "ok", items: [{ invitation_id: invitationId, musician_name: body.p_event_id === firstId ? "Equipe A" : "Equipe B", fee: 400, paid_amount: 0 }] };
@@ -151,6 +151,18 @@ try {
       await page.getByLabel("Atuação").selectOption("musician");
       assert.equal(await page.locator(".finance-event").count(), 0);
       await page.getByLabel("Atuação").selectOption("all");
+      const downloadReady=page.waitForEvent("download");
+      await page.getByRole("button",{name:"Exportar CSV detalhado",exact:true}).click();
+      const download=await downloadReady;
+      assert.equal(download.suggestedFilename(),"stage-flow-financeiro-detalhado.csv");
+      const exported=await readFile(await download.path(),"utf8");
+      assert.equal(exported.charCodeAt(0),0xfeff);
+      assert.equal(exported.split("\r\n").length,3);
+      assert.ok(exported.includes('"3000,00";"1500,00"'));
+      assert.ok(exported.includes('"2100,00";"1050,00"'));
+      assert.ok(!/NaN|undefined/.test(exported));
+      const receivedCard=page.locator('section[aria-label="Resumo financeiro"] .sf-ui-stat').filter({hasText:"Recebido registrado"});
+      assert.match(await receivedCard.innerText(),/R\$\s*3\.000,00/);
       await page.getByRole("button", { name: "Editar financeiro e pagamentos", exact: true }).first().click();
       await page.getByRole("button", { name: "Editar financeiro e pagamentos", exact: true }).last().click();
       await page.getByText("Equipe B", { exact: true }).waitFor();
@@ -172,13 +184,19 @@ try {
         await page.reload();
         await page.getByRole("alert").filter({ hasText: "Não foi possível carregar seus shows" }).waitFor();
         assert.equal(await page.getByText("Nenhum show próprio neste mês", { exact: true }).count(), 0);
+        state.invalidFinance=true;
+        await page.goto(origin+"/financeiro");
+        await page.getByRole("alert").filter({hasText:"Os dados financeiros contêm um valor inválido"}).waitFor();
+        assert.equal(await page.locator('section[aria-label="Resumo financeiro"]').count(),0);
+        assert.equal(await page.getByRole("button",{name:"Exportar CSV detalhado",exact:true}).isDisabled(),true);
+        state.invalidFinance=false;
         state.failFinance = true;
         await page.goto(origin + "/financeiro");
         await page.getByText("Financeiro indisponível", { exact: true }).waitFor();
         assert.equal(await page.locator('section[aria-label="Resumo financeiro"]').count(), 0);
       }
       assert.deepEqual(errors, [], "browser console errors");
-      console.log(`PASS ${width}px: month/cursor pagination, deep links, agenda creation, finance filters and team response isolation`);
+      console.log(`PASS ${width}px: month/cursor pagination, deep links, agenda creation, financial totals/CSV download, data-error recovery and team response isolation`);
     } catch (error) {
       await page.screenshot({ path: `test-results/failure-${width}.png`, fullPage: true }).catch(() => {});
       throw error;
