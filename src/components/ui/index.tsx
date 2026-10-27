@@ -11,33 +11,39 @@ import "./tokens.css";
 type Intent="primary"|"secondary"|"ghost"|"danger";
 type ButtonProps=ButtonHTMLAttributes<HTMLButtonElement>&{variant?:Intent;loading?:boolean};
 export function Button({variant="primary",loading=false,disabled=false,className="",children,...props}:ButtonProps){
- return <button {...props} disabled={disabled||loading} className={"sf-ui-button sf-ui-button-"+variant+" "+className}>
+ return <button type="button" {...props} disabled={disabled||loading} className={"sf-ui-button sf-ui-button-"+variant+" "+className}>
   {loading&&<LoaderCircle size={16} className="sf-ui-spin" aria-hidden="true"/>}{children}
  </button>;
 }
 type FieldProps={label:string;hint?:string;error?:string};
 export function Input({label,hint,error,id,className="",...props}:InputHTMLAttributes<HTMLInputElement>&FieldProps){
  const generated=useId();const fieldId=id||generated;
+ const helpId=(hint||error)?fieldId+"-help":undefined;
  return <div className="sf-ui-field">
   <label htmlFor={fieldId}>{label}</label>
-  <input {...props} id={fieldId} className={"sf-ui-input "+className} aria-invalid={Boolean(error)}/>
-  {(hint||error)&&<small className={error?"sf-ui-error":""}>{error||hint}</small>}
+  <input {...props} id={fieldId} className={"sf-ui-input "+className}
+   aria-describedby={helpId} aria-invalid={Boolean(error)}/>
+  {(hint||error)&&<small id={helpId} className={error?"sf-ui-error":""}>{error||hint}</small>}
  </div>;
 }
 export function Select({label,hint,error,id,className="",children,...props}:SelectHTMLAttributes<HTMLSelectElement>&FieldProps){
  const generated=useId();const fieldId=id||generated;
+ const helpId=(hint||error)?fieldId+"-help":undefined;
  return <div className="sf-ui-field">
   <label htmlFor={fieldId}>{label}</label>
-  <select {...props} id={fieldId} className={"sf-ui-input "+className} aria-invalid={Boolean(error)}>{children}</select>
-  {(hint||error)&&<small className={error?"sf-ui-error":""}>{error||hint}</small>}
+  <select {...props} id={fieldId} className={"sf-ui-input "+className}
+   aria-describedby={helpId} aria-invalid={Boolean(error)}>{children}</select>
+  {(hint||error)&&<small id={helpId} className={error?"sf-ui-error":""}>{error||hint}</small>}
  </div>;
 }
 export function Textarea({label,hint,error,id,className="",...props}:TextareaHTMLAttributes<HTMLTextAreaElement>&FieldProps){
  const generated=useId();const fieldId=id||generated;
+ const helpId=(hint||error)?fieldId+"-help":undefined;
  return <div className="sf-ui-field">
   <label htmlFor={fieldId}>{label}</label>
-  <textarea {...props} id={fieldId} className={"sf-ui-input "+className} aria-invalid={Boolean(error)}/>
-  {(hint||error)&&<small className={error?"sf-ui-error":""}>{error||hint}</small>}
+  <textarea {...props} id={fieldId} className={"sf-ui-input "+className}
+   aria-describedby={helpId} aria-invalid={Boolean(error)}/>
+  {(hint||error)&&<small id={helpId} className={error?"sf-ui-error":""}>{error||hint}</small>}
  </div>;
 }
 export function Card({children,className="",title,description}:{
@@ -63,11 +69,27 @@ export function Avatar({name,src,size="md"}:{name:string;src?:string|null;size?:
  </span>;
 }
 export function Tabs({tabs,value,onChange,label="Abas"}:{
- tabs:{id:string;label:string}[];value:string;onChange:(v:string)=>void;label?:string
+ tabs:{id:string;label:string;panelId?:string}[];
+ value:string;onChange:(v:string)=>void;label?:string
 }){
+ const refs=useRef<(HTMLButtonElement|null)[]>([]);
  return <div className="sf-ui-tabs" role="tablist" aria-label={label}>
-  {tabs.map(t=><button type="button" role="tab" key={t.id}
-   aria-selected={t.id===value} className={t.id===value?"is-selected":""}
+  {tabs.map((t,index)=><button type="button" role="tab" key={t.id}
+   ref={node=>{refs.current[index]=node;}}
+   aria-selected={t.id===value} aria-controls={t.panelId}
+   tabIndex={t.id===value?0:-1}
+   className={t.id===value?"is-selected":""}
+   onKeyDown={event=>{
+    let next=-1;
+    if(event.key==="ArrowRight")next=(index+1)%tabs.length;
+    else if(event.key==="ArrowLeft")next=(index-1+tabs.length)%tabs.length;
+    else if(event.key==="Home")next=0;
+    else if(event.key==="End")next=tabs.length-1;
+    if(next<0||!tabs.length)return;
+    event.preventDefault();
+    onChange(tabs[next].id);
+    refs.current[next]?.focus();
+   }}
    onClick={()=>onChange(t.id)}>{t.label}</button>)}
  </div>;
 }
