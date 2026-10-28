@@ -19,7 +19,7 @@ function fn(text,name){
  return text.slice(p,end);
 }
 
-test("singer signup has explicit optional musician access while free singer and musician profiles stay separate",()=>{
+test("singer signup keeps independent role grants while public artistic identity is unified",()=>{
  assert.match(signup,/const \[alsoMusician,setAlsoMusician\] = useState\(false\)/);
  assert.match(signup,/artistKind==="lead"&&<label className="signup-producer-add"/);
  assert.match(signup,/Também sou músico/);
@@ -30,7 +30,7 @@ test("singer signup has explicit optional musician access while free singer and 
  assert.doesNotMatch(schema,/set plan_code='artist_plus'/);
 });
 
-test("profile hub sits by notifications and keeps distinct singer/musician public profiles",()=>{
+test("profile hub keeps separate roles inside one public artistic identity",()=>{
  assert.match(dashboard,/<NotificationBell\/>\s*<DashboardAccountMenu/);
  assert.match(dashboard,/isOwnerAdmin=\{isOwnerAdmin\}/);
  const menu=read("components/dashboard-account-menu.tsx");
@@ -46,7 +46,8 @@ test("profile hub sits by notifications and keeps distinct singer/musician publi
  assert.match(hub,/Cantor \/ artista principal/);
  assert.match(hub,/Músico \/ instrumentista/);
  assert.match(hub,/href=\{"\/"\+encodeURIComponent\(account\.username\)\}/);
- assert.match(hub,/href=\{"\/musico\/"\+encodeURIComponent\(account\.musician_slug\)\}/);
+ assert.match(hub,/account\.username&&account\.is_public/);
+ assert.match(hub,/Perfil Artístico|perfil artístico|perfil único/);
  assert.match(hub,/\/perfil-artistico/);
  assert.match(hub,/\/perfil-artistico\?aba=instrumentista/);
  assert.match(hub,/stage_my_account_identity/);

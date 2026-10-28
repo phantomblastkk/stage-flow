@@ -24,7 +24,7 @@ type ArtistRole="singer"|"musician";
 const tabs: {id:AccountTab;label:string;sub:string;Icon:typeof UserRound}[]=[
   {id:"inicio",label:"Visão geral",sub:"Minha conta",Icon:UserRound},
   {id:"cantor",label:"Perfil de cantor",sub:"Página artística",Icon:Mic2},
-  {id:"musico",label:"Perfil de músico",sub:"Portfólio",Icon:Guitar},
+  {id:"musico",label:"Atuação como músico",sub:"Especialidades",Icon:Guitar},
   {id:"dados",label:"Dados pessoais",sub:"Nome e @",Icon:Save},
   {id:"seguranca",label:"E-mail e segurança",sub:"Acesso à conta",Icon:KeyRound},
   {id:"privacidade",label:"Privacidade",sub:"Publicações e dados",Icon:Shield}
@@ -188,7 +188,7 @@ export default function MinhaConta(){
      await load();
      await refreshAccount();
      flash(role==="musician"
-       ?"Função de músico ativada. Agora você pode editar e publicar seu portfólio."
+       ?"Função de músico ativada. Agora adicione seus instrumentos ao Perfil Artístico."
        :"Função de cantor ativada. Escolha seu @ e prepare sua página artística.");
      setActiveTab(role==="singer"?"cantor":"musico");
      const url=new URL(window.location.href);
@@ -292,9 +292,9 @@ export default function MinhaConta(){
                <div><h3>Músico / instrumentista</h3>
                  <small>{account.is_musician?"Função ativa":"Função não ativada"}</small></div>
              </div>
-             <p>{account.is_musician?"Instrumentos, trabalhos, disponibilidade e portfólio de músico.":"Ative um portfólio separado para mostrar seus instrumentos e trabalhos."}</p>
+             <p>{account.is_musician?"Instrumentos, trabalhos e disponibilidade no seu Perfil Artístico.":"Ative a função de músico para acrescentar instrumentos e trabalhos ao mesmo perfil."}</p>
              <button type="button" className="account-card-cta" onClick={()=>switchTab("musico")}>
-               {account.is_musician?"Gerenciar perfil de músico":"Conhecer perfil de músico"} <ArrowRight size={16}/>
+               {account.is_musician?"Gerenciar atuação musical":"Conhecer função de músico"} <ArrowRight size={16}/>
              </button>
            </article>
          </div>
@@ -341,27 +341,27 @@ export default function MinhaConta(){
 
        {activeTab==="musico"&&<section className="account-section" aria-label="Meu perfil de músico">
          <div className="account-section-heading"><span className="account-kicker"><Guitar size={15}/> PORTFÓLIO PROFISSIONAL</span>
-           <h2>Meu perfil de músico</h2>
-           <p>Instrumentos, repertório, trabalhos e disponibilidade em um portfólio próprio.</p>
+           <h2>Minha atuação como músico</h2>
+           <p>Instrumentos, repertório, trabalhos e disponibilidade na mesma página artística.</p>
          </div>
          {account.is_musician?<>
            <div className="account-profile-banner account-musician-banner">
-             <div><small>PORTFÓLIO DE MÚSICO</small><h3>{account.display_name}</h3>
-               <p>{account.musician_slug?"/musico/"+account.musician_slug:"Prepare seu portfólio profissional"}</p></div>
+             <div><small>PERFIL ARTÍSTICO · MÚSICO</small><h3>{account.display_name}</h3>
+               <p>{account.username&&account.is_public?"/"+account.username:account.musician_slug?"/musico/"+account.musician_slug:"Prepare seus dados musicais"}</p></div>
              <span className="account-public-status">{account.musician_published?"Publicado":"Não publicado"}</span>
            </div>
            <div className="account-role-actions">
-             <Link className="btn btn-primary" href="/perfil-artistico?aba=instrumentista"><Guitar size={16}/> Editar portfólio de músico</Link>
+             <Link className="btn btn-primary" href="/perfil-artistico?aba=instrumentista"><Guitar size={16}/> Editar instrumentos e atuação</Link>
              {account.musician_slug&&account.musician_published&&
-               <Link className="btn btn-quiet" href={"/musico/"+encodeURIComponent(account.musician_slug)} target="_blank" rel="noopener noreferrer"><ExternalLink size={15}/> Ver portfólio público</Link>}
+               <Link className="btn btn-quiet" href={account.username&&account.is_public?"/"+encodeURIComponent(account.username):"/musico/"+encodeURIComponent(account.musician_slug)} target="_blank" rel="noopener noreferrer"><ExternalLink size={15}/> Ver perfil único</Link>}
              <Link className="btn btn-quiet" href="/meus-convites"><CalendarDays size={15}/> Convites para tocar</Link>
              <Link className="btn btn-quiet" href="/minha-disponibilidade">Disponibilidade</Link>
            </div>
-           <p className="account-note"><ShieldCheck size={17}/> Seu perfil de músico é independente do perfil de cantor. Publicar ou ocultar um não altera o outro.</p>
+           <p className="account-note"><ShieldCheck size={17}/> Seu perfil público é único. A publicação das informações de músico continua opcional e não expõe rascunhos nem dados privados.</p>
          </>:<div className="account-activation">
            <Guitar size={28}/>
-           <h3>Um portfólio só seu.</h3>
-           <p>Mostre instrumentos e trabalhos como músico, mesmo que você também cante. A ativação é permanente para você e só poderá ser revertida pela administração.</p>
+           <h3>Uma identidade, vários talentos.</h3>
+           <p>Mostre instrumentos e trabalhos na sua página artística, mesmo quando também canta. A ativação da função de músico é permanente, salvo ação da administração.</p>
            <button type="button" className="btn btn-primary" disabled={Boolean(enabling)}
              onClick={event=>openRoleConfirmation("musician",event)}>Ativar função de músico <ArrowRight size={16}/></button>
          </div>}
@@ -436,22 +436,22 @@ export default function MinhaConta(){
          </div>
        </section>}
 
-       {activeTab==="privacidade"&&<section className="account-section" aria-label="Privacidade das minhas páginas">
+       {activeTab==="privacidade"&&<section className="account-section" aria-label="Privacidade do perfil artístico">
          <div className="account-section-heading"><span className="account-kicker"><Shield size={15}/> SUA VISIBILIDADE</span>
            <h2>Privacidade e publicação</h2>
-           <p>Você controla separadamente o que é publicado como cantor e como músico.</p>
+           <p>Você controla o que aparece na página artística única. Informações de músico só são exibidas após publicação.</p>
          </div>
          <div className="account-privacy-list">
-           <article><div><Mic2 size={19}/><div><h3>Página de cantor</h3>
+           <article><div><Mic2 size={19}/><div><h3>Perfil artístico principal</h3>
              <p>{account.is_singer
                ?account.is_public?"Seu perfil de cantor está público.":"Seu perfil de cantor está oculto do público."
                :"Você ainda não ativou uma página de cantor."}</p></div></div>
              <button type="button" onClick={()=>switchTab("cantor")}>Gerenciar <ArrowRight size={15}/></button>
            </article>
-           <article><div><Guitar size={19}/><div><h3>Portfólio de músico</h3>
+           <article><div><Guitar size={19}/><div><h3>Informações do músico</h3>
              <p>{account.is_musician
-               ?account.musician_published?"Seu portfólio de músico está público.":"Seu portfólio de músico está oculto do público."
-               :"Você ainda não ativou um portfólio de músico."}</p></div></div>
+               ?account.musician_published?"Seus instrumentos e dados profissionais estão públicos no perfil.":"Seus dados adicionais de músico estão ocultos."
+               :"Você ainda não ativou a função de músico."}</p></div></div>
              <button type="button" onClick={()=>switchTab("musico")}>Gerenciar <ArrowRight size={15}/></button>
            </article>
          </div>
@@ -459,7 +459,7 @@ export default function MinhaConta(){
            <ShieldCheck size={21}/>
            <div><strong>O que fica privado?</strong>
              <p>Seu e-mail de acesso, sua senha e dados internos da conta não aparecem nas páginas públicas. Informações de contratação e recursos privados só podem ser lidos pelas pessoas autorizadas.</p>
-             <p>Para ocultar fotos, biografia ou o perfil inteiro, altere a publicação no editor de cantor ou músico e salve. A página pública só mostra conteúdo publicado.</p>
+             <p>Para ocultar fotos, biografia ou informações de músico, ajuste a publicação na seção correspondente do Perfil Artístico. A página única só mostra conteúdo publicado.</p>
              <button type="button" className="account-inline-action" onClick={()=>switchTab("seguranca")}>Revisar segurança da minha conta <ArrowRight size={15}/></button>
            </div>
          </div>
