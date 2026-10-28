@@ -98,7 +98,7 @@ test("dashboard avatar chooses uploaded singer or musician photo, falls back to 
  assert.match(panel,/stage_my_musician_portfolio/);
  assert.match(panel,/stage-artist-public/);
  assert.match(panel,/stage-musician-media/);
- assert.match(panel,/const accountPhoto=isSupport\?\(musicianPhoto\|\|singerPhoto\)/);
+ assert.match(panel,/const accountPhoto=singerPhoto\|\|musicianPhoto/);
  assert.match(panel,/avatarUrl=\{accountPhoto\}/);
  assert.match(menu,/const portrait=avatarUrl&&!imageBroken/);
  assert.match(menu,/onError=\{\(\)=>setImageBroken\(true\)\}/);
