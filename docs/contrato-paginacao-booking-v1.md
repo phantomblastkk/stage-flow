@@ -2,7 +2,8 @@
 
 Estado: três RPCs de leitura com implementação candidata em
 `supabase/migrations/20261028035231_booking_cursor_reads_v1.sql`, para testes em
-PostgreSQL descartável. Sem instalação remota ou ativação no frontend. Não substituir as RPCs atuais apenas adicionando range/limit
+PostgreSQL descartável. Sem instalação remota ou ativação no frontend.
+[Evidências da implementação](stageflow-saas-phase-13-cursor-rpcs-2026-10-28.md). Não substituir as RPCs atuais apenas adicionando range/limit
 sobre o JSON já agregado: isso não recupera registros além dos limites internos.
 
 ## Operações propostas
@@ -11,7 +12,7 @@ sobre o JSON já agregado: isso não recupera registros além dos limites intern
 |---|---|---|
 | stage_hiring_threads_page | cursor opcional, page_size (padrão 20, máximo 50) | last_message_at DESC, id DESC; participante autenticado |
 | stage_hiring_messages_page | thread_id, cursor anterior opcional, page_size (padrão 50, máximo 100) | created_at DESC, id DESC; participante da conversa |
-| leitura individual de conversa | thread_id | Confirma participação e retorna cabeçalho sem exigir que esteja na primeira página |
+| stage_hiring_thread | thread_id | Confirma participação e retorna cabeçalho sem exigir que esteja na primeira página |
 | confirmação de leitura | thread_id e marcador de mensagem efetivamente recebida | Mutação separada da consulta de histórico; validar marcador e participante |
 
 As três leituras têm SQL candidato; confirmação de leitura permanece proposta.

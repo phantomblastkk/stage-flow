@@ -60,7 +60,10 @@ local disponível neste executor; a execução SQL é verificada no CI descartá
 Advisors remotos não foram executados, para respeitar o escopo sem banco remoto.
 
 - 220 testes Node existentes verificados localmente.
-- CI de banco e CI geral: registrar resultados aprovados antes da entrega.
+- CI de PostgreSQL 17 aprovado no commit `7e35ce1bbc718650f40ccc5c61e684f10f81b102`, com aplicação dupla e execução das assertions de paginação/isolamento.
+- [Suíte de banco aprovada](https://github.com/phantomblastkk/stage-flow/actions/runs/40629818985).
+- [CI geral aprovado](https://github.com/phantomblastkk/stage-flow/actions/runs/40629819082): contratos, TypeScript, build e doze cenários de navegador preservados.
+- [Diff aplicado](https://github.com/phantomblastkk/stage-flow/compare/b80e11716b0ed1994d4c47092b7c5ee636192605...7e35ce1bbc718650f40ccc5c61e684f10f81b102).
 
 ## Performance e limites
 
