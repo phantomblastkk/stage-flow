@@ -168,6 +168,14 @@ try{
    await page.getByRole("button",{name:"Criar perfil",exact:true}).click();
    await form.getByLabel("Tipo de perfil",{exact:true}).selectOption("venue");
    await form.getByLabel("Nome",{exact:true}).fill("Casa do Henrique");
+   const venueForm=await form.evaluate(el=>({
+    kind:el.querySelector("#managed-profile-kind")?.value,
+    name:el.querySelector('input[maxlength="100"]')?.value,
+    valid:el.checkValidity(),
+    invalid:[...el.elements].filter(x=>x.validity&&!x.validity.valid).map(x=>({name:x.name,id:x.id,value:x.value,reason:x.validationMessage}))
+   }));
+   assert.ok(venueForm.valid&&venueForm.kind==="venue",
+    "Venue form must be valid and selected before save: "+JSON.stringify(venueForm));
    const venueSaved=waitProfileSave("venue");
    await form.getByRole("button",{name:"Salvar perfil",exact:true}).click();await venueSaved;await page.getByText("Perfil salvo.",{exact:true}).waitFor();
    await page.getByRole("heading",{name:"Casa do Henrique",exact:true}).waitFor();
