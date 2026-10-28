@@ -21,5 +21,5 @@ test("mobile conversation keeps message composer accessible with iOS dynamic vie
  assert.ok(chat.includes(".hiring-messages{min-height:0;max-height:none"));
  assert.ok(chat.includes(".hiring-composer textarea{font-size:16px"));
  assert.ok(chat.includes(".hiring-composer .sf-ui-button{min-width:79px;min-height:44px"));
- assert.ok(shell.includes(".sf-workspace-route-content>main>.container>.nav{display:none}"));
+ assert.ok(shell.includes(".sf-workspace-route-content>.hiring-page>.container>.nav{display:none}"));
 });

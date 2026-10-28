@@ -242,7 +242,7 @@
 /* Responsive task-first panel and no duplicate global headers on private pages. */
 .sf-mobile-priority-rail{display:none}
 @media(max-width:850px){
- .sf-workspace-route-content>main>.container>.nav{display:none}
+ .sf-workspace-route-content>.hiring-page>.container>.nav{display:none}
  .sf-mobile-priority-rail{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:9px;margin:13px 0 20px}
  .sf-mobile-priority-rail>a{display:flex;align-items:center;gap:9px;min-width:0;min-height:65px;padding:11px 10px;border-radius:13px;border:1px solid #7956a1;background:#2b2041;color:#f4eaff;text-decoration:none}
  .sf-mobile-priority-rail>a>svg:first-child{flex:none;color:#d4b4ff}
