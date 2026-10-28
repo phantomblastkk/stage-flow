@@ -137,3 +137,16 @@
  .account-role-dialog{padding:21px}
 }
 @media(prefers-reduced-motion:reduce){.account-card-cta,.account-tab{transition:none}.account-card-cta:hover{transform:none}}
+
+@media(max-width:770px){
+ .account-side{scrollbar-width:none;scroll-snap-type:x proximity;gap:6px;border-radius:14px}
+ .account-side::-webkit-scrollbar{display:none}
+ .account-tab{scroll-snap-align:start;min-height:48px;font-size:14px}
+ .account-tab-label strong{font-size:13px}
+ .account-section-heading p,.account-role-card>p,.account-note,.account-tip{font-size:14px;line-height:1.6}
+ .account-form>label,.account-form .field>label{font-size:14px}
+ .account-form input,.account-form select,.account-form textarea{font-size:16px}
+ .account-quick-grid button strong{font-size:14px}
+ .account-quick-grid button span{font-size:12px}
+ .account-card-cta,.account-role-actions .btn{font-size:14px;min-height:44px}
+}

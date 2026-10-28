@@ -240,3 +240,14 @@
 .premium-profile-manual-share label{font-size:12px}
 .premium-profile-manual-share input{max-width:700px;width:100%;border-radius:9px;border:1px solid #61577f;color:#fff;background:#14152b;padding:12px}
 .premium-profile-manual-share input:focus-visible{outline:2px solid #bb9bff;outline-offset:3px}
+
+@media(max-width:720px){
+ .pro-public-page .premium-site-tabs{scrollbar-width:none}
+ .pro-public-page .premium-site-tabs a{min-height:44px;white-space:nowrap;font-size:13px}
+ .pro-public-page .premium-site-socials a{width:44px;height:44px}
+ .pro-public-page .premium-site-intro{font-size:14px;line-height:1.65}
+ .premium-musician-heading p,.premium-musician-booking>p{font-size:14px}
+ .premium-musician-tags>span{font-size:12px}
+ .premium-musician-details h3,.premium-musician-work h3{font-size:14px}
+ .premium-musician-work>a{min-height:44px;font-size:13px}
+}

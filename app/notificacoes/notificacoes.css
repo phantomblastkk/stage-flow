@@ -38,3 +38,15 @@
 .notifications-footer{color:#a99dbd;line-height:1.7;font-size:11px;margin:19px 0}
 .notifications-page button:focus-visible,.notifications-page a:focus-visible{outline:2px solid #cfafff;outline-offset:3px}
 @media(max-width:640px){.notifications-body{padding:13px}.notifications-item{padding:13px;gap:10px}.notifications-icon{width:36px;height:36px}.notifications-item-actions .btn{flex:1}.notifications-toolbar{align-items:stretch}.notifications-actions .btn{flex:1}}
+
+@media(max-width:640px){
+ .notifications-hero{padding:18px 0 12px}
+ .notifications-hero h1{font-size:30px;margin:10px 0}
+ .notifications-hero>p{font-size:14px}
+ .notifications-item-title strong{font-size:15px}
+ .notifications-content>p{font-size:14px;line-height:1.55}
+ .notifications-item-meta{font-size:12px}
+ .notifications-filters button{font-size:13px;min-height:44px}
+ .notifications-item-actions .btn,.notifications-actions .btn{font-size:13px;min-height:44px}
+ .notifications-empty p,.notifications-footer{font-size:13px}
+}

@@ -259,3 +259,17 @@
  .sf-operations-opportunities{display:none}
 }
 @media(max-width:390px){.sf-mobile-priority-rail{grid-template-columns:1fr}}
+
+/* Etapa final: legibilidade e espaco de toque em listas operacionais. */
+@media(max-width:600px){
+ .sf-workspace-pane-head h2{font-size:18px}
+ .sf-workspace-pane-head p,.sf-workspace-pane-head a{font-size:13px}
+ .sf-workspace-show-desc strong,.sf-workspace-activity-copy strong{font-size:14px}
+ .sf-workspace-show-desc span,.sf-workspace-activity-copy small{font-size:13px;line-height:1.5}
+ .sf-workspace-activity-time{font-size:12px}
+ .sf-workspace-show-link,.sf-workspace-activity-link{min-height:65px}
+ .sf-workspace-quick-actions a{min-height:44px;font-size:13px}
+ .sf-workspace-group-items .sf-workspace-link{min-height:44px;font-size:13px}
+ .sf-workspace-role button{font-size:13px;min-height:44px}
+ .sf-workspace-welcome p{font-size:14px}
+}
