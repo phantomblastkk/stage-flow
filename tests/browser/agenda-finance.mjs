@@ -255,8 +255,24 @@ try {
   // A fresh anonymous context keeps this independent from workspace fixtures.
   for (const width of [360, 768, 1280]) {
     const context = await browser.newContext({ viewport: { width, height: 900 } });
-    await context.route(api + "/**", route => route.fulfill({ status: 401,
-      contentType: "application/json", body: JSON.stringify({ message: "Anonymous test" }) }));
+    let signupErrorMode = "existing", signupAttempts = 0;
+    await context.route(api + "/**", route => {
+      if (new URL(route.request().url()).pathname === "/auth/v1/signup") {
+        signupAttempts++;
+        const duplicate = signupErrorMode === "existing";
+        return route.fulfill({
+          status: duplicate ? 422 : 500,
+          contentType: "application/json",
+          headers: { "Access-Control-Allow-Origin": "*" },
+          body: JSON.stringify({
+            code: duplicate ? "user_already_exists" : "unexpected_failure",
+            message: duplicate ? "User already registered" : "Database error saving new user"
+          })
+        });
+      }
+      return route.fulfill({ status: 401, contentType: "application/json",
+        body: JSON.stringify({ message: "Anonymous test" }) });
+    });
     const page = await context.newPage();
     const errors = [];
     page.on("pageerror", error => errors.push(error.message));
@@ -280,8 +296,28 @@ try {
         await noHorizontalOverflow(page, "signup role " + name + " " + width);
       }
       await page.screenshot({ path: `test-results/public-signup-${width}.png`, fullPage: true });
+      // Synthetic Auth signup rejects duplicates and trigger collisions without exposing raw errors.
+      await page.locator("#name").fill("Artista de Teste");
+      await page.locator("#slug").fill("artista-de-teste");
+      await page.locator("#email").fill("artista@example.test");
+      await page.locator("#password").fill("senha-ficticia-123");
+      const submitSignup = page.getByRole("button", { name: "Criar minha conta gratuita", exact: true });
+      const duplicateResponse = page.waitForResponse(r => new URL(r.url()).pathname === "/auth/v1/signup");
+      await submitSignup.click();
+      await duplicateResponse;
+      await page.getByRole("status").filter({ hasText: "Este usuário já existe. Use Entrar" }).waitFor();
+      assert.equal(signupAttempts, 1, "Duplicate signup must send just one synthetic request");
+      signupErrorMode = "database";
+      const collisionResponse = page.waitForResponse(r => new URL(r.url()).pathname === "/auth/v1/signup");
+      await submitSignup.click();
+      await collisionResponse;
+      await page.getByRole("status").filter({ hasText: "Este usuário já existe ou o @ artístico informado está em uso" }).waitFor();
+      assert.equal(signupAttempts, 2, "A retry should send only one synthetic request");
+      assert.ok(!(await page.getByRole("status").innerText()).includes("Database error saving new user"));
+      await noHorizontalOverflow(page, "signup duplicate error " + width);
+      await page.screenshot({ path: "test-results/public-signup-duplicate-" + width + ".png", fullPage: true });
       assert.deepEqual(errors, []);
-      console.log(`PASS public home/signup ${width}px: anonymous navigation, keyboard roles and overflow`);
+      console.log(`PASS public home/signup ${width}px: anonymous navigation, keyboard roles, duplicate messages and overflow`);
     } finally { await context.close(); }
   }
   for (const width of [360, 768, 1280]) {
