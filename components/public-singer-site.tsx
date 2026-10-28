@@ -130,6 +130,7 @@ export default function PublicSingerSite({musicianSlug}:{musicianSlug?:string}){
   const [bookingContact,setBookingContact]=useState<PublicBookingContact|null|undefined>(undefined);
   const [error,setError]=useState("");
   const [copied,setCopied]=useState(false);
+  const [manualUrl,setManualUrl]=useState("");
   const [month,setMonth]=useState(()=>new Date(
     new Date().getFullYear(),new Date().getMonth(),1
   ));
@@ -304,6 +305,7 @@ export default function PublicSingerSite({musicianSlug}:{musicianSlug?:string}){
 
   async function share(){
     const url=window.location.href;
+    setManualUrl("");
     if(navigator.share){
       try{
         await navigator.share({title:(artist?.name||"Artista")+" — StageFlow",url});
@@ -311,7 +313,7 @@ export default function PublicSingerSite({musicianSlug}:{musicianSlug?:string}){
       }catch(e){if(e instanceof Error&&e.name==="AbortError")return;}
     }
     try{await navigator.clipboard.writeText(url);setCopied(true);}
-    catch{setError("Copie o endereço diretamente no navegador.");}
+    catch{setManualUrl(url);setError("Selecione o endereço abaixo para copiar manualmente.");}
   }
 
   if(loading)return <main className="pro-public-loading">
@@ -598,6 +600,12 @@ export default function PublicSingerSite({musicianSlug}:{musicianSlug?:string}){
           </div>
         </div>
       </section>}
+      {manualUrl&&<div className="premium-profile-manual-share">
+        <label htmlFor="mp-manual-share">Endereço do perfil</label>
+        <input id="mp-manual-share" readOnly value={manualUrl}
+          onFocus={event=>event.currentTarget.select()}
+          onClick={event=>event.currentTarget.select()}/>
+      </div>}
       <footer className="premium-site-footer">
         <span><Music2 size={18}/> STAGE FLOW
           <small>Conectando artistas, músicos e produtores</small>

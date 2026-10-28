@@ -65,10 +65,11 @@ test("main and develop require manual Vercel deployments",()=>{
  assert.equal(config.git.deploymentEnabled,false);
 });
 
-test("published musician portfolios have their own safe share metadata",()=>{
+test("published musician links reuse the unified public page and keep safe metadata",()=>{
  const musicianMetadata=source("app/musico/[slug]/layout.tsx");
  const musicianPage=source("app/musico/[slug]/page.tsx");
- assert.match(musicianPage,/stage_public_musician_portfolio/);
+ assert.match(musicianPage,/PublicSingerSite musicianSlug=\{slug\}/);
+ assert.match(source("components/public-singer-site.tsx"),/stage_public_musician_portfolio/);
  assert.match(musicianMetadata,/stage_public_musician_portfolio/);
  assert.match(musicianMetadata,/createClient\(endpoint, anon/);
  assert.match(musicianMetadata,/if \(musician\.slug !== slug/);
@@ -146,12 +147,12 @@ test("free singer chosen accent applies to the one shared public design",()=>{
 });
 
 test("public musician sharing falls back to a selectable URL when clipboard is blocked",()=>{
- const publicMusician=source("app/musico/[slug]/page.tsx");
- const css=source("components/musician-portfolio-polish.css");
+ const publicMusician=source("components/public-singer-site.tsx");
+ const css=source("components/public-singer-site.css");
  assert.match(publicMusician,/setManualUrl\(url\)/);
  assert.match(publicMusician,/id="mp-manual-share" readOnly/);
- assert.match(publicMusician,/event\.currentTarget\.select\(\)/);
- assert.match(css,/\.mp-public-manual-share input:focus-visible/);
+ assert.match(publicMusician,/event=>event\.currentTarget\.select\(\)/);
+ assert.match(css,/\.premium-profile-manual-share input:focus-visible/);
 });
 
 test("switching singer editor tabs refreshes eligibility and preserves the Pro draft",()=>{

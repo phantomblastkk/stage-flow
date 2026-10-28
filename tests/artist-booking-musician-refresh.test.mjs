@@ -37,11 +37,11 @@ test("booking phone is opt-in, account-scoped and never uses private WhatsApp pr
 
 test("singer's booking button goes to chosen WhatsApp, Instagram or private form",()=>{
  assert.match(singer,/stage_public_booking_contact/);
- assert.match(singer,/p_kind:"singer"/);
+ assert.match(singer,/p_kind:musicianSlug\?"musician":"singer"/);
  assert.match(singer,/whatsappBookingUrl\(bookingContact\?\.phone/);
  assert.match(singer,/contactMode==="instagram"/);
  assert.match(singer,/contactIsForm/);
- assert.match(singer,/Contrate o cantor/);
+ assert.match(singer,/Contratar artista/);
  assert.match(singer,/href=\{contactHref\|\|"#premium-contato"\}/);
  assert.match(singer,/target=\{contactHref\?"_blank":undefined\}/);
  assert.match(singer,/rel=\{contactHref\?"noopener noreferrer":undefined\}/);
@@ -73,7 +73,7 @@ test("musician offers direct bookable contact and inline consent-gated Youtube p
  assert.match(musician,/is-primary/);
  assert.match(musician,/MEU INSTRUMENTO PRINCIPAL/);
  assert.match(musician,/instagram\.handle/);
- assert.match(src("app/musico/[slug]/page.tsx"),/p_kind:"musician"/);
+ assert.match(src("components/public-singer-site.tsx"),/p_kind:musicianSlug\?"musician":"singer"/);
  assert.match(src("components/musician-portfolio-polish.css"),/object-position:center 22%/);
 });
 

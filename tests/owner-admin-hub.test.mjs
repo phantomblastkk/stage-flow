@@ -97,12 +97,11 @@ test("public verification badge only appears when public RPC confirms a publishe
  assert.match(hook,/stage_public_verified/);
  assert.match(hook,/setVerified\(!error&&data===true\)/);
  for(const [file,kind] of [
-  ["components/public-singer-site.tsx","singer"],
-  ["app/musico/[slug]/page.tsx","musician"],
+  ["components/public-singer-site.tsx","musicianSlug?"],
   ["app/casa/[slug]/page.tsx","venue"]
  ]){
   const code=read(file);
-  assert.match(code,new RegExp('useStageVerified\\("'+kind+'"'));
+  assert.match(code,kind==='musicianSlug?'?/useStageVerified\(musicianSlug\?"musician":"singer"/:new RegExp('useStageVerified\\("'+kind+'"'));
  }
  assert.match(read("components/musician-portfolio-view.tsx"),/verified&&<StageVerifiedBadge compact\/>/);
  assert.match(read("components/public-singer-site.tsx"),/verified&&<StageVerifiedBadge compact\/>/);

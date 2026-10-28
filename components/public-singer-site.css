@@ -235,3 +235,8 @@
 .premium-musician-work>a{display:flex;align-items:center;gap:9px;margin:10px 0;color:#cbb9ff;text-decoration:none;font-size:12px}
 .premium-musician-work>a:focus-visible{outline:2px solid #bb9bff;outline-offset:4px}
 @media(max-width:700px){.premium-musician-layout{grid-template-columns:1fr}.premium-musician-section{padding:24px 17px}.premium-musician-details,.premium-musician-booking{padding:20px}}
+
+.premium-profile-manual-share{padding:16px 25px;display:grid;gap:8px;background:#201d36;color:#e7dfff}
+.premium-profile-manual-share label{font-size:12px}
+.premium-profile-manual-share input{max-width:700px;width:100%;border-radius:9px;border:1px solid #61577f;color:#fff;background:#14152b;padding:12px}
+.premium-profile-manual-share input:focus-visible{outline:2px solid #bb9bff;outline-offset:3px}
