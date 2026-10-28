@@ -229,3 +229,12 @@
 .sf-profile-hub .nav,.sf-profile-hub .singer-editor-intro{display:none}.sf-profile-seo{margin:22px 0;padding:14px;border:1px solid var(--line);border-radius:12px;font-size:12px;line-height:1.8}.sf-profile-seo summary{cursor:pointer;min-height:30px}.sf-profile-seo svg{display:inline;vertical-align:middle;margin-right:8px}
 @media(max-width:700px){.sf-operations-hero{grid-template-columns:1fr}.sf-operations-hero h2{font-size:21px}.sf-profile-hub{padding:16px 12px}.sf-profile-hub-header{align-items:flex-start;flex-direction:column}}
 .sf-operations-status{display:flex;justify-content:space-between;gap:14px;flex-wrap:wrap;padding:16px 0;border-block:1px solid var(--line)}.sf-operations-status a{text-decoration:none;color:var(--text);font-size:13px;min-height:44px;display:inline-flex;align-items:center;gap:7px;flex-wrap:wrap}.sf-operations-status strong{color:var(--accent);font-size:19px}.sf-operations-status span{font-size:11px;color:var(--muted)}
+
+/* Uma barra mobile: destinos, fontes e areas de toque consistentes. */
+@media(max-width:850px){
+ .sf-workspace-bottom-nav{padding:7px max(7px,env(safe-area-inset-left)) calc(7px + env(safe-area-inset-bottom));gap:3px}
+ .sf-workspace-bottom-nav .sf-workspace-link{min-width:0;min-height:54px;padding:7px 1px;font-size:11px;line-height:1.2;gap:4px}
+ .sf-workspace-bottom-nav .sf-workspace-link svg{width:22px;height:22px}
+ .sf-workspace-bottom-nav .sf-workspace-link.is-active{background:#51366e;border-color:#8e64be}
+ .sf-workspace-bottom-nav .sf-workspace-link span{white-space:nowrap}
+}

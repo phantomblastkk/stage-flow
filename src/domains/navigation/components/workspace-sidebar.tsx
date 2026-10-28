@@ -3,7 +3,8 @@
 import {useEffect,useRef,useState} from "react";
 import Link from "next/link";
 import {usePathname} from "next/navigation";
-import {Menu,PanelLeftClose,X,ChevronDown,CalendarDays,Inbox,Store,Wallet} from "lucide-react";
+import {Menu,PanelLeftClose,ChevronDown} from "lucide-react";
+import WorkspaceMobileNav from "./workspace-mobile-nav";
 import {
   homeItem,workspaceNavigation,
   type WorkspaceRole,type WorkspaceNavItem
@@ -86,13 +87,6 @@ export default function WorkspaceSidebar({role}:{role:WorkspaceRole}){
   </nav>
   <p className="sf-workspace-nav-foot">Tudo o que você precisa, em um só palco.</p>
  </>;
- const bottom=[
-  homeItem,
-  {label:"Agenda",href:"/eventos",icon:CalendarDays},
-  {label:"Convites",href:"/meus-convites",icon:Inbox},
-  {label:"Marketplace",href:"/marketplace",icon:Store},
-  {label:"Financeiro",href:"/financeiro",icon:Wallet}
- ];
  return <>
   <aside className="sf-workspace-sidebar">{nav}</aside>
   <button ref={toggle} className="sf-workspace-mobile-trigger" type="button"
@@ -106,8 +100,6 @@ export default function WorkspaceSidebar({role}:{role:WorkspaceRole}){
    <aside ref={drawerRef} id="sf-workspace-mobile-drawer" className="sf-workspace-drawer"
     role="dialog" aria-modal="true" aria-label="Navegação do StageFlow">{nav}</aside>
   </div>}
-  <nav className="sf-workspace-bottom-nav" aria-label="Acesso rápido no celular">
-   {bottom.map(item=><WorkspaceLink item={item} key={item.href} path={path}/>)}
-  </nav>
+  <WorkspaceMobileNav/>
  </>;
 }

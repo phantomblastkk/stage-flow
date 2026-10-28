@@ -705,3 +705,8 @@
   .market-featured-rail{grid-auto-columns:minmax(0,86%)}
   .market-artist-avatar{width:62px;height:62px}
 }
+
+@media(max-width:850px){
+ .market-shell.has-mobile-workspace-nav{padding-bottom:calc(88px + env(safe-area-inset-bottom))}
+ .market-shell .sf-workspace-bottom-nav{position:fixed;z-index:80}
+}
