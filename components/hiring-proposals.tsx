@@ -1,9 +1,11 @@
 "use client";
 
+import { parseProposalFee } from "@/src/domains/booking/model/fee-input";
 import { FormEvent, useCallback, useEffect, useState } from "react";
 import Link from "next/link";
 import { CalendarClock, CheckCircle2, ClipboardList, FileCheck2, Handshake, LoaderCircle, RotateCcw, Send, XCircle } from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
+import { readProposals, readProposalPrefill, checkProposalSchedule, sendProposal, decideProposal, withdrawProposal } from "@/src/domains/booking/services/negotiation-service";
 import { invitationAgendaHref } from "@/src/domains/booking/model/booking-links";
 import "./hiring-proposals.css";
 
@@ -32,13 +34,6 @@ function initialDate(day:string|null){
   if(!day)return "";
   return day+"T18:00";
 }
-function parseFee(raw:string){
-  const cleaned=raw.trim();
-  if(!cleaned)return null;
-  if(!/^\d+(?:[.,]\d{1,2})?$/.test(cleaned))return undefined;
-  const amount=Number(cleaned.replace(",","."));
-  return amount>0&&amount<=999999.99?amount:undefined;
-}
 
 export default function HiringProposals({thread,onUpdate}:Props){
  const [items,setItems]=useState<Proposal[]>([]);
@@ -56,7 +51,7 @@ export default function HiringProposals({thread,onUpdate}:Props){
  const [scheduleCheck,setScheduleCheck]=useState<"idle"|"checking"|"free"|"busy"|"possible_conflict"|"error">("idle");
 
  const load=useCallback(async()=>{
-  const {data,error:rpcError}=await createClient().rpc("stage_hiring_proposals",{
+  const {data,error:rpcError}=await readProposals(createClient(), {
    p_thread_id:thread.id
   });
   if(rpcError)throw rpcError;
@@ -72,7 +67,7 @@ export default function HiringProposals({thread,onUpdate}:Props){
   void load().catch(e=>{if(alive)setError(e instanceof Error?e.message:"Não foi possível carregar as propostas.");})
    .finally(()=>{if(alive)setLoading(false);});
   if(thread.event_id&&thread.acting_as==="requester") {
-    void Promise.resolve(createClient().rpc("stage_hiring_proposal_prefill",{p_thread_id:thread.id}))
+    void Promise.resolve(readProposalPrefill(createClient(), {p_thread_id:thread.id}))
       .then(({data,error})=>{
         if(!alive||error||data?.status!=="ok"||!data.event)return;
         const saved=data.event as {title:string;venue:string|null;city:string|null;starts_at:string};
@@ -96,7 +91,7 @@ export default function HiringProposals({thread,onUpdate}:Props){
   if(Number.isNaN(local.getTime())){setError("Informe a data antes de consultar.");return;}
   setScheduleCheck("checking");setError("");
   try{
-    const {data,error:rpcError}=await createClient().rpc("stage_musician_schedule_check",{
+    const {data,error:rpcError}=await checkProposalSchedule(createClient(), {
       p_musician_id:thread.other_id,
       p_start:local.toISOString(),p_end:new Date(local.getTime()+4*60*60*1000).toISOString(),
       p_thread_id:thread.id,p_ignore_event:thread.event_id
@@ -108,7 +103,7 @@ export default function HiringProposals({thread,onUpdate}:Props){
  async function submit(e:FormEvent<HTMLFormElement>){
   e.preventDefault();if(busy)return;
   setError("");setNotice("");
-  const amount=parseFee(fee);
+  const amount=parseProposalFee(fee);
   if(amount===undefined){setError("Digite um cachê válido ou deixe vazio para combinar depois.");return;}
   const timestamp=new Date(starts+"-03:00");
   if(!starts||Number.isNaN(timestamp.getTime())){
@@ -116,7 +111,7 @@ export default function HiringProposals({thread,onUpdate}:Props){
   }
   setBusy(true);
   try{
-   const {data,error:rpcError}=await createClient().rpc("stage_hiring_proposal_send",{
+   const {data,error:rpcError}=await sendProposal(createClient(), {
     p_thread_id:thread.id,p_title:title.trim(),p_venue:venue.trim()||null,
     p_city:city.trim()||null,p_starts_at:timestamp.toISOString(),
     p_fee:amount,p_details:details.trim()||null
@@ -151,7 +146,7 @@ export default function HiringProposals({thread,onUpdate}:Props){
    "Recusar esta proposta? O contratante poderá enviar outra."))return;
   setBusy(true);setError("");setNotice("");
   try{
-   const {data,error:rpcError}=await createClient().rpc("stage_hiring_proposal_decide",{
+   const {data,error:rpcError}=await decideProposal(createClient(), {
     p_proposal_id:p.id,p_accept:accept
    });
    if(rpcError)throw rpcError;
@@ -180,7 +175,7 @@ export default function HiringProposals({thread,onUpdate}:Props){
   if(!window.confirm("Retirar esta proposta? Ela ficará no histórico, mas deixará de estar ativa."))return;
   setBusy(true);setError("");setNotice("");
   try{
-   const {data,error:rpcError}=await createClient().rpc("stage_hiring_proposal_withdraw",{
+   const {data,error:rpcError}=await withdrawProposal(createClient(), {
     p_proposal_id:p.id
    });
    if(rpcError||data!=="saved")throw Error("Não foi possível retirar a proposta.");

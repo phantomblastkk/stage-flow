@@ -1,8 +1,10 @@
 "use client";
 
+import { parseFeeInput } from "@/src/domains/booking/model/fee-input";
 import { FormEvent, useCallback, useEffect, useRef, useState } from "react";
 import { Check, ChevronDown, ChevronUp, Handshake, LoaderCircle, Send, Wallet } from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
+import { readFeeDetails, offerFee, acceptFee } from "@/src/domains/booking/services/negotiation-service";
 
 type OfferLog = { amount: number; by_me: boolean; note: string | null; date: string };
 type FeeData = {
@@ -39,16 +41,25 @@ export default function FeeNegotiation({ invitationId, perspective, onChanged, o
   const [countering, setCountering] = useState(false);
   const panelRef = useRef<HTMLDivElement>(null);
 
+  const feeRequest = useRef<AbortController | null>(null);
+  useEffect(() => {
+    setData(null);setAmount("");setNote("");setCountering(false);setFeedback("");
+    return () => { feeRequest.current?.abort(); };
+  }, [invitationId]);
+
   const other = perspective === "organizer" ? "músico" : "contratante";
 
   const loadFee = useCallback(async () => {
+    feeRequest.current?.abort();
+    const request = new AbortController();feeRequest.current = request;
     setLoading(true);
-    const { data: result, error } = await createClient().rpc("stage_fee_details", {
+    const { data: result, error } = await readFeeDetails(createClient(), {
       p_invitation_id: invitationId,
-    });
+    }).abortSignal(request.signal);
+    if (request.signal.aborted) return;
     if (error) {
       setHasError(true);
-      setFeedback("Não foi possível consultar as propostas. Execute private_fee_negotiations_migration.sql no Supabase. " + error.message);
+      setFeedback("Não foi possível consultar as propostas. Tente novamente.");
     } else if (!result) {
       setHasError(true);
       setFeedback("Você não tem acesso à negociação deste convite.");
@@ -76,15 +87,15 @@ export default function FeeNegotiation({ invitationId, perspective, onChanged, o
   async function sendOffer(e: FormEvent<HTMLFormElement>) {
     e.preventDefault();
     if (busy) return;
-    const parsed = Number(amount.replace(",", "."));
-    if (!Number.isFinite(parsed) || parsed <= 0 || parsed > 999999.99 || Math.abs(Math.round(parsed * 100) - parsed * 100) > 0.000001) {
+    const parsed = parseFeeInput(amount);
+    if (parsed === undefined) {
       setHasError(true);
       setFeedback("Informe um valor válido em reais com até duas casas decimais.");
       return;
     }
     setBusy(true);
     setFeedback("");
-    const { data: result, error } = await createClient().rpc("stage_offer_fee", {
+    const { data: result, error } = await offerFee(createClient(), {
       p_invitation_id: invitationId,
       p_amount: parsed,
       p_note: note.trim() || null,
@@ -115,7 +126,7 @@ export default function FeeNegotiation({ invitationId, perspective, onChanged, o
     if (busy || !data?.last_amount || data.last_by_me) return;
     setBusy(true);
     setFeedback("");
-    const { data: result, error } = await createClient().rpc("stage_accept_fee", {
+    const { data: result, error } = await acceptFee(createClient(), {
       p_invitation_id: invitationId,
     });
     if (error || result !== "accepted") {

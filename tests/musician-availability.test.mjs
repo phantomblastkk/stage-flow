@@ -7,7 +7,7 @@ const load=path=>readFileSync(resolve(process.cwd(),path),"utf8");
 const sql=load("supabase/musician_smart_schedule_migration.sql");
 const guard=load("supabase/musician_schedule_proposal_guard_migration.sql");
 const page=load("app/minha-disponibilidade/page.tsx");
-const props=load("components/hiring-proposals.tsx");
+const props=load("components/hiring-proposals.tsx")+load("src/domains/booking/services/negotiation-service.ts");
 const dash=load("app/painel/page.tsx");
 function fn(source,name){
  const at=source.indexOf("create or replace function public."+name+"(");

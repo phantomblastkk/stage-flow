@@ -142,7 +142,7 @@ test("subscription landing never creates payments and reads server-side entitlem
 
 test("musician fee negotiation leads to confirmation without bypassing financial approval",()=>{
  const invites=read("app/meus-convites/page.tsx");
- const negotiation=read("components/fee-negotiation.tsx");
+ const negotiation=read("components/fee-negotiation.tsx")+read("src/domains/booking/services/negotiation-service.ts");
  const sql=read("supabase/private_fee_negotiations_migration.sql");
  const respond=func(sql,"stage_respond_invite");
  assert.match(respond,/if p_accept and exists/);
