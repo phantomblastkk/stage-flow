@@ -762,3 +762,21 @@
  .market-shell:not(.has-mobile-workspace-nav) .market-nav-soon:not(.is-preview){display:none}
  .market-nav-soon{max-width:100%;padding:9px;font-size:9px}
 }
+
+/* 320px: filtros e ordenacao nunca alargam o documento inteiro. */
+@media(max-width:570px){
+ .market-results-toolbar,.market-sort-controls{min-width:0;max-width:100%}
+ .market-sort-controls{
+  display:grid;grid-template-columns:auto minmax(0,1fr);
+  align-items:center;gap:9px;width:100%
+ }
+ .market-sort-controls>label{
+  position:absolute;width:1px;height:1px;padding:0;margin:-1px;
+  overflow:hidden;clip:rect(0,0,0,0);white-space:nowrap;border:0
+ }
+ .market-sort-controls>select{width:100%;min-width:0;max-width:none;height:44px;font-size:13px}
+ .market-filters-open{min-height:44px;white-space:nowrap}
+}
+@media(max-width:480px){
+ .market-shell:not(.has-mobile-workspace-nav) .market-nav-link{display:inline-flex;align-items:center;min-height:44px}
+}
