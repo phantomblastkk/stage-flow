@@ -154,7 +154,7 @@ test("suggestion workflow preserves messages and scopes status edits by house",(
 
 test("no deployment is enabled for develop",()=>{
   const cfg=JSON.parse(read("vercel.json"));
-  assert.equal(cfg.git?.deploymentEnabled?.develop,false);
+  assert.equal(cfg.git?.deploymentEnabled,false);
 });
 
 
