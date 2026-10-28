@@ -59,11 +59,14 @@ try{
   await page.getByRole("heading",{name:event.title,exact:true}).waitFor();await page.getByText("Seu dinheiro, à vista",{exact:true}).waitFor();
   assert.match(await page.locator(".sf-operations-summary").innerText(),/3 convites/);
   assert.match(await page.locator(".sf-operations-finance").innerText(),/3\.350,00/);
-  const nav=page.getByRole("navigation",{name:width<=850?"Acesso rápido no celular":"Navegação do StageFlow",exact:true});
-  await nav.getByRole("link",{name:"Marketplace",exact:true}).waitFor();await nav.getByRole("link",{name:"Financeiro",exact:true}).waitFor();
+  const mobile=width<=850;
+  const nav=page.getByRole("navigation",{name:mobile?"Navegação principal no celular":"Navegação do StageFlow",exact:true});
+  await nav.getByRole("link",{name:mobile?"Explorar":"Marketplace",exact:true}).waitFor();
+  await nav.getByRole("link",{name:mobile?"Chats":"Financeiro",exact:true}).waitFor();
   assert.equal(await page.evaluate(()=>document.documentElement.scrollWidth>innerWidth),false,"Dashboard overflows at "+width);
   await page.screenshot({path:`test-results/operational-home-${width}.png`,fullPage:true});
-  await nav.getByRole("link",{name:"Marketplace",exact:true}).click();await page.getByRole("heading",{name:/O próximo encontro/}).waitFor();
+  await nav.getByRole("link",{name:mobile?"Explorar":"Marketplace",exact:true}).click();
+  await page.getByRole("heading",{name:/Encontre o músico certo/}).waitFor();
   await page.goto(origin+"/meu-portfolio");await page.waitForURL(/\/perfil-artistico\?aba=instrumentista/);await page.getByRole("heading",{name:"Perfil Artístico",exact:true}).waitFor();
   await page.goto(origin+"/perfis");await page.getByRole("button",{name:"Criar perfil",exact:true}).click();
   const form=page.getByRole("form",{name:"Editar perfil adicional"});await form.getByLabel("Tipo de perfil",{exact:true}).selectOption("group");
