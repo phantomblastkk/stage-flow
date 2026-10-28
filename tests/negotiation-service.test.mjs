@@ -43,3 +43,10 @@ test('read RPC builders remain abortable and never select public tables',async()
  await service.readProposals(f.db,{p_thread_id:'thread'});
  assert.ok(f.calls.every(c=>['stage_fee_details','stage_hiring_proposals'].includes(c.name)));
 });
+
+const {isFeeSnapshot}=await loadTsModule('src/domains/booking/model/fee-snapshot.ts');
+const snapshot={status:'pending',is_owner:false,has_offer:true,last_amount:400,last_by_me:false,last_note:null,agreed_amount:null,history:[]};
+test('a private pending offer is valid without inventing an agreement',()=>{assert.equal(isFeeSnapshot(snapshot),true);assert.equal(isFeeSnapshot({...snapshot,agreed_amount:400}),true);});
+test('malformed or forbidden fee responses cannot appear as agreed amounts',()=>{for(const value of [null,{},[],{status:'forbidden'},{...snapshot,agreed_amount:undefined},{...snapshot,agreed_amount:'400'},{...snapshot,last_amount:NaN},{...snapshot,history:[{amount:-1}]}])assert.equal(isFeeSnapshot(value),false);});
+
+test('an invitation without an offer accepts the SQL null author flag',()=>{assert.equal(isFeeSnapshot({...snapshot,has_offer:false,last_amount:null,last_by_me:null}),true);assert.equal(isFeeSnapshot({...snapshot,has_offer:true,last_amount:null}),false);});

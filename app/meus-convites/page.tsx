@@ -258,7 +258,7 @@ export default function MeusConvitesPage() {
             {invite.message && <p style={{ margin: "8px 0", overflowWrap: "anywhere", color: "var(--text)" }}><strong>Recado:</strong> {invite.message}</p>}
           </div>
 
-          <FeeNegotiation invitationId={invite.id} perspective="musician" onChanged={() => void reload()}
+          <FeeNegotiation invitationId={invite.id} perspective="musician" onChanged={() => { setFeedback("");setIsError(false);void reload(); }}
             openRequest={feeFocus.invitationId === invite.id ? feeFocus.request : 0}
             invitationStatus={invite.status}
             onConfirmParticipation={invite.status === "pending" ? () => void respond(invite, true) : undefined}

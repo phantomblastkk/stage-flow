@@ -58,7 +58,7 @@ async function setup(width) {
   await context.addCookies([{ name: "sb-example-auth-token", value: "base64-" + encoded(session), url: origin, sameSite: "Lax" }]);
   const state = { events: [...initialEvents(), ...moreEvents(), { ...initialEvents()[1], id: "77777777-7777-4777-8777-777777777777", title: "Show de dezembro", starts_at: "2026-12-02T23:00:00Z" }], accepted: false, failAgenda: false, failFinance: false, invalidFinance: false, writes: [],
     reads: new Map(), adminA: false, financeDelay: null, delayedFinanceStarted: 0, delayedFinanceCompleted: 0,
-    messageDelay: null, delayedMessagesStarted: 0, delayedMessagesCompleted: 0, failMessageId: null, failInvites: false,
+    messageDelay: null, delayedMessagesStarted: 0, delayedMessagesCompleted: 0, failMessageId: null, failInvites: false, feeEnabled:false, feeAgreed:null, feeAmount:400, feeByMe:false, feeReadFail:false, feeOffers:[],
     failChatPreferences: false, showProposal: false, proposalAccepted: false, guestStartsAt: guest.starts_at, sent: [],
     messages: Object.fromEntries([[threadA,"Mensagem privada A"],[threadB,"Mensagem privada B"]].map(([id,text])=>[id,[{id,body:text,is_mine:false,created_at:"2026-11-01T15:00:00Z"}]])) };
   await context.route(api + "/**", async route => {
@@ -137,8 +137,16 @@ async function setup(width) {
       if(state.failInvites){status=503;result={message:"Fixture unavailable"};}
       else result = [{ id: invitationId, status: state.accepted ? "accepted" : "pending", message: null, created_at: "2026-10-27T12:00:00Z", responded_at: null, event_id: guestId, event_title: guest.title, event_starts_at: state.guestStartsAt, event_venue: guest.venue, event_city: guest.city, organizer_name: guest.organizer_name }];
     }
-    else if (rpc === "stage_respond_invite") { assert.equal(body.p_invitation_id, invitationId); state.accepted = body.p_accept; result = state.accepted ? "accepted" : "declined"; }
-    else if (rpc === "stage_fee_details") result = null;
+    else if (rpc === "stage_respond_invite") { assert.equal(body.p_invitation_id, invitationId); if(state.feeEnabled&&body.p_accept&&state.feeAgreed===null)result="fee_pending";else {state.accepted = body.p_accept; result = state.accepted ? "accepted" : "declined";} }
+    else if (rpc === "stage_fee_details") {
+      if(state.feeReadFail){status=503;result={message:"Synthetic private error"};}
+      else result=state.feeEnabled?{status:state.accepted?"accepted":"pending",is_owner:false,has_offer:true,last_amount:state.feeAmount,last_by_me:state.feeByMe,last_note:null,agreed_amount:state.feeAgreed,history:[]}:null;
+    } else if(rpc === "stage_offer_fee") {
+      assert.equal(body.p_invitation_id,invitationId);state.feeOffers.push(body);
+      state.feeAmount=body.p_amount;state.feeByMe=true;result="offered";
+    } else if(rpc === "stage_accept_fee") {
+      assert.equal(body.p_invitation_id,invitationId);state.feeAgreed=state.feeAmount;result="accepted";
+    }
     try { await route.fulfill({ status, json: result, headers: { "Access-Control-Allow-Origin": "*" } }); }
     catch (error) { if (!/closed|disposed|intercept|invalid/i.test(String(error))) throw error; }
   });
@@ -256,6 +264,36 @@ try {
         await page.getByText("Financeiro indisponível", { exact: true }).waitFor();
         assert.equal(await page.locator('section[aria-label="Resumo financeiro"]').count(), 0);
       }
+      state.accepted=false;state.feeEnabled=true;
+      await page.goto(origin+"/meus-convites");
+      await page.getByRole("button",{name:"Aceitar convite",exact:true}).click();
+      await page.getByText(/Antes de confirmar sua presença/).waitFor();
+      await page.getByRole("button",{name:"Contraproposta",exact:true}).click();
+      await page.getByLabel("Sua contraproposta (R$)",{exact:true}).fill("350.25");
+      await page.getByRole("button",{name:"Enviar proposta",exact:true}).click();
+      await page.getByText("Aguardando resposta do contratante.",{exact:true}).waitFor();
+      assert.equal(state.feeOffers.length,1);assert.equal(state.feeOffers[0].p_amount,350.25);
+      state.feeByMe=false;state.feeAmount=375;
+      await page.getByRole("button",{name:"Atualizar negociação",exact:true}).click();
+      await page.getByRole("button",{name:/^Aceitar R/}).click();
+      await page.getByText(/Valor fechado:/).waitFor();
+      assert.equal(state.accepted,false,"fee agreement cannot confirm participation");
+      if(width===360){
+        state.feeReadFail=true;
+        await page.getByRole("button",{name:"Atualizar negociação",exact:true}).click();
+        await page.getByRole("alert").filter({hasText:"Não foi possível consultar a negociação"}).waitFor();
+        assert.equal(await page.getByText(/Valor fechado:/).count(),0);
+        state.feeReadFail=false;
+        await page.getByRole("button",{name:"Atualizar negociação",exact:true}).click();
+        await page.getByText(/Valor fechado:/).waitFor();
+      }
+      await page.getByRole("button",{name:"Confirmar presença no show",exact:true}).click();
+      await page.getByText(/Presença confirmada!/).waitFor();
+      assert.equal(state.accepted,true);
+      await noHorizontalOverflow(page,"fee negotiation "+width);
+      await page.evaluate(()=>scrollTo(0,0));
+      await page.screenshot({path:`test-results/negotiation-${width}.png`,fullPage:true});
+      console.log(`PASS negotiation ${width}px: counteroffer, agreement without attendance, explicit confirmation and read-error recovery`);
       assert.deepEqual(errors, [], "browser console errors");
       console.log(`PASS ${width}px: month/cursor pagination, deep links, agenda creation, financial totals/CSV download, data-error recovery and team response isolation`);
     } catch (error) {
