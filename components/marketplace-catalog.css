@@ -728,3 +728,25 @@
  .market-own-profile{font-size:12px;min-height:44px}
 }
 @media(prefers-reduced-motion:reduce){.market-favorite-spinner{animation:none}}
+
+/* Feedback de favoritos acessível ao polegar, sem rolar até os filtros. */
+.market-favorite-toast{
+ position:fixed;bottom:20px;left:50%;z-index:105;transform:translateX(-50%);
+ display:flex;align-items:center;gap:11px;width:min(440px,calc(100vw - 28px));
+ padding:12px 13px;border-radius:15px;border:1px solid #8670b2;
+ background:#27213a;color:#f3eaff;box-shadow:0 15px 55px #090815b8;
+ font:650 13px/1.4 "DM Sans",sans-serif;
+}
+.market-favorite-toast>span:nth-child(2){flex:1;min-width:0}
+.market-favorite-toast-icon{display:grid;place-items:center;flex:none;color:#dbbaff}
+.market-favorite-toast.is-success{border-color:#558d7e}
+.market-favorite-toast.is-success .market-favorite-toast-icon{color:#a3f3d0}
+.market-favorite-toast.is-error{border-color:#bb7891}
+.market-favorite-toast.is-error .market-favorite-toast-icon{color:#ffc0cd}
+.market-favorite-toast button{display:grid;place-items:center;flex:none;width:44px;height:44px;
+ border:0;border-radius:10px;background:#3e3455;color:#f4e6ff;cursor:pointer}
+.market-favorite-toast button:focus-visible{outline:3px solid #e8c7ff;outline-offset:2px}
+@media(max-width:850px){
+ .market-favorite-toast{bottom:calc(91px + env(safe-area-inset-bottom))}
+ .market-shell:not(.has-mobile-workspace-nav) .market-favorite-toast{bottom:calc(16px + env(safe-area-inset-bottom))}
+}

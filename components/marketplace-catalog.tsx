@@ -204,6 +204,7 @@ export default function MarketplaceCatalog({preview=false}:Props) {
   const [reviewComment,setReviewComment] = useState("");
   const [savingReview,setSavingReview] = useState(false);
   const [favoriteBusy,setFavoriteBusy] = useState<string|null>(null);
+  const [favoriteFeedback,setFavoriteFeedback] = useState<{kind:"success"|"error"|"info";message:string}|null>(null);
   const [refreshNonce,setRefreshNonce] = useState(0);
   const [discoveryView,setDiscoveryView]=useState<"recommended"|"favorites"|"history">("recommended");
   const [history,setHistory]=useState<{id:string;other_name:string}[]>([]);
@@ -394,15 +395,15 @@ export default function MarketplaceCatalog({preview=false}:Props) {
   }
   async function toggleFavorite(m:MarketMusician) {
     if(!authUser){
-      setNotice("Entre na sua conta para salvar músicos nos favoritos.");
+      setFavoriteFeedback({kind:"error",message:"Entre na sua conta para salvar músicos nos favoritos."});
       return;
     }
     if(authUserId===m.musician_id){
-      setNotice("Este é seu próprio perfil. Você pode vê-lo em “Ver perfil”, sem precisar favoritar.");
+      setFavoriteFeedback({kind:"info",message:"Este é seu próprio perfil. Não é necessário favoritar."});
       return;
     }
     if(favoriteBusy)return;
-    setFavoriteBusy(m.musician_id);setError("");setNotice("");
+    setFavoriteBusy(m.musician_id);setError("");setNotice("");setFavoriteFeedback(null);
     try{
       const nextFavorite=!m.is_favorite;
       const {data,error:rpcError}=await createClient().rpc("stage_marketplace_toggle_favorite",{
@@ -416,7 +417,7 @@ export default function MarketplaceCatalog({preview=false}:Props) {
             :data==="invalid"
               ?"Não é possível adicionar este perfil aos favoritos."
               :"Não foi possível salvar o favorito. Verifique a conexão e tente novamente.";
-        setNotice(reason);
+        setFavoriteFeedback({kind:"error",message:reason});
         return;
       }
       setItems(old=>old.map(x=>x.musician_id===m.musician_id
@@ -425,12 +426,12 @@ export default function MarketplaceCatalog({preview=false}:Props) {
         ? {...x,is_favorite:nextFavorite}:x));
       setSelected(old=>old?.musician_id===m.musician_id
         ? {...old,is_favorite:nextFavorite}:old);
-      setNotice(nextFavorite
+      setFavoriteFeedback({kind:"success",message:nextFavorite
         ?"Músico adicionado aos favoritos. Veja seus salvos na aba Favoritos."
-        :"Músico removido dos favoritos.");
+        :"Músico removido dos favoritos."});
       if(applied.favorites)setRefreshNonce(n=>n+1);
     }catch{
-      setNotice("Não foi possível conectar aos favoritos. Verifique sua conexão.");
+      setFavoriteFeedback({kind:"error",message:"Não foi possível conectar aos favoritos. Verifique sua conexão."});
     }finally{
       setFavoriteBusy(null);
     }
@@ -541,7 +542,7 @@ export default function MarketplaceCatalog({preview=false}:Props) {
         </div>
       </section>
 
-      {!preview&&<section className="market-development-banner" aria-label="Novidade em desenvolvimento">
+      {!preview&&<section className="market-development-banner" aria-label="Marketplace aberto">
         <div className="market-development-copy">
           <span className="market-development-label"><Sparkles size={16}/> MARKETPLACE ABERTO</span>
           <h2>Encontre o músico certo para seu próximo show.</h2>
@@ -857,6 +858,17 @@ export default function MarketplaceCatalog({preview=false}:Props) {
         </div>
       </section>
     </div>}
+    {favoriteFeedback&&!selected&&!reportTarget&&
+      <div className={"market-favorite-toast is-"+favoriteFeedback.kind}
+        role={favoriteFeedback.kind==="error"?"alert":"status"} aria-live="polite">
+        <span className="market-favorite-toast-icon" aria-hidden="true">
+          {favoriteFeedback.kind==="success"?<Check size={18}/>
+            :favoriteFeedback.kind==="error"?<CircleHelp size={18}/>:<Heart size={18}/>}
+        </span>
+        <span>{favoriteFeedback.message}</span>
+        <button type="button" onClick={()=>setFavoriteFeedback(null)}
+          aria-label="Fechar aviso de favoritos"><X size={18}/></button>
+      </div>}
     {reportTarget&&<MarketplaceReportDialog
       key={reportTarget.type+":"+reportTarget.id}
       target={reportTarget} signedIn={authUser}
