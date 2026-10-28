@@ -99,6 +99,7 @@ try{
   await page.goto(origin+"/meu-portfolio");await page.waitForURL(/\/perfil-artistico\?aba=instrumentista/);await page.getByRole("heading",{name:"Perfil Artístico",exact:true}).waitFor();
   if(width===360){
    const wizard=page.getByLabel("Etapas de edição do perfil");
+   await page.locator('.sf-editor-wizard[data-wizard-ready="true"]').waitFor();
    await wizard.getByRole("button",{name:/Instrumentos/}).click();
    const instruments=page.locator("#portfolio-instruments");
    await instruments.fill("Cavaquinho, Pandeiro");

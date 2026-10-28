@@ -47,3 +47,10 @@ test("mobile keyboard focus releases the wizard and bottom navigation",()=>{
  assert.match(shellCss,/sf-workspace-route:has\(input:focus,textarea:focus\)/);
  assert.match(chatCss,/hiring-composer:focus-within/);
 });
+
+test("step controls stay disabled until React has hydrated on slow mobile connections",()=>{
+ assert.ok(component.includes("useEffect(()=>{setReady(true);},[])"));
+ assert.ok(component.includes('data-wizard-ready={ready?"true":"false"}'));
+ assert.ok(component.includes("disabled={!ready||disabled}"));
+ assert.ok(component.includes("disabled={!ready||disabled||saveDisabled}"));
+});
