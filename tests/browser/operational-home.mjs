@@ -97,6 +97,18 @@ try{
    await page.setViewportSize({width:360,height:900});
   }
   await page.goto(origin+"/meu-portfolio");await page.waitForURL(/\/perfil-artistico\?aba=instrumentista/);await page.getByRole("heading",{name:"Perfil Artístico",exact:true}).waitFor();
+  if(width===360){
+   const wizard=page.getByLabel("Etapas de edição do perfil");
+   await wizard.getByRole("button",{name:/Instrumentos/}).click();
+   const instruments=page.locator("#portfolio-instruments");
+   await instruments.fill("Cavaquinho, Pandeiro");
+   await wizard.getByRole("button",{name:/Experiência/}).click();
+   assert.equal(await instruments.isVisible(),false,"Wizard must show only the active step on mobile");
+   await wizard.getByRole("button",{name:/Instrumentos/}).click();
+   assert.equal(await instruments.inputValue(),"Cavaquinho, Pandeiro",
+    "Switching steps must preserve the musician's unsaved draft");
+   assert.equal(await instruments.isVisible(),true);
+  }
   await page.goto(origin+"/perfis");await page.getByRole("button",{name:"Criar perfil",exact:true}).click();
   const form=page.getByRole("form",{name:"Editar perfil adicional"});await form.getByLabel("Tipo de perfil",{exact:true}).selectOption("group");
   await form.getByLabel("Nome",{exact:true}).fill("Pagode do Henrique");await form.getByLabel("Integrantes",{exact:false}).fill("João\nPedro\nHenrique");
