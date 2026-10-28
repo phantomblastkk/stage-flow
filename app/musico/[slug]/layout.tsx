@@ -71,7 +71,23 @@ export async function generateMetadata({ params }: {
   const normalized = intro.replace(/\s+/g, " ").trim();
   const description = normalized.length > 160
     ? normalized.slice(0, 157).trimEnd() + "…" : normalized;
-  const canonical = origin + "/musico/" + encodeURIComponent(slug);
+  // A published artistic @ is the only canonical address when the account has both roles.
+  // The lookup is published-only and a failure preserves the legacy musician URL.
+  let publicUsername: string | null = null;
+  try {
+    const client = createClient(endpoint, anon, {
+      auth: { persistSession: false, autoRefreshToken: false }
+    });
+    const { data, error } = await client.rpc("stage_public_artistic_musician", {
+      p_slug: slug
+    });
+    if (!error && data && typeof data.username === "string"
+      && /^[a-z0-9-]{3,30}$/.test(data.username)
+      && data.is_singer === true) publicUsername = data.username;
+  } catch { /* Existing public musician metadata stays valid. */ }
+  const canonical = origin + (publicUsername
+    ? "/" + encodeURIComponent(publicUsername)
+    : "/musico/" + encodeURIComponent(slug));
   const image = safePublicImage(musician.cover_url)
     || safePublicImage(musician.avatar_url);
   const robots = process.env.NEXT_PUBLIC_STAGE_FLOW_ENV === "homologation"
