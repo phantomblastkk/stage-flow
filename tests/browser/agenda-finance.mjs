@@ -257,6 +257,13 @@ try {
     const context = await browser.newContext({ viewport: { width, height: 900 } });
     let signupErrorMode = "existing", signupAttempts = 0;
     await context.route(api + "/**", route => {
+      if (route.request().method() === "OPTIONS") {
+        return route.fulfill({ status: 204, headers: {
+          "Access-Control-Allow-Origin": "*",
+          "Access-Control-Allow-Headers": "authorization, apikey, content-type, x-client-info",
+          "Access-Control-Allow-Methods": "GET, POST, OPTIONS"
+        } });
+      }
       if (new URL(route.request().url()).pathname === "/auth/v1/signup") {
         signupAttempts++;
         const duplicate = signupErrorMode === "existing";
