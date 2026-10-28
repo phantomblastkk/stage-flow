@@ -13,6 +13,7 @@ import {prepareProfilePortrait} from "@/lib/profile-photo";
 import SingerProEditor from "@/components/singer-pro-editor";
 import BookingContactSettings from "@/components/booking-contact-settings";
 import MobileEditorWizard from "@/components/mobile-editor-wizard";
+import {revealMobileEditorField,useMobileEditorKeyboardVisibility} from "@/components/mobile-editor-focus";
 import "@/app/meu-perfil-artistico/singer-unified-editor.css";
 
 type ArtistConfig = {
@@ -33,6 +34,7 @@ type ArtistConfig = {
 
 export default function MeuPerfilArtistico() {
   const router = useRouter();
+  useMobileEditorKeyboardVisibility();
   const [config, setConfig] = useState<ArtistConfig | null>(null);
   const [activeTab, setActiveTab] = useState<"dados" | "pro">("dados");
   const [mobileStep,setMobileStep]=useState(0);
@@ -256,7 +258,7 @@ export default function MeuPerfilArtistico() {
     <p style={{ color: "var(--muted)", display: "flex", alignItems: "center", gap: 9 }}><LoaderCircle size={18}/> Carregando perfil artístico...</p>
   </main>;
 
-  return <main className="singer-unified-editor">
+  return <main className="singer-unified-editor" onFocusCapture={event=>revealMobileEditorField(event.target)}>
     <div className="container" style={{ paddingBottom: 60 }}>
       <nav className="nav">
         <Link className="brand" href="/"><span className="brand-mark">S</span> stage flow</Link>

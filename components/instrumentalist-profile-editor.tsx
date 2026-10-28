@@ -18,6 +18,7 @@ import "@/app/meu-portfolio/musician-portfolio-editor.css";
 import MarketplaceMusicianSettings from "@/components/marketplace-musician-settings";
 import BookingContactSettings from "@/components/booking-contact-settings";
 import MobileEditorWizard from "@/components/mobile-editor-wizard";
+import {revealMobileEditorField,useMobileEditorKeyboardVisibility} from "@/components/mobile-editor-focus";
 
 type EditorPortfolio = MusicianPortfolio & { is_published: boolean };
 
@@ -64,6 +65,7 @@ function slugify(value: string) {
 
 export default function MeuPortfolioDeMusico({unifiedSinger=false,username=null}:{unifiedSinger?:boolean;username?:string|null}) {
   const router = useRouter();
+  useMobileEditorKeyboardVisibility();
   const [portfolio, setPortfolio] = useState<EditorPortfolio>(blank);
   const [mobileStep,setMobileStep]=useState(unifiedSinger?1:0);
   const [instrumentsText, setInstrumentsText] = useState("");
@@ -352,7 +354,7 @@ export default function MeuPortfolioDeMusico({unifiedSinger=false,username=null}
     <p style={{ color: "var(--muted)" }}><LoaderCircle size={17} style={{ display: "inline", verticalAlign: "middle" }}/> Carregando personalização...</p>
   </main>;
 
-  return <main className="mp-editor-workspace" data-editor-active={mobileStep}><div className="container" style={{ paddingBottom: 60 }}>
+  return <main className="mp-editor-workspace" data-editor-active={mobileStep} onFocusCapture={event=>revealMobileEditorField(event.target)}><div className="container" style={{ paddingBottom: 60 }}>
     <nav className="nav">
       <Link className="brand" href="/"><span className="brand-mark">S</span> stage flow</Link>
       <Link className="btn btn-quiet" href="/painel"><ArrowLeft size={15}/> Voltar</Link>
