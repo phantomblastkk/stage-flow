@@ -710,3 +710,21 @@
  .market-shell.has-mobile-workspace-nav{padding-bottom:calc(88px + env(safe-area-inset-bottom))}
  .market-shell .sf-workspace-bottom-nav{position:fixed;z-index:80}
 }
+
+
+/* Favoritos: o próprio anúncio recebe identificação, nunca um coração que
+   dispararia um erro (a RPC bloqueia auto-favoritos por integridade). */
+.market-own-profile{
+  display:inline-flex;align-items:center;justify-content:center;gap:5px;
+  flex:none;min-height:44px;padding:8px 10px;border-radius:12px;
+  border:1px solid #7861a0;background:#302544;color:#e7d6ff;
+  font:800 11px/1.25 Manrope,sans-serif;white-space:nowrap
+}
+.market-favorite[aria-pressed="true"]{border-color:#c59eff;color:#f8b6d9}
+.market-favorite:focus-visible{outline:3px solid #e4b8ff;outline-offset:3px}
+.market-favorite-spinner{animation:market-favorite-spin .9s linear infinite}
+@keyframes market-favorite-spin{to{transform:rotate(360deg)}}
+@media(max-width:670px){
+ .market-own-profile{font-size:12px;min-height:44px}
+}
+@media(prefers-reduced-motion:reduce){.market-favorite-spinner{animation:none}}

@@ -7,7 +7,7 @@ import {
   ChevronLeft, ChevronRight, CircleHelp, Clock3, ExternalLink,
   Filter, Guitar, Heart, LoaderCircle, MapPin, MessageCircle,
   Music2, Search, Send, ShieldCheck, SlidersHorizontal, Sparkles,
-  Star, Trophy, Users, Flag, X
+  Star, Trophy, Users, Flag, UserRound, X
 } from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
 import { trackMarketplaceExposure } from "@/lib/musician-metrics";
@@ -113,9 +113,9 @@ function Availability({musician,date}:{musician:MarketMusician;date:string}) {
   return <span className="market-availability"><CircleHelp size={13}/> Disponibilidade sob consulta</span>;
 }
 
-function MarketplaceMusicianCard({ musician, identity, date, rank, favoriteBusy, onFavorite, onInvite, onReport }: {
+function MarketplaceMusicianCard({ musician, identity, date, rank, ownProfile, favoriteBusy, onFavorite, onInvite, onReport }: {
   musician: MarketMusician; identity?: MarketIdentity; date: string; rank?: number;
-  favoriteBusy: boolean; onFavorite: () => void; onInvite: () => void; onReport: () => void;
+  ownProfile: boolean; favoriteBusy: boolean; onFavorite: () => void; onInvite: () => void; onReport: () => void;
 }) {
   const singerPhoto = identity?.is_singer && identity.avatar_path
     ? createClient().storage.from("stage-artist-public").getPublicUrl(identity.avatar_path).data.publicUrl
@@ -134,12 +134,17 @@ function MarketplaceMusicianCard({ musician, identity, date, rank, favoriteBusy,
           <h3>{musician.name}</h3>
           <p>{role}</p>
         </div>
-        <button type="button" className={"market-favorite"+(musician.is_favorite?" is-saved":"")}
-          disabled={favoriteBusy} onClick={onFavorite}
-          aria-label={musician.is_favorite?"Remover dos favoritos":"Adicionar aos favoritos"}
-          title={musician.is_favorite?"Remover dos favoritos":"Salvar músico"}>
-          <Heart size={18} fill={musician.is_favorite?"currentColor":"none"}/>
-        </button>
+        {ownProfile
+          ? <span className="market-own-profile" title="Este é o seu anúncio no Marketplace">
+              <UserRound size={15} aria-hidden="true"/> Seu perfil
+            </span>
+          : <button type="button" className={"market-favorite"+(musician.is_favorite?" is-saved":"")}
+              disabled={favoriteBusy} onClick={onFavorite} aria-pressed={musician.is_favorite}
+              aria-label={musician.is_favorite?"Remover dos favoritos":"Adicionar aos favoritos"}
+              title={musician.is_favorite?"Remover dos favoritos":"Salvar músico"}>
+              {favoriteBusy?<LoaderCircle size={18} className="market-favorite-spinner" aria-hidden="true"/>
+                :<Heart size={18} fill={musician.is_favorite?"currentColor":"none"}/>}
+            </button>}
       </div>
       <div className="market-artist-proof"><Rating musician={musician}/>
         <span className="market-artist-city"><MapPin size={14}/>{musician.city||"Região não informada"}</span>
@@ -183,6 +188,7 @@ export default function MarketplaceCatalog({preview=false}:Props) {
   const [error,setError] = useState("");
   const [mobileFilters,setMobileFilters] = useState(false);
   const [authUser,setAuthUser] = useState(false);
+  const [authUserId,setAuthUserId] = useState<string|null>(null);
   const [canModerate,setCanModerate] = useState(false);
   const [reportTarget,setReportTarget] = useState<ReportTarget|null>(null);
   const [selected,setSelected] = useState<MarketMusician|null>(null);
@@ -232,6 +238,7 @@ export default function MarketplaceCatalog({preview=false}:Props) {
       const {data:{user}}=await client.auth.getUser();
       if(!active)return;
       setAuthUser(Boolean(user));
+      setAuthUserId(user?.id||null);
       if(preview) {
         if(!user){setGate("denied");return;}
         const {data,error:rpcError}=await client.rpc("stage_marketplace_preview_status");
@@ -387,26 +394,46 @@ export default function MarketplaceCatalog({preview=false}:Props) {
   }
   async function toggleFavorite(m:MarketMusician) {
     if(!authUser){
-      setNotice("Entre na sua conta para salvar favoritos.");
+      setNotice("Entre na sua conta para salvar músicos nos favoritos.");
+      return;
+    }
+    if(authUserId===m.musician_id){
+      setNotice("Este é seu próprio perfil. Você pode vê-lo em “Ver perfil”, sem precisar favoritar.");
       return;
     }
     if(favoriteBusy)return;
     setFavoriteBusy(m.musician_id);setError("");setNotice("");
-    const {data,error:rpcError}=await createClient().rpc("stage_marketplace_toggle_favorite",{
-      p_musician_id:m.musician_id,p_favorite:!m.is_favorite
-    });
-    if(rpcError || data!=="saved"){
-      setNotice("Não foi possível atualizar seus favoritos. Tente novamente.");
-    }else{
+    try{
+      const nextFavorite=!m.is_favorite;
+      const {data,error:rpcError}=await createClient().rpc("stage_marketplace_toggle_favorite",{
+        p_musician_id:m.musician_id,p_favorite:nextFavorite
+      });
+      if(rpcError || data!=="saved"){
+        const reason=rpcError?.code==="42501"||data==="login_required"
+          ?"Sua sessão não está válida. Entre novamente para salvar favoritos."
+          :data==="not_listed"||data==="not_released"
+            ?"Este anúncio não está mais disponível para favoritar. Atualize a lista."
+            :data==="invalid"
+              ?"Não é possível adicionar este perfil aos favoritos."
+              :"Não foi possível salvar o favorito. Verifique a conexão e tente novamente.";
+        setNotice(reason);
+        return;
+      }
       setItems(old=>old.map(x=>x.musician_id===m.musician_id
-        ? {...x,is_favorite:!m.is_favorite}:x));
+        ? {...x,is_favorite:nextFavorite}:x));
       setFeatured(old=>old.map(x=>x.musician_id===m.musician_id
-        ? {...x,is_favorite:!m.is_favorite}:x));
-      if(selected?.musician_id===m.musician_id)
-        setSelected({...m,is_favorite:!m.is_favorite});
+        ? {...x,is_favorite:nextFavorite}:x));
+      setSelected(old=>old?.musician_id===m.musician_id
+        ? {...old,is_favorite:nextFavorite}:old);
+      setNotice(nextFavorite
+        ?"Músico adicionado aos favoritos. Veja seus salvos na aba Favoritos."
+        :"Músico removido dos favoritos.");
       if(applied.favorites)setRefreshNonce(n=>n+1);
+    }catch{
+      setNotice("Não foi possível conectar aos favoritos. Verifique sua conexão.");
+    }finally{
+      setFavoriteBusy(null);
     }
-    setFavoriteBusy(null);
   }
   function scrollFeatured(direction:-1|1){
     const rail=featuredRail.current;
@@ -583,7 +610,8 @@ export default function MarketplaceCatalog({preview=false}:Props) {
                   role="region" aria-label="Carrossel dos músicos mais avaliados" tabIndex={0}>
                   {featured.map((m,index)=><MarketplaceMusicianCard key={m.musician_id}
                     musician={m} identity={identities[m.musician_id]} date={applied.date}
-                    rank={index+1} favoriteBusy={favoriteBusy===m.musician_id}
+                    rank={index+1} ownProfile={authUserId===m.musician_id}
+                    favoriteBusy={favoriteBusy===m.musician_id}
                     onFavorite={()=>void toggleFavorite(m)} onInvite={()=>openMusician(m)}
                     onReport={()=>setReportTarget({type:"musician",id:m.musician_id,label:m.name})}/>)}
                 </div>
@@ -697,6 +725,7 @@ export default function MarketplaceCatalog({preview=false}:Props) {
             <div className="market-card-grid">
               {items.map(m=><MarketplaceMusicianCard key={m.musician_id}
                 musician={m} identity={identities[m.musician_id]} date={applied.date}
+                ownProfile={authUserId===m.musician_id}
                 favoriteBusy={favoriteBusy===m.musician_id}
                 onFavorite={()=>void toggleFavorite(m)} onInvite={()=>openMusician(m)}
                 onReport={()=>setReportTarget({type:"musician",id:m.musician_id,label:m.name})}/>)}
