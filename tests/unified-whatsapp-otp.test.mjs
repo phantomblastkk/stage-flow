@@ -45,7 +45,8 @@ test("central account privacy handles phone change with phone_change OTP",()=>{
  assert.match(account,/AccountWhatsAppPrivacy/);
  assert.match(account,/activeTab==="privacidade"/);
  assert.match(privacy,/auth\.updateUser\(\{phone:/);
- assert.match(privacy,/type:"phone_change"/);
+ assert.match(privacy,/type:otpType/);
+ assert.match(privacy,/confirmingExisting\?"sms":"phone_change"/);
  assert.match(privacy,/stage_my_whatsapp_privacy/);
  assert.match(privacy,/stage_set_whatsapp_privacy/);
  assert.match(privacy,/Verificar número cadastrado/);
