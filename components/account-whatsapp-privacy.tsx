@@ -56,6 +56,9 @@ export default function AccountWhatsAppPrivacy(){
 
   async function requestPhoneCode(){
     const target=normalizePhone(phoneInput);
+    if(prefs?.verified && target===normalizePhone(prefs.phone||"")){
+      setError(true);setMessage("Esse número já está confirmado. Informe um número diferente para alterá-lo.");return;
+    }
     if(!target){setError(true);setMessage("Informe um WhatsApp brasileiro válido com DDD.");return;}
     setBusy(true);setMessage("");setError(false);
     try{
@@ -127,6 +130,7 @@ export default function AccountWhatsAppPrivacy(){
         <Button type="button" disabled={busy||token.length<6} onClick={()=>void verifyPhone()}>
           {busy?"Verificando...":"Confirmar número"}
         </Button>
+        <Button variant="ghost" type="button" disabled={busy} onClick={()=>{setPending("");setToken("");setEditing(true);setMessage("");}}>Cancelar ou corrigir número</Button>
       </div>}
       <div className="account-form">
         <label><input type="checkbox" checked={notifications} onChange={e=>setNotifications(e.target.checked)} disabled={busy}/>
