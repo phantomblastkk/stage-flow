@@ -70,6 +70,7 @@ export default function MinhaConta(){
  const [message,setMessage]=useState("");
  const [error,setError]=useState(false);
  const roleDialogInput=useRef<HTMLInputElement>(null);
+ const accountNav=useRef<HTMLElement>(null);
  const roleOrigin=useRef<HTMLButtonElement|null>(null);
 
  const flash=(text:string,isError=false)=>{setMessage(text);setError(isError);};
@@ -87,6 +88,15 @@ export default function MinhaConta(){
    window.addEventListener("popstate",onPopState);
    return()=>window.removeEventListener("popstate",onPopState);
  },[]);
+
+ useEffect(()=>{
+   const nav=accountNav.current;
+   const selected=nav?.querySelector<HTMLElement>('[aria-current="page"]');
+   if(!nav||!selected||nav.scrollWidth<=nav.clientWidth)return;
+   const area=nav.getBoundingClientRect(),item=selected.getBoundingClientRect();
+   if(item.left<area.left||item.right>area.right)
+     nav.scrollTo({left:Math.max(0,nav.scrollLeft+item.left-area.left-12),behavior:"instant"});
+ },[activeTab,loading]);
 
  const load=useCallback(async()=>{
    const db=createClient();
@@ -263,7 +273,7 @@ export default function MinhaConta(){
    {message&&<div className="account-flash"><InlineNotice tone={error?"danger":"success"}>{message}</InlineNotice></div>}
    {!account&&error&&<EmptyState title="Conta indisponível" description="Tente consultar novamente suas informações." action={<Button onClick={()=>void retryAccount()}>Tentar novamente</Button>}/>}
    {account&&<div className="account-shell">
-     <nav className="account-side" aria-label="Áreas do meu perfil">
+     <nav ref={accountNav} className="account-side" aria-label="Áreas do meu perfil">
        <div className="account-side-heading"><span>CONFIGURAÇÕES</span><strong>Minha conta</strong></div>
        {tabs.map(({id,label,sub,Icon})=><button type="button" key={id}
          className={"account-tab"+(activeTab===id?" is-active":"")}

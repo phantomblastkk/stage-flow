@@ -499,6 +499,7 @@ try {
       await page.getByText("Conta indisponível",{exact:true}).waitFor();
       state.accountReadFail=false;await activate(page.getByRole("button",{name:"Tentar novamente",exact:true}));
       const publicName=page.getByLabel("Nome público",{exact:true});await publicName.waitFor();
+      if(width===360)await page.waitForFunction(()=>{const nav=document.querySelector(".account-side"),selected=nav?.querySelector('[aria-current="page"]');if(!nav||!selected)return false;const n=nav.getBoundingClientRect(),s=selected.getBoundingClientRect();return s.left>=n.left-1&&s.right<=n.right+1;});
       assert.equal(await publicName.isDisabled(),true,"name cooldown must remain active");
       const username=page.getByLabel("@ do cantor",{exact:true});assert.equal(await username.isDisabled(),false,"username has an independent cooldown");
       await username.fill("novo-artista");await activate(page.getByRole("button",{name:"Salvar alterações",exact:true}));
@@ -526,7 +527,7 @@ try {
       await noHorizontalOverflow(page,"role confirmation "+width);await dialog.screenshot({path:`test-results/account-role-dialog-${width}.png`});
       await activate(dialog.getByRole("button",{name:"Confirmar ativação",exact:true}));await page.getByRole("status").filter({hasText:"Função de músico ativada"}).waitFor();assert.equal(state.accountWrites.length,2);assert.equal(state.accountWrites[1].p_role,"musician");
       assert.equal(await page.getByRole("link",{name:"Editar instrumentos e atuação",exact:true}).count(),1);
-      state.proReadFail=true;await page.goto(origin+"/assinatura");const accessError=page.getByRole("alert");await accessError.waitFor();await readable(accessError,"Pro access read error");
+      state.proReadFail=true;await page.goto(origin+"/assinatura");const accessError=page.locator(".subscription-page").getByRole("alert");await accessError.waitFor();await readable(accessError,"Pro access read error");
       assert.equal(await page.getByText("Assinatura ainda indisponível.",{exact:false}).count(),0,"read failure must not be represented as unavailable entitlement");
       state.proReadFail=false;await activate(page.getByRole("button",{name:"Tentar novamente",exact:true}));await page.getByRole("status").filter({hasText:"Assinatura ainda indisponível"}).waitFor();
       assert.equal(await page.getByRole("link",{name:"Acessar meu Perfil Artístico",exact:true}).count(),0);assert.equal(state.billingCalls.length,0);
