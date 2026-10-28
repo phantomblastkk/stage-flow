@@ -176,8 +176,19 @@ try{
    }));
    assert.ok(venueForm.valid&&venueForm.kind==="venue",
     "Venue form must be valid and selected before save: "+JSON.stringify(venueForm));
-   const venueSaved=waitProfileSave("venue");
-   await form.getByRole("button",{name:"Salvar perfil",exact:true}).click();await venueSaved;await page.getByText("Perfil salvo.",{exact:true}).waitFor();
+   const beforeVenueSave=writes.length;
+   await form.getByRole("button",{name:"Salvar perfil",exact:true}).click();
+   for(let check=0;check<35&&writes.length===beforeVenueSave;check++)await delay(100);
+   const submitted=await form.evaluate(el=>({
+    kind:el.querySelector("#managed-profile-kind")?.value,
+    valid:el.checkValidity(),
+    disabled:el.querySelector('button[type="submit"]')?.disabled,
+    name:el.querySelector('input[maxlength="100"]')?.value
+   })).catch(()=>({formClosed:true}));
+   assert.ok(writes.length>beforeVenueSave,
+    "Saving a venue must invoke its RPC: "+JSON.stringify({venueForm,submitted,writes:writes.slice(-3)}));
+   assert.equal(writes.at(-1).p_kind,"venue",
+    "The venue kind must survive rapid typing: "+JSON.stringify(writes.at(-1)));
    await page.getByRole("heading",{name:"Casa do Henrique",exact:true}).waitFor();
   }
   await page.screenshot({path:`test-results/operational-profiles-${width}.png`,fullPage:true});
