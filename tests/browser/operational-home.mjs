@@ -13,6 +13,7 @@ const session={access_token:encode({alg:"HS256",typ:"JWT"})+"."+encode({sub:acto
 const profile={id:actor,role:"musician",display_name:"Henrique",is_artist:true,is_singer:false,is_musician:true,is_producer:true,artist_kind:"support",username:null,city:"São Paulo",is_public:false,artist_avatar_path:null};
 const event={id:eventId,title:"Pagode na Casa Aurora",starts_at:new Date(Date.now()+86400000).toISOString(),venue:"Casa Aurora",city:"São Paulo",kind:"organized",status:"published"};
 const owned={event_id:eventId,title:event.title,starts_at:event.starts_at,event_status:"published",has_budget:true,gross_revenue:4350,received:1000,expense_total:0,expense_paid:0,musician_agreed:0,musician_paid:0,musician_unpriced:0,transport_total:0,equipment_total:0,staff_total:0,food_total:0,other_total:0};
+const ownGroupId="44444444-4444-4444-8444-444444444444";
 const group={id:groupId,account_id:"bbbbbbbb-bbbb-4bbb-8bbb-bbbbbbbbbbbb",name:"Pagode do Henrique",kind:"group",musical_type:"Grupo de Pagode",bio:"Pagode para a sua festa",city:"São Paulo",members:["João","Pedro","Henrique"],is_public:true,venue_id:null};
 await mkdir("test-results",{recursive:true});
 let serverLog="",browser;
@@ -37,7 +38,7 @@ try{
    else if(rpc==="stage_finance_organizer_overview"){if(failFinance){data={message:"Fixture failure"};status=503;}else data=[owned];}
    else if(rpc==="stage_my_show_history")data=[];
    else if(rpc==="stage_performance_profiles"){assert.equal(url.searchParams.get("account_id"),"eq."+actor);data=savedProfiles;}
-   else if(rpc==="stage_save_performance_profile"){writes.push(body);savedProfiles=[{...group,account_id:actor,name:body.p_name,members:body.p_members,is_public:body.p_public}];data={status:"saved",id:groupId};}
+   else if(rpc==="stage_save_performance_profile"){writes.push(body);savedProfiles=[{...group,id:ownGroupId,account_id:actor,name:body.p_name,members:body.p_members,is_public:body.p_public}];data={status:"saved",id:ownGroupId};}
    else if(rpc==="events"){assert.equal(url.searchParams.get("producer_id"),"eq."+actor);data=[event];}
    else if(rpc==="stage_discover_performance_profiles")data={status:"ok",items:[group]};
    else if(rpc==="stage_performance_availability")data="free";
