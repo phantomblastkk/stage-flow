@@ -306,6 +306,7 @@ try {
       // Synthetic Auth signup rejects duplicates and trigger collisions without exposing raw errors.
       await page.locator("#name").fill("Artista de Teste");
       await page.locator("#slug").fill("artista-de-teste");
+      await page.locator("#whatsapp").fill("(11) 99999-9999");
       await page.locator("#email").fill("artista@example.test");
       await page.locator("#password").fill("senha-ficticia-123");
       const submitSignup = page.getByRole("button", { name: "Criar minha conta gratuita", exact: true });
@@ -1002,7 +1003,7 @@ try {
       channel.postMessage({ event: "SIGNED_OUT", session: null });channel.close();
     });
     await page.waitForURL(origin + "/login");
-    await page.getByLabel("E-mail", { exact: true }).waitFor();
+    await page.getByLabel("E-mail ou WhatsApp com DDD", { exact: true }).waitFor();
     assert.equal(await page.locator(".finance-event").count(), 0);
     const privateReads = [...state.reads].filter(([key]) => /:(profiles|stage_owner_admin_status|stage_venue_partner_access)$/.test(key));
     await page.goto(origin + "/marketplace");
