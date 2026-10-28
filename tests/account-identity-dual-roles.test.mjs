@@ -123,8 +123,8 @@ test("both roles require an additional explicit, accessible confirmation at sign
  assert.doesNotMatch(hub,/\.from\("profiles"\)\.update\(\{is_singer|\.from\("profiles"\)\.update\(\{is_musician/);
 });
 
-test("profile settings have separate tabs, real email/password controls, and independent visibility",()=>{
- for(const section of ["Visão geral","Perfil de cantor","Perfil de músico","Dados pessoais","E-mail e segurança","Privacidade"]){
+test("profile settings have unified artistic role tabs, real email/password controls, and independent data visibility",()=>{
+ for(const section of ["Visão geral","Perfil de cantor","Atuação como músico","Dados pessoais","E-mail e segurança","Privacidade"]){
   assert.ok(hub.includes(section),section+" should be offered");
  }
  assert.match(hub,/aria-label="Áreas do meu perfil"/);
