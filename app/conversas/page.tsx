@@ -15,7 +15,6 @@ import type { Thread } from "@/src/domains/booking/types";
 import {historyWindow,snapshotMayBeLimited,THREAD_SNAPSHOT_LIMIT,MESSAGE_SNAPSHOT_LIMIT,THREAD_RENDER_STEP,MESSAGE_RENDER_STEP} from "@/src/domains/booking/model/recent-history";
 import "./conversas.css";
 
-type PhoneSettings = {status:string;opted_in:boolean;phone:string|null};
 const availabilityLabels:Record<Thread["availability"],string>={
  awaiting:"Aguardando resposta",available:"Disponível",unavailable:"Indisponível",ask_later:"A combinar"
 };
@@ -34,19 +33,13 @@ export default function HiringConversations(){
  const selected=useRef(activeId);selected.current=activeId;
  const alive=useRef(false);
  const threadRequest=useRef<AbortController|null>(null);
- const prefsRequest=useRef<AbortController|null>(null);
  const [busy,setBusy]=useState(false);
  const [loading,setLoading]=useState(true);
  const [error,setError]=useState("");
  const [notice,setNotice]=useState("");
- const [settings,setSettings]=useState<PhoneSettings|null>(null);
- const [prefsError,setPrefsError]=useState("");
- const [phone,setPhone]=useState("");
- const [consent,setConsent]=useState(false);
- const [savingSettings,setSavingSettings]=useState(false);
- const [showSettings,setShowSettings]=useState(false);
 
- useEffect(()=>{alive.current=true;return()=>{alive.current=false;threadRequest.current?.abort();prefsRequest.current?.abort();};},[]);
+
+ useEffect(()=>{alive.current=true;return()=>{alive.current=false;threadRequest.current?.abort();};},[]);
  const selectThread=useCallback((id:string|null)=>{
   selected.current=id;setActiveId(id);setError("");setNotice("");
   window.history.replaceState(null,"",id?conversationHref(id):"/conversas");
@@ -60,15 +53,6 @@ export default function HiringConversations(){
    if(alive.current&&!request.signal.aborted)setThreads(result);
    return result;
   }finally{if(threadRequest.current===request)threadRequest.current=null;}
- },[]);
- const loadPrefs=useCallback(async()=>{
-  prefsRequest.current?.abort();const request=new AbortController();prefsRequest.current=request;
-  const {data,error:rpcError}=await createClient().rpc("stage_hiring_whatsapp_settings").abortSignal(request.signal);
-  if(!alive.current||request.signal.aborted)return;
-  const next=data as PhoneSettings;
-  if(rpcError||next?.status!=="ok"){setPrefsError("Não foi possível carregar as preferências de WhatsApp. Suas conversas continuam disponíveis.");return;}
-  setPrefsError("");
-  setSettings(next);setConsent(Boolean(next.opted_in));setPhone(next.phone||"");
  },[]);
  useEffect(()=>{
   if(account.status==="loading")return;
@@ -107,9 +91,6 @@ export default function HiringConversations(){
   return()=>{active=false};
  },[accountId,account.status,router,loadThreads,selectThread]);
 
- useEffect(()=>{
-  void loadPrefs().catch(()=>{if(alive.current)setPrefsError("Não foi possível carregar as preferências de WhatsApp.");});
- },[loadPrefs]);
  const refreshThreads=useCallback(async()=>{
   try{await loadThreads();if(alive.current)setError("");}
   catch(e){if(alive.current&&!(e instanceof Error&&e.name==="AbortError"))setError(e instanceof Error?e.message:"Não foi possível atualizar as conversas.");}
@@ -144,22 +125,6 @@ export default function HiringConversations(){
   }catch(e){if(alive.current&&selected.current===activeId){if(e instanceof BookingSessionRequired)router.replace("/login");else setError(e instanceof Error?e.message:"Não foi possível atualizar.");}}
   finally{if(alive.current)setBusy(false);}
  }
- async function savePrefs(e:FormEvent<HTMLFormElement>){
-  e.preventDefault();if(savingSettings||!settings)return;setSavingSettings(true);setError("");setNotice("");
-  try{
-    const {data,error:rpcError}=await createClient().rpc("stage_hiring_whatsapp_settings",{
-      p_phone:consent?phone:null,p_consent:consent
-    });
-    if(rpcError||data?.status!=="ok")throw Error(data?.status==="invalid_phone"?
-      "Informe um WhatsApp válido com DDD.":"Não foi possível salvar as preferências.");
-    await loadPrefs();
-    setNotice(consent?
-      "Consentimento salvo. Os avisos começarão somente após a conexão oficial da API do WhatsApp.":
-      "Avisos de WhatsApp desativados.");
-    setShowSettings(false);
-  }catch(err){setError(err instanceof Error?err.message:"Erro ao salvar.");}
-  finally{setSavingSettings(false);}
- }
 
  return <main className="hiring-page"><div className="container">
   <nav className="nav"><Link className="brand" href="/"><span className="brand-mark">S</span> stage flow</Link>
@@ -169,22 +134,11 @@ export default function HiringConversations(){
     <h1>Conversas de <span className="accent">contratação.</span></h1>
     <p>Consulte datas, converse com músicos e formalize uma proposta de apresentação. Seu WhatsApp pessoal não é divulgado aqui.</p>
     <Link className="sf-ui-button sf-ui-button-ghost" href="/meus-convites">Ver convites de shows</Link>{" "}
-    <Button variant="ghost" type="button" aria-expanded={showSettings}
-      onClick={()=>setShowSettings(v=>!v)}><Bell size={15}/> Avisos por WhatsApp (opcional)</Button>
+    <Link className="sf-ui-button sf-ui-button-ghost" href="/minha-conta?aba=privacidade"><Bell size={15}/> WhatsApp e notificações</Link>
   </header>
   {error&&<InlineNotice tone="danger">{error}{" "}
     <Button variant="ghost" onClick={()=>void refreshThreads()}>Atualizar conversas</Button></InlineNotice>}
   {notice&&<InlineNotice tone="success">{notice}</InlineNotice>}
-  {showSettings&&<form className="hiring-settings" onSubmit={e=>void savePrefs(e)}>
-   <h2>Notificações no WhatsApp</h2>
-   {prefsError&&<InlineNotice tone="danger">{prefsError}{" "}<Button variant="ghost" onClick={()=>void loadPrefs().catch(()=>{})}>Tentar novamente</Button></InlineNotice>}
-   <p>Quando a API oficial estiver conectada, podemos avisar sobre novas mensagens com um modelo aprovado, direcionando você de volta ao Stage Flow. Sem compartilhar o telefone com outros usuários.</p>
-   <label className="hiring-accept"><input type="checkbox" checked={consent} disabled={!settings||savingSettings}
-     onChange={e=>setConsent(e.target.checked)}/> Autorizo receber notificações transacionais deste chat pelo WhatsApp. Posso cancelar a qualquer momento.</label>
-   {consent&&<Input label="WhatsApp com DDD" value={phone} onChange={e=>setPhone(e.target.value)} placeholder="11 99999-9999" required/>}
-   <Button  disabled={savingSettings||!settings} type="submit">Salvar preferência</Button>
-   {settings?.opted_in&&<small>Consentimento ativo. O envio automático ainda não foi habilitado.</small>}
-  </form>}
   {loading?<div className="hiring-loading"><LoaderCircle size={20}/> Carregando conversas...</div>:
     <div className={"hiring-layout"+(active?" has-active":"")}>
      <aside className="hiring-sidebar" aria-label="Suas conversas">
