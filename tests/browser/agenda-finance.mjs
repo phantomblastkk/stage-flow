@@ -227,6 +227,11 @@ try {
       await page.getByRole("button", { name: "Salvar evento", exact: true }).click();
       await page.getByRole("alert").filter({ hasText: "O término precisa ser depois do início" }).waitFor();
       assert.equal(state.writes.length, 0);
+      await readable(page.getByRole("alert").filter({hasText:"O término precisa ser depois do início"}),"agenda validation error");
+      await readable(page.getByRole("button",{name:"Salvar evento",exact:true}),"agenda primary action");
+      await noHorizontalOverflow(page,"open agenda form "+width);
+      await page.evaluate(()=>scrollTo(0,0));
+      await page.screenshot({path:`test-results/agenda-form-${width}.png`,fullPage:true});
       await page.locator("#event-end").fill("2026-11-04T23:00");
       await page.getByRole("button", { name: "Salvar evento", exact: true }).click();
       await page.getByText("Evento salvo com sucesso!", { exact: true }).waitFor();
@@ -243,6 +248,11 @@ try {
       assert.equal(await page.locator('section[aria-label="Resumo financeiro"] .sf-ui-stat').count(), 4);
       await noHorizontalOverflow(page, "finance " + width);
       await page.locator(".finance-filter-panel>summary").click();
+      await page.getByLabel("Atuação",{exact:true}).focus();
+      await page.keyboard.press("Tab");
+      assert.equal(await page.getByLabel("Ano",{exact:true}).evaluate(node=>node===document.activeElement),true,"year follows mode in filter keyboard order");
+      await page.keyboard.press("Tab");
+      assert.equal(await page.getByLabel("Mês",{exact:true}).evaluate(node=>node===document.activeElement),true,"month follows year in filter keyboard order");
       await page.getByLabel("Atuação").selectOption("musician");
       assert.equal(await page.locator(".finance-event").count(), 0);
       await page.getByLabel("Atuação").selectOption("all");
@@ -263,6 +273,19 @@ try {
       await page.getByText("Equipe B", { exact: true }).waitFor();
       await delay(450);
       assert.equal(await page.getByText("Equipe A", { exact: true }).count(), 0);
+      const paidInput=page.getByLabel("Valor pago a Equipe B",{exact:true});
+      await paidInput.fill("valor inválido");
+      const writesBeforeInvalid=state.writes.length;
+      await paidInput.press("Tab");
+      assert.equal(await page.locator(".finance-team-row").getByRole("button",{name:"Salvar",exact:true}).evaluate(node=>node===document.activeElement),true,"payment save follows its labelled input");
+      await page.keyboard.press("Enter");
+      const paidError=page.getByRole("alert").filter({hasText:"Valor inválido: use reais"});
+      await paidError.waitFor();
+      assert.equal(state.writes.length,writesBeforeInvalid,"invalid manual payment must never write");
+      await readable(paidError,"manual payment validation error");
+      assert.ok(await page.locator(".finance-team-row").getByRole("button",{name:"Salvar",exact:true}).evaluate(node=>node.getBoundingClientRect().height)>=44);
+      if(width===360)assert.ok(await paidInput.evaluate(node=>parseFloat(getComputedStyle(node).fontSize))>=16,"mobile payment field avoids focus zoom");
+      await paidInput.fill("0,00");
       await noHorizontalOverflow(page, "finance editor " + width);
       await page.screenshot({ path: `test-results/finance-${width}.png`, fullPage: true });
       if (width === 360) {

@@ -6,7 +6,7 @@ import { ArrowLeft, BarChart3, CalendarDays, CircleAlert, Download, LockKeyhole,
 import { createClient } from "@/lib/supabase/client";
 import EventBudgetPanel from "@/components/event-budget-panel";
 import ProFeatureLock from "@/components/pro-feature-lock";
-import { Button, EmptyState, LoadingState, StatCard } from "@/src/components/ui";
+import { Button, EmptyState, InlineNotice, Input, LoadingState, Select, StatCard } from "@/src/components/ui";
 import { FinanceSessionRequired, loadFinance, loadFinanceTeam, saveMusicianPayment } from "@/src/domains/billing/services/finance-service";
 import type { Mode, Organized, Participation, TeamMember } from "@/src/domains/billing/types";
 import { buildFinanceReport } from "@/src/domains/billing/model/finance-report";
@@ -110,29 +110,29 @@ export default function Financeiro(){
  }
  return <main className="finance-page"><div className="container">
   <nav className="nav"><Link className="brand" href="/"><span className="brand-mark">S</span> stage flow</Link>
-   <Link href="/painel" className="btn btn-quiet"><ArrowLeft size={15}/> Painel</Link></nav>
+   <Link href="/painel" className="sf-ui-button sf-ui-button-ghost"><ArrowLeft size={15}/> Painel</Link></nav>
   <header className="finance-hero"><span className="eyebrow"><Wallet size={14}/> CONTROLE PRIVADO POR SHOW</span>
    <h1>Minha central <span className="accent">financeira.</span></h1>
    <p>Acompanhe receita bruta, cachês, transporte, outras despesas, valores pagos e resultado. Tudo organizado por show, sem obrigar você a cadastrar valores.</p>
   </header>
-  {visibleError&&<p className="finance-feedback is-error" role="alert">{visibleError}</p>}
-  {notice&&<p className="finance-feedback" role="status">{notice}</p>}
+  {visibleError&&<InlineNotice tone="danger">{visibleError}</InlineNotice>}
+  {notice&&<InlineNotice tone="success">{notice}</InlineNotice>}
   <details className="finance-filter-panel">
    <summary>Filtrar período e atuação <span>{mode==="all"?"Tudo":mode==="organizer"?"Organização":"Músico"} · {month!=="all"?monthLabel(month):year!=="all"?year:"Todos os períodos"}</span></summary>
    <div className="finance-controls">
-   <label>Atuação <select value={mode} onChange={e=>setMode(e.target.value as Mode)}>
+   <Select label="Atuação" value={mode} onChange={e=>setMode(e.target.value as Mode)}>
     <option value="all">Tudo</option><option value="organizer">Organização / produção</option>
-    <option value="musician">Cachês de músico</option></select></label>
-   <label>Ano <select value={year} onChange={e=>{setYear(e.target.value);setMonth("all");}}>
-    <option value="all">Todos</option>{years.map(y=><option key={y} value={y}>{y}</option>)}</select></label>
-   <label>Mês <select value={month} onChange={e=>setMonth(e.target.value)}>
-    <option value="all">Todos</option>{months.map(m=><option key={m} value={m}>{monthLabel(m)}</option>)}</select></label>
+    <option value="musician">Cachês de músico</option></Select>
+   <Select label="Ano" value={year} onChange={e=>{setYear(e.target.value);setMonth("all");}}>
+    <option value="all">Todos</option>{years.map(y=><option key={y} value={y}>{y}</option>)}</Select>
+   <Select label="Mês" value={month} onChange={e=>setMonth(e.target.value)}>
+    <option value="all">Todos</option>{months.map(m=><option key={m} value={m}>{monthLabel(m)}</option>)}</Select>
    </div>
   </details>
   <div className="finance-toolbar">
-   <button className="btn btn-quiet" type="button" disabled={loading} onClick={()=>setNonce(n=>n+1)}><RefreshCw size={15}/> Atualizar</button>
-   {reportAccess?<button className="btn btn-quiet" type="button" disabled={loading||Boolean(visibleError)||coverageLimited||!hasAny||!reportAccessReady} onClick={exportCsv}><Download size={15}/> Exportar CSV detalhado</button>:
-    <Link className="btn btn-quiet" href="/planos"><LockKeyhole size={15}/> Exportação detalhada · Cantor Pro</Link>}
+   <Button variant="ghost" type="button" disabled={loading} onClick={()=>setNonce(n=>n+1)}><RefreshCw size={15}/> Atualizar</Button>
+   {reportAccess?<Button variant="ghost" type="button" disabled={loading||Boolean(visibleError)||coverageLimited||!hasAny||!reportAccessReady} onClick={exportCsv}><Download size={15}/> Exportar CSV detalhado</Button>:
+    <Link className="sf-ui-button sf-ui-button-ghost" href="/planos"><LockKeyhole size={15}/> Exportação detalhada · Cantor Pro</Link>}
   </div>
   {loading?<LoadingState label="Carregando valores privados…"/>:visibleError?<EmptyState title="Financeiro indisponível" description="Atualize os dados para consultar seu resumo financeiro." action={<Button onClick={()=>setNonce(n=>n+1)}>Tentar novamente</Button>}/>:<>
    {coverageLimited&&<p className="finance-warning" role="status"><CircleAlert size={17}/>O histórico disponível atingiu o limite de shows recentes. Os totais podem não incluir períodos antigos; a exportação está pausada para evitar um relatório incompleto.</p>}
@@ -182,8 +182,8 @@ export default function Financeiro(){
     </div>
    </section>:
    <ProFeatureLock title="Relatórios financeiros Pro" description="Desbloqueie análises mensais, gráficos e exportação detalhada. Seus lançamentos básicos seguem gratuitos.">
-    <div className="finance-two" style={{padding:16}}>
-     <div className="finance-panel"><h2>Despesas por categoria</h2><p>Transporte · Equipamentos · Equipe · Alimentação</p><div className="finance-bar-track"><span style={{width:"72%"}}/></div><div className="finance-bar-track"><span style={{width:"43%"}}/></div></div>
+    <div className="finance-two finance-preview">
+     <div className="finance-panel"><h2>Despesas por categoria</h2><p>Transporte · Equipamentos · Equipe · Alimentação</p><div className="finance-bar-track"><span className="finance-preview-primary"/></div><div className="finance-bar-track"><span className="finance-preview-secondary"/></div></div>
      <div className="finance-panel"><h2>Resultado por mês</h2><p>Receita, lucro previsto e saldo de caixa</p><strong>R$ — · R$ —</strong></div>
     </div>
    </ProFeatureLock>}
@@ -191,7 +191,7 @@ export default function Financeiro(){
    <section className="finance-panel finance-event-panel">
     <div className="finance-head"><div><h2>Financeiro por apresentação</h2>
      <p>Confira cada show e expanda para editar despesas, faturamento e cachês pagos.</p></div>
-     <Link href="/eventos" className="btn btn-quiet"><CalendarDays size={15}/> Abrir agenda</Link></div>
+     <Link href="/eventos" className="sf-ui-button sf-ui-button-ghost"><CalendarDays size={15}/> Abrir agenda</Link></div>
     {visibleOwner.map(r=><article key={r.event_id} className="finance-event">
      <div className="finance-event-top"><div>
       <strong>{r.title}</strong><small>{new Date(r.starts_at).toLocaleString("pt-BR",{dateStyle:"medium",timeStyle:"short"})} · Organizador</small>
@@ -201,22 +201,22 @@ export default function Financeiro(){
       {r.financial.partial?" (parcial: valores pendentes)":""}
       {" · "}A receber: <strong>{r.financial.gross===null?"A definir":cash(r.financial.receivable)}</strong>
       {" · "}A pagar: <strong>{cash(r.financial.payable)}</strong></p>}
-     <button className="btn btn-quiet" type="button" disabled={Boolean(busy)} aria-expanded={expanded===r.event_id} aria-controls={"finance-detail-"+r.event_id}
+     <Button variant="ghost" type="button" disabled={Boolean(busy)} aria-expanded={expanded===r.event_id} aria-controls={"finance-detail-"+r.event_id}
        onClick={()=>void openTeam(r.event_id)}><PencilLine size={15}/>
-       {expanded===r.event_id?"Fechar lançamento":"Editar financeiro e pagamentos"}</button>
+       {expanded===r.event_id?"Fechar lançamento":"Editar financeiro e pagamentos"}</Button>
      {expanded===r.event_id&&<div id={"finance-detail-"+r.event_id} className="finance-event-detail">
       <EventBudgetPanel eventId={r.event_id}/>
       <div className="finance-team">
        <h3>Pagamentos à banda</h3>
        <p>Registre quanto realmente foi pago para cada músico com convite aceito. Isso não envia Pix nem marca pagamento no perfil dele.</p>
-       {teamError&&<p className="finance-feedback is-error">{teamError}</p>}
+       {teamError&&<InlineNotice tone="danger">{teamError}</InlineNotice>}
        {teamLoading&&<LoadingState label="Carregando pagamentos da equipe…"/>}
        {team.map(m=><form key={m.invitation_id} className="finance-team-row" onSubmit={e=>void savePaid(e,m.invitation_id)}>
          <div><strong>{m.musician_name}</strong><small>Cachê registrado: {formatAmount(m.fee)}</small></div>
-         <label>Já pago (R$)<input aria-label={"Valor pago a "+m.musician_name} inputMode="decimal"
+         <Input label="Já pago (R$)" aria-label={"Valor pago a "+m.musician_name} inputMode="decimal"
           value={editPaid[m.invitation_id]??""}
-          onChange={e=>setEditPaid(v=>({...v,[m.invitation_id]:e.target.value}))}/></label>
-         <button className="btn btn-quiet" type="submit" disabled={!!busy}><Save size={14}/> Salvar</button>
+          onChange={e=>setEditPaid(v=>({...v,[m.invitation_id]:e.target.value}))}/>
+         <Button variant="ghost" type="submit" disabled={!!busy}><Save size={14}/> Salvar</Button>
        </form>)}
        {!teamLoading&&!team.length&&!teamError&&<p className="fine">Nenhum músico com convite aceito neste show.</p>}
       </div>
@@ -229,7 +229,7 @@ export default function Financeiro(){
       {reportAccess&&<p>Resultado estimado: <strong>{r.financial.gross===null?"A definir":cash(r.financial.projected)}</strong>{" · "}A receber: <strong>{r.financial.gross===null?"A definir":cash(r.financial.receivable)}</strong></p>}
       <p>Recebido pessoal {r.has_financial_record?cash(r.financial.received):"Não lançado"}
         {" · "}Despesas pessoais {r.has_financial_record?cash(r.financial.expenses):"Não lançadas"}</p>
-      <Link className="btn btn-quiet" href="/meus-shows"><PencilLine size={14}/> Registrar meu recebimento</Link>
+      <Link className="sf-ui-button sf-ui-button-ghost" href="/meus-shows"><PencilLine size={14}/> Registrar meu recebimento</Link>
     </article>)}
     {!visibleOwner.length&&!visibleMusician.length&&<p className="finance-empty">Sem shows neste período. Use a agenda para cadastrar eventos, contratações e despesas.</p>}
    </section>

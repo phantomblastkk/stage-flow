@@ -3,24 +3,23 @@
 .agenda-hero{padding:28px 0 22px}
 .agenda-hero .lead{font-size:15px;max-width:680px}
 .agenda-primary-actions{display:flex;flex-wrap:wrap;gap:10px;align-items:center}
-.agenda-primary-actions .btn{font-size:12px;min-height:44px}
+.agenda-primary-actions .sf-ui-button{font-size:12px;min-height:44px}
 .agenda-create,.agenda-calendar{margin-bottom:24px}
 .agenda-create[hidden]{display:none}
 .agenda-create>form{display:grid;gap:18px}
-.agenda-create .field{margin-bottom:0;min-width:0}
+.agenda-create .sf-ui-field{margin-bottom:0;min-width:0}
 .agenda-field-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:16px}
 .agenda-field-grid>*{min-width:0}
 .agenda-calendar-heading{display:flex;flex-wrap:wrap;gap:12px;justify-content:space-between;align-items:center;margin-bottom:18px}
 .agenda-calendar-heading h2{font-size:21px}
-.agenda-calendar-heading .btn{min-height:44px;min-width:44px;padding:10px}
+.agenda-calendar-heading .sf-ui-button{min-height:44px;min-width:44px;padding:10px}
 .agenda-clear-date{margin:14px 0 10px}
-.agenda-error{display:flex;flex-wrap:wrap;align-items:center;gap:12px;border-color:#87516a;background:#321d2c;color:#ffd1df}
 .agenda-event-list{display:grid;gap:12px}
 .agenda-page .event{padding:16px;border:1px solid var(--sf-ui-border);border-radius:var(--sf-ui-radius);background:var(--sf-ui-surface)}
 .agenda-page .event-info{min-width:0;overflow-wrap:anywhere}
 .agenda-page .event-info>.sf-ui-badge{display:inline-flex;margin-top:10px;font-size:11px}
 .agenda-event-actions{display:flex;flex-wrap:wrap;gap:9px;margin-top:14px}
-.agenda-event-actions .btn{min-height:44px;white-space:normal}
+.agenda-event-actions .sf-ui-button{min-height:44px;white-space:normal}
 .agenda-event-actions svg,.agenda-primary-actions svg{flex-shrink:0}
 .agenda-page .agenda-delete{flex:none;min-width:44px;min-height:44px;padding:10px}
 .agenda-page button:focus-visible,.agenda-page a:focus-visible,.agenda-page input:focus-visible,.agenda-page textarea:focus-visible{
@@ -29,8 +28,8 @@
 @media(max-width:600px){
  .agenda-hero{padding-top:22px}
  .agenda-page .nav{height:auto;min-height:64px;gap:8px;flex-wrap:wrap;padding-block:10px}
- .agenda-page .nav .btn{padding:10px;font-size:12px;min-height:44px}
- .agenda-page .feature{padding:14px 12px}
+ .agenda-page .nav .sf-ui-button{padding:10px;font-size:12px;min-height:44px}
+ .agenda-page .sf-ui-card{padding:14px 12px}
  .agenda-field-grid{grid-template-columns:minmax(0,1fr)}
  .agenda-create input:not([type=checkbox]),.agenda-create textarea{font-size:16px;min-width:0}
  .agenda-primary-actions>*{flex:1 1 auto}
@@ -38,7 +37,7 @@
  .agenda-page .event-date{width:40px;height:48px}
  .agenda-page .agenda-delete{grid-column:2;justify-self:start}
  .agenda-event-actions{display:grid;grid-template-columns:minmax(0,1fr)}
- .agenda-event-actions .btn{width:100%;text-align:left;justify-content:flex-start;padding:10px!important}
+ .agenda-event-actions .sf-ui-button{width:100%;text-align:left;justify-content:flex-start;padding:10px}
  .agenda-calendar-heading h2{font-size:19px}
  .agenda-calendar-heading>div:first-child{flex:1 1 160px}
  .agenda-page .section{padding-block:20px}
@@ -50,3 +49,61 @@
 .agenda-pagination>span,.agenda-marker-note{font-size:12px;line-height:1.6;color:var(--sf-ui-muted)}
 .agenda-pagination>p{width:100%;color:var(--sf-ui-danger);font-size:12px}
 @media(max-width:600px){.agenda-pagination>.sf-ui-button{width:100%}}
+
+/* Calendar and catalog presentation extracted from JSX. */
+.agenda-hero-title{font-size:clamp(34px,5vw,46px)}
+.agenda-create-title{font-family:Manrope,sans-serif;margin-top:0}
+.agenda-inline-icon{display:inline;vertical-align:middle}
+.agenda-relative{position:relative}
+.agenda-search-icon{position:absolute;right:12px;top:14px;color:var(--sf-ui-muted);pointer-events:none}
+.agenda-suggestions{position:absolute;z-index:10;top:100%;left:0;right:0;background:var(--sf-ui-surface);border:1px solid var(--sf-ui-border);border-radius:10px;box-shadow:var(--sf-ui-shadow);overflow:hidden}
+.agenda-suggestion{display:block;width:100%;text-align:left;padding:11px 13px;border:0;border-bottom:1px solid var(--sf-ui-border);background:transparent;color:var(--sf-ui-text);cursor:pointer}
+.agenda-suggestion-detail{display:block;font-size:12px;color:var(--sf-ui-muted);margin-top:3px}
+.agenda-venue-help{display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap;margin-top:5px}
+.agenda-hint{font-size:var(--sf-ui-text-xs);color:var(--sf-ui-muted);margin:0}
+.agenda-catalog-link{font-size:12px;color:var(--sf-ui-brand);text-decoration:underline}
+.agenda-suggestion-empty{font-size:12px;color:var(--sf-ui-muted);margin-top:8px}
+.agenda-city-suggestion{display:flex;align-items:center;justify-content:space-between;gap:8px;width:100%;text-align:left;padding:11px 13px;border:0;border-bottom:1px solid var(--sf-ui-border);background:transparent;color:var(--sf-ui-text);cursor:pointer}
+.agenda-city-hint{font-size:var(--sf-ui-text-xs);color:var(--sf-ui-muted);margin-top:5px}
+.agenda-form-hint{font-size:12px;color:var(--sf-ui-muted);line-height:1.6;margin:10px 0}
+.agenda-public-option{display:flex;gap:10px;align-items:flex-start;margin:8px 0 20px;font-size:13px;color:var(--sf-ui-muted)}
+.agenda-public-checkbox{accent-color:var(--sf-ui-brand);margin-top:2px}
+.agenda-strong{color:var(--sf-ui-text)}
+.agenda-month-title{text-transform:capitalize;margin:8px 0 0}
+.agenda-month-actions{display:flex;gap:8px}
+.agenda-weekdays{display:grid;grid-template-columns:repeat(7,minmax(0,1fr));gap:6px;text-align:center;font-size:12px;color:var(--sf-ui-muted);margin-bottom:8px}
+.agenda-weekday{padding:6px 0}
+.agenda-days{display:grid;grid-template-columns:repeat(7,minmax(0,1fr));gap:6px}
+.agenda-day-markers{display:flex;gap:3px;align-items:center}
+.agenda-legend{font-size:12px;color:var(--sf-ui-muted);margin-bottom:0}
+.agenda-owned-section{padding-top:12px}
+.agenda-highlight-label{display:block;color:var(--sf-ui-brand);font-size:var(--sf-ui-text-xs);margin-top:5px}
+.agenda-event-meta{display:block;margin-top:5px}
+.agenda-event-description{color:var(--sf-ui-muted);font-size:13px;margin:8px 0}
+.agenda-event-action{display:inline-flex;align-items:center;gap:8px;font-size:12px}
+.agenda-action-text{font-size:12px}
+.agenda-muted{font-size:var(--sf-ui-text-xs);color:var(--sf-ui-muted)}
+.agenda-guest-section{padding-top:6px}
+.agenda-guest-icon{display:inline;vertical-align:middle;color:var(--sf-ui-brand)}
+.agenda-invite-link{margin-top:12px}
+.agenda-empty-text{margin:0;color:var(--sf-ui-muted)}
+.agenda-briefing-link{display:inline-flex;margin-top:9px;font-size:var(--sf-ui-text-xs)}
+.agenda-page{background:var(--sf-ui-bg);color:var(--sf-ui-text)}
+.agenda-day{min-width:0;min-height:58px;padding:7px 2px;border-radius:var(--sf-ui-radius-sm);border:1px solid var(--sf-ui-border);background:var(--sf-ui-surface);color:var(--sf-ui-text);display:flex;flex-direction:column;align-items:center;justify-content:center;gap:4px;cursor:pointer}
+.agenda-day[aria-pressed=true]{border-color:var(--sf-ui-brand);background:var(--sf-ui-accent-surface)}
+.agenda-page .event{align-items:flex-start;scroll-margin-top:30px}
+.agenda-page .event.is-highlighted{border-color:var(--sf-ui-brand);background:var(--sf-ui-accent-surface)}
+.agenda-page .agenda-guest-event{scroll-margin-top:90px}
+.agenda-page .event-date{background:var(--sf-ui-accent-surface);color:var(--sf-ui-brand);border-color:var(--sf-ui-border)}
+.agenda-page .event-info>strong{color:var(--sf-ui-text)}
+.agenda-page .event-info>span{color:var(--sf-ui-muted)}
+.agenda-page .event-info>.agenda-highlight-label{color:var(--sf-ui-brand)}
+.agenda-page .event-info>.sf-ui-badge-success{color:var(--sf-ui-success)}
+.agenda-page .event-info>.sf-ui-badge-danger{color:var(--sf-ui-danger-contrast)}
+.agenda-notice{margin-bottom:20px}.agenda-notice-action{margin-top:12px}
+.agenda-suggestions{max-height:280px;overflow-y:auto}
+.agenda-suggestion,.agenda-city-suggestion{min-height:44px;overflow-wrap:anywhere}
+.agenda-suggestion:hover,.agenda-city-suggestion:hover{background:var(--sf-ui-accent-surface)}
+.agenda-create .sf-ui-field{min-width:0}
+.agenda-search-icon{top:14px}.agenda-relative>.sf-ui-input{padding-right:36px}
+.agenda-page .sf-ui-button{white-space:normal}

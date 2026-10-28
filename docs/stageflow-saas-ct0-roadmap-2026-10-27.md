@@ -159,3 +159,7 @@ Antes de certificação de escala:
 - Teste de banco: `stage_workspace_overview()` retorna `status=ok` somente ao dono autenticado; `anon` sem EXECUTE; conta sem perfil retorna `profile_required`.
 - A correção RLS foi observada via `pg_policies` e `get_advisors(type='performance')`.
 - **Publicação automática permanece desativada.** Migrações desta fase são executadas em QA, não em produção, até uma release manual planejada.
+
+## Checkpoint — Parte 15 (28/10/2026)
+
+Agenda e Financeiro migrados para tokens e controles compartilhados: 59 atributos style removidos, filtros e pagamentos padronizados. Relatório: `stageflow-saas-phase-15-agenda-finance-css-2026-10-28.md`. CSS global e editores filhos ainda exigem migração; sem deploy ou alteração remota.
