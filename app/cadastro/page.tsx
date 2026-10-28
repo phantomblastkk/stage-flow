@@ -69,6 +69,8 @@ export default function CadastroPage() {
   const [whatsappConsent, setWhatsappConsent] = useState(false);
   const [whatsappNotifications, setWhatsappNotifications] = useState(false);
   const [otpChannel, setOtpChannel] = useState<"sms"|"whatsapp">("sms");
+  // Safe default: WhatsApp OTP is shown only after Twilio Verify is configured in QA.
+  const whatsappOtpEnabled = process.env.NEXT_PUBLIC_STAGEFLOW_OTP_WHATSAPP_ENABLED === "true";
   const [pendingPhone, setPendingPhone] = useState("");
   const [verificationCode, setVerificationCode] = useState("");
   const [busy, setBusy] = useState(false);
@@ -96,7 +98,7 @@ export default function CadastroPage() {
         ...(needsMusicianPhone ? { phone: "+" + internationalPhone } : { email }),
         password,
         options: {
-          ...(needsMusicianPhone ? { channel: otpChannel } : {
+          ...(needsMusicianPhone ? { channel: whatsappOtpEnabled ? otpChannel : "sms" } : {
             emailRedirectTo: inviteCode ? window.location.origin + "/convite?codigo=" + encodeURIComponent(inviteCode) : undefined
           }),
           data: {
@@ -268,7 +270,7 @@ export default function CadastroPage() {
             <span>Permito que contratantes autorizados dos meus convites vejam meu WhatsApp. Essa permissão é opcional e pode ser alterada em Minha conta → Privacidade.</span>
           </label>
           <label className="signup-producer-add"><input type="checkbox" checked={whatsappNotifications} onChange={e=>setWhatsappNotifications(e.target.checked)}/><span>Quero receber avisos de convites, propostas e shows pelo WhatsApp. Posso desligar em Privacidade.</span></label>
-          <div className="field"><label htmlFor="otp-channel">Receber código por</label><select id="otp-channel" value={otpChannel} onChange={e=>setOtpChannel(e.target.value as "sms"|"whatsapp")}><option value="sms">SMS</option><option value="whatsapp">WhatsApp (requer provedor compatível)</option></select></div>
+          {whatsappOtpEnabled ? <div className="field"><label htmlFor="otp-channel">Receber código por</label><select id="otp-channel" value={otpChannel} onChange={e=>setOtpChannel(e.target.value as "sms"|"whatsapp")}><option value="sms">SMS</option><option value="whatsapp">WhatsApp</option></select></div> : <p className="field-help">O código será enviado por SMS. A opção de recebimento por WhatsApp será liberada após a validação do provedor.</p>}
         </>}
         <div className="field"><label htmlFor="email">E-mail {isArtist ? "de contato (opcional)" : "de acesso"}</label><input id="email" type="email" autoComplete="email" value={email} onChange={e=>setEmail(e.target.value)} placeholder="voce@exemplo.com" required={!isArtist} /><span className="field-help">{isArtist?"O acesso desta nova conta será pelo número verificado e senha; não enviaremos código para o e-mail.":"O e-mail continua como acesso para produtores."}</span></div>
         <div className="field"><label htmlFor="password">Criar senha</label><input id="password" type="password" autoComplete="new-password" value={password} onChange={e=>setPassword(e.target.value)} minLength={8} placeholder="Pelo menos 8 caracteres" required /></div>
