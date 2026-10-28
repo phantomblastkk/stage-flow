@@ -187,7 +187,7 @@ export default function MarketplaceCatalog({preview=false}:Props) {
           if(active) setCanModerate(moderator === true);
         }
       } else {
-        // Esta tela so sera usada publicamente apos liberacao deliberada.
+        // Marketplace público autorizado pelo proprietário; o backend mantém as políticas de segurança.
         setGate("allowed");
       }
     }
@@ -220,7 +220,7 @@ export default function MarketplaceCatalog({preview=false}:Props) {
         setItems([]);setTotal(0);
         setError(searchError?.message ||
           (response?.status==="not_released"
-            ? "O marketplace continua fechado para o público. Entre na área de testes autorizada."
+            ? "O catálogo ainda está sendo habilitado. Tente novamente em instantes."
             : response?.status==="login_required"
               ? "Entre na sua conta para consultar os favoritos."
               : "Não foi possível consultar os músicos. Confira a migração do Supabase."));
@@ -408,14 +408,14 @@ export default function MarketplaceCatalog({preview=false}:Props) {
   }
 
   if(gate==="loading")return <div className="market-gate">
-    <LoaderCircle size={22}/><h2>Verificando acesso ao laboratório...</h2>
+    <LoaderCircle size={22}/><h2>{preview?"Verificando acesso ao laboratório...":"Preparando seu Marketplace..."}</h2>
   </div>;
   if(gate==="denied")return <section className="market-gate">
     <ShieldCheck size={34}/>
     <h2>Laboratório privado</h2>
     <p>Esta área está restrita às contas autorizadas pelo administrador do Stage Flow.
       O catálogo continua oculto do público.</p>
-    <Link href="/marketplace" className="btn btn-primary">Voltar ao aviso “Em breve”</Link>
+    <Link href="/marketplace" className="btn btn-primary">Ir para o Marketplace</Link>
   </section>;
 
   return <main className="market-shell">
@@ -446,6 +446,23 @@ export default function MarketplaceCatalog({preview=false}:Props) {
           <span>STAGE</span><strong>FLOW.</strong><small>MUSIC CONNECTS US</small>
         </div>
       </section>
+
+      {!preview&&<section className="market-development-banner" aria-label="Novidade em desenvolvimento">
+        <div className="market-development-copy">
+          <span className="market-development-label"><Sparkles size={16}/> NOVIDADE EM DESENVOLVIMENTO</span>
+          <h2>O próximo encontro acontece no palco.</h2>
+          <p>O Marketplace já está aberto para descobrir profissionais e conhecer seus portfólios.
+            Estamos aprimorando a experiência e novas funcionalidades chegarão gradualmente.</p>
+        </div>
+        <div className="market-development-actions">
+          <Link href="/perfil-artistico?aba=instrumentista" className="market-development-primary">
+            <Guitar size={17}/> Preparar meu portfólio <ArrowRight size={16}/>
+          </Link>
+          <Link href="#market-results" className="market-development-secondary">
+            Explorar músicos <ArrowRight size={16}/>
+          </Link>
+        </div>
+      </section>}
 
       {preview&&<div className="market-preview-ribbon">
         <ShieldCheck size={17}/>
@@ -609,7 +626,7 @@ export default function MarketplaceCatalog({preview=false}:Props) {
             Nenhum compromisso privado é exibido.</p>
         </aside>
 
-        <section className="market-results">
+        <section className="market-results" id="market-results">
           <form className="market-search-bar" onSubmit={apply}>
             <Search size={19}/>
             <input aria-label="Buscar músicos" placeholder="Busque por nome, instrumento ou especialidade..."

@@ -84,3 +84,19 @@ test("private routes are excluded from search indexing; venue metadata is canoni
  assert.match(venue,/alternates:\{canonical\}/);
  assert.match(venue,/url:canonical/);
 });
+
+test("marketplace público abre o catálogo com aviso de desenvolvimento e portfólio",()=>{
+ const route=read("app/marketplace/page.tsx");
+ const catalog=read("components/marketplace-catalog.tsx");
+ const preview=read("app/marketplace/preview/page.tsx");
+ const styles=read("components/marketplace-catalog.css");
+ assert.match(route,/<MarketplaceCatalog\s*\/>/);
+ assert.match(catalog,/NOVIDADE EM DESENVOLVIMENTO/);
+ assert.match(catalog,/Preparar meu portfólio/);
+ assert.match(catalog,/href="\/perfil-artistico\?aba=instrumentista"/);
+ assert.match(catalog,/id="market-results"/);
+ assert.match(catalog,/preview\&\&<div className="market-preview-ribbon">/);
+ assert.match(preview,/<MarketplaceCatalog preview\s*\/>/);
+ assert.match(styles,/market-development-banner/);
+ assert.doesNotMatch(dashboard,/marketplace\/preview\?/);
+});

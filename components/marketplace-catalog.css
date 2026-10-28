@@ -1,4 +1,4 @@
-/* Stage Flow Marketplace — laboratorio privado ate aprovacao do fundador */
+/* Stage Flow Marketplace — catálogo público com prévia privada separada */
 .market-shell{
   min-height:100vh;background:#0d121b;color:#edf2f8;padding-bottom:70px;
   background-image:radial-gradient(ellipse 63% 32% at 79% 0%,#25263c88,transparent 80%)
@@ -563,3 +563,37 @@
 }
 
 .market-discovery-tabs{display:flex;gap:10px;flex-wrap:wrap;margin:24px 0}.market-discovery-tabs button,.market-discovery-tabs a{min-height:44px;padding:12px 18px;border-radius:10px;border:1px solid var(--line);background:var(--panel);color:var(--text);font-size:13px;cursor:pointer;text-decoration:none}.market-discovery-tabs button[aria-pressed=true]{background:#b99bec;color:#1b132b}.market-discovery-tabs :focus-visible{outline:3px solid #c4a6ff;outline-offset:3px}.market-history{padding:24px;border:1px solid var(--line);border-radius:14px}.market-history a{display:block;min-height:44px;padding:12px 0;color:var(--accent)}
+
+/* Aviso de desenvolvimento: informativo, sem bloquear o catálogo. */
+.market-development-banner{
+ display:flex;align-items:center;justify-content:space-between;gap:28px;
+ margin:12px 0 30px;padding:28px 30px;border-radius:19px;
+ border:1px solid #f48ad7;color:#fff;
+ background:linear-gradient(113deg,#6126b4 0%,#a52caa 55%,#d73f7f 100%);
+ box-shadow:0 16px 38px #9f329b30;
+}
+.market-development-copy{max-width:660px}
+.market-development-label{
+ display:inline-flex;align-items:center;gap:8px;padding:8px 11px;
+ border:1px solid #ffffff66;border-radius:100px;background:#ffffff20;
+ color:#fff;font:900 10px Manrope,sans-serif;letter-spacing:.09em
+}
+.market-development-banner h2{
+ margin:14px 0 9px;color:#fff;font:900 clamp(20px,2.5vw,28px)/1.25 Manrope,sans-serif
+}
+.market-development-banner p{font-size:13px;line-height:1.7;margin:0;color:#fff3fc}
+.market-development-actions{display:flex;flex-direction:column;gap:10px;min-width:220px}
+.market-development-primary,.market-development-secondary{
+ display:flex;align-items:center;justify-content:center;gap:8px;
+ min-height:46px;padding:12px 14px;border-radius:11px;
+ font:800 12px Manrope,sans-serif;text-decoration:none;text-align:center
+}
+.market-development-primary{background:#fff;color:#54207e;border:1px solid #fff}
+.market-development-primary:hover{background:#fbe6ff}
+.market-development-secondary{color:#fff;border:1px solid #ffffffa8;background:#ffffff12}
+.market-development-secondary:hover{background:#ffffff25}
+#market-results{scroll-margin-top:18px}
+@media(max-width:760px){
+ .market-development-banner{flex-direction:column;align-items:stretch;gap:18px;padding:23px 20px}
+ .market-development-actions{min-width:0}
+}
