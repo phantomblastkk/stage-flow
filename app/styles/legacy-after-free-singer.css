@@ -1,37 +1,3 @@
-/* ── Cadastro: três atuações, uma conta ── */
-.auth-card:has(.signup-role-picker){width:min(570px,100%)}
-.signup-role-picker{margin:0 0 25px}
-.signup-role-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:9px}
-.signup-role-card{
-  appearance:none;text-align:left;display:flex;flex-direction:column;
-  gap:11px;padding:16px 13px;min-height:195px;border:1px solid var(--line);
-  border-radius:15px;background:var(--panel);color:var(--text);cursor:pointer;
-  transition:border-color .16s,background-color .16s
-}
-.signup-role-card[aria-pressed="true"]{
-  border-color:var(--accent);background:linear-gradient(145deg,#20301e,#141d19);
-  box-shadow:0 0 0 1px #BFA7FF33
-}
-.signup-role-card>svg{color:var(--accent)}
-.signup-role-card strong{font:800 13px/1.45 Manrope,sans-serif}
-.signup-role-card>span{color:var(--muted);font-size:11px;line-height:1.6;flex:1}
-.signup-role-card>small{font-size:10px;font-weight:800;color:var(--accent)}
-.signup-producer-add{
-  margin-top:13px;display:flex;align-items:center;gap:12px;
-  padding:15px;border:1px solid var(--line);border-radius:13px;
-  background:var(--panel2);cursor:pointer
-}
-.signup-producer-add input{width:17px;height:17px;accent-color:var(--accent);flex:none}
-.signup-producer-add span{flex:1;min-width:0}
-.signup-producer-add strong{font:700 12px Manrope,sans-serif;display:block}
-.signup-producer-add small{display:block;color:var(--muted);font-size:11px;line-height:1.6;margin-top:4px}
-@media(max-width:540px){
-  .signup-role-grid{grid-template-columns:1fr}
-  .signup-role-card{min-height:0;gap:8px;padding:13px 15px}
-  .signup-role-card>span{flex:auto}
-}
-
-
 /* Preferência do artista: permitir ou bloquear pedidos de contratação. */
 .artist-booking-setting{
   border:1px solid var(--line);border-radius:13px;
