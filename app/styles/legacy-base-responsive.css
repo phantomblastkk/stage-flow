@@ -1,0 +1,3 @@
+@media(max-width:800px){.hero{grid-template-columns:1fr;gap:38px;padding-top:60px}.preview{transform:none}.cards{grid-template-columns:1fr}.nav-links{gap:12px}.nav-links .hide-mobile{display:none}.auth-wrap{grid-template-columns:1fr}.auth-aside{display:none}.auth-main{min-height:100vh}.footer{flex-direction:column}}@media(max-width:480px){.container{width:min(100% - 28px,1120px)}.nav{height:68px}.nav-links{gap:8px}.nav-links .btn{padding:9px 11px;font-size:12px}.brand{font-size:18px}.brand-mark{width:30px;height:30px}.hero{padding:48px 0}.lead{font-size:16px}h1{letter-spacing:-2px}.preview{padding:14px}.section{padding:45px 0}.auth-main{padding:20px}}
+
+
