@@ -67,6 +67,10 @@ export default function CadastroPage() {
   const [password, setPassword] = useState("");
   const [whatsappPhone, setWhatsappPhone] = useState("");
   const [whatsappConsent, setWhatsappConsent] = useState(false);
+  const [whatsappNotifications, setWhatsappNotifications] = useState(false);
+  const [otpChannel, setOtpChannel] = useState<"sms"|"whatsapp">("sms");
+  const [pendingPhone, setPendingPhone] = useState("");
+  const [verificationCode, setVerificationCode] = useState("");
   const [busy, setBusy] = useState(false);
   const [message, setMessage] = useState("");
   const [error, setError] = useState(false);
@@ -82,16 +86,19 @@ export default function CadastroPage() {
       if (artistKind === "lead" && !inviteCode && reservedArtistUsernames.has(cleanUsername)) {
         throw new Error("Este @ é reservado para o Stage Flow. Escolha outro nome artístico.");
       }
-      const needsMusicianPhone = (Boolean(inviteCode) || isArtist) && whatsappConsent;
+      const needsMusicianPhone = Boolean(inviteCode) || isArtist;
       const rawPhone = whatsappPhone.replace(/\D/g, "");
       const internationalPhone = rawPhone.length === 10 || rawPhone.length === 11 ? "55" + rawPhone : rawPhone;
       if (needsMusicianPhone && !/^55[1-9][0-9]{9,10}$/.test(internationalPhone)) {
         throw new Error("Informe um WhatsApp brasileiro válido, com DDD. Exemplo: (11) 99999-9999.");
       }
       const { data: signupData, error: signUpError } = await supabase.auth.signUp({
-        email, password,
+        ...(needsMusicianPhone ? { phone: "+" + internationalPhone } : { email }),
+        password,
         options: {
-          emailRedirectTo: inviteCode ? window.location.origin + "/convite?codigo=" + encodeURIComponent(inviteCode) : undefined,
+          ...(needsMusicianPhone ? { channel: otpChannel } : {
+            emailRedirectTo: inviteCode ? window.location.origin + "/convite?codigo=" + encodeURIComponent(inviteCode) : undefined
+          }),
           data: {
             role: inviteCode ? "musician" : isProducer && !isArtist ? "producer" : "musician",
             is_artist: inviteCode ? true : isArtist,
@@ -101,6 +108,8 @@ export default function CadastroPage() {
             display_name: displayName.trim(),
             whatsapp_phone: needsMusicianPhone ? internationalPhone : null,
             whatsapp_opt_in: needsMusicianPhone && whatsappConsent,
+            whatsapp_notifications_consent: needsMusicianPhone && whatsappNotifications,
+            contact_email: needsMusicianPhone ? email.trim().toLowerCase() || null : null,
             username: inviteCode ? null : artistKind === "lead" ? cleanUsername : null
           }
         }
@@ -130,6 +139,18 @@ export default function CadastroPage() {
         }
         throw signUpError;
       }
+      if (needsMusicianPhone) {
+        // Verification is required before we allow entry to the dashboard.
+        if (signupData.user?.phone_confirmed_at && signupData.session) {
+          window.location.href = inviteCode ? "/convite?codigo=" + encodeURIComponent(inviteCode) : "/painel";
+          return;
+        }
+        if (signupData.session) await supabase.auth.signOut(); // Never trust auto-confirmed phone setup.
+        setPendingPhone("+" + internationalPhone);
+        setVerificationCode("");
+        setMessage("Enviamos um código por " + (otpChannel === "sms" ? "SMS" : "WhatsApp") + ". Confirme seu número para ativar a conta. Se não recebeu, confira se a verificação telefônica está habilitada no serviço.");
+        return;
+      }
       if (signupData.session) {
         window.location.href = inviteCode
           ? "/convite?codigo=" + encodeURIComponent(inviteCode)
@@ -145,6 +166,26 @@ export default function CadastroPage() {
       setError(true);
       setMessage(err instanceof Error ? err.message : "Não foi possível criar a conta. Confira os dados e tente novamente.");
     } finally { setBusy(false); }
+  }
+
+  async function verifySignupPhone(e: React.FormEvent<HTMLFormElement>) {
+    e.preventDefault();
+    if (!pendingPhone || !/^\\d{6,8}$/.test(verificationCode.trim())) {
+      setError(true);setMessage("Informe o código numérico recebido no celular.");return;
+    }
+    setBusy(true);setError(false);setMessage("");
+    try {
+      const db=createClient();
+      const {data,error:otpError}=await db.auth.verifyOtp({
+        phone:pendingPhone,token:verificationCode.trim(),type:"sms"
+      });
+      if (otpError) throw otpError;
+      if (!data.user?.phone_confirmed_at || !data.session)
+        throw new Error("O número ainda não foi confirmado. Não é possível continuar.");
+      window.location.href=inviteCode?"/convite?codigo="+encodeURIComponent(inviteCode):"/painel";
+    } catch(err) {
+      setError(true);setMessage(err instanceof Error?err.message:"Não foi possível validar o código.");
+    } finally {setBusy(false);}
   }
 
   if (checkingSession) return <main className="auth-wrap">
@@ -198,24 +239,32 @@ export default function CadastroPage() {
           <CheckCircle2 size={18} color={isProducer ? "#C0A7FF" : "#657083"}/>
         </label>}
       </div>}
-      <form onSubmit={handleSubmit}>
+      {pendingPhone ? <form onSubmit={verifySignupPhone}>
+        <h3>Verifique seu celular</h3>
+        <p>Enviamos o código para o número {pendingPhone}. Você só poderá usar a conta depois de confirmá-lo.</p>
+        <div className="field"><label htmlFor="signup-otp">Código de confirmação</label><input id="signup-otp" value={verificationCode} onChange={e=>setVerificationCode(e.target.value.replace(/\D/g,"").slice(0,8))} inputMode="numeric" autoComplete="one-time-code" pattern="[0-9]{6,8}" required/></div>
+        <button className="btn btn-primary full" type="submit" disabled={busy}>{busy?"Verificando...":"Confirmar número"}</button>
+        <button className="btn full" type="button" disabled={busy} onClick={()=>{setPendingPhone("");setVerificationCode("");setMessage("");}}>Corrigir número ou recomeçar cadastro</button>
+      </form> : <form onSubmit={handleSubmit}>
         <div className="field"><label htmlFor="name">Nome {inviteCode ? "profissional" : artistKind === "none" ? "do produtor ou empresa" : artistKind === "lead" ? "artístico" : "completo ou profissional"}</label><input id="name" autoComplete="name" value={displayName} onChange={e=>setDisplayName(e.target.value)} placeholder={artistKind === "none" ? "Ex.: Produções Vitória" : artistKind === "support" || inviteCode ? "Ex.: João Oliveira" : "Ex.: Cantor Sousa"} required /></div>
         {artistKind === "lead"&&!inviteCode&&<div className="field"><label htmlFor="slug">Seu @ artístico (grátis)</label><input id="slug" value={username} onChange={e=>setUsername(e.target.value.toLowerCase().replace(/[^a-z0-9-]/g,""))} placeholder="cantorsousa" pattern="[a-z0-9-]{3,30}" minLength={3} maxLength={30} required /><span className="field-help">Você poderá publicar sua página /{username || "seuusuario"}. Nome e @ podem ser alterados uma vez a cada 60 dias. O site completo com subdomínio é um adicional pago, separado do perfil gratuito.</span></div>}
         {(isArtist || Boolean(inviteCode)) && <>
           <div className="field">
-            <label htmlFor="whatsapp">Seu WhatsApp com DDD (opcional)</label>
-            <input id="whatsapp" type="tel" autoComplete="tel" inputMode="tel" value={whatsappPhone} onChange={e=>setWhatsappPhone(e.target.value)} placeholder="(11) 99999-9999" required={whatsappConsent} maxLength={24}/>
-            <span className="field-help">Opcional. Você pode receber e negociar convites dentro do Stage Flow sem informar WhatsApp.</span>
+            <label htmlFor="whatsapp">Seu WhatsApp com DDD (obrigatório)</label>
+            <input id="whatsapp" type="tel" autoComplete="tel" inputMode="tel" value={whatsappPhone} onChange={e=>setWhatsappPhone(e.target.value)} placeholder="(11) 99999-9999" required maxLength={24}/>
+            <span className="field-help">Esse número será seu contato único no Stage Flow. Ele precisa ser confirmado por código no celular antes de ativar a conta.</span>
           </div>
           <label style={{ display: "flex", alignItems: "flex-start", gap: 10, fontSize: 12, lineHeight: 1.6, color: "var(--muted)", marginBottom: 20 }}>
             <input type="checkbox" checked={whatsappConsent} onChange={e=>setWhatsappConsent(e.target.checked)} style={{ marginTop: 4, flexShrink: 0, accentColor: "var(--lime)" }}/>
-            <span>Opcional: autorizo que organizadores dos meus convites pendentes ou aceitos visualizem meu número e entrem em contato manualmente pelo WhatsApp. Posso revogar essa autorização em Meus convites.</span>
+            <span>Permito que contratantes autorizados dos meus convites vejam meu WhatsApp. Essa permissão é opcional e pode ser alterada em Minha conta → Privacidade.</span>
           </label>
+          <label className="signup-producer-add"><input type="checkbox" checked={whatsappNotifications} onChange={e=>setWhatsappNotifications(e.target.checked)}/><span>Quero receber avisos de convites, propostas e shows pelo WhatsApp. Posso desligar em Privacidade.</span></label>
+          <div className="field"><label htmlFor="otp-channel">Receber código por</label><select id="otp-channel" value={otpChannel} onChange={e=>setOtpChannel(e.target.value as "sms"|"whatsapp")}><option value="sms">SMS</option><option value="whatsapp">WhatsApp (requer provedor compatível)</option></select></div>
         </>}
-        <div className="field"><label htmlFor="email">E-mail</label><input id="email" type="email" autoComplete="email" value={email} onChange={e=>setEmail(e.target.value)} placeholder="voce@exemplo.com" required /></div>
+        <div className="field"><label htmlFor="email">E-mail {isArtist ? "de contato (opcional)" : "de acesso"}</label><input id="email" type="email" autoComplete="email" value={email} onChange={e=>setEmail(e.target.value)} placeholder="voce@exemplo.com" required={!isArtist} /><span className="field-help">{isArtist?"O acesso desta nova conta será pelo número verificado e senha; não enviaremos código para o e-mail.":"O e-mail continua como acesso para produtores."}</span></div>
         <div className="field"><label htmlFor="password">Criar senha</label><input id="password" type="password" autoComplete="new-password" value={password} onChange={e=>setPassword(e.target.value)} minLength={8} placeholder="Pelo menos 8 caracteres" required /></div>
         <button className="btn btn-primary full" type="submit" disabled={busy}>{busy ? "Criando conta..." : inviteCode ? "Criar conta e abrir convite" : "Criar minha conta gratuita"}</button>
-      </form>
+      </form>}
       {message && <div role="status" className="coming" style={error?{borderColor:"#754343",background:"#281919",color:"#ffb5b5"}:{}}>{message}</div>}
       <div className="auth-bottom">Já tem uma conta? <Link href={inviteCode ? "/login?convite=" + encodeURIComponent(inviteCode) : "/login"}>Entrar</Link></div>
     </div></section>
