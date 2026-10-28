@@ -23,3 +23,5 @@ jobs:
       - run: node --test tests/unified-whatsapp-otp.test.mjs tests/chat-finance.test.mjs tests/signup-username-collision.test.mjs
       - run: npx tsc --noEmit
       - run: npm run build
+      - run: npx playwright install --with-deps chromium
+      - run: node tests/browser/agenda-finance.mjs
