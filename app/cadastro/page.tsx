@@ -164,6 +164,18 @@ export default function CadastroPage() {
     } finally { setBusy(false); }
   }
 
+  async function resendSignupCode() {
+    if (!pendingPhone || busy) return;
+    setBusy(true);setError(false);setMessage("");
+    try {
+      const {error:resendError}=await createClient().auth.resend({type:"sms",phone:pendingPhone});
+      if(resendError)throw resendError;
+      setMessage("Solicitamos o reenvio do código por SMS. Confira o celular e aguarde o intervalo de segurança do provedor.");
+    }catch(err){
+      setError(true);setMessage(err instanceof Error?err.message:"Não foi possível reenviar o código.");
+    }finally{setBusy(false);}
+  }
+
   async function verifySignupPhone(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault();
     if (!pendingPhone || !/^[0-9]{6,8}$/.test(verificationCode.trim())) {
@@ -240,7 +252,8 @@ export default function CadastroPage() {
         <p>Enviamos o código para o número {pendingPhone}. Você só poderá usar a conta depois de confirmá-lo.</p>
         <div className="field"><label htmlFor="signup-otp">Código de confirmação</label><input id="signup-otp" value={verificationCode} onChange={e=>setVerificationCode(e.target.value.replace(/\D/g,"").slice(0,8))} inputMode="numeric" autoComplete="one-time-code" pattern="[0-9]{6,8}" required/></div>
         <button className="btn btn-primary full" type="submit" disabled={busy}>{busy?"Verificando...":"Confirmar número"}</button>
-        <button className="btn full" type="button" disabled={busy} onClick={()=>{setPendingPhone("");setVerificationCode("");setMessage("");}}>Corrigir número ou recomeçar cadastro</button>
+        <button className="btn full" type="button" disabled={busy} onClick={()=>void resendSignupCode()}>Reenviar código por SMS</button>
+        <p>Se o número informado estiver incorreto, o cadastro ainda não pode ser ativado. Contate o suporte para corrigir o telefone da conta pendente.</p>
       </form> : <form onSubmit={handleSubmit}>
         <div className="field"><label htmlFor="name">Nome {inviteCode ? "profissional" : artistKind === "none" ? "do produtor ou empresa" : artistKind === "lead" ? "artístico" : "completo ou profissional"}</label><input id="name" autoComplete="name" value={displayName} onChange={e=>setDisplayName(e.target.value)} placeholder={artistKind === "none" ? "Ex.: Produções Vitória" : artistKind === "support" || inviteCode ? "Ex.: João Oliveira" : "Ex.: Cantor Sousa"} required /></div>
         {artistKind === "lead"&&!inviteCode&&<div className="field"><label htmlFor="slug">Seu @ artístico (grátis)</label><input id="slug" value={username} onChange={e=>setUsername(e.target.value.toLowerCase().replace(/[^a-z0-9-]/g,""))} placeholder="cantorsousa" pattern="[a-z0-9-]{3,30}" minLength={3} maxLength={30} required /><span className="field-help">Você poderá publicar sua página /{username || "seuusuario"}. Nome e @ podem ser alterados uma vez a cada 60 dias. O site completo com subdomínio é um adicional pago, separado do perfil gratuito.</span></div>}
