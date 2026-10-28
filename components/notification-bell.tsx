@@ -5,7 +5,7 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import {
   ArrowRight, Bell, BellRing, CheckCircle2, LoaderCircle,
-  MessageCircle, RefreshCw, XCircle, Crown, Gift
+  MessageCircle, RefreshCw, XCircle, Crown, Gift, Star, CalendarDays, BadgeCheck, Wallet
 } from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
 import styles from "./notification-bell.module.css";
@@ -13,7 +13,7 @@ import styles from "./notification-bell.module.css";
 type NotificationPreview = {
   id: string;
   source_id: string;
-  source_type: "invitation" | "proposal" | "conversation" | "operations" | "account";
+  source_type: "invitation" | "proposal" | "conversation" | "operations" | "account" | "booking" | "review" | "verification" | "finance";
   event_code: string;
   event_id: string | null;
   thread_id: string | null;
@@ -32,6 +32,10 @@ const timeFormatter = new Intl.DateTimeFormat("pt-BR", {
 });
 
 function destination(item: NotificationPreview) {
+  if(item.source_type==="booking")return "/meu-perfil-artistico/solicitacoes?pedido="+encodeURIComponent(item.source_id);
+  if(item.source_type==="review")return "/marketplace";
+  if(item.source_type==="verification")return "/perfil-artistico";
+  if(item.source_type==="finance")return "/financeiro";
   if(item.source_type==="account"){
     return item.event_code==="pro_courtesy_granted"
       ?"/meu-perfil-artistico?aba=pro":"/minha-conta?aba=cantor";
@@ -55,6 +59,10 @@ function destination(item: NotificationPreview) {
 }
 
 function NoticeIcon({ code }: { code: string }) {
+  if(code==="booking_received")return <CalendarDays size={18}/>;
+  if(code==="review_received")return <Star size={18}/>;
+  if(code==="profile_verified")return <BadgeCheck size={18}/>;
+  if(code==="finance_received")return <Wallet size={18}/>;
   if(code==="pro_courtesy_granted")return <Gift size={18}/>;
   if(code==="pro_courtesy_revoked")return <Crown size={18}/>;
   if (code === "show_briefing_changed") return <BellRing size={18} />;
@@ -197,7 +205,7 @@ export default function NotificationBell() {
           ? <div className={styles.empty}>
               <Bell size={22} />
               <strong>Nenhuma notificação ainda</strong>
-              <span>Convites, propostas, mensagens e cortesias Pro aparecerão aqui.</span>
+              <span>Pedidos de contratação, convites, avaliações e atividades importantes aparecerão aqui.</span>
             </div>
           : items.map(item =>
             <button key={item.id} type="button"

@@ -73,6 +73,7 @@ export default function ArtistBookingInboxPage() {
   const [success, setSuccess] = useState("");
   const [updating, setUpdating] = useState<string | null>(null);
   const [filter, setFilter] = useState<"active" | "archived" | "all">("active");
+  const [focusedBooking,setFocusedBooking]=useState<string|null>(null);
   const [deletingId, setDeletingId] = useState<string | null>(null);
   const [eventForm, setEventForm] = useState<EventDraftForm | null>(null);
   const [eventError, setEventError] = useState("");
@@ -97,7 +98,20 @@ export default function ArtistBookingInboxPage() {
     setLoading(false);
   }, [router]);
 
+  useEffect(() => {
+    const id=new URLSearchParams(window.location.search).get("pedido");
+    if(id&&/^[0-9a-f]{8}(?:-[0-9a-f]{4}){3}-[0-9a-f]{12}$/i.test(id)){
+      setFocusedBooking(id);setFilter("all");
+    }
+  }, []);
   useEffect(() => { void loadBookings(); }, [loadBookings]);
+  useEffect(()=>{
+    if(loading||!focusedBooking||!bookings.some(b=>b.id===focusedBooking))return;
+    const frame=window.requestAnimationFrame(()=>{
+      document.getElementById("booking-"+focusedBooking)?.scrollIntoView({behavior:"smooth",block:"center"});
+    });
+    return()=>window.cancelAnimationFrame(frame);
+  },[bookings,focusedBooking,loading]);
 
   const counts = useMemo(() => ({
     all: bookings.length,
@@ -274,7 +288,7 @@ export default function ArtistBookingInboxPage() {
         </div> : <div className="booking-inbox-list">
           {visible.map(item => {
             const whatsapp = waLink(item.contact_phone);
-            return <article className="booking-inbox-item" key={item.id}>
+            return <article id={"booking-"+item.id} className={"booking-inbox-item"+(item.id===focusedBooking?" is-notification-focus":"")} key={item.id}>
               <div className="booking-inbox-item-top">
                 <div>
                   <span className="booking-inbox-created"><Clock3 size={13}/> Recebido em {formatDate(item.created_at, true)}</span>

@@ -183,3 +183,6 @@
   .booking-inbox-event-form-actions .btn{flex:1}
   .booking-inbox-status-stack{align-items:flex-start}
 }
+
+/* Destino autenticado de uma notificacao de pedido. */
+.booking-inbox-item.is-notification-focus{border-color:#ab8cff;box-shadow:0 0 0 2px #9d6cf344,0 16px 35px #08091855;scroll-margin-top:100px}

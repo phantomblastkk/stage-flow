@@ -6,12 +6,12 @@ import { useRouter } from "next/navigation";
 import {
  ArrowLeft, ArrowRight, Bell, BellRing, Check, CheckCheck,
  Clock3, Inbox, LoaderCircle, MessageCircle, RefreshCw, ShieldCheck,
- UserRoundCheck, UserRoundX, XCircle, Gift, Crown
+ UserRoundCheck, UserRoundX, XCircle, Gift, Crown, Star, CheckCircle2
 } from "lucide-react";
 import {createClient} from "@/lib/supabase/client";
 import "./notificacoes.css";
 
-type Kind="invitation"|"proposal"|"conversation"|"operations"|"account";
+type Kind="invitation"|"proposal"|"conversation"|"operations"|"account"|"booking"|"review"|"verification"|"finance";
 type Notice={
  id:string;source_type:Kind;source_id:string;event_code:string;
  event_id:string|null;thread_id:string|null;title:string;summary:string;
@@ -28,9 +28,15 @@ const categories:Record<string,string>={
  proposal_accepted:"Proposta aceita",proposal_declined:"Proposta recusada",
  proposal_withdrawn:"Proposta retirada",chat_message:"Mensagem",
  show_briefing_changed:"Atualização da operação",
+ booking_received:"Pedido de contratação",review_received:"Nova avaliação",
+ profile_verified:"Perfil verificado",finance_received:"Recebimento atualizado",
  pro_courtesy_granted:"Cortesia Pro recebida",pro_courtesy_revoked:"Cortesia Pro encerrada"
 };
 function destination(n:Notice){
+ if(n.source_type==="booking")return "/meu-perfil-artistico/solicitacoes?pedido="+encodeURIComponent(n.source_id);
+ if(n.source_type==="review")return "/marketplace";
+ if(n.source_type==="verification")return "/perfil-artistico";
+ if(n.source_type==="finance")return "/financeiro";
  if(n.source_type==="account")return n.event_code==="pro_courtesy_granted"
    ?"/meu-perfil-artistico?aba=pro":"/minha-conta?aba=cantor";
  if(n.source_type==="operations")return n.event_id?"/eventos/operacao?evento="+encodeURIComponent(n.event_id):"/eventos";
@@ -44,6 +50,10 @@ function destination(n:Notice){
  return n.event_id?"/convites?evento="+encodeURIComponent(n.event_id):"/convites";
 }
 function glyph(code:string){
+ if(code==="booking_received")return <Inbox size={18}/>;
+ if(code==="review_received")return <Star size={18}/>;
+ if(code==="profile_verified")return <ShieldCheck size={18}/>;
+ if(code==="finance_received")return <CheckCircle2 size={18}/>;
  if(code==="pro_courtesy_granted")return <Gift size={18}/>;
  if(code==="pro_courtesy_revoked")return <Crown size={18}/>;
  if(code==="show_briefing_changed")return <Clock3 size={18}/>;
@@ -147,7 +157,7 @@ export default function NotificationsPage(){
   <header className="notifications-hero">
    <span className="eyebrow"><ShieldCheck size={14}/> AVISOS PRIVADOS · DENTRO DO SITE</span>
    <h1>Minhas <span className="accent">notificações.</span></h1>
-   <p>Convites, propostas, mensagens e avisos de cortesia Pro em uma única caixa de entrada. O número na campainha desaparece quando você abre ou marca os avisos como lidos.</p>
+   <p>Pedidos de contratação, convites, respostas, avaliações, mensagens, recebimentos e outros avisos importantes em uma única caixa de entrada. O número na campainha desaparece quando você abre ou marca os avisos como lidos.</p>
    <div className="notifications-metrics">
     <span><Bell size={16}/><strong>{unread>99?"99+":unread}</strong> não lida{unread===1?"":"s"}</span>
     <span><Inbox size={16}/>{notifications.length} aviso{notifications.length===1?"":"s"} neste filtro</span>
@@ -176,7 +186,7 @@ export default function NotificationsPage(){
    notifications.length===0?<div className="notifications-empty">
     <Bell size={28}/>
     <h2>{filter==="unread"?"Tudo em dia!":"Sua caixa de entrada está vazia"}</h2>
-    <p>{filter==="unread"?"Você não tem avisos pendentes.":"Assim que houver convites, propostas ou mensagens novas, eles aparecerão aqui."}</p>
+    <p>{filter==="unread"?"Você não tem avisos pendentes.":"Pedidos de contratação e atividades importantes da sua conta aparecerão aqui automaticamente."}</p>
     <Link className="btn btn-quiet" href="/painel">Voltar ao painel <ArrowRight size={15}/></Link>
    </div>:
    <div className="notifications-feed">
