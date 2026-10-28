@@ -50,7 +50,18 @@ Não há alegação de redução de bundle ou ganho de latência medido.
 - Formulário de agenda aberto sem overflow e captura nas três larguras.
 - Campo de pagamento usa ao menos 16 px no celular e botão Salvar tem ao menos 44 px.
 - Revisão React: nenhum novo efeito, controlador, fetch ou dependência; componentes comuns declarativos.
-- CI e inspeção visual: evidências serão registradas após a execução.
+- CI aprovado para `56e78350d3b4ab1363d90c214ffceda96c19d4b6`:
+  [execução 40632875281](https://github.com/phantomblastkk/stage-flow/actions/runs/40632875281).
+  Doze cenários de navegador passaram; artefato contém 23 PNGs e log do servidor.
+- Inspeção visual do formulário de agenda em 360/1280 px e do editor financeiro
+  em 360 px: campos, calendário, avisos e ações permanecem dentro dos painéis.
+  Comparação com capturas da Parte 14 realizada. Painéis filhos continuam com
+  identidade visual legada; barra inferior e elementos fixos aparecem na posição
+  da viewport nas capturas de página inteira.
+- Capturas [antes](https://github.com/phantomblastkk/stage-flow/actions/runs/40631805523/artifacts/12791677457)
+  e [depois](https://github.com/phantomblastkk/stage-flow/actions/runs/40632875281/artifacts/12792746194).
+  Retenção dos artefatos: sete dias.
+- [Diff da implementação](https://github.com/phantomblastkk/stage-flow/compare/160d10aa5b5cf08f0ab58c4e31012b154672f4fe...56e78350d3b4ab1363d90c214ffceda96c19d4b6).
 
 Testes de navegador usam API sintética; não são testes com contas ou dispositivos reais.
 
