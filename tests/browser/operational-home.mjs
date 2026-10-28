@@ -65,8 +65,28 @@ try{
   await nav.getByRole("link",{name:mobile?"Chats":"Financeiro",exact:true}).waitFor();
   assert.equal(await page.evaluate(()=>document.documentElement.scrollWidth>innerWidth),false,"Dashboard overflows at "+width);
   await page.screenshot({path:`test-results/operational-home-${width}.png`,fullPage:true});
+  if(width===360){
+   for(const screen of [320,375,430]){
+    await page.setViewportSize({width:screen,height:820});
+    assert.ok(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth+2),
+      "Dashboard has horizontal overflow at "+screen+"px");
+    const bottom=page.getByRole("navigation",{name:"Navegação principal no celular"});
+    assert.equal(await bottom.getByRole("link").count(),5,"Five thumb destinations at "+screen+"px");
+    await page.screenshot({path:`test-results/mobile-dashboard-${screen}.png`,fullPage:true});
+   }
+   await page.setViewportSize({width:360,height:900});
+  }
   await nav.getByRole("link",{name:mobile?"Explorar":"Marketplace",exact:true}).click();
   await page.getByRole("heading",{name:/Encontre o músico certo/}).waitFor();
+  if(width===360){
+   for(const screen of [320,375,430]){
+    await page.setViewportSize({width:screen,height:820});
+    assert.ok(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth+2),
+      "Marketplace has horizontal overflow at "+screen+"px");
+    await page.screenshot({path:`test-results/mobile-marketplace-${screen}.png`,fullPage:true});
+   }
+   await page.setViewportSize({width:360,height:900});
+  }
   await page.goto(origin+"/meu-portfolio");await page.waitForURL(/\/perfil-artistico\?aba=instrumentista/);await page.getByRole("heading",{name:"Perfil Artístico",exact:true}).waitFor();
   await page.goto(origin+"/perfis");await page.getByRole("button",{name:"Criar perfil",exact:true}).click();
   const form=page.getByRole("form",{name:"Editar perfil adicional"});await form.getByLabel("Tipo de perfil",{exact:true}).selectOption("group");
