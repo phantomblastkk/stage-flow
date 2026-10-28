@@ -159,7 +159,12 @@ try{
    await form.getByLabel("Nome",{exact:true}).fill("Produção do Henrique");
    await form.getByRole("checkbox",{name:/Quero usar esta conta também como produtor/}).check();
    const producerSaved=waitProfileSave("producer");
-   await form.getByRole("button",{name:"Salvar perfil",exact:true}).click();await producerSaved;await page.getByText("Perfil salvo.",{exact:true}).waitFor();
+   await form.getByRole("button",{name:"Salvar perfil",exact:true}).click();await producerSaved;
+   await page.getByRole("heading",{name:"Produção do Henrique",exact:true}).waitFor();
+   // Alterar a função da conta força refresh do contexto; aguarde o novo painel
+   // estabilizar antes de criar uma casa, como acontece em outra visita.
+   await page.reload();
+   await page.getByRole("heading",{name:"Produção do Henrique",exact:true}).waitFor();
    await page.getByRole("button",{name:"Criar perfil",exact:true}).click();
    await form.getByLabel("Tipo de perfil",{exact:true}).selectOption("venue");
    await form.getByLabel("Nome",{exact:true}).fill("Casa do Henrique");
