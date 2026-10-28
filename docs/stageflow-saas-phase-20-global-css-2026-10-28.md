@@ -113,7 +113,17 @@ Classes sem referência literal que não foram removidas:
 - Comparação estrutural antes/depois: todas as regras mantidas preservam seletores,
   declarações, ordem e condições ancestrais. Parser e script pontuais, sem dependência nova.
 - 262 testes Node e TypeScript aprovados localmente.
-- Build e CI: em validação; evidência final será registrada após conclusão.
+- Build de produção aprovado localmente e em CI. Avisos preexistentes de CSS/
+  Autoprefixer permanecem; não houve alteração de declaração nas regras mantidas.
+- CI aprovado no commit `cdb8a88c0c2b42d8cee60f96594d97f4983cf08c`:
+  [Integration and build](https://github.com/phantomblastkk/stage-flow/actions/runs/40741196504)
+  e [Operational UX](https://github.com/phantomblastkk/stage-flow/actions/runs/40741196510),
+  incluindo PostgreSQL temporário e navegador operacional.
+- 24 cenários PASS na suíte agenda-finance, incluindo os três novos cenários públicos.
+  [Artefato de navegador](https://github.com/phantomblastkk/stage-flow/actions/runs/40741196504/artifacts/12839457943):
+  69 PNGs e log do servidor; retenção de sete dias. Revisão visual da home/cadastro
+  em 360 px e cadastro em 1280 px: disposição, botões e seleção por foco preservados.
+  [Evidência operacional](https://github.com/phantomblastkk/stage-flow/actions/runs/40741196510/artifacts/12839906417).
 
 Reproduzir o diff completo: `git diff ede7a4e -- app/globals.css tests/browser/agenda-finance.mjs`.
 Os cenários de navegador existentes continuam cobrindo agenda, financeiro, convites,
