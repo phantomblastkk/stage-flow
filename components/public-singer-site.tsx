@@ -254,7 +254,7 @@ export default function PublicSingerSite({musicianSlug}:{musicianSlug?:string}){
         if(!active||error)return;
         const result=data as PublicArtisticMusician|null;
         setMusician(result?.musician||null);
-      }).catch(()=>{});
+      },()=>{});
     return()=>{active=false};
   },[username,musicianSlug]);
 

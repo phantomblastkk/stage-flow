@@ -371,7 +371,7 @@ export default function MarketplaceCatalog({preview=false}:Props) {
       .then(({data,error})=>{
         if(!active||error||!data||typeof data!=="object"||Array.isArray(data))return;
         setIdentities(current=>({...current,...data as Record<string,MarketIdentity>}));
-      }).catch(()=>{});
+      },()=>{});
     return()=>{active=false;};
   },[items,featured]);
 
