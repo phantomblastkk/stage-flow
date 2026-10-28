@@ -411,7 +411,7 @@ export default function MarketplaceCatalog({preview=false}:Props) {
   function scrollFeatured(direction:-1|1){
     const rail=featuredRail.current;
     if(!rail)return;
-    const firstCard=rail.querySelector<HTMLElement>(".market-featured-card");
+    const firstCard=rail.querySelector<HTMLElement>(".market-artist-card");
     const offset=(firstCard?.getBoundingClientRect().width||270)+14;
     rail.scrollBy({left:direction*offset,behavior:"smooth"});
   }
