@@ -1,5 +1,7 @@
 import type { Metadata } from "next";
 import "./globals.css";
+import "@/src/domains/auth/styles/legacy-auth-forms.css";
+import "./styles/legacy-base-responsive.css";
 import "@/src/domains/artists/styles/legacy-musician-portfolio.css";
 import "./styles/legacy-global-tail.css";
 import "@/src/domains/artists/styles/legacy-free-singer.css";
