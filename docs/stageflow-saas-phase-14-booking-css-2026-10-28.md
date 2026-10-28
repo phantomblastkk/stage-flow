@@ -64,7 +64,18 @@ fonte, sem alegar redução equivalente do bundle ou ganho medido de latência.
   ação primária e avisos de sucesso/erro. Isso não é certificação completa de acessibilidade.
 - Revisão React: não há novas consultas, listeners, dependências ou controladores;
   o novo componente de aviso é declarativo e reutilizável.
-- CI final e comparação visual: registrar as evidências antes da entrega.
+- CI aprovado para `ec45f71d42207208f2ed13ddd21d05d7cbdf0df6`:
+  [execução 40631805523](https://github.com/phantomblastkk/stage-flow/actions/runs/40631805523).
+  Todos os doze cenários de navegador passaram; artefato contém 20 PNGs e log do servidor.
+- Comparação visual realizada em convites/cachê (360 px) e conversas (768 px),
+  além dos formulários abertos de contraproposta e proposta formal (360 px).
+  Campos, ações e textos mantêm quebra dentro dos painéis; avisos usam estados
+  semânticos e controles usam a mesma apresentação. A barra inferior fixa existente
+  aparece no meio das capturas de página inteira por estar presa à viewport.
+- Evidências [antes](https://github.com/phantomblastkk/stage-flow/actions/runs/40629819082/artifacts/12790877618)
+  e [depois](https://github.com/phantomblastkk/stage-flow/actions/runs/40631805523/artifacts/12791677457).
+  Artefatos do Actions têm retenção limitada a sete dias.
+- [Diff completo da implementação](https://github.com/phantomblastkk/stage-flow/compare/ced2e04af6eab5750e17ba01551426e6533a6131...ec45f71d42207208f2ed13ddd21d05d7cbdf0df6).
 
 Testes usam API sintética; não há validação com contas reais ou dispositivos iOS/Android reais.
 
