@@ -45,7 +45,15 @@ export default function LoginPage() {
     setBusy(true); setMessage(""); setError(false);
     try {
       const supabase = createClient();
-      const { error: signInError } = await supabase.auth.signInWithPassword({ email, password });
+      const input=email.trim();
+      const raw=input.replace(/[^0-9]/g,"");
+      const phone=raw.length===10||raw.length===11?"55"+raw:raw;
+      const isPhone=!input.includes("@") && /^55[1-9][0-9]{9,10}$/.test(phone);
+      if(!isPhone && !/^\S+@\S+\\.\S+$/.test(input))
+        throw new Error("Informe seu e-mail ou WhatsApp com DDD.");
+      const { error: signInError } = await supabase.auth.signInWithPassword(
+        isPhone?{phone:"+"+phone,password}:{email:input,password}
+      );
       if (signInError) throw signInError;
       window.location.href = inviteCode ? "/convite?codigo=" + encodeURIComponent(inviteCode) : postLoginDestination();
     } catch (err) {
@@ -62,9 +70,9 @@ export default function LoginPage() {
 
   return <main className="auth-wrap">
     <aside className="auth-aside"><Link className="brand" href="/"><span className="brand-mark">S</span> stage flow</Link><div><div className="eyebrow">BEM-VINDO DE VOLTA</div><h1>Sua próxima apresentação começa <span className="accent">aqui.</span></h1><p className="tagline">Entre para acompanhar sua agenda musical, seus convites e as novidades da plataforma.</p></div><Link href="/" className="fine"><ArrowLeft size={14} style={{display:"inline",verticalAlign:"middle"}}/> Voltar ao início</Link></aside>
-    <section className="auth-main"><div className="auth-card"><Link href="/" className="fine">← Voltar para o site</Link><h2 style={{marginTop:24}}>Entrar na conta</h2><p>{inviteCode ? "Entre com sua conta para vincular o convite ao seu perfil de músico." : "Use seu e-mail e senha para continuar."}</p>
+    <section className="auth-main"><div className="auth-card"><Link href="/" className="fine">← Voltar para o site</Link><h2 style={{marginTop:24}}>Entrar na conta</h2><p>{inviteCode ? "Entre com sua conta para vincular o convite ao seu perfil de músico." : "Use seu e-mail ou número de WhatsApp verificado e senha."}</p>
       <form onSubmit={handleSubmit}>
-        <div className="field"><label htmlFor="email">E-mail</label><input id="email" type="email" autoComplete="email" value={email} onChange={e=>setEmail(e.target.value)} placeholder="voce@exemplo.com" required /></div>
+        <div className="field"><label htmlFor="email">E-mail ou WhatsApp com DDD</label><input id="email" type="text" autoComplete="username" value={email} onChange={e=>setEmail(e.target.value)} placeholder="voce@exemplo.com ou (11) 99999-9999" required /></div>
         <div className="field"><label htmlFor="password">Senha</label><input id="password" type="password" autoComplete="current-password" value={password} onChange={e=>setPassword(e.target.value)} placeholder="Sua senha" required /></div>
         <button className="btn btn-primary full" type="submit" disabled={busy}>{busy ? "Entrando..." : "Entrar"} <Music2 size={16}/></button>
       </form>
