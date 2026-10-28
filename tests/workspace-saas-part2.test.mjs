@@ -56,7 +56,8 @@ test("mobile drawer traps focus, recovers on escape and prioritizes invitations 
  assert.match(nav,/first\.focus\(\)/);
  assert.match(nav,/last\.focus\(\)/);
  assert.match(nav,/document.body.style.overflow="hidden"/);
- assert.match(nav,/label:"Convites",href:"\/meus-convites"/);
+ assert.match(read("src/domains/navigation/workspace-navigation.ts"),/label:"Convites recebidos",href:"\/meus-convites"/);
+ assert.match(read("src/domains/navigation/components/workspace-mobile-nav.tsx"),/label:"Chats"/);
 });
 
 test("shared UI has roving keyboard tabs, safe buttons and announced input guidance",()=>{
