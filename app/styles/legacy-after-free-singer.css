@@ -1,0 +1,182 @@
+/* ── Cadastro: três atuações, uma conta ── */
+.auth-card:has(.signup-role-picker){width:min(570px,100%)}
+.signup-role-picker{margin:0 0 25px}
+.signup-role-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:9px}
+.signup-role-card{
+  appearance:none;text-align:left;display:flex;flex-direction:column;
+  gap:11px;padding:16px 13px;min-height:195px;border:1px solid var(--line);
+  border-radius:15px;background:var(--panel);color:var(--text);cursor:pointer;
+  transition:border-color .16s,background-color .16s
+}
+.signup-role-card[aria-pressed="true"]{
+  border-color:var(--accent);background:linear-gradient(145deg,#20301e,#141d19);
+  box-shadow:0 0 0 1px #BFA7FF33
+}
+.signup-role-card>svg{color:var(--accent)}
+.signup-role-card strong{font:800 13px/1.45 Manrope,sans-serif}
+.signup-role-card>span{color:var(--muted);font-size:11px;line-height:1.6;flex:1}
+.signup-role-card>small{font-size:10px;font-weight:800;color:var(--accent)}
+.signup-producer-add{
+  margin-top:13px;display:flex;align-items:center;gap:12px;
+  padding:15px;border:1px solid var(--line);border-radius:13px;
+  background:var(--panel2);cursor:pointer
+}
+.signup-producer-add input{width:17px;height:17px;accent-color:var(--accent);flex:none}
+.signup-producer-add span{flex:1;min-width:0}
+.signup-producer-add strong{font:700 12px Manrope,sans-serif;display:block}
+.signup-producer-add small{display:block;color:var(--muted);font-size:11px;line-height:1.6;margin-top:4px}
+@media(max-width:540px){
+  .signup-role-grid{grid-template-columns:1fr}
+  .signup-role-card{min-height:0;gap:8px;padding:13px 15px}
+  .signup-role-card>span{flex:auto}
+}
+
+
+/* Preferência do artista: permitir ou bloquear pedidos de contratação. */
+.artist-booking-setting{
+  border:1px solid var(--line);border-radius:13px;
+  padding:19px 17px;margin:20px 0 4px;background:var(--panel2)
+}
+.artist-booking-setting-toggle{
+  display:flex;align-items:flex-start;gap:12px;cursor:pointer
+}
+.artist-booking-setting-toggle input{accent-color:var(--accent);width:17px;height:17px;flex:none;margin-top:3px}
+.artist-booking-setting-toggle input:disabled{opacity:.4;cursor:not-allowed}
+.artist-booking-setting-toggle>span{display:grid;gap:8px;min-width:0}
+.artist-booking-setting-toggle strong{font-size:13px;line-height:1.55;color:var(--text)}
+.artist-booking-setting-toggle small{font-size:11px;color:var(--muted);line-height:1.8}
+.artist-booking-setting .field-help{margin:12px 0 0}
+
+
+/* STAGE FLOW | Identidade de marca 2D (logo aprovada em roxo e azul).
+   Reutilizada na navegação e nos rodapés sem alterar os fluxos da plataforma. */
+.brand{color:var(--text);text-transform:capitalize;white-space:nowrap}
+.brand-mark{
+  display:inline-block;flex:0 0 44px;width:44px;height:35px;
+  background:transparent url("/stageflow-symbol.svg") center/contain no-repeat;
+  border:0;border-radius:0;box-shadow:none;color:transparent;font-size:0;line-height:0;
+}
+.mp-end-mark{
+  display:inline-block;flex:0 0 37px;width:37px;height:29px;
+  background:transparent url("/stageflow-symbol.svg") center/contain no-repeat;
+  color:transparent;font-size:0;line-height:0;
+}
+@media(max-width:480px){
+  .brand-mark{flex-basis:37px;width:37px;height:30px}
+}
+
+/* ── Stage Flow · Identidade Deep Purple + Electric Blue ──
+   Verde permanece apenas para status positivos e temas pessoais opcionais. */
+html{color-scheme:dark}
+body{accent-color:var(--accent-solid)}
+::selection{background:#6541B4;color:#fff}
+.home-shell{background:radial-gradient(ellipse 60% 36% at 75% 7%,#38225999,transparent 74%),radial-gradient(ellipse 40% 29% at 89% 25%,#13365644,transparent 75%),var(--bg)}
+.home-hero-copy h1 span{background:linear-gradient(96deg,#C6AFFF 7%,#AA8DFF 45%,#70B9FF 100%);-webkit-background-clip:text;background-clip:text;color:transparent}
+.home-stage-card{border-color:#4B3868;box-shadow:0 38px 100px #0A061680}
+.home-stage-calendar,.home-resource-icon{border:1px solid #584079}
+.home-pill{box-shadow:inset 0 1px 0 #B39CFF15}
+.home-resource-card:hover{box-shadow:0 16px 38px #160C2F55}
+.home-floating-note{box-shadow:0 20px 44px #10072199}
+.home-closing{border-color:#514071}
+.auth-aside{background:radial-gradient(ellipse at 16% 20%,#332052,transparent 58%),radial-gradient(ellipse at 80% 70%,#15325140,transparent 60%),#0E1020}
+.btn-primary:focus-visible{outline-color:#D1C0FF}
+input[type="checkbox"],input[type="radio"]{accent-color:var(--accent-solid)}
+.mp-editor-stickybar{background:#161529F2}
+
+/* Stage Flow · Casas parceiras na vitrine da home (somente casas oficiais publicadas). */
+.home-partners{margin:4px 0 26px;padding:30px 0 37px;border-top:1px solid #46345f66;border-bottom:1px solid #46345f66}
+.home-partners-heading{display:flex;justify-content:space-between;align-items:flex-end;gap:18px;margin-bottom:22px}
+.home-partners-heading .home-kicker{display:inline-flex;align-items:center;gap:7px}
+.home-partners-heading h2{font:800 clamp(23px,3.4vw,35px)/1.15 Manrope,sans-serif;letter-spacing:-1.2px;margin:13px 0 8px}
+.home-partners-heading h2 span{color:var(--accent)}
+.home-partners-heading p{color:var(--muted);font-size:13px;line-height:1.7;max-width:610px;margin:0}
+.home-partners-grid{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:12px}
+.home-partner-card{min-width:0;display:flex;align-items:center;gap:13px;padding:14px;border:1px solid #46385e;border-radius:17px;background:linear-gradient(135deg,#1c1931,#151425);transition:transform .2s,border-color .2s,box-shadow .2s}
+.home-partner-card:hover{transform:translateY(-3px);border-color:#9875ef;box-shadow:0 15px 35px #08030e88}
+.home-partner-card:focus-visible{outline:2px solid var(--accent);outline-offset:3px}
+.home-partner-logo{width:66px;height:66px;flex:none;display:grid;place-items:center;overflow:hidden;background:#26203c;border:1px solid #554172;border-radius:14px;color:#c8b0ff}
+.home-partner-logo img{display:block;width:100%;height:100%;object-fit:contain;padding:5px}
+.home-partner-name{min-width:0;flex:1;font:800 12px/1.5 Manrope,sans-serif;overflow-wrap:anywhere}
+.home-partner-arrow{color:var(--accent);flex:none;align-self:flex-start}
+@media(max-width:1080px){.home-partners-grid{grid-template-columns:repeat(3,minmax(0,1fr))}}
+@media(max-width:730px){.home-partners-grid{grid-template-columns:repeat(2,minmax(0,1fr))}.home-partner-card{padding:12px}.home-partner-logo{width:56px;height:56px}}
+@media(max-width:480px){.home-partners{padding:23px 0 28px}.home-partners-grid{grid-template-columns:1fr}.home-partner-card{padding:12px 14px}.home-partner-logo{width:60px;height:60px}.home-partner-name{font-size:14px}}
+
+
+/* Public partner showcase and verified artist selection, never placeholder identities. */
+.home-partner-empty{
+ display:flex;align-items:center;gap:18px;padding:25px 23px;
+ border:1px dashed #65537d;border-radius:18px;
+ background:linear-gradient(110deg,#211a33,#172237);
+ color:#cdb9ec
+}
+.home-partner-empty>svg{flex:none;color:#caa6ff}
+.home-partner-empty strong{display:block;font-size:14px;color:#f5ecff;margin-bottom:7px}
+.home-partner-empty p{font-size:12px;line-height:1.75;margin:0;color:#b8b0ce}
+.home-verified-artists{margin:5px 0 46px;padding:26px 0 35px}
+.home-verified-artists .home-partners-heading h2 span{color:#d9b2ff}
+.home-verified-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:14px}
+.home-verified-card{
+ display:flex;align-items:center;min-width:0;gap:13px;
+ padding:16px;border:1px solid #59466e;border-radius:19px;
+ background:radial-gradient(circle at 94% 8%,#6b3f8540,transparent 68%),linear-gradient(132deg,#261c37,#15182a);
+ text-decoration:none;transition:transform .18s,border-color .18s,box-shadow .18s
+}
+.home-verified-card:hover{transform:translateY(-3px);border-color:#ac8be0;box-shadow:0 15px 36px #0704108a}
+.home-verified-card:focus-visible{outline:3px solid #cda7f6;outline-offset:3px}
+.home-verified-portrait{
+ display:grid;place-items:center;flex:none;overflow:hidden;width:85px;height:85px;
+ border:1px solid #78608d;border-radius:17px;
+ color:#e4caff;background:linear-gradient(145deg,#594373,#302d4d)
+}
+.home-verified-portrait img{width:100%;height:100%;object-fit:cover}
+.home-verified-info{min-width:0;display:flex;flex:1;align-items:flex-start;flex-direction:column;gap:5px}
+.home-verified-info>strong{color:#faf2ff;font-size:14px;line-height:1.35;overflow-wrap:anywhere}
+.home-verified-info>small{color:#b1a2c5;font-size:11px}
+.home-verified-tagline{color:#d9c8e9;font-size:11px;line-height:1.4;max-width:24ch;overflow:hidden;text-overflow:ellipsis;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical}
+.home-verified-info .sf-verified{margin-top:3px}
+.home-verified-arrow{flex:none;color:#dab4ff;align-self:flex-start}
+.home-verified-footnote{display:flex;align-items:center;gap:8px;margin-top:17px;font-size:11px;color:#b2a7c7}
+.home-verified-footnote svg{flex:none;color:#ceb1ef}
+@media(max-width:1000px){.home-verified-grid{grid-template-columns:repeat(2,minmax(0,1fr))}}
+@media(max-width:600px){.home-verified-grid{grid-template-columns:1fr}.home-verified-card{padding:13px}.home-verified-portrait{height:71px;width:71px}.home-partner-empty{align-items:flex-start;padding:20px}}
+@media(prefers-reduced-motion:reduce){.home-verified-card{transition:none}.home-verified-card:hover{transform:none}}
+
+
+/* StageFlow accessible defaults on narrow touchscreens. */
+@media(max-width:600px){
+  .field label{font-size:14px}
+  .field-help{font-size:13px}
+  .signup-role-card>span,.signup-producer-add small{font-size:13px}
+  .signup-role-card>small{font-size:12px}
+  .signup-role-card{min-height:132px}
+  .auth-main input,.auth-main select,.auth-main textarea{font-size:16px}
+  .signup-role-grid{gap:9px}
+}
+@media(max-width:375px){
+  .signup-role-grid{grid-template-columns:1fr}
+  .signup-role-card{min-height:0}
+}
+
+/* Perfil artistico unificado: atalhos apenas no celular e acesso ao salvar. */
+.artist-mobile-edit-steps{display:none}
+@media(max-width:850px){
+ .artist-mobile-edit-steps{display:flex;gap:7px;align-items:center;min-width:0;overflow-x:auto;scrollbar-width:none;overscroll-behavior-x:contain;padding:8px;border:1px solid #514265;border-radius:13px;background:#20192fee}
+ .artist-mobile-edit-steps::-webkit-scrollbar{display:none}
+ .artist-mobile-edit-steps>a{display:inline-flex;align-items:center;min-height:44px;padding:8px 12px;flex:none;border:1px solid #64557a;border-radius:11px;color:#ebddff;text-decoration:none;font-size:13px;white-space:nowrap}
+ .artist-mobile-edit-steps>button{margin-left:auto;flex:none;min-height:44px;padding:8px 14px;border:1px solid #8960d8;border-radius:11px;background:#7541ca;color:#fff;font-size:13px;font-weight:850}
+ .singer-unified-editor [id^="artist-edit-"]{scroll-margin-top:82px}
+ .singer-unified-editor input,.singer-unified-editor select,.singer-unified-editor textarea{font-size:16px}
+ .singer-unified-editor .field-help{font-size:13px}
+}
+
+/* Controls legiveis no iPhone, sem zoom ao focar inputs de formularios. */
+@media(max-width:600px){
+ .auth-card p,.auth-bottom,.auth-card .field-help{font-size:14px}
+ .auth-card .btn{min-height:44px}
+ .signup-producer-add input,.signup-hybrid-confirm input{min-width:20px;min-height:20px}
+ :where(.sf-profile-hub,.account-page,.hiring-page,.notifications-page) a:focus-visible,
+ :where(.sf-profile-hub,.account-page,.hiring-page,.notifications-page) button:focus-visible{
+  outline:3px solid #d7b3ff;outline-offset:3px
+ }
+}
