@@ -13,14 +13,14 @@ const css=read("src/components/ui/tokens.css");
 test("workspace preserves existing URLs while grouping actions for artists and producers",()=>{
  for(const route of ["/painel","/eventos","/minha-disponibilidade","/meus-shows",
   "/meus-convites","/conversas","/convites","/marketplace","/financeiro",
-  "/meu-portfolio","/meu-perfil-artistico","/meu-desempenho",
+  "/perfil-artistico","/perfis","/contratar",
   "/minha-conta","/notificacoes","/admin/central"]){
   assert.ok(nav.includes(route),"Missing navigation route "+route);
  }
  assert.match(nav,/role.isMusician/);
  assert.match(nav,/role.isSinger/);
  assert.match(nav,/role.isOwnerAdmin/);
- assert.match(nav,/if\(role.partnerHouseCount\)/);
+ assert.match(nav,/role.isProducer\|\|role.partnerHouseCount/);
  assert.match(panel,/<WorkspaceSidebar role=/);
  assert.match(panel,/<WorkspaceOverview isSinger=/);
  assert.doesNotMatch(panel,/primary\.map\(|secondary\.map\(|\.dashboard-shortcuts/);
@@ -56,8 +56,8 @@ test("dashboard numbers and activity are real private bounded database data",()=
  assert.doesNotMatch(overviewSql,/service_role|raw_user_meta_data|set plan_code/i);
  assert.match(dashboard,/stage_workspace_overview/);
  assert.match(dashboard,/!Array.isArray\(snapshot.upcoming\)/);
- assert.match(dashboard,/Contagem de conversas, não de mensagens individuais/);
- assert.match(dashboard,/Registros manuais de shows do mês/);
+ assert.match(dashboard,/conversas<\/strong> para acompanhar/);
+ assert.match(read("src/domains/dashboard/components/operational-finance.tsx"),/liquidação bancária/);
  assert.match(dashboard,/A atividade não é marcada como lida/);
 });
 test("all 15 reusable design system components are present and keyboard-accessible",()=>{

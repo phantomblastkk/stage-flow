@@ -144,7 +144,31 @@ export default function MarketplaceCatalog({preview=false}:Props) {
   const [savingReview,setSavingReview] = useState(false);
   const [favoriteBusy,setFavoriteBusy] = useState<string|null>(null);
   const [refreshNonce,setRefreshNonce] = useState(0);
+  const [discoveryView,setDiscoveryView]=useState<"recommended"|"favorites"|"history">("recommended");
+  const [history,setHistory]=useState<{id:string;other_name:string}[]>([]);
+  const [historyError,setHistoryError]=useState("");
   const limit = 12;
+  useEffect(()=>{
+   const params=new URLSearchParams(window.location.search);
+   const next={...defaultFilters,query:params.get("busca")?.slice(0,100)||"",city:params.get("cidade")?.slice(0,100)||"",genre:params.get("estilo")||"",favorites:params.get("aba")==="favoritos"};
+   setFilters(next);setApplied(next);
+   if(next.favorites)setDiscoveryView("favorites");
+   if(params.get("aba")==="historico")setDiscoveryView("history");
+   if(params.get("evento"))setSelectedEvent(params.get("evento")!);
+  },[]);
+  useEffect(()=>{
+   if(gate!=="allowed"||discoveryView!=="history")return;
+   let active=true;setHistoryError("");
+   void Promise.resolve(createClient().rpc("stage_hiring_list")).then(({data,error})=>{
+    if(!active)return;if(error||!Array.isArray(data)){setHistoryError("Não foi possível atualizar o histórico de conversas.");return;}
+    setHistory(data.slice(0,30));
+   }).catch(()=>{if(active)setHistoryError("Não foi possível atualizar o histórico de conversas.");});
+   return()=>{active=false;};
+  },[gate,discoveryView]);
+  function discovery(view:"recommended"|"favorites"|"history"){
+   setDiscoveryView(view);setPage(0);setFilters(current=>({...current,favorites:view==="favorites"}));setApplied(current=>({...current,favorites:view==="favorites"}));
+  }
+
 
   useEffect(()=>{
     let active=true;
@@ -433,13 +457,21 @@ export default function MarketplaceCatalog({preview=false}:Props) {
           </Link></>}</span>
       </div>}
 
+      <nav className="market-discovery-tabs" aria-label="Descobrir no Marketplace">
+       <button type="button" aria-pressed={discoveryView==="recommended"} onClick={()=>discovery("recommended")}>Recomendados</button>
+       <button type="button" aria-pressed={discoveryView==="favorites"} onClick={()=>discovery("favorites")}>Favoritos</button>
+       <button type="button" aria-pressed={discoveryView==="history"} onClick={()=>discovery("history")}>Histórico</button>
+       <Link href={"/contratar"+(selectedEvent?"?evento="+encodeURIComponent(selectedEvent):"")}>Buscar artistas e grupos</Link>
+      </nav>
+      {discoveryView==="history"&&<section className="market-history"><h2>Seu histórico de contatos</h2><p>Conversas reais da sua conta, ordenadas pela atividade mais recente.</p>{historyError?<p role="alert">{historyError}</p>:history.length?history.map(item=><Link key={item.id} href={"/conversas?conversa="+encodeURIComponent(item.id)}>{item.other_name} · Continuar conversa</Link>):<p>Nenhum contato anterior encontrado.</p>}</section>}
+      <div hidden={discoveryView==="history"}>
       <section className="market-featured" aria-labelledby="market-featured-title">
         <div className="market-featured-heading">
           <div>
             <div className="market-featured-eyebrow">
               <Trophy size={15}/> SELEÇÃO POR AVALIAÇÕES VERIFICADAS
             </div>
-            <h2 id="market-featured-title">Músicos <span>em destaque.</span></h2>
+            <h2 id="market-featured-title">Recomendados <span>para explorar.</span></h2>
             <p>Profissionais com mais avaliações de shows realizados no Stage Flow.
               Empates são decididos pela nota média. Nenhuma posição é comprada.</p>
           </div>
@@ -684,6 +716,7 @@ export default function MarketplaceCatalog({preview=false}:Props) {
             com convite aceito no Stage Flow. Nenhum cachê privado é divulgado.
           </div>
         </section>
+      </div>
       </div>
     </div>
 

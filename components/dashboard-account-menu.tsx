@@ -3,7 +3,7 @@
 import {useEffect,useId,useRef,useState} from "react";
 import Link from "next/link";
 import {
-  ChevronDown,ArrowUpRight,Guitar,LogOut,Mic2,
+  ChevronDown,ArrowUpRight,LogOut,Mic2,
   Settings2,ShieldCheck,Shield,UserRound,KeyRound
 } from "lucide-react";
 import "./dashboard-account-menu.css";
@@ -69,8 +69,8 @@ export default function DashboardAccountMenu({
       <div className="dashboard-profile-group">
         <span className="dashboard-profile-group-title">PERFIS</span>
         <Link onClick={()=>setOpen(false)} href="/minha-conta"><UserRound size={17}/> Meu perfil e conta</Link>
-        {isSinger&&<Link onClick={()=>setOpen(false)} href="/minha-conta?aba=cantor"><Mic2 size={17}/> Perfil de cantor <ArrowUpRight size={14}/></Link>}
-        {isMusician&&<Link onClick={()=>setOpen(false)} href="/minha-conta?aba=musico"><Guitar size={17}/> Perfil de músico <ArrowUpRight size={14}/></Link>}
+        {(isSinger||isMusician)&&<Link onClick={()=>setOpen(false)} href="/perfil-artistico"><Mic2 size={17}/> Perfil Artístico <ArrowUpRight size={14}/></Link>}
+        <Link onClick={()=>setOpen(false)} href="/perfis"><UserRound size={17}/> Perfis e grupos</Link>
         {isOwnerAdmin&&<Link onClick={()=>setOpen(false)} href="/admin/central"><ShieldCheck size={17}/> Administração geral</Link>}
       </div>
       <div className="dashboard-profile-group">

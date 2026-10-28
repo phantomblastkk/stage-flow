@@ -243,7 +243,7 @@ export default function ShowFlyerManager({
         <input type="file" accept="image/jpeg,image/png,image/webp" hidden
           disabled={!ready||busy} onChange={chooseFile}/>
       </label>
-      <small>Até 8 MB. O flyer original permanece privado e só aparece no site Pro se o show for público.</small>
+      <small>Até 8 MB. O flyer original permanece privado e só aparece no Perfil Artístico se o show for público.</small>
     </div>
     {image&&<div className="show-flyer-workspace">
       <div className="show-flyer-canvas-wrap">

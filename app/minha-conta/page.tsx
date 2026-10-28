@@ -320,7 +320,7 @@ export default function MinhaConta(){
              <span className="account-public-status">{account.is_public?"Publicado":"Não publicado"}</span>
            </div>
            <div className="account-role-actions">
-             <Link className="btn btn-primary" href="/meu-perfil-artistico"><Mic2 size={16}/> Editar perfil de cantor</Link>
+             <Link className="btn btn-primary" href="/perfil-artistico"><Mic2 size={16}/> Editar perfil de cantor</Link>
              {account.username&&account.is_public&&<>
                <Link className="btn btn-quiet" href={"/"+encodeURIComponent(account.username)} target="_blank" rel="noopener noreferrer"><ExternalLink size={15}/> Ver perfil público</Link>
                <button type="button" className="btn btn-quiet" onClick={()=>void copySingerLink()}>
@@ -351,7 +351,7 @@ export default function MinhaConta(){
              <span className="account-public-status">{account.musician_published?"Publicado":"Não publicado"}</span>
            </div>
            <div className="account-role-actions">
-             <Link className="btn btn-primary" href="/meu-portfolio"><Guitar size={16}/> Editar portfólio de músico</Link>
+             <Link className="btn btn-primary" href="/perfil-artistico?aba=instrumentista"><Guitar size={16}/> Editar portfólio de músico</Link>
              {account.musician_slug&&account.musician_published&&
                <Link className="btn btn-quiet" href={"/musico/"+encodeURIComponent(account.musician_slug)} target="_blank" rel="noopener noreferrer"><ExternalLink size={15}/> Ver portfólio público</Link>}
              <Link className="btn btn-quiet" href="/meus-convites"><CalendarDays size={15}/> Convites para tocar</Link>

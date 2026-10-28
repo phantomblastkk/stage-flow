@@ -35,8 +35,8 @@ test("profile hub sits by notifications and keeps distinct singer/musician publi
  assert.match(dashboard,/isOwnerAdmin=\{isOwnerAdmin\}/);
  const menu=read("components/dashboard-account-menu.tsx");
  assert.match(menu,/href="\/minha-conta"/);
- assert.match(menu,/href="\/minha-conta\?aba=cantor"/);
- assert.match(menu,/href="\/minha-conta\?aba=musico"/);
+ assert.match(menu,/href="\/perfil-artistico"/);
+ assert.match(menu,/href="\/perfis"/);
  assert.match(menu,/isOwnerAdmin&&<Link/);
  assert.match(menu,/event\.key==="Escape"/);
   assert.ok(dashboard.includes("profile?.is_singer&&profile.is_musician&&"));
@@ -47,8 +47,8 @@ test("profile hub sits by notifications and keeps distinct singer/musician publi
  assert.match(hub,/Músico \/ instrumentista/);
  assert.match(hub,/href=\{"\/"\+encodeURIComponent\(account\.username\)\}/);
  assert.match(hub,/href=\{"\/musico\/"\+encodeURIComponent\(account\.musician_slug\)\}/);
- assert.match(hub,/\/meu-perfil-artistico/);
- assert.match(hub,/\/meu-portfolio/);
+ assert.match(hub,/\/perfil-artistico/);
+ assert.match(hub,/\/perfil-artistico\?aba=instrumentista/);
  assert.match(hub,/stage_my_account_identity/);
  assert.match(hub,/stage_account_enable_role/);
  assert.match(css,/@media\(max-width:770px\)/);
@@ -137,8 +137,8 @@ test("profile settings have separate tabs, real email/password controls, and ind
  assert.match(hub,/account\.musician_published/);
  assert.match(hub,/account\.is_singer/);
  assert.match(hub,/account\.is_musician/);
- assert.match(hub,/\/meu-perfil-artistico/);
- assert.match(hub,/\/meu-portfolio/);
+ assert.match(hub,/\/perfil-artistico/);
+ assert.match(hub,/\/perfil-artistico\?aba=instrumentista/);
  assert.doesNotMatch(hub,/SERVICE_ROLE|NEXT_PUBLIC_SUPABASE_SERVICE/);
  assert.match(css,/\.account-shell/);
  assert.match(css,/@media\(max-width:770px\)/);

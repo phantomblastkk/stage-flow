@@ -328,7 +328,7 @@ export default function SiteProfissionalPreview({ active = true, onEditData }: {
       <Mic2 size={28}/>
       <h1>A personalização do seu perfil começa aqui.</h1>
       <p>Configure os dados do seu perfil de cantor antes de experimentar a personalização.</p>
-      <Link href="/meu-perfil-artistico" className="btn btn-primary"
+      <Link href="/perfil-artistico" className="btn btn-primary"
         onClick={onEditData ? event => { event.preventDefault(); onEditData(); } : undefined}>Configurar meu perfil <ArrowRight size={16}/></Link>
     </div> : <>
       <section className="premium-design-editor" aria-label="Personalização Pro do perfil de cantor">

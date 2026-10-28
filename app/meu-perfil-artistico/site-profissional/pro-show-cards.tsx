@@ -107,7 +107,7 @@ export default function ProShowCards({ shows, artistName, preview = false }: Pro
   const [downloading,setDownloading] = useState<string|null>(null);
 
   // Links individuais continuam funcionando quando a lista foi recolhida,
-  // inclusive após o carregamento assíncrono do site Pro publicado.
+  // inclusive após o carregamento assíncrono do Perfil Artístico publicado.
   useEffect(() => {
     if (preview) return;
     const target = window.location.hash.slice(1);

@@ -58,6 +58,19 @@ export default function EventosPage() {
  const [markers,setMarkers]=useState<{own:string[];guest:string[]}>({own:[],guest:[]});
  const [markerMessage,setMarkerMessage]=useState("");
  const [markerNonce,setMarkerNonce]=useState(0);
+ useEffect(()=>{
+  const params=new URLSearchParams(window.location.search);
+  if(params.get("novo")==="1")setShowCreateForm(true);
+  const house=params.get("casa");
+  if(!house)return;
+  const request=new AbortController();
+  void createClient().auth.getUser().then(async({data:{user}})=>{
+   if(!user||request.signal.aborted)return;
+   const {data}=await createClient().from("stage_performance_profiles").select("name,city,venue_id").eq("id",house).eq("account_id",user.id).eq("kind","venue").abortSignal(request.signal).maybeSingle();
+   if(!data||request.signal.aborted)return;setVenue(data.name);setCity(data.city);setSelectedVenueId(data.venue_id);
+  });
+  return()=>request.abort();
+ },[]);
  const monthRange=agendaWindow(calendarMonth);
  const listRange=agendaWindow(calendarMonth,selectedDate);
  const monthFrom=monthRange.from,monthTo=monthRange.to;
@@ -194,6 +207,7 @@ export default function EventosPage() {
   setSaving(true);setMessage("");setIsError(false);
   try{
    const created=await saveEvent(createClient(),{title,description,venue,venueId:selectedVenueId,city,startsAt,endsAt,publicly});
+   if(new URLSearchParams(window.location.search).get("continuar")==="contratar"){router.push("/contratar?evento="+created.id);return;}
    setSpotlightEvent(created);setSpotlightEventId(created.id);setSelectedDate(null);
    const date=new Date(created.starts_at);setCalendarMonth(new Date(date.getFullYear(),date.getMonth(),1));
    setMarkerNonce(value=>value+1);

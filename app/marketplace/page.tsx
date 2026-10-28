@@ -30,7 +30,7 @@ export default function MarketplaceComingSoon() {
             <span>Sem data de lançamento anunciada</span>
           </div>
           <div className="market-coming-actions">
-            <Link href="/meu-portfolio" className="market-coming-primary">
+            <Link href="/perfil-artistico?aba=instrumentista" className="market-coming-primary">
               <Guitar size={17}/> Preparar meu portfólio <ArrowRight size={16}/>
             </Link>
             <Link href="/painel" className="market-coming-secondary">

@@ -118,7 +118,7 @@ export default async function OpenGraphImage({params}:Props){
             display:"flex",fontSize:17,fontWeight:800,
             color:"#bcadd9",letterSpacing:2
           }}>
-            SITE PROFISSIONAL DO ARTISTA
+            Perfil Artístico DO ARTISTA
           </div>
         </div>
 

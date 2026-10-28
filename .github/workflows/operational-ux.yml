@@ -1,0 +1,56 @@
+name: StageFlow operational UX verification
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  isolated-profiles:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    services:
+      postgres:
+        image: postgres:16
+        env:
+          POSTGRES_PASSWORD: isolated-fixture-only
+        ports: [5432:5432]
+        options: >-
+          --health-cmd pg_isready --health-interval 10s --health-timeout 5s --health-retries 5
+    env:
+      PGHOST: localhost
+      PGPORT: "5432"
+      PGDATABASE: postgres
+      PGUSER: postgres
+      PGPASSWORD: isolated-fixture-only
+    steps:
+      - uses: actions/checkout@v4
+      - name: Test additive schema and isolation without production access
+        run: |
+          psql -X -v ON_ERROR_STOP=1 -f tests/operational-db/fixture.sql
+          psql -X -v ON_ERROR_STOP=1 -f supabase/private_fee_negotiations_migration.sql
+          psql -X -v ON_ERROR_STOP=1 -f supabase/migrations/20261028044643_operational_experience_profiles.sql
+          psql -X -v ON_ERROR_STOP=1 -f tests/operational-db/isolation.sql
+  browser:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    env:
+      NEXT_PUBLIC_SUPABASE_URL: https://example.supabase.co
+      NEXT_PUBLIC_SUPABASE_ANON_KEY: build-time-placeholder-not-a-real-secret
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci
+      - run: node --test tests/*.test.mjs
+      - run: npx tsc --noEmit
+      - run: npm run build
+      - run: npx playwright install --with-deps chromium
+      - run: node tests/browser/operational-home.mjs
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: operational-ux-evidence
+          path: test-results/operational-*

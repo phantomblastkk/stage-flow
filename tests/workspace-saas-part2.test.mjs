@@ -39,7 +39,8 @@ test("dashboard displays a contextual priority instead of empty cards while stil
  for(const href of ["/meu-portfolio","/minha-disponibilidade","/meus-convites","/meu-perfil-artistico","/marketplace"]){
   assert.ok(next.includes(href),"Journey missing "+href);
  }
- assert.match(overview,/<WorkspaceNextStep/);
+ assert.match(overview,/PRÓXIMO SHOW/);
+ assert.match(overview,/<OperationalFinance/);
  assert.match(overview,/\{data&&<div className="sf-workspace-columns">/);
  assert.match(overview,/\{data&&<Card className="sf-workspace-action-card">/);
  assert.equal((next.match(/\.rpc\(/g)||[]).length,0,"Do not add redundant dashboard calls");

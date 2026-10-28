@@ -1,5 +1,8 @@
 /** Frame titles only. The boundary handles the dashboard provider and public marketplace exception. */
 export const workspaceRoutes = [
+  ["/perfil-artistico", "Perfil Artístico"],
+  ["/perfis", "Perfis e grupos"],
+  ["/contratar", "Contratar"],
   ["/eventos", "Agenda"],
   ["/meus-shows", "Histórico de shows"],
   ["/shows-recorrentes", "Shows recorrentes"],
@@ -13,7 +16,7 @@ export const workspaceRoutes = [
   ["/parceiros", "Casas parceiras"],
   ["/meu-portfolio", "Portfólio"],
   ["/meu-desempenho", "Estatísticas"],
-  ["/meu-perfil-artistico", "Perfil de cantor"],
+  ["/meu-perfil-artistico", "Perfil Artístico"],
   ["/minha-conta", "Minha conta"],
   ["/notificacoes", "Notificações"],
 ] as const;

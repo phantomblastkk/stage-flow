@@ -1,0 +1,66 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1440" height="1050" viewBox="0 0 1440 1050">
+<style>text{font-family:Arial,sans-serif} .muted{fill:#b6abc9} .small{font-size:12px} .label{font-size:10px;font-weight:700;letter-spacing:1.3px}</style>
+<rect width="1440" height="1050" fill="#10101c"/>
+<rect x="0" y="0" width="236" height="1050" rx="0" fill="#161323" stroke="#332b48"/>
+<text x="24" y="50" fill="#c5a6ff" font-size="27" font-weight="800">stage flow</text>
+<rect x="15" y="88" width="206" height="44" rx="14" fill="#382a51" stroke="#43374f"/>
+<text x="30" y="116" fill="#faf2ff" font-size="14" font-weight="700">Início</text>
+<text x="30" y="170" fill="#c0b3d1" font-size="14" font-weight="700">Agenda</text>
+<text x="30" y="224" fill="#c0b3d1" font-size="14" font-weight="700">Contratações</text>
+<text x="30" y="278" fill="#faf2ff" font-size="14" font-weight="700">Marketplace</text>
+<text x="30" y="332" fill="#faf2ff" font-size="14" font-weight="700">Financeiro</text>
+<text x="30" y="386" fill="#c0b3d1" font-size="14" font-weight="700">Perfil Artístico</text>
+<text x="30" y="440" fill="#c0b3d1" font-size="14" font-weight="700">Configurações</text>
+<text x="270" y="34" fill="#bca5d8" font-size="11" font-weight="700">INÍCIO / VISÃO GERAL</text>
+<text x="1348" y="34" fill="#e4d4f8" font-size="11" font-weight="400">Meu perfil</text>
+<text x="270" y="96" fill="#fff" font-size="34" font-weight="800">Boa noite, Henrique</text>
+<text x="270" y="124" fill="#b6abc9" font-size="12" font-weight="400">2 shows nesta semana · 3 convites</text>
+<text x="270" y="144" fill="#c5a6ff" font-size="13" font-weight="700">R$ 4.350 a receber</text>
+<rect x="270" y="174" width="614.9000000000001" height="194" rx="14" fill="#201c2e" stroke="#43374f"/>
+<text x="290" y="201" fill="#bfa3e5" font-size="10" font-weight="700">PRÓXIMO SHOW</text>
+<text x="290" y="236" fill="#fff" font-size="21" font-weight="700">Pagode na Casa Aurora</text>
+<text x="290" y="265" fill="#b6abc9" font-size="12" font-weight="400">Casa Aurora · São Paulo</text>
+<text x="290" y="288" fill="#b6abc9" font-size="12" font-weight="400">Sábado, 31 out · 21h</text>
+<rect x="290" y="308" width="160" height="42" rx="9" fill="#bd9bef" stroke="#bd9bef"/>
+<text x="304" y="334" fill="#20132e" font-size="12" font-weight="700">Ver detalhes</text>
+<rect x="902.9000000000001" y="174" width="503.0999999999999" height="194" rx="14" fill="#30233f" stroke="#43374f"/>
+<text x="922.9000000000001" y="201" fill="#d7b8ff" font-size="10" font-weight="700">MARKETPLACE</text>
+<text x="922.9000000000001" y="236" fill="#fff" font-size="21" font-weight="700">Seu próximo encontro</text>
+<text x="922.9000000000001" y="262" fill="#fff" font-size="21" font-weight="700">começa aqui.</text>
+<text x="922.9000000000001" y="288" fill="#c3b7d2" font-size="11" font-weight="400">Descubra talentos e consulte a agenda.</text>
+<rect x="922.9000000000001" y="308" width="190" height="42" rx="9" fill="#bd9bef" stroke="#bd9bef"/>
+<text x="936.9000000000001" y="334" fill="#20132e" font-size="12" font-weight="700">Abrir marketplace</text>
+<rect x="270.0" y="392" width="275.0" height="88" rx="14" fill="#201c2e" stroke="#43374f"/>
+<text x="284.0" y="416" fill="#b6abc9" font-size="10" font-weight="400">Shows do mês</text>
+<text x="284.0" y="453" fill="#fff" font-size="22" font-weight="700">8</text>
+<rect x="557.0" y="392" width="275.0" height="88" rx="14" fill="#201c2e" stroke="#43374f"/>
+<text x="571.0" y="416" fill="#b6abc9" font-size="10" font-weight="400">Receita do mês</text>
+<text x="571.0" y="453" fill="#fff" font-size="22" font-weight="700">R$ 6.200</text>
+<rect x="844.0" y="392" width="275.0" height="88" rx="14" fill="#201c2e" stroke="#43374f"/>
+<text x="858.0" y="416" fill="#b6abc9" font-size="10" font-weight="400">Convites pendentes</text>
+<text x="858.0" y="453" fill="#fff" font-size="22" font-weight="700">3</text>
+<rect x="1131.0" y="392" width="275.0" height="88" rx="14" fill="#201c2e" stroke="#43374f"/>
+<text x="1145.0" y="416" fill="#b6abc9" font-size="10" font-weight="400">Perfil completo</text>
+<text x="1145.0" y="453" fill="#fff" font-size="22" font-weight="700">83%</text>
+<rect x="270" y="504" width="1136" height="152" rx="14" fill="#201c2e" stroke="#43374f"/>
+<text x="288" y="532" fill="#fff" font-size="18" font-weight="700">Seu dinheiro, à vista</text>
+<text x="288" y="560" fill="#b6abc9" font-size="11" font-weight="400">Últimos recebimentos</text>
+<text x="288" y="584" fill="#f5efff" font-size="12" font-weight="400">Show de sexta</text>
+<text x="1312" y="584" fill="#c5a6ff" font-size="13" font-weight="700">R$ 850</text>
+<text x="288" y="609" fill="#b6abc9" font-size="11" font-weight="400">Próximos recebimentos</text>
+<text x="288" y="634" fill="#f5efff" font-size="12" font-weight="400">Casa Aurora</text>
+<text x="1296" y="634" fill="#c5a6ff" font-size="13" font-weight="700">R$ 1.200</text>
+<rect x="270" y="674" width="1136" height="106" rx="14" fill="#201c2e" stroke="#43374f"/>
+<text x="288" y="702" fill="#fff" font-size="18" font-weight="700">Oportunidades para você</text>
+<text x="288" y="727" fill="#b6abc9" font-size="11" font-weight="400">Pagode · Sertanejo · Região · Favoritos</text>
+<text x="288" y="756" fill="#c5a6ff" font-size="11" font-weight="700">Abrir descoberta na prévia autorizada →</text>
+<rect x="270" y="798" width="1136" height="121" rx="14" fill="#201c2e" stroke="#43374f"/>
+<text x="288" y="826" fill="#fff" font-size="18" font-weight="700">Atividades recentes</text>
+<text x="288" y="853" fill="#b6abc9" font-size="11" font-weight="400">Convite recebido · Casa Aurora</text>
+<text x="288" y="877" fill="#b6abc9" font-size="11" font-weight="400">Recebimento registrado · R$ 850</text>
+<text x="288" y="901" fill="#b6abc9" font-size="11" font-weight="400">Novo evento na agenda</text>
+<text x="270" y="944" fill="#bfa3e5" font-size="10" font-weight="700">AÇÕES RÁPIDAS</text>
+<text x="270" y="969" fill="#f5efff" font-size="12" font-weight="400">Disponibilidade · Editar perfil · Agenda</text>
+<text x="270" y="991" fill="#f5efff" font-size="12" font-weight="400">Marketplace · Criar evento</text>
+<text x="270" y="1025" fill="#9385a8" font-size="9" font-weight="400">WIREFRAME · dados ilustrativos · liberação do catálogo preservada</text>
+</svg>

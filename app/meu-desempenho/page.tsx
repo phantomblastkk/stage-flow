@@ -290,7 +290,7 @@ export default function MusicianPerformancePage(){
                 <p>{!report.marketplace_launched
                   ?"O catálogo público continua em “Em breve”. Exibições registradas agora vêm apenas de testes autorizados."
                   :"As exibições passam a ser registradas quando seus cartões aparecem nas buscas e nos destaques."}</p>
-                <Link className="reach-portfolio-link" href="/meu-portfolio">
+                <Link className="reach-portfolio-link" href="/perfil-artistico?aba=instrumentista">
                   Gerenciar meu portfólio <ArrowRight size={15}/>
                 </Link>
                 {report.portfolio_published&&report.slug&&

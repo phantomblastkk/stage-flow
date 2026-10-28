@@ -4,19 +4,19 @@ import {useCallback,useEffect,useRef,useState} from "react";
 import Link from "next/link";
 import {
  ArrowUpRight,CalendarCheck2,CalendarDays,CheckCircle2,
- CircleDollarSign,Clock3,Inbox,MessageCircle,Plus,RefreshCw,
- Sparkles,Wallet
+ Clock3,Inbox,MessageCircle,Plus,RefreshCw,
+ Sparkles,Store,UserRound
 } from "lucide-react";
 import {createClient} from "@/lib/supabase/client";
-import {Button,Card,EmptyState,LoadingState,StatCard,StatusChip} from "@/src/components/ui";
-import WorkspaceNextStep from "./workspace-next-step";
+import {Button,Card,EmptyState,LoadingState,StatusChip} from "@/src/components/ui";
+import OperationalFinance from "./operational-finance";
+import ProfileReadiness from "./profile-readiness";
 
 type Show={id:string;title:string;starts_at:string;venue:string|null;city:string|null;kind:"organized"|"participation"};
 type Activity={id:string;type:string;title:string;summary:string;created_at:string;read:boolean;href:string};
 type Metrics={shows_week:number;pending_invites:number;unread_conversations:number;pending_contacts:number;received_month:number};
 type Overview={status:string;metrics:Metrics;upcoming:Show[];activity:Activity[];updated_at:string};
 
-const brl=new Intl.NumberFormat("pt-BR",{style:"currency",currency:"BRL",maximumFractionDigits:2});
 const date=new Intl.DateTimeFormat("pt-BR",{day:"2-digit",month:"short",hour:"2-digit",minute:"2-digit",timeZone:"America/Sao_Paulo"});
 const day=new Intl.DateTimeFormat("pt-BR",{day:"2-digit",timeZone:"America/Sao_Paulo"});
 const month=new Intl.DateTimeFormat("pt-BR",{month:"short",timeZone:"America/Sao_Paulo"});
@@ -75,6 +75,7 @@ export default function WorkspaceOverview({isMusician,isSinger,isProducer}:{
  },[refresh]);
 
  const metrics=data?.metrics;
+ const nextShow=data?.upcoming?.[0];
  return <div className="sf-workspace-overview">
   <div className="sf-workspace-pane-head">
    <div><h2>Visão geral</h2><p>Prioridades do dia, sem navegar por dez páginas.</p></div>
@@ -85,49 +86,30 @@ export default function WorkspaceOverview({isMusician,isSinger,isProducer}:{
   {error&&<div className="sf-workspace-error" role="alert">{error}
     <button type="button" onClick={()=>void refresh(true)} className="sf-workspace-retry">Tentar novamente</button>
   </div>}
-  {loading&&!data?<LoadingState label="Preparando seu resumo personalizado…"/>:
-   metrics&&<div className="sf-workspace-stat-grid">
-    <StatCard label="Shows nos próximos 7 dias"
-     value={safeCount(metrics.shows_week)}
-     icon={<CalendarDays size={20}/>}
-     description="Agenda própria e participações confirmadas."
-     action={<Link href="/eventos">Ver agenda <ArrowUpRight size={12}/></Link>}/>
-    <StatCard label="Convites pendentes"
-     value={safeCount(metrics.pending_invites)}
-     icon={<Inbox size={20}/>}
-     description="Convites recebidos que aguardam sua resposta."
-     action={<Link href="/meus-convites">Responder convites <ArrowUpRight size={12}/></Link>}/>
-    <StatCard label="Conversas não lidas"
-     value={safeCount(metrics.unread_conversations)}
-     icon={<MessageCircle size={20}/>}
-     description="Contagem de conversas, não de mensagens individuais."
-     action={<Link href="/conversas">Abrir conversas <ArrowUpRight size={12}/></Link>}/>
-    <StatCard label="Recebido registrado no mês"
-     value={brl.format(Math.max(0,Number(metrics.received_month)||0))}
-     icon={<Wallet size={20}/>}
-     description="Registros manuais de shows do mês; não confirma liquidação bancária."
-     action={<Link href="/financeiro">Ver financeiro <ArrowUpRight size={12}/></Link>}/>
-   </div>}
+  {loading&&!data?<LoadingState label="Preparando seu resumo personalizado…"/>:metrics&&<>
+   <p className="sf-operations-summary">Você tem <Link href="/eventos"><strong>{safeCount(metrics.shows_week)} shows</strong> nos próximos 7 dias</Link>, <Link href="/meus-convites"><strong>{safeCount(metrics.pending_invites)} convites</strong> aguardando resposta</Link> e <Link href="/conversas"><strong>{safeCount(metrics.unread_conversations)} conversas</strong> para acompanhar</Link>.</p>
+   <div className="sf-operations-hero">
+    <Card className="sf-operations-next-show"><span className="eyebrow">PRÓXIMO SHOW</span>
+     {nextShow?<><h2>{nextShow.title}</h2><p>{nextShow.venue||"Local a definir"}{nextShow.city?" · "+nextShow.city:""}</p><p>{date.format(new Date(nextShow.starts_at))}</p><Link className="sf-ui-button sf-ui-button-primary" href={"/eventos?evento="+encodeURIComponent(nextShow.id)}>Ver detalhes <ArrowUpRight size={16}/></Link></>:<><h2>Seu próximo palco está por vir</h2><p>Confira os convites ou organize um novo show.</p><Link className="sf-ui-button sf-ui-button-primary" href="/eventos?novo=1">Criar evento</Link></>}
+    </Card>
+    <Card className="sf-operations-market"><span className="eyebrow">MARKETPLACE</span><h2>Seu próximo encontro começa aqui.</h2><p>Descubra profissionais, consulte disponibilidade e conecte seu evento a novos talentos.</p><Link className="sf-ui-button sf-ui-button-primary" href="/marketplace"><Store size={18}/> Abrir marketplace <ArrowUpRight size={16}/></Link><small>O catálogo está em preparação. A prévia continua restrita às contas autorizadas.</small></Card>
+   </div>
+   <div className="sf-operations-status"><Link href="/meus-convites"><strong>{safeCount(metrics.pending_invites)}</strong> convites pendentes · Responder →</Link><ProfileReadiness/></div>
+   <OperationalFinance revision={latestRequest.current}/>
+   <Card className="sf-operations-opportunities"><div className="sf-workspace-pane-head"><div><h2>Oportunidades para você</h2><p>Explore por estilo, região e disponibilidade. O acesso à descoberta permanece restrito à prévia autorizada.</p></div><Store size={20}/></div><div className="sf-workspace-quick-actions"><Link href="/marketplace/preview?estilo=Pagode">Pagode</Link><Link href="/marketplace/preview?estilo=Sertanejo">Sertanejo</Link><Link href="/marketplace/preview?aba=favoritos">Favoritos</Link><Link href="/contratar">Artistas e grupos</Link></div><p className="sf-operations-muted">Ainda não há uma fonte de vagas de casas e eventos publicada. Estes acessos abrem buscas reais no catálogo; não representam ofertas de trabalho.</p></Card>
+  </>}
   {metrics&&safeCount(metrics.pending_contacts)>0&&<Link href="/meu-perfil-artistico/solicitacoes"
    className="sf-workspace-contact-alert"><Inbox size={18}/>Você tem
    <strong>{safeCount(metrics.pending_contacts)} pedido(s) de contratação</strong>
    aguardando resposta. <ArrowUpRight size={15}/></Link>}
-  {metrics&&<WorkspaceNextStep
-   metrics={{
-    shows_week:safeCount(metrics.shows_week),
-    pending_invites:safeCount(metrics.pending_invites),
-    unread_conversations:safeCount(metrics.unread_conversations),
-    pending_contacts:safeCount(metrics.pending_contacts)
-   }}
-   isMusician={isMusician} isSinger={isSinger} isProducer={isProducer}/>}
   {data&&<div className="sf-workspace-columns">
    <Card>
     <div className="sf-workspace-pane-head">
-     <div><h2>Próximas atividades</h2><p>Seus próximos compromissos confirmados e organizados.</p></div>
+     <div><h2>Sua agenda</h2><p>Seus próximos compromissos confirmados e organizados.</p></div>
      <Link href="/eventos">Agenda <ArrowUpRight size={15}/></Link>
     </div>
-    {data?.upcoming?.length?<div className="sf-workspace-show-list">
-     {data.upcoming.map(show=><Link href={"/eventos?evento="+encodeURIComponent(show.id)}
+    {(data?.upcoming?.length??0)>1?<div className="sf-workspace-show-list">
+     {data.upcoming.slice(1,4).map(show=><Link href={"/eventos?evento="+encodeURIComponent(show.id)}
       className="sf-workspace-show-link" key={show.id}>
       <span className="sf-workspace-show-date">
        <strong>{day.format(new Date(show.starts_at))}</strong>
@@ -140,8 +122,8 @@ export default function WorkspaceOverview({isMusician,isSinger,isProducer}:{
       </span><ArrowUpRight size={16}/>
      </Link>)}
     </div>:<EmptyState icon={<CalendarDays size={24}/>}
-      title="Sua próxima apresentação começa aqui"
-      description="Nenhum show futuro cadastrado. Organize uma data ou acompanhe os convites recebidos."
+      title="Sua agenda está em dia"
+      description="Os demais shows confirmados aparecerão aqui."
       action={<Link href="/eventos" className="sf-workspace-empty-action"><Plus size={16}/> Abrir agenda</Link>}/>}
    </Card>
    <Card>
@@ -168,15 +150,14 @@ export default function WorkspaceOverview({isMusician,isSinger,isProducer}:{
   </div>}
   {data&&<Card className="sf-workspace-action-card">
    <div className="sf-workspace-pane-head">
-    <div><h2>Acessos rápidos</h2><p>Suas ações mais comuns, sem passar por vários menus.</p></div>
+    <div><h2>Ações rápidas</h2><p>Suas ações mais comuns, sem passar por vários menus.</p></div>
    </div>
    <div className="sf-workspace-quick-actions">
-    <Link href="/eventos"><Plus size={16}/>Organizar show</Link>
-    {isMusician&&<Link href="/meus-convites"><Inbox size={16}/>Responder convites</Link>}
-    {isMusician&&<Link href="/meu-portfolio"><Sparkles size={16}/>Editar portfólio</Link>}
-    {isSinger&&<Link href="/meu-perfil-artistico"><Sparkles size={16}/>Editar perfil de cantor</Link>}
-    {isProducer&&<Link href="/convites"><MessageCircle size={16}/>Convidar músicos</Link>}
-    <Link href="/financeiro"><CircleDollarSign size={16}/>Ver financeiro</Link>
+    <Link href="/minha-disponibilidade"><CalendarDays size={16}/>Atualizar disponibilidade</Link>
+    <Link href="/perfil-artistico"><UserRound size={16}/>Editar perfil</Link>
+    <Link href="/marketplace"><Store size={16}/>Abrir marketplace</Link>
+    <Link href="/eventos"><CalendarDays size={16}/>Ver agenda</Link>
+    <Link href="/eventos?novo=1"><Plus size={16}/>Criar evento</Link>
    </div>
   </Card>}
   {data&&<p className="sf-workspace-asof">Resumo de dados reais, atualizado {timeAgo(data.updated_at)}.

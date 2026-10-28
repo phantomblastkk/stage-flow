@@ -32,8 +32,8 @@ export default function Assinatura(){
    <span className="eyebrow"><Crown size={16}/> ASSINATURA DO CANTOR</span>
    <h1 style={{margin:"18px 0"}}>Seu StageFlow <span className="accent">Pro.</span></h1>
    {checking?<p role="status"><LoaderCircle size={18}/> Consultando seu acesso...</p>:
-    access?.entitled?<><p role="status"><CheckCircle2 size={19}/> Sua conta já possui acesso Pro autorizado.</p><Link className="btn btn-primary" href="/meu-perfil-artistico/site-profissional">Acessar meu site Pro</Link></>:
-    <><p>Site profissional, portfólio avançado, análises financeiras e subdomínio estarão incluídos na versão Pro do cantor.</p>
+    access?.entitled?<><p role="status"><CheckCircle2 size={19}/> Sua conta já possui acesso Pro autorizado.</p><Link className="btn btn-primary" href="/perfil-artistico?aba=midia">Acessar meu Perfil Artístico</Link></>:
+    <><p>Perfil Artístico, portfólio avançado, análises financeiras e subdomínio estarão incluídos na versão Pro do cantor.</p>
      <p role="status" style={{display:"flex",gap:10,alignItems:"center"}}><LockKeyhole size={19}/> Assinatura ainda indisponível. Não estamos recebendo pagamentos nem registrando compras.</p>
      {message&&<p>{message}</p>}
      <Link className="btn btn-quiet" href="/planos">Conferir benefícios do Pro</Link>

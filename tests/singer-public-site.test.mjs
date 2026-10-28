@@ -89,11 +89,11 @@ test("singer URL helpers use the one canonical free-and-Pro public path",()=>{
 });
 
 test("singer has one editing workspace for free identity and Pro features",()=>{
- const editor=source("app/meu-perfil-artistico/page.tsx");
+ const editor=source("components/artist-profile-editor.tsx");
  const premium=source("components/singer-pro-editor.tsx");
  const legacyEditor=source("app/meu-perfil-artistico/site-profissional/page.tsx");
  assert.match(editor,/import SingerProEditor from/);
- assert.match(editor,/aria-label="Áreas do perfil de cantor"/);
+ assert.match(editor,/aria-label="Áreas do Perfil Artístico"/);
  assert.match(editor,/Dados e publicação/);
  assert.match(editor,/Aparência e galerias/);
  assert.match(editor,/activeTab === "dados"/);
@@ -102,7 +102,7 @@ test("singer has one editing workspace for free identity and Pro features",()=>{
  assert.match(editor,/style=\{\{ display: activeTab === "dados" \? "block" : "none" \}\}/);
  assert.match(editor,/singer-editor-canonical/);
  assert.doesNotMatch(editor,/href="\/meu-perfil-artistico\/site-profissional"/);
- assert.match(legacyEditor,/redirect\("\/meu-perfil-artistico\?aba=pro"\)/);
+ assert.match(legacyEditor,/redirect\("\/perfil-artistico\?aba=midia"\)/);
  assert.match(premium,/MESMO PERFIL PÚBLICO/);
  assert.match(premium,/O link antigo com \/pro\/ apenas redireciona/);
  assert.doesNotMatch(premium,/publicado em <strong>\/pro\//);
@@ -115,7 +115,7 @@ test("singer has one editing workspace for free identity and Pro features",()=>{
 
 test("musician showcase has calm colors, safe previews, and a real full-screen editor",()=>{
  const view=source("components/musician-portfolio-view.tsx");
- const musicianEditor=source("app/meu-portfolio/page.tsx");
+ const musicianEditor=source("components/instrumentalist-profile-editor.tsx");
  const musicianCss=source("components/musician-portfolio-polish.css");
  const editorCss=source("app/meu-portfolio/musician-portfolio-editor.css");
  const singerCss=source("app/meu-perfil-artistico/site-profissional/premium-preview.css");
@@ -139,7 +139,7 @@ test("musician showcase has calm colors, safe previews, and a real full-screen e
 test("free singer chosen accent applies to the one shared public design",()=>{
  assert.match(shared,/palette\.includes\(artist\.accent as Accent\)/);
  assert.match(shared,/accent:palette\.includes/);
- const freeEditor=source("app/meu-perfil-artistico/page.tsx");
+ const freeEditor=source("components/artist-profile-editor.tsx");
  assert.match(freeEditor,/\["lime", "Rosa", "#e6a3c8"\]/);
  const themes=source("app/meu-perfil-artistico/site-profissional/premium-preview.css");
  assert.match(themes,/\.premium-site-lime\{--pro-accent:#e6a3c8/);
@@ -155,7 +155,7 @@ test("public musician sharing falls back to a selectable URL when clipboard is b
 });
 
 test("switching singer editor tabs refreshes eligibility and preserves the Pro draft",()=>{
- const editor=source("app/meu-perfil-artistico/page.tsx");
+ const editor=source("components/artist-profile-editor.tsx");
  const premium=source("components/singer-pro-editor.tsx");
  const publication=source("app/meu-perfil-artistico/site-profissional/pro-publish-controls.tsx");
  assert.match(editor,/proVisited &&/);
@@ -171,7 +171,7 @@ test("switching singer editor tabs refreshes eligibility and preserves the Pro d
 
 test("singer headline is written once in the autograph area, not repeated in the introduction",()=>{
  const presentation=source("lib/profile-presentation.ts");
- const editor=source("app/meu-perfil-artistico/page.tsx");
+ const editor=source("components/artist-profile-editor.tsx");
  assert.match(presentation,/export function distinctPublicBiography/);
  assert.match(presentation,/normalizeProfileCopy\(text\) === normalizeProfileCopy\(signature\)/);
  assert.match(presentation,/toLocaleLowerCase\("pt-BR"\)/);

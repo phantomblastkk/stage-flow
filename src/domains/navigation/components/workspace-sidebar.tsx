@@ -3,7 +3,7 @@
 import {useEffect,useRef,useState} from "react";
 import Link from "next/link";
 import {usePathname} from "next/navigation";
-import {Menu,PanelLeftClose,X,ChevronDown} from "lucide-react";
+import {Menu,PanelLeftClose,X,ChevronDown,CalendarDays,Inbox,Store,Wallet} from "lucide-react";
 import {
   homeItem,workspaceNavigation,
   type WorkspaceRole,type WorkspaceNavItem
@@ -67,7 +67,7 @@ export default function WorkspaceSidebar({role}:{role:WorkspaceRole}){
   </div>
   <nav className="sf-workspace-group-list" aria-label="Navegação do StageFlow">
    <WorkspaceLink item={homeItem} path={path} onNavigate={()=>setMobileOpen(false)}/>
-   {groups.map(group=><details className="sf-workspace-group" key={group.title}
+   {groups.map(group=>group.href?<WorkspaceLink key={group.title} item={{label:group.title,href:group.href,icon:group.icon}} path={path} onNavigate={()=>setMobileOpen(false)}/>:<details className="sf-workspace-group" key={group.title}
      open={expanded[group.title]??(group.items.some(x=>path===x.href.split("?")[0]||
       path.startsWith(x.href.split("?")[0]+"/"))||group.title==="Agenda")}
      onToggle={event=>{
@@ -88,10 +88,10 @@ export default function WorkspaceSidebar({role}:{role:WorkspaceRole}){
  </>;
  const bottom=[
   homeItem,
-  {label:"Agenda",href:"/eventos",icon:groups[0].icon},
-  {label:"Contratações",href:role.isMusician?"/meus-convites":"/conversas",icon:groups[1].icon},
-  {label:"Negócios",href:"/financeiro",icon:groups[2].icon},
-  {label:"Conta",href:"/minha-conta",icon:groups[groups.length-1].icon}
+  {label:"Agenda",href:"/eventos",icon:CalendarDays},
+  {label:"Convites",href:role.isMusician?"/meus-convites":"/conversas",icon:Inbox},
+  {label:"Marketplace",href:"/marketplace",icon:Store},
+  {label:"Financeiro",href:"/financeiro",icon:Wallet}
  ];
  return <>
   <aside className="sf-workspace-sidebar">{nav}</aside>

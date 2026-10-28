@@ -9,6 +9,7 @@ export default function robots():MetadataRoute.Robots{
  }
  return {
   rules:[{userAgent:"*",allow:"/",disallow:[
+   "/perfil-artistico","/perfis","/contratar",
    "/api/","/auth/","/login","/cadastro","/painel",
    "/admin/","/assinatura","/configuracoes","/minha-conta",
    "/minha-disponibilidade","/meu-desempenho","/meu-portfolio",

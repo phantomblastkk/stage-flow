@@ -270,7 +270,7 @@ export default function ArtistBookingInboxPage() {
           <Inbox size={32}/>
           <h2>{filter === "archived" ? "Nenhuma solicitação arquivada." : "Nenhuma solicitação por enquanto."}</h2>
           <p>Quando alguém preencher o formulário da sua página gratuita de cantor, o pedido aparecerá aqui.</p>
-          <Link className="btn btn-primary" href="/meu-perfil-artistico">Minha página artística <ArrowUpRight size={15}/></Link>
+          <Link className="btn btn-primary" href="/perfil-artistico">Minha página artística <ArrowUpRight size={15}/></Link>
         </div> : <div className="booking-inbox-list">
           {visible.map(item => {
             const whatsapp = waLink(item.contact_phone);

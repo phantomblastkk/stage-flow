@@ -10,13 +10,14 @@ import NotificationBell from "@/components/notification-bell";
 import DashboardAccountMenu from "@/components/dashboard-account-menu";
 import { useAccount } from "@/src/domains/account/account-context";
 import "./painel-account-actions.css";
+import {greeting} from "@/src/domains/dashboard/model/operational-summary";
 
 type ArtistKind = "lead" | "support";
 export default function Dashboard() {
   const router = useRouter();
   const {snapshot:account,refresh:refreshAccount}=useAccount();
   const profile=account.profile;
-  const email=account.user?.email||"";
+
   const {isOwnerAdmin,partnerHouseCount}=account.permissions;
   const [singerPhoto,setSingerPhoto]=useState<string|null>(null);
   const [musicianPhoto,setMusicianPhoto]=useState<string|null>(null);
@@ -120,9 +121,9 @@ export default function Dashboard() {
       </header>
       <section className="sf-workspace-welcome">
         <span className="eyebrow"><span className="dot"/> SEU STAGEFLOW · {roleLabel.toUpperCase()}</span>
-        <h1>Olá, <span>{profile?.display_name||"bem-vindo(a)"}</span>!</h1>
+        <h1>{greeting()}, <span>{profile?.display_name?.split(" ")[0]||"bem-vindo(a)"}</span> 👋</h1>
         <p>O que merece sua atenção hoje? Suas tarefas, shows e oportunidades em um só lugar.</p>
-        {email&&<p className="sf-workspace-private-email">Conta: {email}</p>}
+
       </section>
 
       {message&&<div role={messageError?"alert":"status"}
@@ -144,8 +145,6 @@ export default function Dashboard() {
       <WorkspaceOverview isSinger={Boolean(profile?.is_singer)}
         isMusician={Boolean(profile?.is_musician)}
         isProducer={Boolean(profile?.is_producer)}/>
-      <p className="sf-workspace-asof">O painel reúne funções já existentes; as antigas URLs continuam válidas.
-        Sua função ativa não altera contratações, permissões, planos ou cachês.</p>
     </div>
   </main>;
 }

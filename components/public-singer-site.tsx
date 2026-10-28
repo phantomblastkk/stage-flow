@@ -275,7 +275,7 @@ export default function PublicSingerSite(){
   }
 
   if(loading)return <main className="pro-public-loading">
-    <LoaderCircle size={22}/> Carregando site profissional...
+    <LoaderCircle size={22}/> Carregando Perfil Artístico...
   </main>;
 
   if(!artist||!data)return <main className="pro-public-unavailable">
@@ -293,7 +293,7 @@ export default function PublicSingerSite(){
         <Link href="/" className="premium-site-brand">
           <span className="premium-site-signal"><Music2 size={20}/></span> STAGE FLOW
         </Link>
-        <nav aria-label="Navegação do site profissional">
+        <nav aria-label="Navegação do Perfil Artístico">
           {visible.map(id=><a key={id} href={anchor(id)}>{sectionLabels[id]}</a>)}
         </nav>
         <button type="button" className="pro-public-share" onClick={()=>void share()}>

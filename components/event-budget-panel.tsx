@@ -424,7 +424,7 @@ export default function EventBudgetPanel({ eventId, refreshToken = 0 }: Props) {
         </div>
       </div>
       <p className="event-budget-privacy"><LockKeyhole size={14}/>
-        Seus dados não aparecem na página do cantor ou no site profissional.
+        Seus dados não aparecem na página do cantor ou no Perfil Artístico.
         Nenhum registro financeiro realiza transferência, cobrança ou comprova pagamento.
       </p>
     </>}

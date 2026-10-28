@@ -9,10 +9,10 @@ const singer=src("components/public-singer-site.tsx");
 const musician=src("components/musician-portfolio-view.tsx");
 const menu=src("components/dashboard-account-menu.tsx");
 const panel=src("app/painel/page.tsx");
-const musicianEditor=src("app/meu-portfolio/page.tsx");
+const musicianEditor=src("components/instrumentalist-profile-editor.tsx");
 const contactEditor=src("components/booking-contact-settings.tsx");
 const contactHelpers=src("lib/booking-contact.ts");
-const singerEditor=src("app/meu-perfil-artistico/page.tsx");
+const singerEditor=src("components/artist-profile-editor.tsx");
 
 test("booking phone is opt-in, account-scoped and never uses private WhatsApp preferences",()=>{
  assert.match(contactSql,/create table if not exists public\.stage_public_booking_contacts/);

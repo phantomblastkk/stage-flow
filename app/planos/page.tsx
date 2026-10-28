@@ -12,7 +12,7 @@ const free = [
 const professional = [
   "Todos os recursos gratuitos",
   "Relatórios financeiros avançados do cantor e exportação detalhada",
-  "Site profissional exclusivo do cantor",
+  "Perfil Artístico exclusivo do cantor",
   "Temas, cores e layouts especiais para portfólio artístico",
   "Galeria profissional, vídeos e destaques de portfólio",
   "Publicação Pro com autorização da conta",

@@ -94,7 +94,7 @@ export function usePremiumGallery(enabled: boolean) {
         invalid_order: "A ordem dos trabalhos mudou. Recarregue a galeria e tente novamente.",
         not_found: "Este trabalho não foi encontrado na sua conta.",
         duplicate: "Esta foto já está na galeria.",
-        published_media_in_use: "Esta foto está no site Pro publicado. Retire o site Pro do ar antes de excluí-la da galeria; depois publique novamente."
+        published_media_in_use: "Esta foto está no Perfil Artístico publicado. Retire o Perfil Artístico do ar antes de excluí-la da galeria; depois publique novamente."
       };
       setError(rpcError?.message || reasons[String(data)] || "Não foi possível concluir a operação.");
       setBusy(false);
@@ -258,12 +258,12 @@ export function PremiumGalleryEditor({ gallery }: { gallery: PremiumGallery }) {
     if (await gallery.rename(item.id, editingTitle.trim())) setEditingId(null);
   }
 
-  return <section className="premium-media-editor" aria-label="Galeria do seu site profissional">
+  return <section className="premium-media-editor" aria-label="Galeria do seu Perfil Artístico">
     <div className="premium-media-editor-heading">
       <div>
-        <span className="premium-design-eyebrow"><ImagePlus size={15}/> GALERIA DO SITE PROFISSIONAL</span>
+        <span className="premium-design-eyebrow"><ImagePlus size={15}/> GALERIA DO Perfil Artístico</span>
         <h2>Fotos e vídeos, cada um no seu espaço.</h2>
-        <p>O site Pro permite até 3 fotos e 3 vídeos, com espaços separados para cada tipo de mídia.</p>
+        <p>O Perfil Artístico permite até 3 fotos e 3 vídeos, com espaços separados para cada tipo de mídia.</p>
       </div>
       <div className="premium-media-limit-counts" aria-label="Limites da galeria">
         <span className={photoFull ? "is-full" : ""}>Fotos: {photoCount}/{MAX_PER_TYPE}</span>
@@ -309,7 +309,7 @@ export function PremiumGalleryEditor({ gallery }: { gallery: PremiumGallery }) {
           disabled={gallery.busy || videoFull}>
           <PlayCircle size={16}/> Adicionar vídeo
         </button>
-        <small>O vídeo será reproduzido dentro do site Pro. Também haverá um link direto para o YouTube.</small>
+        <small>O vídeo será reproduzido dentro do Perfil Artístico. Também haverá um link direto para o YouTube.</small>
       </form>
     </div>
 
@@ -319,7 +319,7 @@ export function PremiumGalleryEditor({ gallery }: { gallery: PremiumGallery }) {
       <p className="premium-media-cap-notice" role="status">
         Você possui mídias cadastradas antes do novo limite. Nenhum arquivo foi apagado;
         somente as 3 primeiras fotos e os 3 primeiros vídeos (priorizando o destaque)
-        aparecerão na prévia e no site Pro. Os demais continuam no seu rascunho
+        aparecerão na prévia e no Perfil Artístico. Os demais continuam no seu rascunho
         para você organizar ou remover.
       </p>}
     {gallery.loading ? <p className="premium-media-loading"><LoaderCircle size={16}/> Carregando trabalhos...</p> :
@@ -390,7 +390,7 @@ export function PremiumGalleryEditor({ gallery }: { gallery: PremiumGallery }) {
     }
     <p className="premium-media-privacy">
       <strong>Galeria do rascunho:</strong> os arquivos permanecem privados no Supabase.
-      Só as fotos que você escolher publicar com o botão <strong>Publicar site Pro</strong>
+      Só as fotos que você escolher publicar com o botão <strong>Publicar Perfil Artístico</strong>
       poderão ser baixadas por visitantes, enquanto o site estiver no ar.
       As demais fotos e os dados dos convites continuam privados.
       O player do YouTube só é carregado quando alguém pede para reproduzir.
