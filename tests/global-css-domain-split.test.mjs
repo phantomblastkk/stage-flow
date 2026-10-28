@@ -49,7 +49,8 @@ test("authentication and signup rules are scoped to the auth domain while respon
   assert.match(responsive, /\.auth-wrap\{grid-template-columns:1fr\}/);
   for (const selector of [".signup-role-picker", ".signup-role-grid", ".signup-role-card", ".signup-producer-add"])
     assert.ok(signup.includes(selector), "Signup selector missing: " + selector);
-  assert.doesNotMatch(later, /\.signup-role-card\{/);
+  assert.doesNotMatch(later, /\.signup-role-card\{\s*appearance:/);
+  assert.match(later, /\.signup-role-card\{min-height:132px\}/);
   assert.match(later, /\.auth-main/);
   assert.match(later, /\.artist-mobile-edit-steps/);
   assert.match(later, /\.home-verified-artists/);
