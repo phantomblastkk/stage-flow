@@ -90,3 +90,31 @@
 .singer-unified-editor .artist-free-editor-preview-info{
   padding-bottom:18px
 }
+
+/* Etapas reais no celular: campos persistem montados, apenas a secao atual aparece. */
+.artist-wizard-group{display:grid;gap:12px;min-width:0}
+.artist-wizard-identity{min-width:0}
+.artist-wizard-extras{display:grid;gap:11px;min-width:0}
+@media(max-width:850px){
+ .artist-wizard-mode{grid-template-columns:minmax(0,1fr)}
+ .artist-wizard-mode [data-editor-step]{display:none!important}
+ .artist-wizard-mode[data-editor-active="0"] [data-editor-step="0"],
+ .artist-wizard-mode[data-editor-active="1"] [data-editor-step="1"],
+ .artist-wizard-mode[data-editor-active="2"] [data-editor-step="2"],
+ .artist-wizard-mode[data-editor-active="3"] [data-editor-step="3"]{display:block!important}
+ .artist-wizard-mode[data-editor-active="0"] .artist-wizard-group[data-editor-step="0"],
+ .artist-wizard-mode[data-editor-active="1"] .artist-wizard-group[data-editor-step="1"],
+ .artist-wizard-mode[data-editor-active="2"] .artist-wizard-group[data-editor-step="2"],
+ .artist-wizard-mode[data-editor-active="3"] .artist-wizard-group[data-editor-step="3"],
+ .artist-wizard-mode[data-editor-active="3"] .artist-wizard-extras{display:grid!important}
+ .artist-wizard-mode>.artist-wizard-preview{display:none!important}
+ .artist-wizard-mode[data-editor-active="3"]>.artist-wizard-preview{display:grid!important}
+ .artist-wizard-mode>.feature{padding:15px;min-width:0}
+ .artist-wizard-mode #artist-main-form{margin-top:0!important}
+ .artist-wizard-mode .field input,.artist-wizard-mode .field select,
+ .artist-wizard-mode .field textarea{font-size:16px}
+ .artist-wizard-mode .field-help{font-size:13px;line-height:1.55}
+ .artist-wizard-mode [id^="artist-edit-"]{scroll-margin-top:95px}
+ .singer-editor-intro{padding-top:14px}
+ .singer-editor-intro .lead{font-size:14px;line-height:1.55}
+}

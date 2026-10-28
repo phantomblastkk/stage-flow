@@ -200,3 +200,26 @@
  .mp-editor-panel input,.mp-editor-panel select,.mp-editor-panel textarea{font-size:16px}
  .mp-editor-panel .field>label{font-size:14px}
 }
+
+/* Wizard sem desmontar campos: preserva rascunho quando o usuario troca de etapa. */
+@media(max-width:850px){
+ .mp-editor-workspace .mp-editor-columns{grid-template-columns:minmax(0,1fr);gap:14px}
+ .mp-editor-workspace [data-editor-step]{display:none!important}
+ .mp-editor-workspace[data-editor-active="0"] [data-editor-step="0"],
+ .mp-editor-workspace[data-editor-active="1"] [data-editor-step="1"],
+ .mp-editor-workspace[data-editor-active="2"] [data-editor-step="2"],
+ .mp-editor-workspace[data-editor-active="3"] [data-editor-step="3"],
+ .mp-editor-workspace[data-editor-active="4"] [data-editor-step="4"]{display:block!important}
+ .mp-editor-workspace[data-editor-active="4"] .mp-editor-preview{display:block!important}
+ .mp-editor-workspace .mp-editor-panel{padding:16px}
+ .mp-editor-workspace .mp-editor-panel>h2{font-size:18px;line-height:1.35}
+ .mp-editor-workspace .mp-editor-panel>p{font-size:13px;line-height:1.6}
+ .mp-editor-workspace .mp-editor-panel input,
+ .mp-editor-workspace .mp-editor-panel select,
+ .mp-editor-workspace .mp-editor-panel textarea{font-size:16px}
+ .mp-editor-workspace .mp-editor-progress small{font-size:12px}
+ .mp-editor-workspace .mp-editor-panel[id]{scroll-margin-top:95px}
+ .mp-editor-workspace .mp-reach-link{margin:12px 0;padding:16px}
+ .mp-editor-workspace .mp-reach-link p{font-size:13px}
+ .mp-editor-workspace .mp-reach-button{min-height:44px;font-size:13px}
+}
