@@ -54,3 +54,9 @@ test("step controls stay disabled until React has hydrated on slow mobile connec
  assert.ok(component.includes("disabled={!ready||disabled}"));
  assert.ok(component.includes("disabled={!ready||disabled||saveDisabled}"));
 });
+
+test("tab changes do not animate scroll and swallow fast taps",()=>{
+ assert.ok(component.includes('scrollIntoView({block:"start",behavior:"auto"})'));
+ assert.ok(!component.includes('behavior:"smooth"'));
+ assert.ok(read("components/mobile-editor-wizard.css").includes(".sf-editor-wizard>p{display:none}"));
+});

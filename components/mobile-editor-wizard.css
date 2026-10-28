@@ -55,3 +55,11 @@
  .sf-editor-wizard-tabs{padding-bottom:0}
  .sf-editor-wizard-head strong{font-size:13px}
 }
+
+/* Compactar o guia para não cobrir os campos em telas pequenas. */
+@media(max-width:850px){
+ .sf-editor-wizard>p{display:none}
+ .sf-editor-wizard{gap:8px;padding:10px 11px}
+ .sf-editor-wizard-head strong{font-size:13px}
+ .sf-editor-wizard-tabs{padding-bottom:0}
+}
