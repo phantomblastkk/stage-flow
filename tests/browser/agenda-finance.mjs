@@ -521,7 +521,7 @@ try {
       await noHorizontalOverflow(page,"saved team "+width);
       if(width===360)assert.ok(await page.getByLabel("Nome da equipe *",{exact:true}).evaluate(n=>parseFloat(getComputedStyle(n).fontSize))>=16);
       await page.screenshot({path:`test-results/saved-team-${width}.png`,fullPage:true});
-      const remove=page.getByRole("button",{name:"Remover",exact:true});await confirm(remove,false);assert.equal(state.savedMembers[threadB].length,1);
+      const remove=page.getByRole("button",{name:"Remover Contato profissional",exact:true});await confirm(remove,false);assert.equal(state.savedMembers[threadB].length,1);
       await confirm(remove,true);await page.getByText("Integrante removido da equipe, sem alterar os convites anteriores.",{exact:true}).waitFor();assert.equal(state.teamWrites.length,1);assert.equal(state.savedMembers[threadA].length,1);
       const del=page.getByRole("button",{name:"Excluir",exact:true});await confirm(del,false);assert.equal(state.savedTeams.length,2);
       await confirm(del,true);await page.getByText("Equipe excluída. Os convites anteriores foram preservados.",{exact:true}).waitFor();assert.equal(state.savedTeams.length,1);assert.equal(state.teamWrites.length,1);
