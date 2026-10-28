@@ -49,7 +49,7 @@ export default function LoginPage() {
       const raw=input.replace(/[^0-9]/g,"");
       const phone=raw.length===10||raw.length===11?"55"+raw:raw;
       const isPhone=!input.includes("@") && /^55[1-9][0-9]{9,10}$/.test(phone);
-      if(!isPhone && !/^\S+@\S+\\.\S+$/.test(input))
+      if(!isPhone && !/^[^@ ]+@[^@ ]+[.][^@ ]+$/.test(input))
         throw new Error("Informe seu e-mail ou WhatsApp com DDD.");
       const { error: signInError } = await supabase.auth.signInWithPassword(
         isPhone?{phone:"+"+phone,password}:{email:input,password}
