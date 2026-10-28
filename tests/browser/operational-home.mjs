@@ -108,6 +108,28 @@ try{
    assert.equal(await instruments.inputValue(),"Cavaquinho, Pandeiro",
     "Switching steps must preserve the musician's unsaved draft");
    assert.equal(await instruments.isVisible(),true);
+   // Janela baixa simula a area visivel reduzida pelo teclado mobile;
+   // nao equivale a um teste de teclado fisico no Safari.
+   await page.setViewportSize({width:375,height:520});
+   await instruments.focus();
+   await page.waitForTimeout(80);
+   const field=await instruments.evaluate(el=>{
+    const r=el.getBoundingClientRect();
+    const guide=el.closest(".mp-editor-workspace")?.querySelector(".sf-editor-wizard");
+    const nav=document.querySelector(".sf-workspace-bottom-nav");
+    return {top:r.top,bottom:r.bottom,font:parseFloat(getComputedStyle(el).fontSize),
+      guidePosition:guide?getComputedStyle(guide).position:null,
+      bottomNav:nav?getComputedStyle(nav).display:null,
+      viewport:innerHeight,overflow:document.documentElement.scrollWidth-innerWidth};
+   });
+   assert.equal(field.guidePosition,"static","Editor guide must stop sticking while a field has focus");
+   assert.equal(field.bottomNav,"none","Keyboard focus must not be covered by fixed bottom navigation");
+   assert.ok(field.font>=16,"Mobile inputs should not trigger iOS auto-zoom");
+   assert.ok(field.overflow<=2,"Editor must not overflow at 375px and short height: "+JSON.stringify(field));
+   assert.ok(field.bottom<=field.viewport+2&&field.top>=-2,
+     "Focused editor field should be visible above keyboard-sized viewport: "+JSON.stringify(field));
+   await page.screenshot({path:"test-results/mobile-editor-keyboard-375.png",fullPage:false});
+   await instruments.blur();await page.setViewportSize({width:360,height:900});
   }
   await page.goto(origin+"/perfis");await page.getByRole("button",{name:"Criar perfil",exact:true}).click();
   const form=page.getByRole("form",{name:"Editar perfil adicional"});await form.getByLabel("Tipo de perfil",{exact:true}).selectOption("group");

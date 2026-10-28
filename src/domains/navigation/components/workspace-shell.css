@@ -273,3 +273,12 @@
  .sf-workspace-role button{font-size:13px;min-height:44px}
  .sf-workspace-welcome p{font-size:14px}
 }
+
+/* Abrir o teclado em um formulário privado não deve deixar a barra fixa
+   sobre o campo ou o botão de enviar. A navegação retorna ao perder foco. */
+@media(max-width:850px){
+ .sf-workspace:has(input:focus,textarea:focus) .sf-workspace-bottom-nav,
+ .sf-workspace-route:has(input:focus,textarea:focus) .sf-workspace-bottom-nav{
+  display:none
+ }
+}

@@ -58,3 +58,23 @@
  .hiring-composer .sf-ui-button{min-width:64px;padding-inline:8px}
  .hiring-composer>div{gap:5px}
 }
+
+/* Foco mobile: compactar a conversa e manter espaço para a composição. */
+@media(max-width:750px){
+ .hiring-layout.has-active{height:clamp(355px,calc(100dvh - 180px),740px);min-height:355px}
+ .hiring-composer:focus-within{padding-bottom:12px}
+ .hiring-composer textarea{resize:none;max-height:100px}
+ .hiring-composer .sf-ui-field label{font-size:13px}
+ .hiring-main{min-height:0}
+}
+@media(max-width:750px) and (max-height:650px){
+ .hiring-heading{padding:10px 0}
+ .hiring-heading h1{font-size:25px}
+ .hiring-heading p{display:none}
+ .hiring-chat-header{padding:9px}
+ .hiring-answers{padding:6px 8px}
+ .hiring-answers span{font-size:11px}
+ .hiring-composer>small{display:none}
+ .hiring-composer{padding:8px}
+ .hiring-composer textarea{height:44px}
+}

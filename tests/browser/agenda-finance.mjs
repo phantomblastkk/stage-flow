@@ -407,6 +407,29 @@ try {
       await page.locator(".hiring-messages").getByText("Rascunho exclusivo B",{exact:true}).waitFor();
       assert.deepEqual(state.sent,[{p_thread_id:threadB,p_body:"Rascunho exclusivo B"}]);
       await noHorizontalOverflow(page,"booking "+width);
+      if(width===360){
+       // Simula um viewport visual curto enquanto o campo de mensagem recebe foco.
+       await page.setViewportSize({width:375,height:520});
+       const input=page.getByLabel("Sua mensagem",{exact:true});
+       await input.focus();
+       await page.waitForTimeout(80);
+       const layout=await page.locator(".hiring-composer").evaluate(el=>{
+        const send=el.querySelector('button[type="submit"]')?.getBoundingClientRect();
+        const panel=el.closest(".hiring-layout").getBoundingClientRect();
+        const nav=document.querySelector(".sf-workspace-bottom-nav");
+        return {sendBottom:send?.bottom,panelBottom:panel.bottom,viewport:innerHeight,
+         nav:nav?getComputedStyle(nav).display:null,
+         textSize:parseFloat(getComputedStyle(el.querySelector("textarea")).fontSize),
+         overflow:document.documentElement.scrollWidth-innerWidth};
+       });
+       assert.equal(layout.nav,"none","Bottom navigation should disappear while typing a message");
+       assert.ok(layout.textSize>=16,"Chat text field should avoid iPhone zoom");
+       assert.ok(layout.sendBottom<=layout.panelBottom+2,
+        "Send button must remain inside the message panel: "+JSON.stringify(layout));
+       assert.ok(layout.overflow<=2,"Chat must not overflow at 375x520: "+JSON.stringify(layout));
+       await page.screenshot({path:"test-results/mobile-chat-keyboard-375.png",fullPage:false});
+       await input.blur();await page.setViewportSize({width:360,height:900});
+      }
       assert.ok(await page.locator(".hiring-composer").evaluate(form=>{
         const panel=form.closest(".hiring-layout").getBoundingClientRect();
         const send=form.querySelector('button[type="submit"]').getBoundingClientRect();
