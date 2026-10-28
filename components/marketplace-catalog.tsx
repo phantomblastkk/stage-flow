@@ -832,6 +832,6 @@ export default function MarketplaceCatalog({preview=false}:Props) {
       key={reportTarget.type+":"+reportTarget.id}
       target={reportTarget} signedIn={authUser}
       onClose={()=>setReportTarget(null)}/>}
-    {authUser&&!preview&&<WorkspaceMobileNav/>}
+    {authUser&&!preview&&!selected&&!reportTarget&&<WorkspaceMobileNav/>}
   </main>;
 }

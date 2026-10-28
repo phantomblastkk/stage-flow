@@ -15,8 +15,8 @@ test("mobile navigation has five consistent destinations including chat and acco
  assert.ok(sidebar.includes("<WorkspaceMobileNav/>"));
  assert.ok(!sidebar.includes('label:"Convites",href:"/meus-convites"'));
 });
-test("Marketplace bottom navigation is restricted to signed-in users",()=>{
- assert.ok(marketplace.includes("authUser&&!preview&&<WorkspaceMobileNav/>"));
+test("Marketplace bottom navigation is shown only for signed-in users outside dialogs",()=>{
+ assert.ok(marketplace.includes("authUser&&!preview&&!selected&&!reportTarget&&<WorkspaceMobileNav/>"));
  assert.ok(marketplace.includes("authUser&&!preview?"));
  assert.ok(shellCss.includes("env(safe-area-inset-bottom)"));
  assert.ok(shellCss.includes("min-height:54px"));
