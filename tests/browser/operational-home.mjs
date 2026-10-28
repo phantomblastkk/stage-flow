@@ -147,20 +147,24 @@ try{
    await page.screenshot({path:"test-results/mobile-editor-keyboard-375.png",fullPage:false});
    await instruments.blur();await page.setViewportSize({width:360,height:900});
   }
+  const waitProfileSave=kind=>page.waitForResponse(r=>r.url().endsWith("/stage_save_performance_profile")&&r.request().postDataJSON()?.p_kind===kind);
   await page.goto(origin+"/perfis");await page.getByRole("button",{name:"Criar perfil",exact:true}).click();
   const form=page.getByRole("form",{name:"Editar perfil adicional"});await form.getByLabel("Tipo de perfil",{exact:true}).selectOption("group");
   await form.getByLabel("Nome",{exact:true}).fill("Pagode do Henrique");await form.getByLabel("Integrantes",{exact:false}).fill("João\nPedro\nHenrique");
-  await form.getByRole("button",{name:"Salvar perfil",exact:true}).click();await page.getByText("Perfil salvo.",{exact:true}).waitFor();assert.equal(writes[0].p_kind,"group");assert.equal(writes[0].p_members.length,3);
+  const groupSaved=waitProfileSave("group");
+  await form.getByRole("button",{name:"Salvar perfil",exact:true}).click();await groupSaved;await page.getByText("Perfil salvo.",{exact:true}).waitFor();assert.equal(writes[0].p_kind,"group");assert.equal(writes[0].p_members.length,3);
   if(width===360){
    await page.getByRole("button",{name:"Criar perfil",exact:true}).click();
    await form.getByLabel("Tipo de perfil",{exact:true}).selectOption("producer");
    await form.getByLabel("Nome",{exact:true}).fill("Produção do Henrique");
    await form.getByRole("checkbox",{name:/Quero usar esta conta também como produtor/}).check();
-   await form.getByRole("button",{name:"Salvar perfil",exact:true}).click();await page.getByText("Perfil salvo.",{exact:true}).waitFor();
+   const producerSaved=waitProfileSave("producer");
+   await form.getByRole("button",{name:"Salvar perfil",exact:true}).click();await producerSaved;await page.getByText("Perfil salvo.",{exact:true}).waitFor();
    await page.getByRole("button",{name:"Criar perfil",exact:true}).click();
    await form.getByLabel("Tipo de perfil",{exact:true}).selectOption("venue");
    await form.getByLabel("Nome",{exact:true}).fill("Casa do Henrique");
-   await form.getByRole("button",{name:"Salvar perfil",exact:true}).click();await page.getByText("Perfil salvo.",{exact:true}).waitFor();
+   const venueSaved=waitProfileSave("venue");
+   await form.getByRole("button",{name:"Salvar perfil",exact:true}).click();await venueSaved;await page.getByText("Perfil salvo.",{exact:true}).waitFor();
    await page.getByRole("heading",{name:"Casa do Henrique",exact:true}).waitFor();
   }
   await page.screenshot({path:`test-results/operational-profiles-${width}.png`,fullPage:true});
