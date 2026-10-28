@@ -35,7 +35,9 @@ promete desfazer mutações já recebidas pelo servidor.
 - TypeScript e build de produção com URL/chave fictícias.
 - CI mantém os sete cenários de navegador da Parte 8, incluindo aceite de proposta
   até a participação na agenda, isolamento de conversas e conta e compositor mobile.
-- Resultado final do CI: pendente de registro antes da entrega.
+- CI aprovado no commit `5c85b0e04d692cae6e8113254e71f8489175c4f4`, incluindo os sete cenários de navegador.
+- [Workflow aprovado](https://github.com/phantomblastkk/stage-flow/actions/runs/40621279051).
+- [Diff aplicado](https://github.com/phantomblastkk/stage-flow/compare/969e1016944823b3f62d640c75ad27ebc07c49a7...5c85b0e04d692cae6e8113254e71f8489175c4f4).
 
 Somente fixtures; sem contas reais, banco remoto ou teste de carga.
 
