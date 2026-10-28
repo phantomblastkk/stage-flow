@@ -515,10 +515,9 @@ export default function MarketplaceCatalog({preview=false}:Props) {
 
       {!preview&&<section className="market-development-banner" aria-label="Novidade em desenvolvimento">
         <div className="market-development-copy">
-          <span className="market-development-label"><Sparkles size={16}/> NOVIDADE EM DESENVOLVIMENTO</span>
-          <h2>O próximo encontro acontece no palco.</h2>
-          <p>O Marketplace já está aberto para descobrir profissionais e conhecer seus portfólios.
-            Estamos aprimorando a experiência e novas funcionalidades chegarão gradualmente.</p>
+          <span className="market-development-label"><Sparkles size={16}/> MARKETPLACE ABERTO</span>
+          <h2>Encontre o músico certo para seu próximo show.</h2>
+          <p>Pesquise profissionais, compare especialidades e converse diretamente com músicos disponíveis. Novas melhorias continuam chegando.</p>
         </div>
         <div className="market-development-actions">
           <Link href="/perfil-artistico?aba=instrumentista" className="market-development-primary">
@@ -547,7 +546,7 @@ export default function MarketplaceCatalog({preview=false}:Props) {
        <Link href={"/contratar"+(selectedEvent?"?evento="+encodeURIComponent(selectedEvent):"")}>Buscar artistas e grupos</Link>
       </nav>
       {discoveryView==="history"&&<section className="market-history"><h2>Seu histórico de contatos</h2><p>Conversas reais da sua conta, ordenadas pela atividade mais recente.</p>{historyError?<p role="alert">{historyError}</p>:history.length?history.map(item=><Link key={item.id} href={"/conversas?conversa="+encodeURIComponent(item.id)}>{item.other_name} · Continuar conversa</Link>):<p>Nenhum contato anterior encontrado.</p>}</section>}
-      <div hidden={discoveryView==="history"}>
+      <div className="market-discovery-body" hidden={discoveryView==="history"}>
       <section className="market-featured" aria-labelledby="market-featured-title">
         <div className="market-featured-heading">
           <div>

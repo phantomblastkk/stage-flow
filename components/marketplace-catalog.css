@@ -659,7 +659,7 @@
 }
 .market-artist-card .market-report-link{align-self:flex-end;margin:11px 0 -3px;font-size:10px;color:#8f9db4}
 .market-artist-card.is-featured{border-color:#6c568c}
-.market-featured-rail{grid-auto-columns:calc((100% - 28px)/3);align-items:stretch}
+.market-featured-rail{align-items:stretch}
 .market-featured-rail>.market-artist-card{scroll-snap-align:start}
 .market-featured-rail>.market-artist-card:hover{border-color:#b79aeb}
 @media(max-width:1050px){.market-artist-main{padding:17px 16px 0}.market-artist-bottom{padding:14px 16px 16px}}
@@ -670,3 +670,38 @@
   .market-artist-bottom{padding:13px 17px 15px}
 }
 @media(prefers-reduced-motion:reduce){.market-artist-card,.market-artist-card .market-card-actions>*{transition:none}.market-artist-card:hover{transform:none}}
+
+
+/* Mobile-first catalog priority: reach the search/results before promotional content. */
+@media(max-width:670px){
+  .market-discovery-body:not([hidden]){display:flex;flex-direction:column;min-width:0}
+  .market-discovery-body>.market-content{order:1;min-width:0}
+  .market-discovery-body>.market-featured{order:2;margin-top:22px}
+  .market-featured-rail{grid-auto-columns:minmax(0,82%)}
+  .market-hero{padding:26px 0 10px;gap:0}
+  .market-hero h1{font-size:clamp(30px,8vw,38px);margin:10px 0}
+  .market-hero-copy>p{font-size:14px;line-height:1.5;margin-bottom:12px}
+  .market-hero-stats{margin-top:10px}
+  .market-development-banner{margin:8px 0 12px;padding:13px 15px;gap:8px;box-shadow:none}
+  .market-development-label{font-size:10px;letter-spacing:.025em}
+  .market-development-banner h2{font-size:15px;margin:5px 0}
+  .market-development-banner p{font-size:12px;line-height:1.45;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
+  .market-development-actions{flex-direction:row;gap:8px}
+  .market-development-primary{min-height:44px;flex:1;font-size:12px}
+  .market-development-secondary{display:none}
+  .market-discovery-tabs{display:flex;flex-wrap:nowrap;overflow-x:auto;scroll-snap-type:x proximity;scrollbar-width:none;gap:8px;margin:12px 0}
+  .market-discovery-tabs::-webkit-scrollbar{display:none}
+  .market-discovery-tabs>button,.market-discovery-tabs>a{flex:none;padding:10px 12px;scroll-snap-align:start;font-size:13px}
+  .market-artist-card .market-favorite{width:44px;height:44px}
+  .market-sort-controls>select,.market-pagination button{min-height:44px;font-size:14px}
+  .market-artist-identification p,.market-artist-city,.market-artist-proof .market-unrated{font-size:13px}
+  .market-artist-tags span,.market-artist-proof .market-rating span{font-size:12px}
+  .market-artist-bottom .market-availability{font-size:13px}
+  .market-artist-card .market-card-actions>*{font-size:13px}
+  .market-featured-heading p{font-size:13px}
+  .market-results-toolbar{scroll-margin-top:12px}
+}
+@media(max-width:390px){
+  .market-featured-rail{grid-auto-columns:minmax(0,86%)}
+  .market-artist-avatar{width:62px;height:62px}
+}

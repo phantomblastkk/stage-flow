@@ -158,14 +158,14 @@ export default function CadastroPage() {
           <input type="checkbox" checked={alsoMusician} onChange={e=>{
              setAlsoMusician(e.target.checked);setHybridConfirmed(false);
            }}/>
-          <span><strong>Também sou músico</strong><small>Libera meu portfólio de músico, convites para tocar e as funções de instrumentista nesta conta. Meu perfil de cantor continua separado.</small></span>
+          <span><strong>Também sou músico</strong><small>Adiciona instrumentos, repertório e oportunidades para tocar ao seu único Perfil Artístico. Nada de página duplicada.</small></span>
           <CheckCircle2 size={18} color={alsoMusician ? "#C0A7FF" : "#657083"}/>
         </label>}
         {artistKind==="lead"&&alsoMusician&&<label className="signup-hybrid-confirm">
           <input type="checkbox" checked={hybridConfirmed} required
             onChange={e=>setHybridConfirmed(e.target.checked)}/>
-          <span><strong>Confirmo que quero os dois perfis</strong>
-            <small>Entendo que terei uma página de cantor e um portfólio de músico independentes. A função extra não pode ser removida por mim; somente a administração pode revertê-la.</small>
+          <span><strong>Quero ativar as duas funções na mesma conta</strong>
+            <small>Entendo que terei um único perfil público, com recursos extras de músico. A ativação dessa função só poderá ser revertida pela administração.</small>
           </span>
         </label>}
         {isArtist && <label className="signup-producer-add">

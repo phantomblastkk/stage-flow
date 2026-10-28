@@ -637,3 +637,19 @@ input[type="checkbox"],input[type="radio"]{accent-color:var(--accent-solid)}
 @media(max-width:1000px){.home-verified-grid{grid-template-columns:repeat(2,minmax(0,1fr))}}
 @media(max-width:600px){.home-verified-grid{grid-template-columns:1fr}.home-verified-card{padding:13px}.home-verified-portrait{height:71px;width:71px}.home-partner-empty{align-items:flex-start;padding:20px}}
 @media(prefers-reduced-motion:reduce){.home-verified-card{transition:none}.home-verified-card:hover{transform:none}}
+
+
+/* StageFlow accessible defaults on narrow touchscreens. */
+@media(max-width:600px){
+  .field label{font-size:14px}
+  .field-help{font-size:13px}
+  .signup-role-card>span,.signup-producer-add small{font-size:13px}
+  .signup-role-card>small{font-size:12px}
+  .signup-role-card{min-height:132px}
+  .auth-main input,.auth-main select,.auth-main textarea{font-size:16px}
+  .signup-role-grid{gap:9px}
+}
+@media(max-width:375px){
+  .signup-role-grid{grid-template-columns:1fr}
+  .signup-role-card{min-height:0}
+}

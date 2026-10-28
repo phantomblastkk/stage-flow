@@ -116,9 +116,9 @@ export default function Home() {
           <Link href="/marketplace" className="home-resource-card"
             style={{ textDecoration: "none", color: "inherit", display: "block" }}>
             <span className="home-resource-icon"><Search size={21}/></span>
-            <span className="home-resource-index">05 / MARKETPLACE · EM BREVE</span>
+            <span className="home-resource-index">05 / MARKETPLACE ABERTO</span>
             <h3>O próximo palco começa aqui.</h3>
-            <p>Uma novidade para encontrar músicos, descobrir talentos e conectar oportunidades. Ainda em preparação.</p>
+            <p>Descubra músicos, confira avaliações reais, converse e convide profissionais para seu próximo show.</p>
           </Link>
         </div>
       </section>
@@ -164,7 +164,7 @@ export default function Home() {
 
       <footer className="footer">
         <Link className="brand" href="/"><span className="brand-mark">S</span> stage flow</Link>
-        <span>Plataforma em desenvolvimento · Marketplace em preparação</span>
+        <span>Marketplace aberto · Novidades em evolução</span>
         <span>© {new Date().getFullYear()} Stage Flow</span>
       </footer>
     </div>
