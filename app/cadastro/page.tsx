@@ -141,11 +141,7 @@ export default function CadastroPage() {
       }
       if (needsMusicianPhone) {
         // Verification is required before we allow entry to the dashboard.
-        if (signupData.user?.phone_confirmed_at && signupData.session) {
-          window.location.href = inviteCode ? "/convite?codigo=" + encodeURIComponent(inviteCode) : "/painel";
-          return;
-        }
-        if (signupData.session) await supabase.auth.signOut(); // Never trust auto-confirmed phone setup.
+        if (signupData.session) await supabase.auth.signOut(); // A phone OTP must be entered even if Auth accidentally auto-confirms.
         setPendingPhone("+" + internationalPhone);
         setVerificationCode("");
         setMessage("Enviamos um código por " + (otpChannel === "sms" ? "SMS" : "WhatsApp") + ". Confirme seu número para ativar a conta. Se não recebeu, confira se a verificação telefônica está habilitada no serviço.");
@@ -170,7 +166,7 @@ export default function CadastroPage() {
 
   async function verifySignupPhone(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault();
-    if (!pendingPhone || !/^\\d{6,8}$/.test(verificationCode.trim())) {
+    if (!pendingPhone || !/^[0-9]{6,8}$/.test(verificationCode.trim())) {
       setError(true);setMessage("Informe o código numérico recebido no celular.");return;
     }
     setBusy(true);setError(false);setMessage("");
