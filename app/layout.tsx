@@ -1,5 +1,7 @@
 import type { Metadata } from "next";
 import "./globals.css";
+import "@/src/domains/artists/styles/legacy-musician-portfolio.css";
+import "./styles/legacy-global-tail.css";
 import WorkspaceBoundary from "@/src/domains/navigation/components/workspace-boundary";
 
 export const metadata: Metadata = {
