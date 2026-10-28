@@ -12,6 +12,7 @@ Esta entrega reorganiza a experiência sobre a `main` `0ee63676b90d9a924a03169bb
 - Nomenclatura “Site Pro” removida das interfaces. IDs de banco, paths e nomes internos continuam estáveis para compatibilidade. Planos Pro permanecem planos; não foram renomeados nem liberados.
 - Descoberta do catálogo existente com Recomendados, Favoritos e Histórico. Recomendados usa a seleção por avaliações verificadas; Histórico mostra contatos reais da conta, não navegação inventada. Evento selecionado segue do fluxo de contratação ao catálogo.
 - Perfis adicionais de artista individual, grupo, produtor e casa sob a mesma conta, em `/perfis`. Formação musical, integrantes, líder responsável, apresentação e publicação na descoberta restrita.
+- Criar explicitamente um perfil de Produtor ativa a função operacional gratuita na própria conta, após confirmação na interface; planos e privilégios administrativos permanecem intactos.
 - Produtor pode criar uma casa comum e cadastrar sua programação na Agenda. Isso não concede selo oficial, parceria nem privilégios sobre outras casas.
 - Contratação em `/contratar`: evento/casa existente ou novo evento → artista/grupo → disponibilidade → convite → negociação de cachê existente → aceite → agenda/financeiro. Para grupo, uma única contratação e um cachê total; nome e formação ficam congelados no convite.
 

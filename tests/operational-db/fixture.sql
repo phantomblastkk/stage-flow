@@ -16,3 +16,8 @@ alter table public.profiles enable row level security;alter table public.events 
 revoke all on public.profiles,public.venues,public.events,public.invitations,public.stage_musician_availability_rules,public.stage_show_participation_finance from public,anon,authenticated;
 insert into public.profiles values('aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa','Henrique','henrique',true),('bbbbbbbb-bbbb-4bbb-8bbb-bbbbbbbbbbbb','Líder','lider',false),('cccccccc-cccc-4ccc-8ccc-cccccccccccc','Outra conta','outra',false);
 insert into public.events(id,producer_id,title,starts_at,ends_at) values('11111111-1111-4111-8111-111111111111','aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa','Show de teste',now()+interval '2 days',now()+interval '2 days 3 hours'),('22222222-2222-4222-8222-222222222222','aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa','Show concorrente',now()+interval '2 days 1 hour',now()+interval '2 days 4 hours');
+
+grant select on public.profiles to authenticated;
+create policy own_profile_read on public.profiles for select to authenticated using(id=(select auth.uid()));
+grant select,insert on public.events to authenticated;
+create policy own_event_read on public.events for select to authenticated using(producer_id=(select auth.uid()));

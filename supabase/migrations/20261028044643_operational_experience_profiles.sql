@@ -39,7 +39,11 @@ declare v_id uuid; v_venue uuid;v_existing public.stage_performance_profiles;beg
  if p_id is null then
   perform pg_advisory_xact_lock(hashtextextended(auth.uid()::text,91723));
   if (select count(*) from public.stage_performance_profiles where account_id=auth.uid())>=30 then return jsonb_build_object('status','limit_reached');end if;
-  if p_kind in ('producer','venue') and not exists(select 1 from public.profiles where id=auth.uid() and is_producer) then return jsonb_build_object('status','producer_required');end if;
+  if p_kind='producer' then
+   -- Explicit self-service creation enables only the standard producer capability.
+   update public.profiles set is_producer=true where id=auth.uid();
+  end if;
+  if p_kind='venue' and not exists(select 1 from public.profiles where id=auth.uid() and is_producer) then return jsonb_build_object('status','producer_required');end if;
   if p_kind='venue' then
    -- This is an ordinary house. Official / partner status and admin ACL never change.
    insert into public.venues(name,submitted_by) values(btrim(p_name),auth.uid()) returning id into v_venue;
@@ -57,6 +61,10 @@ declare v_id uuid; v_venue uuid;v_existing public.stage_performance_profiles;beg
 end;$$;
 revoke all on function public.stage_save_performance_profile(uuid,text,text,text,text,text,text[],boolean) from public,anon,authenticated;
 grant execute on function public.stage_save_performance_profile(uuid,text,text,text,text,text,text[],boolean) to authenticated;
+
+-- Both legacy and new producer identities create only their own events.
+create policy "Performance producers create own events" on public.events for insert to authenticated
+ with check(producer_id=(select auth.uid()) and exists(select 1 from public.profiles p where p.id=(select auth.uid()) and p.is_producer));
 
 -- Deliberate launch gate; public profile creation does not open marketplace access.
 create or replace function public.stage_discover_performance_profiles(p_query text default '',p_kind text default null)

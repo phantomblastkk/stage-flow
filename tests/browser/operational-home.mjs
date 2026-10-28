@@ -25,12 +25,12 @@ try{
  for(const width of [360,768,1280]){
   const context=await browser.newContext({viewport:{width,height:900},timezoneId:"America/Sao_Paulo"});
   await context.addCookies([{name:"sb-example-auth-token",value:"base64-"+encode(session),url:origin,sameSite:"Lax"}]);
-  const writes=[],errors=[],unhandled=[];let savedProfiles=[],failFinance=false;
+  const writes=[],errors=[],unhandled=[];let savedProfiles=[],failFinance=false,producer=width!==360;
   await context.route(api+"/**",async route=>{
    const req=route.request(),url=new URL(req.url()),rpc=url.pathname.split("/").at(-1),body=req.postDataJSON();let data=[],status=200;
    if(req.method()==="OPTIONS"){await route.fulfill({status:204,headers:{"access-control-allow-origin":"*","access-control-allow-headers":"*"}});return;}
    if(url.pathname.endsWith("/user"))data=user;
-   else if(rpc==="profiles"){assert.equal(url.searchParams.get("id"),"eq."+actor);data=profile;}
+   else if(rpc==="profiles"){assert.equal(url.searchParams.get("id"),"eq."+actor);data={...profile,is_producer:producer};}
    else if(rpc==="stage_owner_admin_status")data=false;
    else if(rpc==="stage_venue_partner_access")data={status:"ok",items:[]};
    else if(rpc==="stage_my_musician_portfolio")data={name:"Henrique",bio:"Músico de teste",city:"São Paulo",slug:"henrique",avatar_url:null,instagram_url:null,is_published:false};
@@ -38,7 +38,11 @@ try{
    else if(rpc==="stage_finance_organizer_overview"){if(failFinance){data={message:"Fixture failure"};status=503;}else data=[owned];}
    else if(rpc==="stage_my_show_history")data=[];
    else if(rpc==="stage_performance_profiles"){assert.equal(url.searchParams.get("account_id"),"eq."+actor);data=savedProfiles;}
-   else if(rpc==="stage_save_performance_profile"){writes.push(body);savedProfiles=[{...group,id:ownGroupId,account_id:actor,name:body.p_name,members:body.p_members,is_public:body.p_public}];data={status:"saved",id:ownGroupId};}
+   else if(rpc==="stage_save_performance_profile"){
+    writes.push(body);if(body.p_kind==="producer")producer=true;
+    const id=body.p_kind==="group"?ownGroupId:body.p_kind==="producer"?"55555555-5555-4555-8555-555555555555":"66666666-6666-4666-8666-666666666666";
+    savedProfiles=[...savedProfiles.filter(row=>row.id!==id),{...group,id,account_id:actor,kind:body.p_kind,musical_type:body.p_type,name:body.p_name,members:body.p_members,is_public:body.p_public}];data={status:"saved",id};
+   }
    else if(rpc==="events"){assert.equal(url.searchParams.get("producer_id"),"eq."+actor);data=[event];}
    else if(rpc==="stage_discover_performance_profiles")data={status:"ok",items:[group]};
    else if(rpc==="stage_performance_availability")data="free";
@@ -65,6 +69,18 @@ try{
   const form=page.getByRole("form",{name:"Editar perfil adicional"});await form.getByLabel("Tipo de perfil",{exact:true}).selectOption("group");
   await form.getByLabel("Nome",{exact:true}).fill("Pagode do Henrique");await form.getByLabel("Integrantes",{exact:false}).fill("João\nPedro\nHenrique");
   await form.getByRole("button",{name:"Salvar perfil",exact:true}).click();await page.getByText("Perfil salvo.",{exact:true}).waitFor();assert.equal(writes[0].p_kind,"group");assert.equal(writes[0].p_members.length,3);
+  if(width===360){
+   await page.getByRole("button",{name:"Criar perfil",exact:true}).click();
+   await form.getByLabel("Tipo de perfil",{exact:true}).selectOption("producer");
+   await form.getByLabel("Nome",{exact:true}).fill("Produção do Henrique");
+   await form.getByRole("checkbox",{name:/Quero usar esta conta também como produtor/}).check();
+   await form.getByRole("button",{name:"Salvar perfil",exact:true}).click();await page.getByText("Perfil salvo.",{exact:true}).waitFor();
+   await page.getByRole("button",{name:"Criar perfil",exact:true}).click();
+   await form.getByLabel("Tipo de perfil",{exact:true}).selectOption("venue");
+   await form.getByLabel("Nome",{exact:true}).fill("Casa do Henrique");
+   await form.getByRole("button",{name:"Salvar perfil",exact:true}).click();await page.getByText("Perfil salvo.",{exact:true}).waitFor();
+   await page.getByRole("heading",{name:"Casa do Henrique",exact:true}).waitFor();
+  }
   await page.screenshot({path:`test-results/operational-profiles-${width}.png`,fullPage:true});
   await page.goto(origin+"/contratar?evento="+eventId);await page.getByRole("button",{name:"Buscar perfis",exact:true}).click();
   await page.getByRole("button",{name:"Ver disponibilidade",exact:true}).click();await page.getByLabel("Cachê total proposto (R$)",{exact:true}).fill("1500");

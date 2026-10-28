@@ -58,3 +58,19 @@ do $$begin
 end;$$;
 reset role;
 select 'PASS: owner isolation, group snapshot, launch gate, producer houses, fee agreement, finance and overlapping schedule';
+
+set role authenticated;
+select set_config('request.jwt.claim.sub','bbbbbbbb-bbbb-4bbb-8bbb-bbbbbbbbbbbb',false);
+do $$declare result jsonb;begin
+ result:=public.stage_save_performance_profile(null,'producer',null,'Produção do líder','','',array[]::text[],false);
+ if result->>'status'<>'saved' or not (select is_producer from public.profiles where id=auth.uid()) then raise exception 'Producer profile did not activate standard self-service role';end if;
+ result:=public.stage_save_performance_profile(null,'venue',null,'Casa do líder','','',array[]::text[],false);
+ if result->>'status'<>'saved' then raise exception 'New producer cannot create own house';end if;
+ insert into public.events(producer_id,title,starts_at) values(auth.uid(),'Evento do novo produtor',now()+interval '10 days');
+ begin
+  insert into public.events(producer_id,title,starts_at) values('aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa','Evento forjado',now()+interval '10 days');
+  raise exception 'New producer can forge event owner';
+ exception when insufficient_privilege then null;end;
+end;$$;
+reset role;
+select 'PASS: explicit producer creation, own house and owner-scoped event creation';
