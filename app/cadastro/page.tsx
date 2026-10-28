@@ -105,7 +105,25 @@ export default function CadastroPage() {
           }
         }
       });
-      if (signUpError) throw signUpError;
+      if (signUpError) {
+        // O Auth não expõe a violação UNIQUE do @: ela chega como erro 500 genérico.
+        // Não alteramos a unicidade no banco nem afirmamos que todo erro 500 é colisão.
+        const databaseSignupFailure =
+          signUpError.status === 500 &&
+          (signUpError.code === "unexpected_failure" ||
+            /database error saving new user/i.test(signUpError.message));
+        if (databaseSignupFailure && artistKind === "lead" && !inviteCode && cleanUsername) {
+          throw new Error(
+            "Não foi possível cadastrar este @ artístico. Ele pode já estar em uso. Escolha outro @ e tente novamente. Se o perfil já é seu, use Entrar para acessar sua conta."
+          );
+        }
+        if (databaseSignupFailure) {
+          throw new Error(
+            "O cadastro não pôde ser salvo no momento. Tente novamente. Se o problema continuar, entre em contato com o suporte."
+          );
+        }
+        throw signUpError;
+      }
       if (signupData.session) {
         window.location.href = inviteCode
           ? "/convite?codigo=" + encodeURIComponent(inviteCode)
