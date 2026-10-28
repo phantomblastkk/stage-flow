@@ -88,7 +88,14 @@ returns trigger language plpgsql security definer set search_path='' as $$
 declare v_phone text;v_pref public.musician_whatsapp_preferences%rowtype;
 begin
  v_phone:=regexp_replace(coalesce(new.phone,''),'[^0-9]','','g');
- if new.phone_confirmed_at is null or v_phone !~ '^[1-9][0-9]{9,14}
+ if new.phone_confirmed_at is null or v_phone !~ '^[1-9][0-9]{9,14}$' then
+   -- Never allow queued messages to an unverified destination.
+   update public.stage_hiring_whatsapp_preferences
+   set opted_in=false,updated_at=now() where profile_id=new.id;
+   update public.stage_hiring_whatsapp_outbox set status='expired'
+   where recipient_id=new.id and status='queued';
+   return new;
+ end if;
  if not exists(select 1 from public.profiles where id=new.id) then return new;end if;
  insert into public.musician_whatsapp_preferences
    (profile_id,phone_e164,opted_in,notify_opted_in)
