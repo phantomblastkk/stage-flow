@@ -59,16 +59,15 @@ test("bell and full inbox route each new category to its owner-facing location",
   assert.match(booking,/focusedBooking\?" is-notification-focus"/);
 });
 
-test("dashboard recent activity uses notification destinations without duplicating known events",()=>{
+test("dashboard recent activity uses correct links and avoids duplicating known notices",()=>{
   const overview=read("supabase/stage_workspace_activity_notification_links_20261028.sql");
   for(const type of ["booking","review","verification","finance"])
-    assert.match(overview,new RegExp("n\\.source_type='"+type+"'"));
-  assert.match(overview,/meu-perfil-artistico\\/solicitacoes\\?pedido=/);
-  assert.match(overview,/n\\.source_id=b\\.id/);
-  assert.match(overview,/n\\.source_id=v\\.target_id/);
-  assert.match(overview,/n\\.source_id=f\\.invitation_id/);
-  assert.match(overview,/n\\.source_id=b\\.event_id/);
-  assert.match(overview,/n\\.source_id=i\\.id/);
-  assert.match(overview,/where n\\.recipient_id=v_uid/);
-  assert.match(overview,/limit 8/);
+    assert.ok(overview.includes("n.source_type='"+type+"'"),"missing route for "+type);
+  for(const detail of [
+    "meu-perfil-artistico/solicitacoes?pedido=",
+    "n.source_id=b.id","n.source_id=v.target_id",
+    "n.source_id=f.invitation_id","n.source_id=b.event_id",
+    "n.source_id=i.id","n.recipient_id=v_uid",
+    "order by 6 desc,1 desc limit 8"
+  ])assert.ok(overview.includes(detail),"missing activity deduplication: "+detail);
 });
