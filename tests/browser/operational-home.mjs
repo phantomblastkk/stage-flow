@@ -103,11 +103,21 @@ try{
    const instruments=page.locator("#portfolio-instruments");
    await instruments.fill("Cavaquinho, Pandeiro");
    await wizard.getByRole("button",{name:/Experiência/}).click();
-   await page.locator('.mp-editor-workspace[data-editor-active="2"]').waitFor();
-   if(await instruments.isVisible()){
+   const state=await page.evaluate(()=>{
+    const editor=document.querySelector(".mp-editor-workspace");
+    const wizard=document.querySelector(".sf-editor-wizard");
+    const active=wizard?.querySelector(".sf-editor-wizard-tabs .is-active");
+    const instrument=document.querySelector("#portfolio-instruments");
+    return {editorStep:editor?.getAttribute("data-editor-active"),
+      activeButton:active?.textContent?.trim(),progress:wizard?.querySelector('[role="progressbar"]')?.getAttribute("aria-valuenow"),
+      instrumentDisplay:instrument?getComputedStyle(instrument.closest("[data-editor-step]")).display:null};
+   });
+   if(state.editorStep!=="2"||await instruments.isVisible()){
     await page.screenshot({path:"test-results/operational-editor-experience-360.png",fullPage:true});
    }
-   assert.equal(await instruments.isVisible(),false,"Wizard must show only the active step on mobile");
+   assert.equal(state.editorStep,"2","Step button must switch editor: "+JSON.stringify(state));
+   assert.equal(await instruments.isVisible(),false,
+    "Wizard must show only the active step on mobile: "+JSON.stringify(state));
    await wizard.getByRole("button",{name:/Instrumentos/}).click();
    await page.locator('.mp-editor-workspace[data-editor-active="1"]').waitFor();
    assert.equal(await instruments.inputValue(),"Cavaquinho, Pandeiro",
