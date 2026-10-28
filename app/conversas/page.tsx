@@ -12,6 +12,7 @@ import { useConversationMessages } from "@/src/domains/booking/hooks/use-convers
 import { conversationHref } from "@/src/domains/booking/model/booking-links";
 import { BookingSessionRequired, loadThreads as readThreads, saveThreadAvailability, sendThreadMessage, startConversation } from "@/src/domains/booking/services/booking-service";
 import type { Thread } from "@/src/domains/booking/types";
+import {historyWindow,snapshotMayBeLimited,THREAD_SNAPSHOT_LIMIT,MESSAGE_SNAPSHOT_LIMIT,THREAD_RENDER_STEP,MESSAGE_RENDER_STEP} from "@/src/domains/booking/model/recent-history";
 import "./conversas.css";
 
 type PhoneSettings = {status:string;opted_in:boolean;phone:string|null};
@@ -27,6 +28,8 @@ export default function HiringConversations(){
  const accountId=account.user?.id??"";
  const [threads,setThreads]=useState<Thread[]>([]);
  const [activeId,setActiveId]=useState<string|null>(null);
+ const [visibleThreads,setVisibleThreads]=useState(THREAD_RENDER_STEP);
+ const [messageWindow,setMessageWindow]=useState({id:"",count:MESSAGE_RENDER_STEP});
  const {messages,messagesLoading,messagesError,text,setText,loadMessages}=useConversationMessages(activeId);
  const selected=useRef(activeId);selected.current=activeId;
  const alive=useRef(false);
@@ -77,7 +80,7 @@ export default function HiringConversations(){
     const conversation=query.get("conversa");
     if(conversation){
       if(!/^[a-f0-9-]{36}$/i.test(conversation))throw Error("Conversa inválida.");
-      if(!openedThreads.some(item=>item.id===conversation))throw Error("Conversa não encontrada nesta conta.");
+      if(!openedThreads.some(item=>item.id===conversation))throw Error(snapshotMayBeLimited(openedThreads.length,THREAD_SNAPSHOT_LIMIT)?"Esta conversa não está na lista recente disponível. O histórico de conversas pode estar limitado.":"Conversa não encontrada nesta conta.");
       selectThread(conversation);return;
     }
     const musician=query.get("musico");
@@ -110,6 +113,10 @@ export default function HiringConversations(){
  },[refreshThreads]);
 
  const active=threads.find(t=>t.id===activeId);
+ const threadView=historyWindow(threads,visibleThreads,"start");
+ const threadRows=active&&!threadView.items.some(thread=>thread.id===active.id)?[active,...threadView.items]:threadView.items;
+ const hiddenThreads=threads.length-threadRows.length;
+ const messageView=historyWindow(messages,messageWindow.id===activeId?messageWindow.count:MESSAGE_RENDER_STEP,"end");
  async function send(e:FormEvent<HTMLFormElement>){
   e.preventDefault();if(!activeId||busy||!text.trim())return;
   setBusy(true);setError("");setNotice("");
@@ -176,7 +183,9 @@ export default function HiringConversations(){
      <aside className="hiring-sidebar" aria-label="Suas conversas">
       <div className="hiring-sidebar-heading"><strong>Caixa de entrada</strong>
        <button type="button" title="Atualizar conversas" onClick={()=>void refreshThreads()} aria-label="Atualizar conversas"><RefreshCw size={15}/></button></div>
-      {threads.map(thread=><button key={thread.id} type="button"
+      <p className="hiring-empty" role="status">{threadRows.length} de {threads.length} conversas recebidas nesta consulta</p>
+      {snapshotMayBeLimited(threads.length,THREAD_SNAPSHOT_LIMIT)&&<p className="hiring-feedback" role="status">A consulta atingiu o limite de conversas recentes. Conversas mais antigas podem não aparecer nesta lista.</p>}
+      {threadRows.map(thread=><button key={thread.id} type="button"
        className={"hiring-thread"+(thread.id===activeId?" is-selected":"")}
        aria-label={"Abrir conversa com "+thread.other_name}
        aria-pressed={thread.id===activeId} onClick={()=>selectThread(thread.id)}>
@@ -186,6 +195,7 @@ export default function HiringConversations(){
         <small>{thread.last_message||"Conversa iniciada — envie sua pergunta"}</small>
        </span>{thread.unread>0&&<span className="hiring-unread">{thread.unread}</span>}
       </button>)}
+      {hiddenThreads>0&&<Button variant="ghost" onClick={()=>setVisibleThreads(n=>n+THREAD_RENDER_STEP)}>Mostrar mais conversas recebidas ({hiddenThreads})</Button>}
       {!threads.length&&!error&&<p className="hiring-empty">Nenhuma conversa por enquanto. Abra um perfil no marketplace de testes para consultar a disponibilidade do músico.</p>}
      </aside>
      <section className="hiring-main" aria-label="Mensagens da conversa">
@@ -208,10 +218,13 @@ export default function HiringConversations(){
         void refreshThreads();void loadMessages(active.id);
        }}/>
       <div className="hiring-messages" aria-busy={messagesLoading}>
+       {messages.length>0&&<p className="hiring-empty" role="status">{messageView.items.length} de {messages.length} mensagens recebidas nesta consulta</p>}
+       {snapshotMayBeLimited(messages.length,MESSAGE_SNAPSHOT_LIMIT)&&<p className="hiring-feedback" role="status">A consulta atingiu o limite de mensagens recentes. Mensagens anteriores podem não estar disponíveis nesta tela.</p>}
+       {messageView.hidden>0&&<Button variant="ghost" onClick={()=>setMessageWindow({id:active.id,count:(messageWindow.id===active.id?messageWindow.count:MESSAGE_RENDER_STEP)+MESSAGE_RENDER_STEP})}>Mostrar mensagens anteriores recebidas ({messageView.hidden})</Button>}
        {messagesLoading&&<LoadingState label="Carregando mensagens…"/>}
        {messagesError&&<div role="alert">{messagesError}{" "}<Button variant="ghost" onClick={()=>void loadMessages(active.id)}>Tentar novamente</Button></div>}
        {!messagesLoading&&!messagesError&&!messages.length&&<p className="hiring-empty">Conversa privada. Pergunte sobre disponibilidade, repertório e cachê. A contratação só acontece após os dois confirmarem os detalhes.</p>}
-       {messages.map(message=><article key={message.id}
+       {messageView.items.map(message=><article key={message.id}
          className={"hiring-bubble "+(message.is_mine?"mine":"theirs")}>
          <p>{message.body}</p><small>{timeBR(message.created_at)}</small>
        </article>)}

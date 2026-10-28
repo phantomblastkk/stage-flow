@@ -94,3 +94,26 @@ test("availability changes retain the participant-scoped RPC contract",async()=>
  await service.saveThreadAvailability(f.db,A,B,"ask_later");
  assert.deepEqual(f.calls[0].body,{p_thread_id:B,p_response:"ask_later"});
 });
+
+const {historyWindow,snapshotMayBeLimited,THREAD_SNAPSHOT_LIMIT,MESSAGE_SNAPSHOT_LIMIT}=await loadTsModule('src/domains/booking/model/recent-history.ts');
+test('bounded histories distinguish received counts from possible server truncation',()=>{
+ assert.equal(snapshotMayBeLimited(79,THREAD_SNAPSHOT_LIMIT),false);assert.equal(snapshotMayBeLimited(80,THREAD_SNAPSHOT_LIMIT),true);
+ assert.equal(snapshotMayBeLimited(199,MESSAGE_SNAPSHOT_LIMIT),false);assert.equal(snapshotMayBeLimited(200,MESSAGE_SNAPSHOT_LIMIT),true);
+ assert.equal(snapshotMayBeLimited(201,MESSAGE_SNAPSHOT_LIMIT),true);
+});
+test('message windows keep the latest records in chronological order and expand backwards',()=>{
+ const rows=Object.freeze(Array.from({length:200},(_,index)=>Object.freeze({id:index})));
+ const initial=historyWindow(rows,50,'end'),expanded=historyWindow(rows,100,'end');
+ assert.deepEqual(initial.items.map(r=>r.id),Array.from({length:50},(_,i)=>150+i));
+ assert.equal(initial.hidden,150);assert.equal(initial.loaded,200);assert.equal(expanded.items[0].id,100);
+ assert.deepEqual(expanded.items.slice(-50),initial.items);assert.equal(rows.length,200);
+});
+test('thread windows preserve the server order, saturate safely and handle empty data',()=>{
+ const rows=['newest','second','start'];assert.deepEqual(historyWindow(rows,2,'start'),{items:['newest','second'],hidden:1,loaded:3});
+ assert.deepEqual(historyWindow(rows,20,'start').items,rows);assert.deepEqual(historyWindow([],50,'end'),{items:[],hidden:0,loaded:0});
+});
+test('invalid history windows fail rather than silently omit records',()=>{
+ for(const value of [0,-1,1.5,NaN,Infinity])assert.throws(()=>historyWindow([],value,'end'));
+ for(const value of [-1,NaN,1.5])assert.throws(()=>snapshotMayBeLimited(value,80));
+ assert.throws(()=>snapshotMayBeLimited(0,0));
+});

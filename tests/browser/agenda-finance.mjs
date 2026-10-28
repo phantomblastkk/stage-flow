@@ -29,6 +29,7 @@ const invitationId = "44444444-4444-4444-8444-444444444444";
 const threadA = "99999999-9999-4999-8999-999999999999";
 const threadB = "dddddddd-dddd-4ddd-8ddd-dddddddddddd";
 const proposalId = "eeeeeeee-eeee-4eee-8eee-eeeeeeeeeeee";
+const bulkIds=Array.from({length:78},(_,i)=>"70000000-0000-4000-8000-"+String(i+1).padStart(12,"0"));
 const user = { id: userId, aud: "authenticated", role: "authenticated", email: "musician@example.test", created_at: "2026-01-01T00:00:00Z", app_metadata: {}, user_metadata: {} };
 const encoded = value => Buffer.from(JSON.stringify(value)).toString("base64url");
 const sessionFor = id => ({ access_token: encoded({ alg: "HS256", typ: "JWT" }) + "." + encoded({ sub: id, role: "authenticated", exp: 4102444800 }) + ".fixture",
@@ -57,7 +58,7 @@ async function setup(width) {
   const context = await browser.newContext({ viewport: { width, height: 900 }, timezoneId: "America/Sao_Paulo" });
   await context.addCookies([{ name: "sb-example-auth-token", value: "base64-" + encoded(session), url: origin, sameSite: "Lax" }]);
   const state = { events: [...initialEvents(), ...moreEvents(), { ...initialEvents()[1], id: "77777777-7777-4777-8777-777777777777", title: "Show de dezembro", starts_at: "2026-12-02T23:00:00Z" }], accepted: false, failAgenda: false, failFinance: false, invalidFinance: false, writes: [],
-    reads: new Map(), adminA: false, financeDelay: null, delayedFinanceStarted: 0, delayedFinanceCompleted: 0,
+    bulkHistory:false, reads: new Map(), adminA: false, financeDelay: null, delayedFinanceStarted: 0, delayedFinanceCompleted: 0,
     messageDelay: null, delayedMessagesStarted: 0, delayedMessagesCompleted: 0, failMessageId: null, failInvites: false, feeEnabled:false, feeAgreed:null, feeAmount:400, feeByMe:false, feeReadFail:false, feeOffers:[],
     failChatPreferences: false, showProposal: false, proposalReadFail:false, proposalDelay:null, proposalStarted:0, proposalCompleted:0, asRequester:false, prefillDelay:null, prefillStarted:0, prefillCompleted:0, scheduleDelay:null, scheduleCalls:[], sendResult:"schedule_conflict", proposalWrites:[], submittedProposal:null, proposalWithdrawn:false, proposalAccepted: false, guestStartsAt: guest.starts_at, sent: [],
     messages: Object.fromEntries([[threadA,"Mensagem privada A"],[threadB,"Mensagem privada B"]].map(([id,text])=>[id,[{id,body:text,is_mine:false,created_at:"2026-11-01T15:00:00Z"}]])) };
@@ -99,13 +100,13 @@ async function setup(width) {
     else if (rpc === "stage_owner_admin_status") result = actor === userId && state.adminA;
     else if (rpc === "stage_workspace_overview") result = { status: "ok", metrics: { shows_week: 0, pending_invites: 0, unread_conversations: 0, pending_contacts: 0, received_month: 0 }, upcoming: [], activity: [], updated_at: "2026-11-01T15:00:00Z" };
     else if (rpc === "stage_accepted_shows") result = filtered(state.accepted ? [{...guest,starts_at:state.guestStartsAt}] : [],url);
-    else if (rpc === "stage_hiring_list") result = [threadA,threadB].map((id,index)=>({id,requested_date:"2026-12-02",event_id:state.asRequester?firstId:null,availability:"awaiting",last_message_at:"2026-11-01T15:00:00Z",other_id:otherUserId,other_name:index?"Contratante B":"Contratante A",acting_as:state.asRequester?"requester":"musician",unread:0,last_message:index?"Mensagem privada B":"Mensagem privada A"}));
+    else if (rpc === "stage_hiring_list") result = (state.bulkHistory?[threadA,threadB,...bulkIds]:[threadA,threadB]).map((id,index)=>({id,requested_date:"2026-12-02",event_id:state.asRequester?firstId:null,availability:"awaiting",last_message_at:"2026-11-01T15:00:00Z",other_id:otherUserId,other_name:index>1?"Histórico "+(index-1):index?"Contratante B":"Contratante A",acting_as:state.asRequester?"requester":"musician",unread:0,last_message:index?"Mensagem privada B":"Mensagem privada A"}));
     else if (rpc === "stage_hiring_messages") {
-      assert.ok([threadA,threadB].includes(body.p_thread_id));
+      assert.ok([threadA,threadB,...(state.bulkHistory?bulkIds:[])].includes(body.p_thread_id));
       const pending=body.p_thread_id===threadA?state.messageDelay:null;
       if(pending){state.delayedMessagesStarted++;await pending;state.delayedMessagesCompleted++;}
       if(state.failMessageId===body.p_thread_id){status=503;result={message:"Fixture unavailable"};}
-      else result={status:"ok",messages:state.messages[body.p_thread_id]};
+      else result={status:"ok",messages:state.bulkHistory?Array.from({length:200},(_,i)=>({id:"90000000-0000-4000-8000-"+String(i).padStart(12,"0"),body:"Mensagem histórica "+i,is_mine:false,created_at:"2026-11-01T15:00:00Z"})):state.messages[body.p_thread_id]};
     } else if (rpc === "stage_hiring_send") {
       assert.equal(actor,userId);assert.ok([threadA,threadB].includes(body.p_thread_id));
       state.sent.push(body);
@@ -438,6 +439,46 @@ try {
       console.log("PASS proposal editor 360px: late prefill preserves draft, stale schedule discarded, conflict recovery, unknown fee and withdrawal");
     }catch(error){await page.screenshot({path:"test-results/failure-proposal-editor.png",fullPage:true}).catch(()=>{});throw error;}
     finally{releasePrefill?.();releaseSchedule?.();await context.close();}
+  }
+  {
+    const {context,page,state,errors}=await setup(360);
+    try{
+      state.bulkHistory=true;
+      await page.goto(origin+"/conversas?conversa="+bulkIds.at(-1));
+      await page.getByRole("heading",{name:"Histórico 78",exact:true}).waitFor();
+      await page.getByRole("button",{name:"Todas as conversas",exact:true}).click();
+      assert.equal(await page.locator(".hiring-thread").count(),20);
+      await page.getByText(/A consulta atingiu o limite de conversas recentes/).waitFor();
+      for(const count of [40,60,80]){
+        await page.getByRole("button",{name:/Mostrar mais conversas recebidas/}).click();
+        assert.equal(await page.locator(".hiring-thread").count(),count);
+      }
+      assert.equal(await page.getByRole("button",{name:/Mostrar mais conversas recebidas/}).count(),0);
+      await page.getByRole("button",{name:"Abrir conversa com Histórico 78",exact:true}).click();
+      await page.locator(".hiring-messages").getByText("Mensagem histórica 199",{exact:true}).waitFor();
+      assert.equal(await page.locator(".hiring-bubble").count(),50);
+      await page.getByText(/A consulta atingiu o limite de mensagens recentes/).waitFor();
+      const reads=state.reads.get(userId+":stage_hiring_messages");
+      for(const count of [100,150,200]){
+        await page.getByRole("button",{name:/Mostrar mensagens anteriores recebidas/}).click();
+        assert.equal(await page.locator(".hiring-bubble").count(),count);
+      }
+      assert.equal(state.reads.get(userId+":stage_hiring_messages"),reads,"expanding received data must not pretend to request another server page");
+      assert.equal(await page.getByRole("button",{name:/Mostrar mensagens anteriores recebidas/}).count(),0);
+      await noHorizontalOverflow(page,"bounded history 360");
+      await page.evaluate(()=>scrollTo(0,0));await page.screenshot({path:"test-results/history-limits-360.png",fullPage:true});
+      await page.getByRole("button",{name:"Todas as conversas",exact:true}).click();
+      await page.getByRole("button",{name:"Abrir conversa com Contratante B",exact:true}).click();
+      await page.locator(".hiring-messages").getByText("Mensagem histórica 199",{exact:true}).waitFor();
+      assert.equal(await page.locator(".hiring-bubble").count(),50,"another thread starts with its own recent window");
+      const oldReads=state.reads.get(userId+":stage_hiring_messages");
+      await page.goto(origin+"/conversas?conversa="+otherEventId);
+      await page.getByRole("alert").filter({hasText:"não está na lista recente disponível"}).waitFor();
+      assert.equal(state.reads.get(userId+":stage_hiring_messages"),oldReads);
+      assert.deepEqual(errors,[]);
+      console.log("PASS recent history 360px: bounded rendering, all received rows reachable, explicit 80/200 limits, window reset and unavailable deep-link semantics");
+    }catch(error){await page.screenshot({path:"test-results/failure-history.png",fullPage:true}).catch(()=>{});throw error;}
+    finally{await context.close();}
   }
   const { context, page, state, errors } = await setup(360);
   let releaseFinance;

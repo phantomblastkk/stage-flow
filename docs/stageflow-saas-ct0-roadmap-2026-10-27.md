@@ -1,7 +1,7 @@
 # StageFlow — CTO: evolução SaaS, auditoria e roadmap
 **Data:** 27/10/2026 · **Branch exclusiva:** `main` · **Deploy automático:** bloqueado.
 
-**Checkpoint atual:** [Parte 11 — propostas formais](stageflow-saas-phase-11-proposal-controller-2026-10-28.md).
+**Checkpoint atual:** [Parte 12 — limites do histórico recente](stageflow-saas-phase-12-history-limits-2026-10-28.md).
 As seções abaixo registram a auditoria inicial. Consulte os relatórios das partes
 seguintes para as alterações incrementais e suas evidências; nesta etapa não
 houve acesso à homologação, banco remoto ou deploy.
