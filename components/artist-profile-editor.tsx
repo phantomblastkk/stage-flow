@@ -9,6 +9,7 @@ import {
   ExternalLink, Globe2, ImagePlus, Inbox, LoaderCircle, LockKeyhole, Mic2, Music2, Palette, Save, Upload
 } from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
+import {prepareProfilePortrait} from "@/lib/profile-photo";
 import SingerProEditor from "@/components/singer-pro-editor";
 import BookingContactSettings from "@/components/booking-contact-settings";
 import "@/app/meu-perfil-artistico/singer-unified-editor.css";
@@ -188,9 +189,10 @@ export default function MeuPerfilArtistico() {
       setUploading(null);
       return;
     }
-    const imagePath = user.id + "/" + crypto.randomUUID() + "." + extensions[file.type];
+    const prepared=kind==="avatar"?await prepareProfilePortrait(file):file;
+    const imagePath = user.id + "/" + crypto.randomUUID() + "." + extensions[prepared.type];
     const { error: uploadError } = await supabase.storage.from("stage-artist-public").upload(
-      imagePath, file, { upsert: false, contentType: file.type, cacheControl: "3600" }
+      imagePath, prepared, { upsert: false, contentType: prepared.type, cacheControl: "3600" }
     );
     if (uploadError) {
       setError(true);

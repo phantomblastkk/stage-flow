@@ -9,6 +9,7 @@ import {
   BriefcaseBusiness, Clock3, Instagram, Youtube, Headphones, ListChecks, ChartNoAxesCombined, ArrowRight
 } from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
+import {prepareProfilePortrait} from "@/lib/profile-photo";
 import MusicianPortfolioView, {
   MusicianPortfolio, MusicianLayout,
   musicianThemes, musicianAccents
@@ -192,10 +193,11 @@ export default function MeuPortfolioDeMusico({unifiedSinger=false,username=null}
       setUploading(null);
       return;
     }
-    const path = user.id + "/" + crypto.randomUUID() + "." + extensions[file.type];
+    const prepared=kind==="avatar"?await prepareProfilePortrait(file):file;
+    const path = user.id + "/" + crypto.randomUUID() + "." + extensions[prepared.type];
     const { error: uploadError } = await supabase.storage
       .from("stage-musician-media")
-      .upload(path, file, { cacheControl: "3600", contentType: file.type, upsert: false });
+      .upload(path, prepared, { cacheControl: "3600", contentType: prepared.type, upsert: false });
     if (uploadError) {
       setError(true);
       setStatus("Não foi possível enviar a foto. Execute o SQL de aparência e tente novamente. Detalhes: " + uploadError.message);
