@@ -12,6 +12,7 @@ import {createClient} from "@/lib/supabase/client";
 import {useAccount} from "@/src/domains/account/account-context";
 import { Button, EmptyState, InlineNotice, Input, LoadingState } from "@/src/components/ui";
 import "./minha-conta.css";
+import AccountWhatsAppPrivacy from "@/components/account-whatsapp-privacy";
 
 type AccountIdentity={
   display_name:string;username:string|null;
@@ -450,6 +451,7 @@ export default function MinhaConta(){
            <h2>Privacidade e publicação</h2>
            <p>Você controla o que aparece na página artística única. Informações de músico só são exibidas após publicação.</p>
          </div>
+         <AccountWhatsAppPrivacy/>
          <div className="account-privacy-list">
            <article><div><Mic2 size={19}/><div><h3>Perfil artístico principal</h3>
              <p>{account.is_singer
