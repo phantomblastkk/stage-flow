@@ -2,11 +2,12 @@
 
 import { FormEvent, useEffect, useState } from "react";
 import {
-  AlertCircle, ArrowDownRight, ArrowUpRight, CheckCircle2, CircleHelp,
+  ArrowDownRight, ArrowUpRight, CircleHelp,
   CreditCard, FilePlus2, LoaderCircle, LockKeyhole, Pencil, Plus,
   Receipt, RefreshCw, Save, Trash2, Wallet, X
 } from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
+import { Button, InlineNotice, Input, LoadingState, Select } from "@/src/components/ui";
 import "./event-budget-panel.css";
 
 type Category = "transport" | "equipment" | "staff" | "food" | "other";
@@ -243,21 +244,15 @@ export default function EventBudgetPanel({ eventId, refreshToken = 0 }: Props) {
         <h4><Wallet size={20}/> Receita e despesas do show</h4>
         <p>Informe quanto foi combinado com o contratante e organize despesas extras. Nada é cobrado ou pago pelo Stage Flow.</p>
       </div>
-      <button type="button" className="event-budget-refresh" disabled={loading || busy}
+      <Button variant="ghost" type="button" className="event-budget-refresh" disabled={loading || busy}
         onClick={() => {setFeedback("");refresh();}}>
         <RefreshCw size={15}/> Atualizar
-      </button>
+      </Button>
     </div>
 
-    {loading && <p className="event-budget-loading" role="status">
-      <LoaderCircle size={17}/> Carregando controle financeiro...
-    </p>}
-    {!loading && error && <p className="event-budget-error" role="alert">
-      <AlertCircle size={16}/> {error}
-    </p>}
-    {!loading && feedback && <p className="event-budget-success" role="status">
-      <CheckCircle2 size={16}/> {feedback}
-    </p>}
+    {loading && <LoadingState label="Carregando controle financeiro..."/>}
+    {!loading && error && <div className="event-budget-feedback"><InlineNotice tone="danger">{error}</InlineNotice></div>}
+    {!loading && feedback && <div className="event-budget-feedback"><InlineNotice tone="success">{feedback}</InlineNotice></div>}
 
     {!loading && budget && <>
       <div className="event-budget-overview">
@@ -316,25 +311,17 @@ export default function EventBudgetPanel({ eventId, refreshToken = 0 }: Props) {
         <form className="event-budget-editor" onSubmit={e => void saveRevenue(e)}>
           <span className="event-budget-subtitle"><ArrowUpRight size={16}/> Receita do contratante</span>
           <p>Preencha o valor combinado, mesmo que ainda não tenha recebido. Atualize o recebido quando houver pagamento.</p>
-          <div className="event-budget-field">
-            <label htmlFor={"event-budget-client-" + eventId}>Valor combinado (R$)</label>
-            <input id={"event-budget-client-" + eventId} type="text" inputMode="decimal"
+          <Input label="Valor combinado (R$)" hint="Deixe vazio enquanto não houver valor definido." id={"event-budget-client-" + eventId} type="text" inputMode="decimal"
               maxLength={12} placeholder="Ex.: 3500,00" value={clientFee}
               onChange={e => setClientFee(e.target.value)}
               disabled={busy}/>
-            <small>Deixe vazio enquanto não houver valor definido.</small>
-          </div>
-          <div className="event-budget-field">
-            <label htmlFor={"event-budget-received-" + eventId}>Já recebido (R$)</label>
-            <input id={"event-budget-received-" + eventId} type="text" inputMode="decimal"
+          <Input label="Já recebido (R$)" hint="Não pode ultrapassar o valor combinado." id={"event-budget-received-" + eventId} type="text" inputMode="decimal"
               maxLength={12} required placeholder="Ex.: 1000,00" value={received}
               onChange={e => setReceived(e.target.value)} disabled={busy}/>
-            <small>Não pode ultrapassar o valor combinado.</small>
-          </div>
-          <button type="submit" className="btn btn-primary" disabled={busy}>
+          <Button type="submit" disabled={busy}>
             {busy ? <LoaderCircle size={15}/> : <Save size={15}/>}
             {busy ? "Salvando..." : "Salvar receita"}
-          </button>
+          </Button>
         </form>
 
         <div className="event-budget-editor">
@@ -343,53 +330,41 @@ export default function EventBudgetPanel({ eventId, refreshToken = 0 }: Props) {
               <span className="event-budget-subtitle"><ArrowDownRight size={16}/> Despesas extras</span>
               <p>Transporte, alimentação, equipamentos e outros custos separados dos cachês da banda.</p>
             </div>
-            {!showExpenseForm && <button type="button" className="btn btn-quiet" disabled={busy || budget.expenses.length >= 60}
-              onClick={newExpense}><Plus size={15}/> Adicionar</button>}
+            {!showExpenseForm && <Button variant="ghost" type="button" disabled={busy || budget.expenses.length >= 60}
+              onClick={newExpense}><Plus size={15}/> Adicionar</Button>}
           </div>
 
           {showExpenseForm && <form className="event-budget-expense-form" onSubmit={e => void saveExpense(e)}>
             <div className="event-budget-expense-form-header">
               <strong><FilePlus2 size={15}/> {editingExpense ? "Editar despesa" : "Nova despesa"}</strong>
-              <button type="button" aria-label="Fechar formulário de despesa"
+              <Button variant="ghost" type="button" aria-label="Fechar formulário de despesa"
                 disabled={busy} onClick={() => {setShowExpenseForm(false);setEditingExpense(null);setError("");}}>
                 <X size={16}/>
-              </button>
+              </Button>
             </div>
-            <div className="event-budget-field">
-              <label htmlFor={"event-expense-description-" + eventId}>Descrição *</label>
-              <input id={"event-expense-description-" + eventId} maxLength={120} minLength={2}
+            <Input label="Descrição *" id={"event-expense-description-" + eventId} maxLength={120} minLength={2}
                 required value={expenseForm.description} disabled={busy}
                 onChange={e => setExpenseForm(prev => ({...prev,description:e.target.value}))}
                 placeholder="Ex.: Transporte da equipe"/>
-            </div>
-            <div className="event-budget-field">
-              <label htmlFor={"event-expense-category-" + eventId}>Categoria</label>
-              <select id={"event-expense-category-" + eventId} value={expenseForm.category}
+            <Select label="Categoria" id={"event-expense-category-" + eventId} value={expenseForm.category}
                 disabled={busy}
                 onChange={e => setExpenseForm(prev => ({...prev,category:e.target.value as Category}))}>
                 {categories.map(category => <option key={category} value={category}>{categoryNames[category]}</option>)}
-              </select>
-            </div>
+              </Select>
             <div className="event-budget-field-grid">
-              <div className="event-budget-field">
-                <label htmlFor={"event-expense-amount-" + eventId}>Valor total (R$) *</label>
-                <input id={"event-expense-amount-" + eventId} type="text" inputMode="decimal"
+              <Input label="Valor total (R$) *" id={"event-expense-amount-" + eventId} type="text" inputMode="decimal"
                   required value={expenseForm.amount} disabled={busy}
                   onChange={e => setExpenseForm(prev => ({...prev,amount:e.target.value}))}
                   placeholder="Ex.: 250,00"/>
-              </div>
-              <div className="event-budget-field">
-                <label htmlFor={"event-expense-paid-" + eventId}>Pago até agora (R$) *</label>
-                <input id={"event-expense-paid-" + eventId} type="text" inputMode="decimal"
+              <Input label="Pago até agora (R$) *" id={"event-expense-paid-" + eventId} type="text" inputMode="decimal"
                   required value={expenseForm.paid} disabled={busy}
                   onChange={e => setExpenseForm(prev => ({...prev,paid:e.target.value}))}
                   placeholder="Ex.: 0,00"/>
-              </div>
             </div>
-            <button className="btn btn-primary" type="submit" disabled={busy}>
+            <Button type="submit" disabled={busy}>
               {busy ? <LoaderCircle size={15}/> : <Save size={15}/>}
               {busy ? "Salvando..." : editingExpense ? "Salvar despesa" : "Adicionar despesa"}
-            </button>
+            </Button>
           </form>}
 
           {budget.expenses.length === 0 ? <div className="event-budget-expenses-empty">
@@ -406,10 +381,10 @@ export default function EventBudgetPanel({ eventId, refreshToken = 0 }: Props) {
                 <div className="event-budget-expense-actions">
                   <strong>{money(item.amount)}</strong>
                   <div>
-                    <button type="button" disabled={busy} onClick={() => editExpense(item)}
-                      aria-label={"Editar despesa " + item.description}><Pencil size={15}/></button>
-                    <button type="button" disabled={busy} onClick={() => void deleteExpense(item)}
-                      aria-label={"Excluir despesa " + item.description}><Trash2 size={15}/></button>
+                    <Button variant="ghost" type="button" disabled={busy} onClick={() => editExpense(item)}
+                      aria-label={"Editar despesa " + item.description}><Pencil size={15}/></Button>
+                    <Button variant="ghost" type="button" disabled={busy} onClick={() => void deleteExpense(item)}
+                      aria-label={"Excluir despesa " + item.description}><Trash2 size={15}/></Button>
                   </div>
                 </div>
               </div>

@@ -9,6 +9,7 @@ import {
 import { createClient } from "@/lib/supabase/client";
 import EventFinancialSummary from "./event-financial-summary";
 import EventBudgetPanel from "./event-budget-panel";
+import { Button, InlineNotice, LoadingState, Select, Textarea } from "@/src/components/ui";
 import "./event-team-invites.css";
 
 type SavedTeam = {
@@ -160,14 +161,14 @@ export default function EventTeamInvites({ eventId, eventTitle, eventStatus }: P
         <h3>Monte a equipe deste show.</h3>
         <p>Escolha uma formação salva. Os convites e a negociação de cachê continuam individuais.</p>
       </div>
-      <button type="button" className="event-team-refresh"
+      <Button variant="ghost" type="button" className="event-team-refresh"
         onClick={() => {setRefreshing(true);void readData();}}
         disabled={loading || refreshing || sending} aria-label="Atualizar convites e equipes">
         <RefreshCw size={16}/>{refreshing ? "Atualizando..." : "Atualizar"}
-      </button>
+      </Button>
     </div>
 
-    {loading ? <p className="event-team-loading"><LoaderCircle size={16}/> Carregando equipes...</p> : <>
+    {loading ? <LoadingState label="Carregando equipes..."/> : <>
       <div className="event-team-statuses" aria-label="Convites deste show">
         <span><Clock3 size={15}/> {pending} pendente(s)</span>
         <span><CheckCircle2 size={15}/> {accepted} aceito(s)</span>
@@ -180,27 +181,26 @@ export default function EventTeamInvites({ eventId, eventTitle, eventStatus }: P
       {teams.length === 0 ? <div className="event-team-empty">
         <Users size={20}/>
         <p>Você ainda não tem uma equipe salva. Crie uma formação a partir de músicos com quem já colaborou.</p>
-        <Link className="btn btn-primary" href={"/equipes?evento=" + encodeURIComponent(eventId)}>
+        <Link className="sf-ui-button sf-ui-button-primary" href={"/equipes?evento=" + encodeURIComponent(eventId)}>
           Criar minha equipe <ArrowRight size={15}/>
         </Link>
       </div> : <form onSubmit={event => void sendTeamInvites(event)} className="event-team-form">
-        <label htmlFor={"event-team-select-" + eventId}>Equipe salva</label>
-        <select id={"event-team-select-" + eventId} value={teamId}
+        <Select label="Equipe salva" id={"event-team-select-" + eventId} value={teamId}
           disabled={sending}
           onChange={event => {setTeamId(event.target.value);setNotice("");setError("");}}>
           {teams.map(team => <option key={team.id} value={team.id}>
             {team.name} · {team.member_count} músico(s)
           </option>)}
-        </select>
+        </Select>
 
         {chosen && <div className="event-team-members">
-          <button type="button" className="event-team-members-toggle"
+          <Button variant="ghost" type="button" className="event-team-members-toggle"
             aria-expanded={showMembers} onClick={() => setShowMembers(value => !value)}>
             <span><Users size={16}/> {members.length} integrante(s) da equipe</span>
             {showMembers ? <ChevronUp size={16}/> : <ChevronDown size={16}/>}
-          </button>
+          </Button>
           {showMembers && (membersLoading
-            ? <p className="event-team-loading"><LoaderCircle size={15}/> Carregando integrantes...</p>
+            ? <LoadingState label="Carregando integrantes..."/>
             : members.length === 0
               ? <p className="event-team-no-members">Adicione músicos à equipe antes de enviar convites.</p>
               : <div className="event-team-member-list">
@@ -211,20 +211,19 @@ export default function EventTeamInvites({ eventId, eventTitle, eventStatus }: P
               </div>)}
         </div>}
 
-        <label htmlFor={"event-team-message-" + eventId}>Mensagem aos convidados (opcional)</label>
-        <textarea id={"event-team-message-" + eventId}
+        <Textarea label="Mensagem aos convidados (opcional)" id={"event-team-message-" + eventId}
           value={message} onChange={event => setMessage(event.target.value)}
           maxLength={500} rows={3}
           placeholder="Ex.: vamos tocar nesse show; confirma sua disponibilidade?"/>
 
         <div className="event-team-actions">
-          <button type="submit" className="btn btn-primary"
+          <Button type="submit"
             disabled={sending || membersLoading || members.length === 0 ||
               eventStatus === "cancelled" || eventStatus === "completed"}>
             {sending ? <LoaderCircle size={16}/> : <Send size={16}/>}
             {sending ? "Registrando convites..." : "Convidar esta equipe"}
-          </button>
-          <Link className="btn btn-quiet" href={"/equipes?evento=" + encodeURIComponent(eventId)}>
+          </Button>
+          <Link className="sf-ui-button sf-ui-button-ghost" href={"/equipes?evento=" + encodeURIComponent(eventId)}>
             Gerenciar formações <ArrowRight size={15}/>
           </Link>
         </div>
@@ -246,7 +245,7 @@ export default function EventTeamInvites({ eventId, eventTitle, eventStatus }: P
       </p>
     </>}
 
-    {error && <div className="event-team-error" role="alert">{error}</div>}
-    {notice && <div className="event-team-notice" role="status">{notice}</div>}
+    {error && <div className="event-team-feedback"><InlineNotice tone="danger">{error}</InlineNotice></div>}
+    {notice && <div className="event-team-feedback"><InlineNotice tone="success">{notice}</InlineNotice></div>}
   </section>;
 }

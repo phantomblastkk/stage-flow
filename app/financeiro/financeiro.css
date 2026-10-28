@@ -65,7 +65,6 @@
  .finance-team-row>div,.finance-team-row>.sf-ui-field{min-width:0;width:100%}
  .finance-team-row>.sf-ui-field{flex:1 1 100%}
  .finance-event-detail .event-budget-header>div{min-width:0}
- .finance-event-detail .event-budget-editor>.btn{white-space:normal;min-height:44px;width:100%}
 }
 
 /* Shared controls own colours, focus and target sizes; this sheet owns layout. */

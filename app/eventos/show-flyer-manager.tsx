@@ -11,6 +11,7 @@ import {
   loadFlyerImage, makeFlyerBlob, safeFlyerSettings,
   type FlyerCrop, type FlyerFit, type FlyerFormat, type FlyerSettings
 } from "@/app/meu-perfil-artistico/site-profissional/show-flyer-render";
+import { Button, InlineNotice, Input } from "@/src/components/ui";
 import "./show-flyer-manager.css";
 
 const BUCKET="stage-show-flyers";
@@ -235,26 +236,23 @@ export default function ShowFlyerManager({
           Feed (1080×1350) e Story/Status (1080×1920).</p>
       </div>
     </header>
-    {error&&<p className="show-flyer-error" role="alert">{error}</p>}
-    {message&&<p className="show-flyer-success" role="status">{message}</p>}
+    {error&&<div className="show-flyer-feedback"><InlineNotice tone="danger">{error}</InlineNotice></div>}
+    {message&&<div className="show-flyer-feedback"><InlineNotice tone="success">{message}</InlineNotice></div>}
     <div className="show-flyer-upload">
-      <label className={"btn btn-quiet"+(!ready||busy?" is-disabled":"")}>
-        <ImagePlus size={16}/> {image?"Trocar flyer original":"Escolher flyer (JPG, PNG, WebP)"}
-        <input type="file" accept="image/jpeg,image/png,image/webp" hidden
-          disabled={!ready||busy} onChange={chooseFile}/>
-      </label>
+      <Input type="file" label={image?"Trocar flyer original":"Escolher flyer (JPG, PNG, WebP)"}
+        accept="image/jpeg,image/png,image/webp" disabled={!ready||busy} onChange={chooseFile}/>
       <small>Até 8 MB. O flyer original permanece privado e só aparece no Perfil Artístico se o show for público.</small>
     </div>
     {image&&<div className="show-flyer-workspace">
       <div className="show-flyer-canvas-wrap">
         <div className="show-flyer-format-tabs" role="group" aria-label="Formato do flyer">
-          <button type="button" className={format==="feed"?"is-active":""}
-            onClick={()=>setFormat("feed")}>Feed 4:5</button>
-          <button type="button" className={format==="story"?"is-active":""}
-            onClick={()=>setFormat("story")}>Story / Status 9:16</button>
+          <Button variant="ghost" type="button" className={format==="feed"?"is-active":""}
+            aria-pressed={format==="feed"} onClick={()=>setFormat("feed")}>Feed 4:5</Button>
+          <Button variant="ghost" type="button" className={format==="story"?"is-active":""}
+            aria-pressed={format==="story"} onClick={()=>setFormat("story")}>Story / Status 9:16</Button>
         </div>
         <canvas ref={canvasRef} className="show-flyer-canvas"
-          style={{aspectRatio:format==="feed"?"4 / 5":"9 / 16"}}
+          data-format={format}
           onPointerDown={startDrag}
           onPointerMove={moveDrag}
           onPointerUp={stopDrag}
@@ -265,14 +263,14 @@ export default function ShowFlyerManager({
       <div className="show-flyer-controls">
         <strong>Enquadramento do {format==="feed"?"Feed":"Story / Status"}</strong>
         <div className="show-flyer-modes" role="group" aria-label="Tipo de ajuste">
-          <button type="button" className={crop.fit==="cover"?"is-active":""}
-            onClick={()=>setCrop({fit:"cover",zoom:1,x:0,y:0})}>
+          <Button variant="ghost" type="button" className={crop.fit==="cover"?"is-active":""}
+            aria-pressed={crop.fit==="cover"} onClick={()=>setCrop({fit:"cover",zoom:1,x:0,y:0})}>
             <ArrowLeftRight size={15}/> Preencher / recorte automático
-          </button>
-          <button type="button" className={crop.fit==="contain"?"is-active":""}
-            onClick={()=>setCrop({fit:"contain",zoom:1,x:0,y:0})}>
+          </Button>
+          <Button variant="ghost" type="button" className={crop.fit==="contain"?"is-active":""}
+            aria-pressed={crop.fit==="contain"} onClick={()=>setCrop({fit:"contain",zoom:1,x:0,y:0})}>
             <ImagePlus size={15}/> Sem cortar / fundo desfocado
-          </button>
+          </Button>
         </div>
         <label>
           <span>Zoom <b>{crop.zoom.toFixed(1)}×</b></span>
@@ -289,36 +287,36 @@ export default function ShowFlyerManager({
           <input type="range" min={-100} max={100} step={1} value={crop.y}
             onChange={event=>setCrop({y:Number(event.target.value)})}/>
         </label>
-        <button className="show-flyer-reset" type="button"
+        <Button variant="ghost" className="show-flyer-reset" type="button"
           onClick={()=>setCrop({fit:"cover",zoom:1,x:0,y:0})}>
           <RotateCcw size={15}/> Restaurar ajuste automático
-        </button>
+        </Button>
         {pendingFile&&<p className="show-flyer-pending">
           Você selecionou uma nova arte. Clique em <strong>Salvar flyer</strong> para enviá-la ao show.
         </p>}
-        <button className="btn btn-primary" type="button"
+        <Button type="button"
           onClick={()=>void save()} disabled={!ready||busy}>
           {busy?<LoaderCircle size={16}/>:<Save size={16}/>}
           {busy?"Processando...":"Salvar flyer e enquadramento"}
-        </button>
-        <button className="btn btn-quiet" type="button" disabled={busy}
+        </Button>
+        <Button variant="ghost" type="button" disabled={busy}
           onClick={()=>void shareCurrentFormat()}>
           <Share2 size={16}/> {format==="feed"?"Compartilhar Feed":"Compartilhar Story / Status"} (ou baixar)
-        </button>
+        </Button>
         <div className="show-flyer-downloads">
-          <button className="btn btn-quiet" type="button" disabled={busy}
+          <Button variant="ghost" type="button" disabled={busy}
             onClick={()=>void exportFormat("feed")}>
             <Download size={15}/> Baixar Feed 1080×1350
-          </button>
-          <button className="btn btn-quiet" type="button" disabled={busy}
+          </Button>
+          <Button variant="ghost" type="button" disabled={busy}
             onClick={()=>void exportFormat("story")}>
             <Download size={15}/> Baixar Story 1080×1920
-          </button>
+          </Button>
         </div>
-        {flyerPath&&<button className="show-flyer-remove" type="button"
+        {flyerPath&&<Button variant="ghost" className="show-flyer-remove" type="button"
           disabled={busy} onClick={()=>void remove()}>
           <Trash2 size={15}/> Excluir flyer do show
-        </button>}
+        </Button>}
         <p className="show-flyer-footnote"><Check size={14}/>
           O enquadramento de Feed e Story é salvo separadamente.
           O sistema começa pelo centro da imagem; confira textos, rostos e logos antes de publicar.</p>

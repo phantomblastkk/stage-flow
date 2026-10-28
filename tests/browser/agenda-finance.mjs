@@ -58,7 +58,7 @@ async function setup(width) {
   const context = await browser.newContext({ viewport: { width, height: 900 }, timezoneId: "America/Sao_Paulo" });
   await context.addCookies([{ name: "sb-example-auth-token", value: "base64-" + encoded(session), url: origin, sameSite: "Lax" }]);
   const state = { events: [...initialEvents(), ...moreEvents(), { ...initialEvents()[1], id: "77777777-7777-4777-8777-777777777777", title: "Show de dezembro", starts_at: "2026-12-02T23:00:00Z" }], accepted: false, failAgenda: false, failFinance: false, invalidFinance: false, writes: [],
-    bulkHistory:false, reads: new Map(), adminA: false, financeDelay: null, delayedFinanceStarted: 0, delayedFinanceCompleted: 0,
+    editorWrites:[], editorExpenses:[], teamWrites:[], bulkHistory:false, reads: new Map(), adminA: false, financeDelay: null, delayedFinanceStarted: 0, delayedFinanceCompleted: 0,
     messageDelay: null, delayedMessagesStarted: 0, delayedMessagesCompleted: 0, failMessageId: null, failInvites: false, feeEnabled:false, feeAgreed:null, feeAmount:400, feeByMe:false, feeReadFail:false, feeOffers:[],
     failChatPreferences: false, showProposal: false, proposalReadFail:false, proposalDelay:null, proposalStarted:0, proposalCompleted:0, asRequester:false, prefillDelay:null, prefillStarted:0, prefillCompleted:0, scheduleDelay:null, scheduleCalls:[], sendResult:"schedule_conflict", proposalWrites:[], submittedProposal:null, proposalWithdrawn:false, proposalAccepted: false, guestStartsAt: guest.starts_at, sent: [],
     messages: Object.fromEntries([[threadA,"Mensagem privada A"],[threadB,"Mensagem privada B"]].map(([id,text])=>[id,[{id,body:text,is_mine:false,created_at:"2026-11-01T15:00:00Z"}]])) };
@@ -148,7 +148,16 @@ async function setup(width) {
     } else if (rpc === "stage_finance_event_team") {
       await delay(body.p_event_id === firstId ? 350 : 20);
       result = { status: "ok", items: [{ invitation_id: invitationId, musician_name: body.p_event_id === firstId ? "Equipe A" : "Equipe B", fee: 400, paid_amount: 0 }] };
-    } else if (rpc === "stage_my_event_budget") result = { event_id: body.p_event_id, client_fee: 3000, received_amount: 1500, to_receive: 1500, expenses_total: 100, expenses_paid_total: 50, expenses_unpaid_total: 50, expenses: [], musician_agreed_total: 800, musician_unpriced_count: 0, projected_partial_result: 2100 };
+    } else if (rpc === "stage_my_event_budget") result = { event_id: body.p_event_id, client_fee: 3000, received_amount: 1500, to_receive: 1500, expenses_total: 100, expenses_paid_total: 50, expenses_unpaid_total: 50, expenses: state.editorExpenses, musician_agreed_total: 800, musician_unpriced_count: 0, projected_partial_result: 2100 };
+    else if (rpc === "stage_my_teams") result=[{id:threadA,name:"Banda de teste",member_count:1}];
+    else if (rpc === "stage_team_members_for_owner") result=[{member_id:threadB,musician_id:otherUserId,musician_name:"Músico da formação",instrument:"Violão"}];
+    else if (rpc === "stage_sent_invitations_with_whatsapp") result=[];
+    else if (rpc === "stage_event_financial_summary") result={event_id:body.p_event_id,invitation_count:0,active_count:0,accepted_count:0,confirmed_fee_count:0,agreed_waiting_count:0,pending_fee_count:0,open_offer_count:0,unquoted_count:0,inactive_count:0,confirmed_total:0,agreed_waiting_total:0,agreed_total:0,open_offer_total:0,items:[]};
+    else if (rpc === "stage_invite_team_to_event") {state.teamWrites.push(body);result={status:"sent",created:1,existing:0,total:1};}
+    else if (rpc === "stage_save_event_expense") {
+      assert.equal(actor,userId);assert.equal(body.p_paid_amount,50);assert.equal(body.p_amount,100);
+      state.editorWrites.push(body);state.editorExpenses=[{id:proposalId,description:body.p_description,category:body.p_category,amount:body.p_amount,paid_amount:body.p_paid_amount}];result={status:"created"};
+    }
     else if (rpc === "stage_my_invitations") {
       if(state.failInvites){status=503;result={message:"Fixture unavailable"};}
       else result = [{ id: invitationId, status: state.accepted ? "accepted" : "pending", message: null, created_at: "2026-10-27T12:00:00Z", responded_at: null, event_id: guestId, event_title: guest.title, event_starts_at: state.guestStartsAt, event_venue: guest.venue, event_city: guest.city, organizer_name: guest.organizer_name }];
@@ -243,6 +252,47 @@ try {
       assert.equal(state.events.length, 24);
       await page.evaluate(() => scrollTo(0, 0));
       await page.screenshot({ path: `test-results/agenda-${width}.png`, fullPage: true });
+      // Part 16: flyer selection/export and explicit team confirmation use synthetic data only.
+      const ownCard=page.locator("#stage-event-"+firstId);
+      await ownCard.getByRole("button",{name:"Flyer para Instagram/WhatsApp",exact:true}).click();
+      const flyer=ownCard.getByRole("region",{name:/^Flyer do show/});
+      const fileInput=flyer.locator('input[type="file"]');
+      await fileInput.waitFor({state:"visible"});
+      await fileInput.setInputFiles({name:"invalid.txt",mimeType:"text/plain",buffer:Buffer.from("invalid")});
+      await flyer.getByRole("alert").filter({hasText:"Use JPG, PNG ou WebP"}).waitFor();
+      const fixturePng=await page.evaluate(()=>{const c=document.createElement("canvas");c.width=40;c.height=60;const x=c.getContext("2d");x.fillStyle="#7650b0";x.fillRect(0,0,40,60);return c.toDataURL("image/png").split(",")[1];});
+      await fileInput.setInputFiles({name:"fixture.png",mimeType:"image/png",buffer:Buffer.from(fixturePng,"base64")});
+      await flyer.locator("canvas").waitFor();
+      await flyer.getByRole("button",{name:"Story / Status 9:16",exact:true}).click();
+      assert.equal(await flyer.getByRole("button",{name:"Story / Status 9:16",exact:true}).getAttribute("aria-pressed"),"true");
+      assert.equal(await flyer.locator("canvas").getAttribute("data-format"),"story");
+      const zoom=flyer.getByRole("slider",{name:/^Zoom/});await zoom.focus();await page.keyboard.press("ArrowRight");
+      assert.equal(await zoom.inputValue(),"1.1");
+      assert.ok(await zoom.evaluate(n=>n.getBoundingClientRect().height)>=44);
+      const flyerDownload=page.waitForEvent("download");
+      await flyer.getByRole("button",{name:"Baixar Feed 1080×1350",exact:true}).click();
+      const flyerFile=await flyerDownload;
+      const jpeg=await readFile(await flyerFile.path());
+      const dimensions=await page.evaluate(async b=>{const bytes=Uint8Array.from(atob(b),c=>c.charCodeAt(0));const bitmap=await createImageBitmap(new Blob([bytes],{type:"image/jpeg"}));const d=[bitmap.width,bitmap.height];bitmap.close();return d;},jpeg.toString("base64"));
+      assert.deepEqual(dimensions,[1080,1350]);
+      assert.equal(state.reads.get(userId+":stage_set_show_flyer")??0,0,"preview/export must not publish a flyer");
+      await noHorizontalOverflow(page,"flyer editor "+width);
+      await flyer.screenshot({path:`test-results/flyer-editor-${width}.png`});
+      await ownCard.getByRole("button",{name:"Fechar flyer",exact:true}).click();
+      await ownCard.getByRole("button",{name:"Equipe, convites e financeiro",exact:true}).click();
+      const teamPanel=ownCard.getByRole("region",{name:/^Equipe de músicos/});
+      await teamPanel.getByText("Músico da formação",{exact:true}).waitFor();
+      assert.equal(await teamPanel.getByLabel("Equipe salva",{exact:true}).inputValue(),threadA);
+      await teamPanel.getByLabel("Mensagem aos convidados (opcional)",{exact:true}).fill("Ensaio de teste");
+      page.once("dialog",dialog=>dialog.dismiss());
+      await teamPanel.getByRole("button",{name:"Convidar esta equipe",exact:true}).click();
+      assert.equal(state.teamWrites.length,0,"dismissed confirmation must not invite anyone");
+      page.once("dialog",dialog=>dialog.accept());
+      await teamPanel.getByRole("button",{name:"Convidar esta equipe",exact:true}).click();
+      await teamPanel.getByRole("status").filter({hasText:"1 novo(s) convite(s) registrado(s)"}).waitFor();
+      assert.equal(state.teamWrites.length,1);assert.equal(state.teamWrites[0].p_event_id,firstId);assert.equal(state.teamWrites[0].p_message,"Ensaio de teste");
+      await noHorizontalOverflow(page,"team editor "+width);
+      await teamPanel.screenshot({path:`test-results/team-editor-${width}.png`});
       await page.goto(origin + "/financeiro");
       await page.getByRole("region", { name: "Resumo financeiro" }).waitFor();
       assert.equal(await page.locator('section[aria-label="Resumo financeiro"] .sf-ui-stat').count(), 4);
@@ -286,6 +336,28 @@ try {
       assert.ok(await page.locator(".finance-team-row").getByRole("button",{name:"Salvar",exact:true}).evaluate(node=>node.getBoundingClientRect().height)>=44);
       if(width===360)assert.ok(await paidInput.evaluate(node=>parseFloat(getComputedStyle(node).fontSize))>=16,"mobile payment field avoids focus zoom");
       await paidInput.fill("0,00");
+      const budgetPanel=page.getByRole("region",{name:"Receita e despesas privadas do show",exact:true});
+      await budgetPanel.getByRole("button",{name:"Adicionar",exact:true}).click();
+      await budgetPanel.getByLabel("Descrição *",{exact:true}).fill("Transporte de teste");
+      await budgetPanel.getByLabel("Categoria",{exact:true}).selectOption("transport");
+      await budgetPanel.getByLabel("Valor total (R$) *",{exact:true}).fill("100,00");
+      await budgetPanel.getByLabel("Pago até agora (R$) *",{exact:true}).fill("200,00");
+      await budgetPanel.getByRole("button",{name:"Adicionar despesa",exact:true}).click();
+      const expenseError=budgetPanel.getByRole("alert").filter({hasText:"Confira a despesa"});await expenseError.waitFor();
+      assert.equal(state.editorWrites.length,0,"expense paid above total must not write");
+      await readable(expenseError,"expense validation error");
+      await noHorizontalOverflow(page,"open expense form "+width);
+      if(width===360)assert.ok(await budgetPanel.getByLabel("Valor total (R$) *",{exact:true}).evaluate(n=>parseFloat(getComputedStyle(n).fontSize))>=16);
+      await budgetPanel.screenshot({path:`test-results/expense-form-${width}.png`});
+      await budgetPanel.getByLabel("Pago até agora (R$) *",{exact:true}).fill("50,00");
+      await budgetPanel.getByRole("button",{name:"Adicionar despesa",exact:true}).click();
+      await budgetPanel.getByText("Transporte de teste",{exact:true}).waitFor();
+      assert.equal(state.editorWrites.length,1);assert.equal(state.editorWrites[0].p_event_id,secondId);
+      const editExpense=budgetPanel.getByRole("button",{name:"Editar despesa Transporte de teste",exact:true});
+      assert.ok(await editExpense.evaluate(n=>n.getBoundingClientRect().height)>=44);
+      await editExpense.click();
+      assert.equal(await budgetPanel.getByLabel("Pago até agora (R$) *",{exact:true}).inputValue(),"50,00");
+      await budgetPanel.getByRole("button",{name:"Fechar formulário de despesa",exact:true}).click();
       await noHorizontalOverflow(page, "finance editor " + width);
       await page.screenshot({ path: `test-results/finance-${width}.png`, fullPage: true });
       if (width === 360) {

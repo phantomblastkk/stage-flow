@@ -80,3 +80,8 @@
 .sf-ui-notice-success{color:var(--sf-ui-success);background:var(--sf-ui-success-bg);border-color:var(--sf-ui-success-border)}
 .sf-ui-notice-warning{color:var(--sf-ui-warning);background:var(--sf-ui-warning-bg);border-color:var(--sf-ui-warning-border)}
 .sf-ui-notice-danger{color:var(--sf-ui-danger-contrast);background:var(--sf-ui-danger-bg);border-color:var(--sf-ui-danger-border)}
+
+/* Native file controls remain focusable and use the same shared field tokens. */
+.sf-ui-input[type=file]{overflow:hidden;font-size:var(--sf-ui-text-xs)}
+.sf-ui-input::file-selector-button{margin-right:10px;border:1px solid var(--sf-ui-border);border-radius:var(--sf-ui-radius-sm);padding:8px;color:var(--sf-ui-text);background:var(--sf-ui-surface-raised);cursor:pointer}
+.sf-ui-input:disabled::file-selector-button{cursor:not-allowed}
