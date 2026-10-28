@@ -7,8 +7,8 @@
 
 ## Deploy
 - **NUNCA habilite deploy automático**, nem na Vercel nem em workflows GitHub.
-- Mantenha `vercel.json` com `git.deploymentEnabled.main=false` e `develop=false`.
-- Mantenha o Ignored Build Step de produção bloqueando builds automáticos.
+- Mantenha `vercel.json` com `git.deploymentEnabled=false` para **todas** as branches. Sem deploy automático de GitHub.
+- O Ignored Build Step da Vercel deve ficar em `Automatic` (sem comando que sempre retorne `exit 0`); ele não controla a autorização de publicação. A autorização é a operação manual de deploy, enquanto `git.deploymentEnabled=false` bloqueia todos os deploys automáticos. Nunca reative o Git auto deploy.
 - Commits na `main` **não** autorizam deploy manual. Faça-o somente após pedido específico.
 - Não reconfigure alias, domínio, SSO, credenciais, plano comercial ou faturamento para contornar uma falha.
 

@@ -141,8 +141,7 @@ test("main is the only active CI branch; commits never auto-deploy",()=>{
   assert.doesNotMatch(yml,/vercel\s+deploy|supabase\s+db\s+push|\bdeploy-to-production\b/i);
  }
  const vercel=JSON.parse(read("vercel.json"));
- assert.equal(vercel.git.deploymentEnabled.main,false);
- assert.equal(vercel.git.deploymentEnabled.develop,false);
+ assert.equal(vercel.git.deploymentEnabled,false);
  const policy=read("AGENTS.md");
  assert.match(policy,/branch `main`/);
  assert.match(policy,/NUNCA habilite deploy automático/);

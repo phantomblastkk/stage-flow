@@ -62,7 +62,7 @@ test("search and social metadata for the singer use only public server functions
 });
 
 test("main and develop require manual Vercel deployments",()=>{
- assert.deepEqual(config.git.deploymentEnabled,{develop:false,main:false});
+ assert.equal(config.git.deploymentEnabled,false);
 });
 
 test("published musician portfolios have their own safe share metadata",()=>{
