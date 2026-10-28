@@ -33,3 +33,28 @@
 .hiring-composer .sf-ui-field{flex:1;min-width:0}.hiring-settings .sf-ui-field{max-width:340px}.hiring-page>.container>.sf-ui-notice{margin-bottom:var(--sf-ui-space-4)}.hiring-thread:focus-visible{outline:3px solid var(--sf-ui-focus);outline-offset:-3px}
 
 .hiring-main{background:var(--sf-ui-surface)}.hiring-accept{min-height:44px;color:var(--sf-ui-muted)}
+
+/* Chat com comportamento de mensageiro: mensagens rolaveis e envio ao alcance do polegar. */
+@media(max-width:750px){
+ .hiring-heading{padding:15px 0 14px}
+ .hiring-heading h1{font-size:clamp(24px,7vw,32px);letter-spacing:-.035em;margin:8px 0}
+ .hiring-heading p{font-size:13px;line-height:1.5}
+ .hiring-layout.has-active{height:clamp(440px,calc(100dvh - 185px),740px);min-height:440px}
+ .hiring-main{min-height:0;max-height:100%;overflow:hidden}
+ .hiring-messages{min-height:0;max-height:none;overscroll-behavior-y:contain;flex:1}
+ .hiring-chat-header{flex-shrink:0;gap:8px}
+ .hiring-chat-header>div{flex:1;min-width:130px}
+ .hiring-chat-header h2{font-size:16px;margin:0}
+ .hiring-chat-header p{font-size:12px;line-height:1.4;margin-top:4px}
+ .hiring-composer{position:relative;z-index:1;flex:none;padding:10px 12px calc(12px + env(safe-area-inset-bottom))}
+ .hiring-composer>div{flex-direction:row;align-items:flex-end;gap:8px}
+ .hiring-composer textarea{font-size:16px;min-height:44px;height:48px;max-height:130px;resize:vertical}
+ .hiring-composer .sf-ui-button{min-width:79px;min-height:44px;align-self:flex-end;font-size:13px}
+ .hiring-composer>small{font-size:11px;line-height:1.35;margin-top:6px}
+ .hiring-answers{gap:6px;padding:8px 11px;flex-shrink:0}
+ .hiring-answers button{font-size:12px;min-height:44px}
+}
+@media(max-width:380px){
+ .hiring-composer .sf-ui-button{min-width:64px;padding-inline:8px}
+ .hiring-composer>div{gap:5px}
+}

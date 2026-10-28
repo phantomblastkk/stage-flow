@@ -88,6 +88,11 @@ export default function WorkspaceOverview({isMusician,isSinger,isProducer}:{
   </div>}
   {loading&&!data?<LoadingState label="Preparando seu resumo personalizado…"/>:metrics&&<>
    <p className="sf-operations-summary">Você tem <Link href="/eventos"><strong>{safeCount(metrics.shows_week)} shows</strong> nos próximos 7 dias</Link>, <Link href="/meus-convites"><strong>{safeCount(metrics.pending_invites)} convites</strong> aguardando resposta</Link> e <Link href="/conversas"><strong>{safeCount(metrics.unread_conversations)} conversas</strong> para acompanhar</Link>.</p>
+   <nav className="sf-mobile-priority-rail" aria-label="Pendências para responder">
+    {safeCount(metrics.pending_contacts)>0&&<Link href="/meu-perfil-artistico/solicitacoes"><Inbox size={19}/><span><strong>{safeCount(metrics.pending_contacts)} pedido(s)</strong><small>Responder contratação</small></span><ArrowUpRight size={16}/></Link>}
+    {safeCount(metrics.pending_invites)>0&&<Link href="/meus-convites"><Users size={19}/><span><strong>{safeCount(metrics.pending_invites)} convite(s)</strong><small>Avaliar convites</small></span><ArrowUpRight size={16}/></Link>}
+    {safeCount(metrics.unread_conversations)>0&&<Link href="/conversas"><MessageCircle size={19}/><span><strong>{safeCount(metrics.unread_conversations)} conversa(s)</strong><small>Responder mensagens</small></span><ArrowUpRight size={16}/></Link>}
+   </nav>
    <div className="sf-operations-hero">
     <Card className="sf-operations-next-show"><span className="eyebrow">PRÓXIMO SHOW</span>
      {nextShow?<><h2>{nextShow.title}</h2><p>{nextShow.venue||"Local a definir"}{nextShow.city?" · "+nextShow.city:""}</p><p>{date.format(new Date(nextShow.starts_at))}</p><Link className="sf-ui-button sf-ui-button-primary" href={"/eventos?evento="+encodeURIComponent(nextShow.id)}>Ver detalhes <ArrowUpRight size={16}/></Link></>:<><h2>Seu próximo palco está por vir</h2><p>Confira os convites ou organize um novo show.</p><Link className="sf-ui-button sf-ui-button-primary" href="/eventos?novo=1">Criar evento</Link></>}
@@ -98,11 +103,7 @@ export default function WorkspaceOverview({isMusician,isSinger,isProducer}:{
    <OperationalFinance revision={latestRequest.current}/>
    <Card className="sf-operations-opportunities"><div className="sf-workspace-pane-head"><div><h2>Oportunidades para você</h2><p>Explore músicos por estilo, região e disponibilidade diretamente no Marketplace.</p></div><Store size={20}/></div><div className="sf-workspace-quick-actions"><Link href="/marketplace?estilo=Pagode">Pagode</Link><Link href="/marketplace?estilo=Sertanejo">Sertanejo</Link><Link href="/marketplace?aba=favoritos">Favoritos</Link><Link href="/contratar">Artistas e grupos</Link></div><p className="sf-operations-muted">Ainda não há uma fonte de vagas de casas e eventos publicada. Estes acessos abrem buscas reais no catálogo; não representam ofertas de trabalho.</p></Card>
   </>}
-  {metrics&&safeCount(metrics.pending_contacts)>0&&<Link href="/meu-perfil-artistico/solicitacoes"
-   className="sf-workspace-contact-alert"><Inbox size={18}/>Você tem
-   <strong>{safeCount(metrics.pending_contacts)} pedido(s) de contratação</strong>
-   aguardando resposta. <ArrowUpRight size={15}/></Link>}
-  {data&&<div className="sf-workspace-columns">
+   {data&&<div className="sf-workspace-columns">
    <Card>
     <div className="sf-workspace-pane-head">
      <div><h2>Sua agenda</h2><p>Seus próximos compromissos confirmados e organizados.</p></div>
