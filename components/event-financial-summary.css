@@ -133,7 +133,7 @@
 }
 
 .event-financial-panel{background:var(--sf-ui-surface);color:var(--sf-ui-text)}
-.event-financial-heading>div{min-width:0}
+.event-financial-heading>div{flex:1 1 220px;min-width:0}
 .event-financial-total{background:var(--sf-ui-accent-surface)}
 .event-financial-heading h4 svg,.event-financial-eyebrow{color:var(--sf-ui-brand)}
 .event-financial-negotiate{min-height:44px;background:var(--sf-ui-accent-surface);color:var(--sf-ui-brand)}

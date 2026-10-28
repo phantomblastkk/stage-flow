@@ -479,6 +479,8 @@ try {
       await card.getByRole("button",{name:"Equipe, convites e financeiro",exact:true}).click();
       const summary=card.getByRole("region",{name:"Resumo financeiro privado deste show",exact:true});
       await summary.locator(".event-financial-total strong").waitFor();
+      const summaryHeading=await summary.locator(".event-financial-heading").evaluate(n=>({available:n.clientWidth,textWidth:n.firstElementChild.getBoundingClientRect().width}));
+      assert.ok(summaryHeading.textWidth>=Math.min(180,summaryHeading.available)-1,"summary heading must wrap the refresh action instead of squeezing text into a narrow column");
       assert.match(await summary.locator(".event-financial-total strong").innerText(),/R\$\s*500,00/);
       const breakdown=summary.getByRole("button",{name:/Ver cachês por músico/});await breakdown.focus();await breakdown.press("Enter");
       const rows=summary.locator(".event-financial-row");assert.equal(await rows.count(),4);
