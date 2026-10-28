@@ -14,3 +14,6 @@ dist
 
 # Local/browser verification outputs
 test-results/
+
+# Supabase CLI local cache (never commit project/session cache)
+supabase/.temp/

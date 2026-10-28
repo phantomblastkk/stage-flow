@@ -1,0 +1,46 @@
+name: Stage Flow • Booking cursor database isolation
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'supabase/migrations/*_booking_cursor_reads_v1.sql'
+      - 'tests/booking-db/**'
+      - '.github/workflows/booking-pagination.yml'
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  cursor-isolation:
+    name: Booking cursor reads (disposable PostgreSQL, no deploy)
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    services:
+      postgres:
+        image: postgres:17
+        env:
+          POSTGRES_PASSWORD: disposable-booking-fixture
+        ports: ['5432:5432']
+        options: >-
+          --health-cmd "pg_isready -U postgres"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 10
+    env:
+      PGHOST: localhost
+      PGPORT: '5432'
+      PGDATABASE: postgres
+      PGUSER: postgres
+      PGPASSWORD: disposable-booking-fixture
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - name: Create synthetic schema and apply only candidate migration twice
+        run: |
+          set -euo pipefail
+          psql -X -v ON_ERROR_STOP=1 -f tests/booking-db/fixture.sql
+          for round in 1 2; do
+            psql -X -v ON_ERROR_STOP=1 -f supabase/migrations/20261028035231_booking_cursor_reads_v1.sql
+          done
+      - name: Verify cursor, participant isolation and side-effect-free reads
+        run: psql -X -v ON_ERROR_STOP=1 -f tests/booking-db/isolation.sql

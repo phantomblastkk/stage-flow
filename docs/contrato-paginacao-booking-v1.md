@@ -1,7 +1,8 @@
 # Contrato proposto — paginação de contratação v1
 
-Estado: desenho técnico, sem RPC nova instalada, sem migration aplicada e sem
-ativação no frontend. Não substituir as RPCs atuais apenas adicionando range/limit
+Estado: três RPCs de leitura com implementação candidata em
+`supabase/migrations/20261028035231_booking_cursor_reads_v1.sql`, para testes em
+PostgreSQL descartável. Sem instalação remota ou ativação no frontend. Não substituir as RPCs atuais apenas adicionando range/limit
 sobre o JSON já agregado: isso não recupera registros além dos limites internos.
 
 ## Operações propostas
@@ -13,7 +14,8 @@ sobre o JSON já agregado: isso não recupera registros além dos limites intern
 | leitura individual de conversa | thread_id | Confirma participação e retorna cabeçalho sem exigir que esteja na primeira página |
 | confirmação de leitura | thread_id e marcador de mensagem efetivamente recebida | Mutação separada da consulta de histórico; validar marcador e participante |
 
-Nomes são propostas, não endpoints disponíveis hoje. Uma página deve retornar
+As três leituras têm SQL candidato; confirmação de leitura permanece proposta.
+Nenhum endpoint novo está disponível no banco remoto por esta entrega. Uma página deve retornar
 status, items, has_more, next_cursor e versão do contrato. Buscar page_size + 1
 registros para determinar has_more; não calcular total global em cada polling.
 Items vazios só equivalem a fim de histórico se status ok e has_more false.
