@@ -13,6 +13,7 @@ Sem deploy, migrations, alterações remotas no banco ou envio de mensagens reai
 | Cores locais e controles duplicados | Manutenção e contraste inconsistentes | Tokens semânticos em equipe-show.css e event-financial-summary.css; regras substituídas removidas |
 | Ações de substituição/histórico eram pequenas | Uso difícil por toque/teclado | Botões compartilhados com 44 px, summary de histórico com 44 px e foco visível |
 | Nomes longos e valores disputavam espaço no celular | Cards podiam transbordar | Quebra de nomes/títulos, campos min-width 0 e detalhe monetário abaixo do nome em telas estreitas |
+| Botão Atualizar comprimindo o título do resumo em painel estreito | Texto quase vertical mesmo sem overflow | Base flexível de 220 px para o bloco de texto; ação passa para outra linha quando necessário |
 
 ## Comportamento preservado
 
@@ -50,7 +51,17 @@ Não há alegação de ganho de latência, redução medida de bundle ou certifi
 - Verificação de overflow e contraste do aviso de erro nos estados exercitados.
 - Revisão React: componentes compartilhados declarativos, sem novos efeitos,
   listeners ou consultas em produção.
-- CI e inspeção visual: registrar após a execução.
+- CI aprovado no commit `914c786263b2ae2b963600e6000ff77cfa2844e8`:
+  [Integration and build](https://github.com/phantomblastkk/stage-flow/actions/runs/40729400981)
+  e [Operational UX](https://github.com/phantomblastkk/stage-flow/actions/runs/40729401116).
+- Os quinze cenários de navegador passaram. [Artefato com 42 PNGs e log do servidor](https://github.com/phantomblastkk/stage-flow/actions/runs/40729400981/artifacts/12834207436),
+  com retenção de sete dias.
+- Inspeção visual: convites enviados e resumo a 360 px; escala a 360/1280 px.
+  O cabeçalho comprimido encontrado na primeira inspeção foi corrigido e revisto
+  na captura final. O teste agora exige uma largura mínima legível para esse bloco,
+  além da ausência de overflow. Elementos fixos de navegação aparecem na posição
+  da viewport em capturas de painéis longos.
+- [Diff completo](https://github.com/phantomblastkk/stage-flow/compare/48bf50636894944e645fba28343e6b4bd0affff8...914c786263b2ae2b963600e6000ff77cfa2844e8).
 
 ## Continuidade
 
