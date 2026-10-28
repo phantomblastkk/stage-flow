@@ -7,7 +7,7 @@ import { ArrowLeft, CalendarDays, Check, CheckCircle2, Clock3, LoaderCircle, Map
 import { createClient } from "@/lib/supabase/client";
 import FeeNegotiation from "@/components/fee-negotiation";
 import { useAccount } from "@/src/domains/account/account-context";
-import { Button,Input,StatCard,StatusChip,InlineNotice,EmptyState,LoadingState,Card } from "@/src/components/ui";
+import { Button,StatCard,StatusChip,InlineNotice,EmptyState,LoadingState,Card } from "@/src/components/ui";
 import type { Invite } from "@/src/domains/booking/types";
 import { invitationAgendaHref } from "@/src/domains/booking/model/booking-links";
 import { BookingSessionRequired, loadInvitations, respondToInvitation } from "@/src/domains/booking/services/booking-service";
@@ -41,12 +41,7 @@ export default function MeusConvitesPage() {
   const focusedFromNotification = useRef(false);
   const [feedback, setFeedback] = useState("");
   const [isError, setIsError] = useState(false);
-  const [whatsappPhone, setWhatsappPhone] = useState("");
-  const [whatsappConsent, setWhatsappConsent] = useState(false);
-  const [whatsappLoading, setWhatsappLoading] = useState(true);
-  const [whatsappSaving, setWhatsappSaving] = useState(false);
-  const [whatsappMessage, setWhatsappMessage] = useState("");
-  const [whatsappError, setWhatsappError] = useState(false);
+
 
   const reload = useCallback(async () => {
     invitationRequest.current?.abort();
@@ -65,80 +60,6 @@ export default function MeusConvitesPage() {
     alive.current = true;void reload();
     return () => { alive.current = false;invitationRequest.current?.abort(); };
   }, [reload]);
-
-  useEffect(() => {
-    let active = true;
-    async function loadWhatsAppPreferences() {
-      const supabase = createClient();
-      const { data: authData, error: authError } = await supabase.auth.getUser();
-      if (!active) return;
-      if (authError || !authData.user) {
-        setWhatsappLoading(false);
-        if (authError) {
-          setWhatsappError(true);
-          setWhatsappMessage("Não foi possível consultar suas preferências de WhatsApp agora. Tente novamente mais tarde.");
-        }
-        return;
-      }
-      const { data, error } = await supabase.rpc("stage_my_whatsapp_preference");
-      if (!active) return;
-      if (error) {
-        setWhatsappError(true);
-        setWhatsappMessage("Não foi possível consultar as preferências de WhatsApp. Tente novamente mais tarde.");
-      } else if (data?.[0]) {
-        setWhatsappPhone(data[0].phone || "");
-        setWhatsappConsent(Boolean(data[0].opted_in));
-      }
-      setWhatsappLoading(false);
-    }
-    void loadWhatsAppPreferences();
-    return () => { active = false; };
-  }, []);
-
-  async function saveWhatsappPreferences(e: React.FormEvent<HTMLFormElement>) {
-    e.preventDefault();
-    if (whatsappSaving) return;
-    setWhatsappSaving(true);
-    setWhatsappError(false);
-    setWhatsappMessage("");
-    const { data, error } = await createClient().rpc("stage_save_whatsapp_preference", {
-      p_phone: whatsappPhone,
-      p_opt_in: true,
-    });
-    if (error) {
-      setWhatsappError(true);
-      setWhatsappMessage("Não foi possível salvar: " + error.message);
-    } else if (data === "enabled") {
-      setWhatsappConsent(true);
-      setWhatsappMessage("Número salvo! Os organizadores dos seus convites pendentes ou confirmados poderão abrir uma conversa pelo WhatsApp.");
-    } else if (data === "disabled") {
-      setWhatsappConsent(false);
-      setWhatsappMessage("Autorização desativada. Seu número continuará guardado de forma privada, mas não ficará disponível aos organizadores.");
-    } else {
-      setWhatsappError(true);
-      setWhatsappMessage(data === "invalid_phone" ? "Informe um número válido com DDD (por exemplo: 11 99999-9999)." : "Não foi possível atualizar a autorização: " + String(data));
-    }
-    setWhatsappSaving(false);
-  }
-
-  async function disableWhatsapp() {
-    if (whatsappSaving) return;
-    setWhatsappSaving(true);
-    setWhatsappMessage("");
-    setWhatsappError(false);
-    const { data, error } = await createClient().rpc("stage_save_whatsapp_preference", {
-      p_phone: whatsappPhone,
-      p_opt_in: false,
-    });
-    if (error || data !== "disabled") {
-      setWhatsappError(true);
-      setWhatsappMessage("Não foi possível desativar os contatos: " + (error?.message || String(data)));
-    } else {
-      setWhatsappConsent(false);
-      setWhatsappMessage("Contatos desativados. O número continua privado e não será mostrado aos organizadores.");
-    }
-    setWhatsappSaving(false);
-  }
 
   useEffect(() => {
     if (loading || focusedFromNotification.current) return;
@@ -252,19 +173,9 @@ export default function MeusConvitesPage() {
     </div>
     <Card className="sf-booking-preferences">
       <div className="eyebrow"><span className="dot"/> WHATSAPP E PRIVACIDADE</div>
-      <h2 className="sf-booking-inline"><MessageCircle size={21}/> Lembretes no WhatsApp</h2>
-      <p>A autorização para contato é registrada no cadastro. Aqui você pode corrigir seu número ou desativar os contatos a qualquer momento. Os lembretes são enviados manualmente pelo organizador.</p>
-      {whatsappLoading ? <LoadingState label="Carregando preferências..."/> : <form onSubmit={saveWhatsappPreferences} className="sf-booking-form">
-        <Input label="Seu WhatsApp com DDD" id="my-whatsapp-number" type="tel" autoComplete="tel" value={whatsappPhone} onChange={e=>setWhatsappPhone(e.target.value)} placeholder="(11) 99999-9999" required={whatsappConsent}/>
-        <p className="sf-booking-muted">{whatsappConsent
-          ? "Contato pelo WhatsApp ativado no cadastro. Seu número só fica disponível aos organizadores de convites pendentes ou aceitos."
-          : "Contato pelo WhatsApp desativado. Se quiser voltar a receber lembretes, ative novamente abaixo."}</p>
-        <div className="sf-booking-actions">
-          <Button type="submit" disabled={whatsappSaving}>{whatsappSaving ? "Salvando..." : whatsappConsent ? "Atualizar meu número" : "Ativar contato pelo WhatsApp"}</Button>
-          {whatsappConsent && <Button variant="ghost" disabled={whatsappSaving} onClick={() => void disableWhatsapp()}>Desativar contatos</Button>}
-        </div>
-        {whatsappMessage && <InlineNotice tone={whatsappError ? "danger" : "success"}>{whatsappMessage}</InlineNotice>}
-      </form>}
+      <h2 className="sf-booking-inline"><MessageCircle size={21}/> Seu WhatsApp único</h2>
+      <p>O número é cadastrado uma vez na conta e só pode ser alterado após confirmação por código. Para receber notificações ou permitir que organizadores autorizados vejam seu contato, gerencie as preferências na conta.</p>
+      <Link className="sf-ui-button sf-ui-button-primary" href="/minha-conta?aba=privacidade">Gerenciar telefone e preferências</Link>
     </Card>
     <p className="sf-booking-footnote">Os convites são gratuitos. Aceitar um show não libera marketplace ou endereço personalizado.</p>
   </div></main>;
