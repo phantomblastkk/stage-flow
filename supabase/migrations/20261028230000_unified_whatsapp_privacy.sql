@@ -34,7 +34,10 @@ begin
  v_digits:=regexp_replace(coalesce(u.phone,''),'[^0-9]','','g');
  v_verified:=u.phone_confirmed_at is not null and v_digits ~ '^[1-9][0-9]{9,14}$';
  return jsonb_build_object('status','ok',
-   'phone',case when v_verified then v_digits else coalesce(p.phone_e164,v_digits) end,
+   'phone',case when v_verified then v_digits
+     else coalesce(p.phone_e164,
+       nullif(regexp_replace(coalesce(u.raw_user_meta_data->>'whatsapp_phone',''),'[^0-9]','','g'),''),
+       nullif(v_digits,'')) end,
    'verified',v_verified,
    'share',coalesce(p.opted_in,false),
    'notifications',coalesce(p.notify_opted_in,false));
