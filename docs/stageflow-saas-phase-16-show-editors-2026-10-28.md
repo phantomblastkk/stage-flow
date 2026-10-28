@@ -32,7 +32,7 @@ Sem deploy, alteração de migrations, banco remoto ou configuração da Vercel 
 
 ## Validação
 
-- 261 testes Node, TypeScript e build de produção passaram localmente.
+- 262 testes Node, TypeScript e build de produção passaram localmente.
 - Navegador: cenários existentes em 360/768/1280 px ampliados para equipe,
   despesa inválida/válida, edição da despesa, upload inválido/válido, troca Feed/Story,
   zoom pelo teclado e arquivo exportado com dimensões 1080×1350.
@@ -41,11 +41,25 @@ Sem deploy, alteração de migrations, banco remoto ou configuração da Vercel 
 - Pagamento de despesa acima do previsto não escreve; salvar valor válido recarrega
   o item e mantém valores na edição. API totalmente sintética.
 - Verificação de overflow, contraste do erro e alvos de toque nos estados exercitados.
-- CI e inspeção visual: registrar evidências após a execução.
+- CI aprovado no commit integrado `c6ec49cfd6ea05f4ee077d3959a9265909491625`:
+  [Integration and build](https://github.com/phantomblastkk/stage-flow/actions/runs/40726500082)
+  e [Operational UX](https://github.com/phantomblastkk/stage-flow/actions/runs/40726499985).
+- Os doze cenários de Agenda/Financeiro/Contratações passaram; as novas verificações
+  dos editores são executadas dentro dos cenários em 360/768/1280 px.
+- [Evidências do navegador](https://github.com/phantomblastkk/stage-flow/actions/runs/40726500082/artifacts/12833950328):
+  33 PNGs e log do servidor, com retenção de sete dias. Inspeção visual realizada
+  no flyer e formulário de despesa a 360 px e equipe a 1280 px. Os elementos fixos
+  de navegação aparecem na posição da viewport nas capturas de elementos longos.
+- A exportação é acionada pelo teclado em botão com foco e valida o JPEG real;
+  cada confirmação de convite é aguardada e encerrada antes da tentativa seguinte.
+- [Diff da implementação](https://github.com/phantomblastkk/stage-flow/commit/068a6be159e8ef963f7f421b1101ac541b1296cd),
+  com ajustes de sincronização dos cenários nos commits
+  [ec216a2](https://github.com/phantomblastkk/stage-flow/commit/ec216a2c824711082ee4c7dada5e3174813c1d5c)
+  e [c6ec49c](https://github.com/phantomblastkk/stage-flow/commit/c6ec49cfd6ea05f4ee077d3959a9265909491625).
 
-A base possuía falha no workflow operacional de perfis por timeout de navegador
-(execução 40723002685); o commit da base da7548f trata esse teste. Verificar seu
-resultado separadamente, sem confundir com a regressão dos editores.
+O workflow operacional de perfis e o teste isolado de banco também passaram
+na versão integrada. Confirmações nativas de convite e exclusão foram mantidas;
+uma migração futura pode padronizá-las com o Dialog compartilhado.
 
 ## Continuidade
 
