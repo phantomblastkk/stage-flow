@@ -17,6 +17,7 @@ Sem develop, homologação, banco remoto, migrations ou deploy.
 | Lista e conversa ficavam empilhadas em uma tela estreita | Rolagem e perda de espaço para responder | Até 750 px, navegação lista → conversa → “Todas as conversas”; alvos principais com mínimo de 44 px |
 | Convite aceito abria a agenda geral; proposta aceita levava o músico ao histórico | Usuário precisava procurar o show novamente | Links com o ID exato do evento; seleção de conversa também fica na URL para reabertura |
 | A agenda resolvia links apenas para o produtor | Link de um músico não encontrava sua participação | Resolução primeiro pela consulta do proprietário e depois pela RPC de participações aceitas, limitada a um ID; pin independente do mês e da página carregados |
+| O destaque podia aparecer antes de iniciar a consulta do novo mês | Show selecionado sumia durante a transição | Leitura do mês anterior é cancelada e o carregamento começa junto da mudança de mês, antes do efeito de consulta |
 
 ## Código aplicado
 

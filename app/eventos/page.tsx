@@ -33,6 +33,7 @@ export default function EventosPage() {
  const [loading,setLoading]=useState(true),[saving,setSaving]=useState(false),[ownerId,setOwnerId]=useState("");
  const [message,setMessage]=useState(""),[isError,setIsError]=useState(false);
  const [calendarMonth,setCalendarMonth]=useState(()=>new Date(2000,0,1));
+ const calendarView=useRef(calendarMonth);calendarView.current=calendarMonth;
  const [calendarReady,setCalendarReady]=useState(false);
  useEffect(()=>{
   const today=new Date();setCalendarMonth(new Date(today.getFullYear(),today.getMonth(),1));
@@ -137,12 +138,18 @@ export default function EventosPage() {
   const request=new AbortController();setSpotlightEventId(eventId);
   void loadAgendaTarget(createClient(),request.signal,eventId).then(target=>{
    if(request.signal.aborted)return;
+   const date=new Date(target.event.starts_at);
+   // Start the loading state in this render, before the new month's query effect runs.
+   if(date.getFullYear()!==calendarView.current.getFullYear()||date.getMonth()!==calendarView.current.getMonth()){
+    loadRequest.current?.abort();ownMoreRequest.current?.abort();guestMoreRequest.current?.abort();
+    setLoading(true);
+   }
    if(target.kind==="owned"){
     setSpotlightEvent(target.event);setSpotlightGuest(null);
     if(new URLSearchParams(window.location.search).get("equipe")==="1")setOpenTeamEventId(eventId);
    }else{setSpotlightGuest(target.event);setSpotlightEvent(null);}
    setSelectedDate(null);
-   const date=new Date(target.event.starts_at);setCalendarMonth(new Date(date.getFullYear(),date.getMonth(),1));
+   setCalendarMonth(new Date(date.getFullYear(),date.getMonth(),1));
   }).catch(error=>{if(!request.signal.aborted){setIsError(true);setMessage(error instanceof Error?error.message:"Não foi possível abrir o show.");}});
   return()=>request.abort();
  },[]);
