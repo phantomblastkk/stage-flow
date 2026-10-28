@@ -12,6 +12,7 @@ import { createClient } from "@/lib/supabase/client";
 import {prepareProfilePortrait} from "@/lib/profile-photo";
 import SingerProEditor from "@/components/singer-pro-editor";
 import BookingContactSettings from "@/components/booking-contact-settings";
+import MobileEditorWizard from "@/components/mobile-editor-wizard";
 import "@/app/meu-perfil-artistico/singer-unified-editor.css";
 
 type ArtistConfig = {
@@ -34,6 +35,7 @@ export default function MeuPerfilArtistico() {
   const router = useRouter();
   const [config, setConfig] = useState<ArtistConfig | null>(null);
   const [activeTab, setActiveTab] = useState<"dados" | "pro">("dados");
+  const [mobileStep,setMobileStep]=useState(0);
   const [proVisited, setProVisited] = useState(false);
 
   useEffect(() => {
@@ -293,8 +295,9 @@ export default function MeuPerfilArtistico() {
         {message}
       </div>}
 
-      {config && <div className="artist-free-editor">
+      {config && <div className="artist-free-editor artist-wizard-mode" data-editor-active={mobileStep}>
         <section className="feature">
+          <div data-editor-step="0" className="artist-wizard-identity">
           <h2 style={{ fontSize: 21, marginBottom: 12 }}><Globe2 size={19} style={{ display: "inline", verticalAlign: "middle", marginRight: 7 }}/> Seu único endereço público</h2>
           <p>Seu nome público: <strong style={{ color: "var(--text)" }}>{config.name}</strong></p>
           <div className="artist-free-address">
@@ -317,12 +320,16 @@ export default function MeuPerfilArtistico() {
             </button>
           </form>}
 
-          <nav className="artist-mobile-edit-steps" aria-label="Atalhos para editar o Perfil Artístico">
-            <a href="#artist-edit-photo">Foto</a><a href="#artist-edit-bio">Apresentação</a>
-            <a href="#artist-edit-publicacao">Publicação</a><a href="#artist-edit-booking">Contratação</a>
-            <button type="submit" form="artist-main-form" disabled={saving || Boolean(uploading)}>Salvar</button>
-          </nav>
+          </div>
+          <MobileEditorWizard
+            steps={[{value:0,label:"Identidade e fotos"},{value:1,label:"Apresentação"},
+              {value:2,label:"Redes sociais"},{value:3,label:"Publicar e contratar"}]}
+            active={mobileStep} onChange={setMobileStep} formId="artist-main-form"
+            disabled={saving||Boolean(uploading)}
+            saveDisabled={published&&!config.username}
+          />
           <form id="artist-main-form" onSubmit={save} style={{ display: "grid", gap: 12, marginTop: 21 }}>
+            <div data-editor-step="0" className="artist-wizard-group">
             <div className="field">
               <label htmlFor="artist-headline">Frase de assinatura</label>
               <input id="artist-headline" maxLength={100} value={headline}
@@ -371,6 +378,8 @@ export default function MeuPerfilArtistico() {
               </div>
             </div>
             <p className="field-help">Fotos são arquivos públicos de divulgação, mesmo quando o perfil ainda está em rascunho. Não envie documentos ou imagens privadas.</p>
+            </div>
+            <div data-editor-step="1" className="artist-wizard-group">
             <div className="field">
               <label id="artist-edit-bio" htmlFor="artist-bio">Apresentação artística</label>
               <textarea id="artist-bio" value={bio} onChange={e => setBio(e.target.value)}
@@ -383,6 +392,8 @@ export default function MeuPerfilArtistico() {
               <label htmlFor="artist-city">Cidade de atuação</label>
               <input id="artist-city" value={city} onChange={e => setCity(e.target.value)} maxLength={120} placeholder="Ex.: Rio de Janeiro - RJ"/>
             </div>
+            </div>
+            <div data-editor-step="2" className="artist-wizard-group">
             <div className="field">
               <label htmlFor="artist-instagram">Instagram (opcional)</label>
               <input id="artist-instagram" type="url" value={instagram}
@@ -398,6 +409,8 @@ export default function MeuPerfilArtistico() {
               <input id="artist-spotify" type="url" value={spotify}
                 onChange={e => setSpotify(e.target.value)} placeholder="https://open.spotify.com/artist/..."/>
             </div>
+            </div>
+            <div data-editor-step="3" className="artist-wizard-group">
             <label id="artist-edit-publicacao" style={{ display: "flex", alignItems: "flex-start", gap: 10, fontSize: 13, lineHeight: 1.6, marginBottom: 8 }}>
               <input type="checkbox" checked={published} onChange={e => setPublished(e.target.checked)}
                 style={{ marginTop: 4, accentColor: "var(--lime)" }}/>
@@ -411,7 +424,9 @@ export default function MeuPerfilArtistico() {
               {saving ? <LoaderCircle size={16}/> : <Save size={16}/>}
               {saving ? "Salvando..." : published ? "Salvar e publicar" : "Salvar rascunho"}
             </button>
+            </div>
           </form>
+          <div data-editor-step="3" className="artist-wizard-extras">
           <section id="artist-edit-booking" className="artist-booking-setting" aria-label="Recebimento de pedidos de contratação">
             <div className="artist-free-label" style={{ marginBottom: 12 }}>CONTATO COM CONTRATANTES</div>
             <label className="artist-booking-setting-toggle">
@@ -437,9 +452,10 @@ export default function MeuPerfilArtistico() {
             style={{ marginTop: 12, justifyContent: "center" }}>
             <Inbox size={17}/> Pedidos de contratação <ArrowUpRight size={15}/>
           </Link>
+          </div>
         </section>
 
-        <aside style={{ alignSelf: "start", display: "grid", gap: 17 }}>
+        <aside className="artist-wizard-preview" style={{ alignSelf: "start", display: "grid", gap: 17 }}>
           <section className="feature">
             <div className="eyebrow"><span className="dot"/> PRÉVIA EM TEMPO REAL</div>
             <div className="artist-free-editor-preview" style={{ "--artist-free-accent": accent === "lime" ? "#e6a3c8" : accent === "cyan" ? "#72dce7" : "#a99bff" } as CSSProperties}>
