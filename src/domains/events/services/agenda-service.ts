@@ -115,6 +115,23 @@ export async function loadAgendaEvent(db: AgendaClient, signal: AbortSignal, eve
   return data as EventRow;
 }
 
+/** A booking link can target an owned event or an accepted participation, never a public event lookup. */
+export async function loadAgendaTarget(db: AgendaClient, signal: AbortSignal, eventId: string) {
+  if (!uuid.test(eventId)) throw new Error("Show inválido.");
+  const user = await currentUser(db, signal);
+  const own = await db.from("events").select(eventColumns).eq("id", eventId)
+    .eq("producer_id", user.id).abortSignal(signal).maybeSingle();
+  signal.throwIfAborted();
+  if (own.error) throw new Error("Não foi possível abrir o show. Tente novamente.");
+  if (own.data) return { kind: "owned" as const, event: own.data as EventRow };
+  const guest = await db.rpc("stage_accepted_shows").eq("event_id", eventId)
+    .limit(1).abortSignal(signal).maybeSingle();
+  signal.throwIfAborted();
+  if (guest.error) throw new Error("Não foi possível abrir sua participação. Tente novamente.");
+  if (!guest.data) throw new Error("Show não encontrado ou sem acesso.");
+  return { kind: "accepted" as const, event: guest.data as GuestShow };
+}
+
 /** Validate before any mutation. Identity is always taken from Auth, never the form. */
 export function eventPayload(draft: EventDraft) {
   const title = draft.title.trim();

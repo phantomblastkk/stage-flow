@@ -26,6 +26,9 @@ const firstId = "11111111-1111-4111-8111-111111111111";
 const secondId = "22222222-2222-4222-8222-222222222222";
 const guestId = "33333333-3333-4333-8333-333333333333";
 const invitationId = "44444444-4444-4444-8444-444444444444";
+const threadA = "99999999-9999-4999-8999-999999999999";
+const threadB = "dddddddd-dddd-4ddd-8ddd-dddddddddddd";
+const proposalId = "eeeeeeee-eeee-4eee-8eee-eeeeeeeeeeee";
 const user = { id: userId, aud: "authenticated", role: "authenticated", email: "musician@example.test", created_at: "2026-01-01T00:00:00Z", app_metadata: {}, user_metadata: {} };
 const encoded = value => Buffer.from(JSON.stringify(value)).toString("base64url");
 const sessionFor = id => ({ access_token: encoded({ alg: "HS256", typ: "JWT" }) + "." + encoded({ sub: id, role: "authenticated", exp: 4102444800 }) + ".fixture",
@@ -43,6 +46,8 @@ function filtered(rows, url) {
   const cursor = url.searchParams.get("or")?.match(/starts_at.gt.([^,]+),and\(starts_at.eq.([^,]+),(?:id|event_id).gt.([0-9a-f-]+)\)/);
   if (cursor) result = result.filter(row => Date.parse(row.starts_at) > Date.parse(cursor[1]) || (Date.parse(row.starts_at) === Date.parse(cursor[2]) && row[idKey] > cursor[3]));
   result.sort((a, b) => Date.parse(a.starts_at) - Date.parse(b.starts_at) || a[idKey].localeCompare(b[idKey]));
+  const targetId = url.searchParams.get(idKey);
+  if(targetId) result=result.filter(row=>row[idKey]===targetId.slice(3));
   const limit = Number(url.searchParams.get("limit") ?? result.length);
   return result.slice(0, limit);
 }
@@ -52,7 +57,10 @@ async function setup(width) {
   const context = await browser.newContext({ viewport: { width, height: 900 }, timezoneId: "America/Sao_Paulo" });
   await context.addCookies([{ name: "sb-example-auth-token", value: "base64-" + encoded(session), url: origin, sameSite: "Lax" }]);
   const state = { events: [...initialEvents(), ...moreEvents(), { ...initialEvents()[1], id: "77777777-7777-4777-8777-777777777777", title: "Show de dezembro", starts_at: "2026-12-02T23:00:00Z" }], accepted: false, failAgenda: false, failFinance: false, invalidFinance: false, writes: [],
-    reads: new Map(), adminA: false, financeDelay: null, delayedFinanceStarted: 0, delayedFinanceCompleted: 0 };
+    reads: new Map(), adminA: false, financeDelay: null, delayedFinanceStarted: 0, delayedFinanceCompleted: 0,
+    messageDelay: null, delayedMessagesStarted: 0, delayedMessagesCompleted: 0, failMessageId: null, failInvites: false,
+    failChatPreferences: false, showProposal: false, proposalAccepted: false, guestStartsAt: guest.starts_at, sent: [],
+    messages: Object.fromEntries([[threadA,"Mensagem privada A"],[threadB,"Mensagem privada B"]].map(([id,text])=>[id,[{id,body:text,is_mine:false,created_at:"2026-11-01T15:00:00Z"}]])) };
   await context.route(api + "/**", async route => {
     const request = route.request();
     const url = new URL(request.url());
@@ -90,7 +98,32 @@ async function setup(width) {
     } else if (rpc === "stage_venue_partner_access") result = { status: "ok", items: [] };
     else if (rpc === "stage_owner_admin_status") result = actor === userId && state.adminA;
     else if (rpc === "stage_workspace_overview") result = { status: "ok", metrics: { shows_week: 0, pending_invites: 0, unread_conversations: 0, pending_contacts: 0, received_month: 0 }, upcoming: [], activity: [], updated_at: "2026-11-01T15:00:00Z" };
-    else if (rpc === "stage_accepted_shows") result = filtered(state.accepted ? [guest] : [],url);
+    else if (rpc === "stage_accepted_shows") result = filtered(state.accepted ? [{...guest,starts_at:state.guestStartsAt}] : [],url);
+    else if (rpc === "stage_hiring_list") result = [threadA,threadB].map((id,index)=>({id,requested_date:"2026-12-02",event_id:null,availability:"awaiting",last_message_at:"2026-11-01T15:00:00Z",other_id:otherUserId,other_name:index?"Contratante B":"Contratante A",acting_as:"musician",unread:0,last_message:index?"Mensagem privada B":"Mensagem privada A"}));
+    else if (rpc === "stage_hiring_messages") {
+      assert.ok([threadA,threadB].includes(body.p_thread_id));
+      const pending=body.p_thread_id===threadA?state.messageDelay:null;
+      if(pending){state.delayedMessagesStarted++;await pending;state.delayedMessagesCompleted++;}
+      if(state.failMessageId===body.p_thread_id){status=503;result={message:"Fixture unavailable"};}
+      else result={status:"ok",messages:state.messages[body.p_thread_id]};
+    } else if (rpc === "stage_hiring_send") {
+      assert.equal(actor,userId);assert.ok([threadA,threadB].includes(body.p_thread_id));
+      state.sent.push(body);
+      state.messages[body.p_thread_id].push({id:"fixture-message-"+state.sent.length,body:body.p_body,is_mine:true,created_at:"2026-11-01T15:00:00Z"});
+      result={status:"ok"};
+    } else if (rpc === "stage_hiring_availability") result="saved";
+    else if (rpc === "stage_hiring_whatsapp_settings") {
+      if(state.failChatPreferences){status=503;result={message:"Fixture unavailable"};}
+      else result={status:"ok",opted_in:false,phone:null};
+    } else if (rpc === "stage_hiring_proposals") result={status:"ok",items:state.showProposal&&body.p_thread_id===threadA?[{
+      id:proposalId,title:"Proposta de show de teste",venue:guest.venue,city:guest.city,starts_at:state.guestStartsAt,fee_amount:400,details:null,
+      status:state.proposalAccepted?"accepted":"pending",created_at:"2026-11-01T15:00:00Z",responded_at:null,
+      linked_event_id:state.proposalAccepted?guestId:null,linked_invitation_id:state.proposalAccepted?invitationId:null
+    }]:[]};
+    else if (rpc === "stage_hiring_proposal_decide") {
+      assert.equal(body.p_proposal_id,proposalId);assert.equal(body.p_accept,true);
+      state.proposalAccepted=true;state.accepted=true;result={status:"ok"};
+    }
     else if (rpc === "stage_finance_organizer_overview") {
       const pending = actor === userId ? state.financeDelay : null;
       if (pending) { state.delayedFinanceStarted++;await pending;state.delayedFinanceCompleted++; }
@@ -100,7 +133,10 @@ async function setup(width) {
       await delay(body.p_event_id === firstId ? 350 : 20);
       result = { status: "ok", items: [{ invitation_id: invitationId, musician_name: body.p_event_id === firstId ? "Equipe A" : "Equipe B", fee: 400, paid_amount: 0 }] };
     } else if (rpc === "stage_my_event_budget") result = { event_id: body.p_event_id, client_fee: 3000, received_amount: 1500, to_receive: 1500, expenses_total: 100, expenses_paid_total: 50, expenses_unpaid_total: 50, expenses: [], musician_agreed_total: 800, musician_unpriced_count: 0, projected_partial_result: 2100 };
-    else if (rpc === "stage_my_invitations") result = [{ id: invitationId, status: state.accepted ? "accepted" : "pending", message: null, created_at: "2026-10-27T12:00:00Z", responded_at: null, event_id: guestId, event_title: guest.title, event_starts_at: guest.starts_at, event_venue: guest.venue, event_city: guest.city, organizer_name: guest.organizer_name }];
+    else if (rpc === "stage_my_invitations") {
+      if(state.failInvites){status=503;result={message:"Fixture unavailable"};}
+      else result = [{ id: invitationId, status: state.accepted ? "accepted" : "pending", message: null, created_at: "2026-10-27T12:00:00Z", responded_at: null, event_id: guestId, event_title: guest.title, event_starts_at: state.guestStartsAt, event_venue: guest.venue, event_city: guest.city, organizer_name: guest.organizer_name }];
+    }
     else if (rpc === "stage_respond_invite") { assert.equal(body.p_invitation_id, invitationId); state.accepted = body.p_accept; result = state.accepted ? "accepted" : "declined"; }
     else if (rpc === "stage_fee_details") result = null;
     try { await route.fulfill({ status, json: result, headers: { "Access-Control-Allow-Origin": "*" } }); }
@@ -201,7 +237,9 @@ try {
         await page.goto(origin + "/meus-convites");
         await page.getByRole("button", { name: /Aceitar/ }).first().click();
         await page.getByText(/Presença confirmada!/).waitFor();
-        await page.goto(origin + "/eventos");
+        await page.getByRole("link",{name:"Ver show na minha agenda",exact:true}).click();
+        await page.waitForURL(origin+"/eventos?evento="+guestId);
+        await page.locator("#stage-event-"+guestId).waitFor();
         await page.getByText(guest.title, { exact: true }).waitFor();
         state.failAgenda = true;
         await page.reload();
@@ -224,6 +262,76 @@ try {
       await page.screenshot({ path: `test-results/failure-${width}.png`, fullPage: true }).catch(() => {});
       throw error;
     } finally { await context.close(); }
+  }
+  for(const width of [360,768,1280]) {
+    const {context,page,state,errors}=await setup(width);
+    let releaseMessages;
+    const choose=async(name)=>{
+      if(width<=750&&await page.locator(".hiring-layout.has-active").count())
+        await page.getByRole("button",{name:"Todas as conversas",exact:true}).click();
+      await page.getByRole("button",{name:"Abrir conversa com "+name,exact:true}).click();
+    };
+    try{
+      state.showProposal=true;state.guestStartsAt="2026-12-02T23:00:00Z";
+      state.failChatPreferences=width===360;
+      await page.goto(origin+"/conversas");
+      await choose("Contratante A");
+      await page.locator(".hiring-messages").getByText("Mensagem privada A",{exact:true}).waitFor();
+      assert.equal(state.reads.get(userId+":stage_hiring_messages"),1,"initial thread must load messages only once");
+      await page.getByLabel("Sua mensagem",{exact:true}).fill("Rascunho exclusivo A");
+      state.messageDelay=new Promise(resolve=>{releaseMessages=resolve;});
+      await page.getByRole("button",{name:"Atualizar mensagens",exact:true}).click();
+      await until(()=>state.delayedMessagesStarted===1);
+      await choose("Contratante B");
+      await page.locator(".hiring-messages").getByText("Mensagem privada B",{exact:true}).waitFor();
+      assert.equal(await page.getByLabel("Sua mensagem",{exact:true}).inputValue(),"");
+      await page.getByLabel("Sua mensagem",{exact:true}).fill("Rascunho exclusivo B");
+      releaseMessages();await until(()=>state.delayedMessagesCompleted===1);state.messageDelay=null;
+      await delay(100);
+      assert.equal(await page.locator(".hiring-messages").getByText("Mensagem privada A",{exact:true}).count(),0);
+      await choose("Contratante A");
+      await page.locator(".hiring-messages").getByText("Mensagem privada A",{exact:true}).waitFor();
+      assert.equal(await page.getByLabel("Sua mensagem",{exact:true}).inputValue(),"Rascunho exclusivo A");
+      state.failMessageId=threadB;
+      await choose("Contratante B");
+      await page.locator(".hiring-messages").getByRole("alert").waitFor();
+      assert.equal(await page.locator(".hiring-messages").getByText("Mensagem privada A",{exact:true}).count(),0);
+      state.failMessageId=null;
+      await page.locator(".hiring-messages").getByRole("button",{name:"Tentar novamente",exact:true}).click();
+      await page.locator(".hiring-messages").getByText("Mensagem privada B",{exact:true}).waitFor();
+      assert.equal(await page.getByLabel("Sua mensagem",{exact:true}).inputValue(),"Rascunho exclusivo B");
+      assert.equal(new URL(page.url()).searchParams.get("conversa"),threadB);
+      await page.getByRole("button",{name:"Enviar",exact:true}).click();
+      await page.locator(".hiring-messages").getByText("Rascunho exclusivo B",{exact:true}).waitFor();
+      assert.deepEqual(state.sent,[{p_thread_id:threadB,p_body:"Rascunho exclusivo B"}]);
+      await noHorizontalOverflow(page,"booking "+width);
+      await page.screenshot({path:`test-results/booking-${width}.png`,fullPage:true});
+      await choose("Contratante A");
+      page.once("dialog",dialog=>void dialog.accept());
+      await page.getByRole("button",{name:"Aceitar proposta",exact:true}).click();
+      await page.getByRole("link",{name:"Ver show na agenda",exact:true}).click();
+      await page.waitForURL(origin+"/eventos?evento="+guestId);
+      const target=page.locator("#stage-event-"+guestId);
+      await target.getByText("Show selecionado",{exact:true}).waitFor();
+      assert.equal(await target.getByRole("button",{name:/Excluir/}).count(),0);
+      assert.equal(await target.count(),1);
+      if(width===360){
+        const messageReads=state.reads.get(userId+":stage_hiring_messages");
+        await page.goto(origin+"/conversas?conversa="+otherEventId);
+        await page.getByRole("alert").filter({hasText:"Conversa não encontrada nesta conta"}).waitFor();
+        assert.equal(state.reads.get(userId+":stage_hiring_messages"),messageReads,"unowned deep link must not query messages");
+        state.failInvites=true;
+        await page.goto(origin+"/meus-convites");
+        await page.getByRole("alert").filter({hasText:"Não foi possível carregar os convites"}).waitFor();
+        assert.equal(await page.getByText("Nenhum convite por enquanto",{exact:true}).count(),0);
+        state.failInvites=false;
+        await page.getByRole("button",{name:"Tentar carregar convites novamente",exact:true}).click();
+        await page.getByRole("link",{name:"Ver show na minha agenda",exact:true}).waitFor();
+      }
+      assert.deepEqual(errors,[],"booking browser errors");
+      console.log(`PASS booking ${width}px: thread response/draft isolation, retry/send, private deep links, accepted proposal to selected participation in another month`);
+    }catch(error){await page.screenshot({path:`test-results/failure-booking-${width}.png`,fullPage:true}).catch(()=>{});throw error;}
+    finally{releaseMessages?.();await context.close();}
   }
   const { context, page, state, errors } = await setup(360);
   let releaseFinance;

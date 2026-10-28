@@ -7,7 +7,7 @@ import { createClient } from "@supabase/supabase-js";
 // Execute the service with the real PostgREST request builder, without real credentials.
 const source = readFileSync(new URL("../src/domains/events/services/agenda-service.ts", import.meta.url), "utf8");
 const compiled = ts.transpileModule(source, { compilerOptions: { module: ts.ModuleKind.ESNext, target: ts.ScriptTarget.ES2020 } }).outputText;
-const { loadAgenda, eventPayload, saveEvent, removeEvent, searchVenues, AgendaSessionRequired, agendaWindow, loadMoreAgenda, loadAgendaMarkers, loadAgendaEvent, AGENDA_PAGE_SIZE } =
+const { loadAgenda, eventPayload, saveEvent, removeEvent, searchVenues, AgendaSessionRequired, agendaWindow, loadMoreAgenda, loadAgendaMarkers, loadAgendaEvent, loadAgendaTarget, AGENDA_PAGE_SIZE } =
   await import("data:text/javascript;base64," + Buffer.from(compiled).toString("base64"));
 const period = { from: "2026-11-01T03:00:00.000Z", to: "2026-12-01T03:00:00.000Z" };
 const userId = "aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa";
@@ -162,4 +162,30 @@ test("PostgreSQL microseconds survive the cursor and cannot restart the same pag
     startsAt: "2026-11-01T23:00:00Z,and(event_id.eq.injected)", id: "11111111-1111-4111-8111-000000000020",
   }));
   assert.equal(calls.length, 1);
+});
+
+test("booking focus falls back to the accepted-show RPC without exposing producer controls",async()=>{
+ const id="33333333-3333-4333-8333-333333333333";
+ const guest={event_id:id,title:"Confirmed participation",starts_at:"2026-12-02T23:00:00Z"};
+ const f=client(call=>({body:call.url.pathname.endsWith("/events")?null:[guest]}));
+ const result=await loadAgendaTarget(f.db,new AbortController().signal,id);
+ assert.equal(result.kind,"accepted");assert.equal(result.event.event_id,id);
+ assert.equal(f.calls[0].url.searchParams.get("producer_id"),"eq."+userId);
+ assert.equal(f.calls[1].url.searchParams.get("event_id"),"eq."+id);
+ assert.equal(f.calls[1].url.searchParams.get("limit"),"1");
+});
+test("booking focus never opens an event absent from both owned and accepted sources",async()=>{
+ const f=client(call=>({body:call.url.pathname.endsWith("/events")?null:[]}));
+ await assert.rejects(loadAgendaTarget(f.db,new AbortController().signal,"33333333-3333-4333-8333-333333333333"),/sem acesso/);
+ assert.equal(f.calls.length,2);
+});
+test("owned booking focus needs no participation lookup; network failure cannot become a fallback",async()=>{
+ const id="11111111-1111-4111-8111-111111111111";
+ const f=client(()=>({body:{id}}));
+ assert.equal((await loadAgendaTarget(f.db,new AbortController().signal,id)).kind,"owned");
+ assert.equal(f.calls.length,1);
+ const failed=client(()=>({status:503,body:{message:"offline"}}));
+ await assert.rejects(loadAgendaTarget(failed.db,new AbortController().signal,id),/Não foi possível abrir o show/);
+ assert.ok(failed.calls.length>=1);
+ assert.ok(failed.calls.every(call=>call.url.pathname.endsWith("/events")),"transport retries must never query the accepted fallback after an owner query failure");
 });

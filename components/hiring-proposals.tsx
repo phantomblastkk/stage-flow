@@ -4,6 +4,7 @@ import { FormEvent, useCallback, useEffect, useState } from "react";
 import Link from "next/link";
 import { CalendarClock, CheckCircle2, ClipboardList, FileCheck2, Handshake, LoaderCircle, RotateCcw, Send, XCircle } from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
+import { invitationAgendaHref } from "@/src/domains/booking/model/booking-links";
 import "./hiring-proposals.css";
 
 type HiringThread = {
@@ -277,7 +278,9 @@ export default function HiringProposals({thread,onUpdate}:Props){
         <Link className="btn btn-quiet" href={"/eventos?evento="+encodeURIComponent(p.linked_event_id)+"&equipe=1"}>
           Ver show e financeiro
         </Link>}
-       {thread.acting_as==="musician"&&<Link className="btn btn-quiet" href="/meus-shows">Meus shows</Link>}
+       {thread.acting_as==="musician"&&<Link className="btn btn-quiet"
+        href={p.linked_event_id?invitationAgendaHref(p.linked_event_id):"/meus-shows"}>
+         {p.linked_event_id?"Ver show na agenda":"Meus shows"}</Link>}
       </div>}
     </article>)}
    </div>:<p className="hiring-proposals-empty">Ainda não há proposta formal nesta conversa.</p>}

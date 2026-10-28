@@ -6,24 +6,16 @@ import { useRouter } from "next/navigation";
 import { ArrowLeft, CalendarDays, Check, CheckCircle2, Clock3, LoaderCircle, MapPin, MessageCircle, Music2, X } from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
 import FeeNegotiation from "@/components/fee-negotiation";
+import { useAccount } from "@/src/domains/account/account-context";
+import { Button } from "@/src/components/ui";
+import type { Invite } from "@/src/domains/booking/types";
+import { invitationAgendaHref } from "@/src/domains/booking/model/booking-links";
+import { BookingSessionRequired, loadInvitations, respondToInvitation } from "@/src/domains/booking/services/booking-service";
 
-type Invite = {
-  id: string;
-  status: "pending" | "accepted" | "declined" | "cancelled";
-  message: string | null;
-  created_at: string;
-  responded_at: string | null;
-  event_id: string;
-  event_title: string;
-  event_starts_at: string;
-  event_venue: string | null;
-  event_city: string | null;
-  organizer_name: string;
-};
 type Filter = "all" | "pending" | "accepted" | "declined";
 
 const dateTime = (value: string) =>
-  new Intl.DateTimeFormat("pt-BR", { dateStyle: "full", timeStyle: "short" }).format(new Date(value));
+  new Intl.DateTimeFormat("pt-BR", { dateStyle: "full", timeStyle: "short", timeZone: "America/Sao_Paulo" }).format(new Date(value));
 
 const statusNames: Record<Invite["status"], string> = {
   pending: "Aguardando resposta",
@@ -34,6 +26,10 @@ const statusNames: Record<Invite["status"], string> = {
 
 export default function MeusConvitesPage() {
   const router = useRouter();
+  const { snapshot: account } = useAccount();
+  const alive = useRef(false);
+  const invitationRequest = useRef<AbortController | null>(null);
+  const [listError, setListError] = useState("");
   const [invites, setInvites] = useState<Invite[]>([]);
   const [loading, setLoading] = useState(true);
   const [processingId, setProcessingId] = useState<string | null>(null);
@@ -51,35 +47,21 @@ export default function MeusConvitesPage() {
   const [whatsappError, setWhatsappError] = useState(false);
 
   const reload = useCallback(async () => {
-    const supabase = createClient();
-    const { data: { user }, error: authError } = await supabase.auth.getUser();
-    if (authError) {
-      // A network validation error must not discard a session.
-      const { data: { session } } = await supabase.auth.getSession();
-      if (session) {
-        setIsError(true);
-        setFeedback("Não foi possível validar sua sessão agora. Sua conta não foi desconectada. Confira a conexão e tente novamente.");
-        setLoading(false);
-        return;
-      }
-    }
-    if (!user) {
-      router.replace("/login");
-      return;
-    }
-    const { data, error } = await supabase.rpc("stage_my_invitations");
-    if (error) {
-      setIsError(true);
-      setFeedback("Não foi possível carregar os convites. Execute received_invitations_migration.sql no Supabase. Detalhes: " + error.message);
-    } else {
-      setInvites((data ?? []) as Invite[]);
-      setIsError(false);
-    }
-    setLoading(false);
-  }, [router]);
+    invitationRequest.current?.abort();
+    const request = new AbortController();invitationRequest.current = request;
+    try {
+      const data = await loadInvitations(createClient(), request.signal);
+      if (!alive.current || request.signal.aborted) return;
+      setInvites(data);setListError("");
+    } catch (error) {
+      if (!alive.current || request.signal.aborted) return;
+      setListError(error instanceof Error ? error.message : "Não foi possível carregar os convites.");
+    } finally { if (alive.current && !request.signal.aborted) setLoading(false); }
+  }, []);
 
   useEffect(() => {
-    void reload();
+    alive.current = true;void reload();
+    return () => { alive.current = false;invitationRequest.current?.abort(); };
   }, [reload]);
 
   useEffect(() => {
@@ -100,7 +82,7 @@ export default function MeusConvitesPage() {
       if (!active) return;
       if (error) {
         setWhatsappError(true);
-        setWhatsappMessage("Preferências de WhatsApp ainda indisponíveis. Execute whatsapp_reminders_migration.sql no Supabase.");
+        setWhatsappMessage("Não foi possível consultar as preferências de WhatsApp. Tente novamente mais tarde.");
       } else if (data?.[0]) {
         setWhatsappPhone(data[0].phone || "");
         setWhatsappConsent(Boolean(data[0].opted_in));
@@ -180,15 +162,12 @@ export default function MeusConvitesPage() {
     setProcessingId(invite.id);
     setFeedback("");
     setIsError(false);
-    const supabase = createClient();
-    const { data, error } = await supabase.rpc("stage_respond_invite", {
-      p_invitation_id: invite.id,
-      p_accept: accept,
-    });
-    if (error) {
-      setFeedback("Não conseguimos registrar sua resposta: " + error.message);
-      setIsError(true);
-    } else if (data === "accepted" || data === "declined") {
+    invitationRequest.current?.abort();
+    try {
+    const data = await respondToInvitation(createClient(), account.user?.id ?? "", invite.id, accept);
+    if (!alive.current) return;
+    invitationRequest.current?.abort();
+    if (data === "accepted" || data === "declined") {
       setInvites((prev) => prev.map((item) =>
         item.id === invite.id ? { ...item, status: data, responded_at: new Date().toISOString() } : item
       ));
@@ -204,7 +183,11 @@ export default function MeusConvitesPage() {
         : data === "already_responded" ? "Esse convite já foi respondido. Atualize a página para conferir."
         : "Não foi possível responder a esse convite. Atualize a página e tente novamente.");
     }
-    setProcessingId(null);
+    } catch (error) {
+      if (!alive.current) return;
+      if (error instanceof BookingSessionRequired) router.replace("/login");
+      else { setIsError(true);setFeedback(error instanceof Error ? error.message : "Não foi possível responder ao convite."); }
+    } finally { if (alive.current) setProcessingId(null); }
   }
 
   if (loading) return <main><div className="container" style={{ minHeight: "85vh", display: "grid", placeItems: "center" }}>
@@ -221,6 +204,7 @@ export default function MeusConvitesPage() {
       <div className="eyebrow"><span className="dot"/> PARTICIPAÇÕES MUSICAIS</div>
       <h1 style={{ fontSize: "clamp(32px,5vw,46px)", marginBottom: 14 }}>Meus <span className="accent">convites.</span></h1>
       <p className="lead">Veja quem convidou você, confira os detalhes do show e confirme sua participação. Tudo funciona pelo celular.</p>
+      <Link href="/conversas" className="btn btn-quiet"><MessageCircle size={16}/> Conversas de contratação</Link>
     </section>
 
     <div className="stat-row" style={{ marginBottom: 26 }}>
@@ -243,7 +227,9 @@ export default function MeusConvitesPage() {
       ))}
     </div>
 
-    {filtered.length === 0 && <section className="feature" style={{ maxWidth: 680 }}>
+    {listError && <div className="coming" role="alert">{listError}{" "}
+      <Button variant="ghost" onClick={() => void reload()}>Tentar carregar convites novamente</Button></div>}
+    {!listError && filtered.length === 0 && <section className="feature" style={{ maxWidth: 680 }}>
       <Music2 size={27} style={{ color: "var(--lime)", marginBottom: 14 }}/>
       <h2 style={{ fontSize: 21 }}>{invites.length === 0 ? "Nenhum convite por enquanto" : "Nada nesta categoria"}</h2>
       <p>{invites.length === 0 ? "Quando um cantor ou produtor convidar você para um show, ele aparecerá aqui após você vincular o convite à sua conta." : "Escolha outro filtro para ver seus convites."}</p>
@@ -287,7 +273,7 @@ export default function MeusConvitesPage() {
             </button>
           </div>}
 
-          {invite.status === "accepted" && <div style={{ marginTop: 18, display: "grid", gap: 10 }}><p style={{ display: "flex", alignItems: "center", gap: 8, margin: 0, fontSize: 13, color: "var(--lime)" }}><CheckCircle2 size={17}/> Sua participação está confirmada.</p><Link className="btn btn-quiet" href="/eventos" style={{ justifyContent: "center" }}><CalendarDays size={16}/> Ver show na minha agenda</Link><Link className="btn btn-quiet" href={"/eventos/operacao?evento="+encodeURIComponent(invite.event_id)} style={{ justifyContent: "center" }}><Music2 size={16}/> Ver briefing e logística do show</Link></div>}
+          {invite.status === "accepted" && <div style={{ marginTop: 18, display: "grid", gap: 10 }}><p style={{ display: "flex", alignItems: "center", gap: 8, margin: 0, fontSize: 13, color: "var(--lime)" }}><CheckCircle2 size={17}/> Sua participação está confirmada.</p><Link className="btn btn-quiet" href={invitationAgendaHref(invite.event_id)} style={{ justifyContent: "center" }}><CalendarDays size={16}/> Ver show na minha agenda</Link><Link className="btn btn-quiet" href={"/eventos/operacao?evento="+encodeURIComponent(invite.event_id)} style={{ justifyContent: "center" }}><Music2 size={16}/> Ver briefing e logística do show</Link></div>}
           {invite.status === "declined" && <p style={{ display: "flex", alignItems: "center", gap: 8, margin: "18px 0 0", fontSize: 13, color: "var(--muted)" }}><Clock3 size={16}/> Você recusou este convite.</p>}
         </article>
       ))}

@@ -7,7 +7,7 @@ import { createClient } from "@/lib/supabase/client";
 import EventTeamInvites from "@/components/event-team-invites";
 import dynamic from "next/dynamic";
 import { Button, Dialog, EmptyState, Input, LoadingState, StatusChip, Textarea } from "@/src/components/ui";
-import { AgendaSessionRequired, agendaWindow, catalogAvailable, loadAgenda, loadAgendaEvent, loadAgendaMarkers, loadMoreAgenda, removeEvent, saveEvent, searchCities, searchVenues } from "@/src/domains/events/services/agenda-service";
+import { AgendaSessionRequired, agendaWindow, catalogAvailable, loadAgenda, loadAgendaTarget, loadAgendaMarkers, loadMoreAgenda, removeEvent, saveEvent, searchCities, searchVenues } from "@/src/domains/events/services/agenda-service";
 import type { AgendaCursor, AgendaSource, CitySuggestion, EventRow, GuestShow, VenueSuggestion } from "@/src/domains/events/types";
 import "./agenda.css";
 
@@ -49,6 +49,7 @@ export default function EventosPage() {
  const [showVenueSuggestions,setShowVenueSuggestions]=useState(false),[showCitySuggestions,setShowCitySuggestions]=useState(false);
  const [catalogReady,setCatalogReady]=useState(false);
  const [spotlightEvent,setSpotlightEvent]=useState<EventRow|null>(null);
+ const [spotlightGuest,setSpotlightGuest]=useState<GuestShow|null>(null);
  const [ownNext,setOwnNext]=useState<AgendaCursor|null>(null),[guestNext,setGuestNext]=useState<AgendaCursor|null>(null);
  const [ownMoreLoading,setOwnMoreLoading]=useState(false),[guestMoreLoading,setGuestMoreLoading]=useState(false);
  const [ownMoreError,setOwnMoreError]=useState(""),[guestMoreError,setGuestMoreError]=useState("");
@@ -129,27 +130,32 @@ export default function EventosPage() {
  },[showCreateForm]);
  const closeCreateForm=()=>{setShowCreateForm(false);createTrigger.current?.focus();};
  const closeDelete=useCallback(()=>{if(!deleting)setDeleteTarget(null);},[deleting]);
- // A direct link is resolved independently of month and page, with owner scoping.
+ // Direct booking links retain the show outside the current month/page and check participation on the server.
  useEffect(()=>{
   const eventId=new URLSearchParams(window.location.search).get("evento");
   if(!eventId||!/^[0-9a-f]{8}(?:-[0-9a-f]{4}){3}-[0-9a-f]{12}$/i.test(eventId))return;
   const request=new AbortController();setSpotlightEventId(eventId);
-  if(new URLSearchParams(window.location.search).get("equipe")==="1")setOpenTeamEventId(eventId);
-  void loadAgendaEvent(createClient(),request.signal,eventId).then(event=>{
+  void loadAgendaTarget(createClient(),request.signal,eventId).then(target=>{
    if(request.signal.aborted)return;
-   setSpotlightEvent(event);setSelectedDate(null);
-   const date=new Date(event.starts_at);setCalendarMonth(new Date(date.getFullYear(),date.getMonth(),1));
+   if(target.kind==="owned"){
+    setSpotlightEvent(target.event);setSpotlightGuest(null);
+    if(new URLSearchParams(window.location.search).get("equipe")==="1")setOpenTeamEventId(eventId);
+   }else{setSpotlightGuest(target.event);setSpotlightEvent(null);}
+   setSelectedDate(null);
+   const date=new Date(target.event.starts_at);setCalendarMonth(new Date(date.getFullYear(),date.getMonth(),1));
   }).catch(error=>{if(!request.signal.aborted){setIsError(true);setMessage(error instanceof Error?error.message:"Não foi possível abrir o show.");}});
   return()=>request.abort();
  },[]);
  useEffect(()=>{
-  if(loading||!spotlightEventId||(!events.some(event=>event.id===spotlightEventId)&&spotlightEvent?.id!==spotlightEventId))return;
+  if(loading||!spotlightEventId||(!events.some(event=>event.id===spotlightEventId)&&spotlightEvent?.id!==spotlightEventId&&
+   !guestShows.some(show=>show.event_id===spotlightEventId)&&spotlightGuest?.event_id!==spotlightEventId))return;
   if(focusScrolled.current===spotlightEventId)return;
   const target=document.getElementById("stage-event-"+spotlightEventId);
   if(!target)return;
   focusScrolled.current=spotlightEventId;
   target.scrollIntoView({behavior:"smooth",block:"center"});
- },[loading,spotlightEventId,events,spotlightEvent]);
+  target.focus({preventScroll:true});
+ },[loading,spotlightEventId,events,spotlightEvent,guestShows,spotlightGuest]);
 
  useEffect(()=>{
   const request=new AbortController();
@@ -216,7 +222,8 @@ export default function EventosPage() {
  const dateKey=(day:number)=>calendarMonth.getFullYear()+"-"+String(calendarMonth.getMonth()+1).padStart(2,"0")+"-"+String(day).padStart(2,"0");
  const pin=spotlightEvent&&Date.parse(spotlightEvent.starts_at)>=Date.parse(listFrom)&&Date.parse(spotlightEvent.starts_at)<Date.parse(listTo)&&!events.some(event=>event.id===spotlightEvent.id)?spotlightEvent:null;
  const visibleEvents=pin?[pin,...events]:events;
- const visibleGuestShows=guestShows;
+ const guestPin=spotlightGuest&&Date.parse(spotlightGuest.starts_at)>=Date.parse(listFrom)&&Date.parse(spotlightGuest.starts_at)<Date.parse(listTo)&&!guestShows.some(show=>show.event_id===spotlightGuest.event_id)?spotlightGuest:null;
+ const visibleGuestShows=guestPin?[guestPin,...guestShows]:guestShows;
 
  if(!calendarReady)return <main className="agenda-page"><LoadingState label="Abrindo sua agenda…"/></main>;
  return <main className="agenda-page"><div className="container">
@@ -315,10 +322,12 @@ export default function EventosPage() {
    {guestError&&<div className="coming agenda-error" role="alert">{guestError}<Button variant="ghost" onClick={()=>void loadEvents()}>Tentar novamente</Button></div>}
    {!loading&&!guestError&&visibleGuestShows.length===0&&<div className="feature"><p style={{margin:0,color:"var(--muted)"}}>{selectedDate?"Nenhuma participação aceita nesta data.":"Você ainda não confirmou participações. Aceite um show em Meus convites para vê-lo na agenda."}</p></div>}
    {!loading&&!guestError&&visibleGuestShows.length>0&&<div className="agenda-event-list">
-    {visibleGuestShows.map(show=><article className="event" key={show.event_id} style={{alignItems:"flex-start"}}>
+    {visibleGuestShows.map(show=><article className="event" key={show.event_id} id={"stage-event-"+show.event_id} tabIndex={-1}
+      style={{alignItems:"flex-start",scrollMarginTop:90,border:show.event_id===spotlightEventId?"1px solid var(--sf-ui-brand)":undefined}}>
      <div className="event-date"><div><strong>{new Date(show.starts_at).toLocaleDateString("pt-BR",{day:"2-digit"})}</strong><br/><span>{new Date(show.starts_at).toLocaleDateString("pt-BR",{month:"short"}).replace(".","").toUpperCase()}</span></div></div>
      <div className="event-info">
       <strong>{show.title}</strong>
+      {show.event_id===spotlightEventId&&<StatusChip status="success" label="Show selecionado"/>}
       <span style={{display:"block",marginTop:5}}><Clock3 size={12} style={{display:"inline",verticalAlign:"middle"}}/> {formatDate(show.starts_at)}</span>
       {(show.venue||show.city)&&<span style={{display:"block",marginTop:5}}><MapPin size={12} style={{display:"inline",verticalAlign:"middle"}}/> {[show.venue,show.city].filter(Boolean).join(" · ")}</span>}
       <span style={{display:"block",marginTop:5}}>Organização: {show.organizer_name}</span>

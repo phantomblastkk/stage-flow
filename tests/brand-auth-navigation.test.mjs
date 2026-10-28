@@ -112,9 +112,11 @@ test("signed-in musicians open invitation links without seeing a second signup f
 test("temporary auth errors in invitation inbox do not silently sign out musicians",()=>{
  const invites=load("app/meus-convites/page.tsx");
  assert.ok(invites.includes("if (authError) {"));
- assert.ok(invites.includes("await supabase.auth.getSession()"));
- assert.ok(invites.includes("if (session) {"));
- assert.ok(invites.includes("Sua conta não foi desconectada"));
+ assert.match(invites,/useAccount\(\)/);
+ const booking=load("src/domains/booking/services/booking-service.ts");
+ assert.match(booking,/Sua conta não foi desconectada/);
+ assert.match(booking,/AuthSessionMissingError/);
+ assert.match(load("src/domains/account/account-store.ts"),/state.status === "ready" && state.profile/);
  assert.ok(invites.includes("setWhatsappLoading(false)"));
  assert.doesNotMatch(invites,/auth\.signOut\(/);
 });

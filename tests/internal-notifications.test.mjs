@@ -122,7 +122,8 @@ test("notification links focus the invitation belonging to the signed-in musicia
  assert.match(invites,/scrollIntoView\(\{ behavior: "smooth", block: "center" \}\)/);
  assert.match(invites,/tabIndex=\{-1\}/);
  assert.match(invites,/highlightedInvite === invite\.id/);
- assert.match(invites,/stage_my_invitations/);
+ assert.match(invites,/loadInvitations/);
+ assert.match(read("src/domains/booking/services/booking-service.ts"),/stage_my_invitations/);
  assert.doesNotMatch(page,/source_id\)\+"https?:/);
 });
 
