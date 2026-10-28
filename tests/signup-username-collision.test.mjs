@@ -8,8 +8,11 @@ const signup = readFileSync(resolve(process.cwd(), "app/cadastro/page.tsx"), "ut
 test("singer signup handles database failures without exposing raw English error", () => {
   assert.match(signup, /signUpError\.status === 500/);
   assert.match(signup, /signUpError\.code === "unexpected_failure"/);
+  assert.match(signup, /signUpError\.code === "user_already_exists"/);
+  assert.match(signup, /user already \(\?:registered\|exists\)/);
+  assert.match(signup, /Este usuário já existe\. Use Entrar/);
   assert.match(signup, /artistKind === "lead" && !inviteCode && cleanUsername/);
-  assert.match(signup, /Ele pode já estar em uso\. Escolha outro @/);
+  assert.match(signup, /Este usuário já existe ou o @ artístico informado está em uso/);
   assert.match(signup, /if \(databaseSignupFailure\) \{/);
   assert.match(signup, /O cadastro não pôde ser salvo no momento/);
 });
