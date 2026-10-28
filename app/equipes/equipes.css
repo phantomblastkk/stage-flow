@@ -1,0 +1,49 @@
+.teams-spacing{padding-bottom:60px}
+.teams-hero{padding:42px 0 24px}
+.teams-title{font-size:clamp(34px,5vw,46px);margin-bottom:12px}
+.teams-recurring-link{margin-top:14px}
+.teams-context{max-width:840px;margin-top:16px}
+.teams-top-gap{margin-top:12px}
+.teams-create-panel{max-width:860px;margin-bottom:22px}
+.teams-section-title{font-size:23px;margin-top:0}
+.teams-inline-icon{display:inline;vertical-align:middle}
+.teams-form{display:grid;gap:12px}
+.teams-create-action{justify-content:center;max-width:250px}
+.teams-panel{max-width:860px}
+.teams-heading{display:flex;gap:10px;align-items:center;justify-content:space-between;flex-wrap:wrap}
+.teams-heading-title{font-size:23px;margin:0}
+.teams-empty{margin-top:18px}
+.teams-zero{margin:0}
+.teams-selected-heading{display:flex;justify-content:space-between;align-items:flex-start;gap:12px;flex-wrap:wrap;margin-top:20px}
+.teams-team-title{font-size:20px;margin:0 0 5px}
+.teams-team-meta{color:var(--sf-ui-muted);font-size:13px;margin:0}
+.teams-actions{display:flex;gap:8px;flex-wrap:wrap}
+.teams-edit-form{display:grid;gap:10px;margin-top:16px;border:1px solid var(--sf-ui-border);border-radius:12px;padding:15px}
+.teams-members-section{margin-top:25px}
+.teams-subheading{font-size:18px;margin-bottom:12px}
+.teams-members{display:grid;gap:8px}
+.teams-member-card{background:var(--sf-ui-surface-raised);border:1px solid var(--sf-ui-border);border-radius:12px;padding:12px;display:flex;gap:10px;align-items:center;justify-content:space-between;flex-wrap:wrap}
+.teams-member-person{flex:1;min-width:140px}
+.teams-member-name{display:block}
+.teams-member-meta{font-size:12px;color:var(--sf-ui-muted)}
+.teams-add-section{margin-top:24px}
+.teams-hint{color:var(--sf-ui-muted);font-size:13px}
+.teams-text-link{color:var(--sf-ui-brand)}
+.teams-field-grid{grid-template-columns:repeat(auto-fit,minmax(min(100%,220px),1fr))}
+.teams-invite-section{border-top:1px solid var(--sf-ui-border);margin-top:27px;padding-top:24px}
+.teams-invite-title{font-size:21px;margin:0 0 8px}
+.teams-footnote{max-width:860px;margin-top:22px}
+
+.teams-page{min-height:100vh;background:var(--sf-ui-bg);color:var(--sf-ui-text)}
+.teams-feedback{max-width:860px;margin-bottom:20px}
+.teams-page .sf-ui-field{min-width:0}
+.teams-page .sf-ui-button{max-width:100%;white-space:normal}
+.teams-field-grid{display:grid;gap:14px}
+.teams-selected-heading>div:first-child{flex:1 1 220px;min-width:0}
+.teams-heading>h2{flex:1 1 200px;min-width:0}
+.teams-member-person{flex:1 1 150px;min-width:0}
+.teams-team-title,.teams-member-name,.teams-team-meta{overflow-wrap:anywhere}
+.teams-footnote{font-size:var(--sf-ui-text-xs);color:var(--sf-ui-muted);line-height:1.7}
+.teams-page textarea{resize:vertical}
+.teams-page svg{flex-shrink:0}
+@media(max-width:600px){.teams-hero{padding-top:24px}.teams-page .nav{height:auto;min-height:64px;gap:8px;flex-wrap:wrap;padding-block:10px}.teams-page .sf-ui-input{font-size:16px}.teams-create-action{width:100%;max-width:none}.teams-member-card>.sf-ui-button{width:100%}.teams-invite-section form>.sf-ui-button{width:100%}}

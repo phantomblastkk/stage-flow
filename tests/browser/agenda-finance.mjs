@@ -58,7 +58,7 @@ async function setup(width) {
   const context = await browser.newContext({ viewport: { width, height: 900 }, timezoneId: "America/Sao_Paulo" });
   await context.addCookies([{ name: "sb-example-auth-token", value: "base64-" + encoded(session), url: origin, sameSite: "Lax" }]);
   const state = { events: [...initialEvents(), ...moreEvents(), { ...initialEvents()[1], id: "77777777-7777-4777-8777-777777777777", title: "Show de dezembro", starts_at: "2026-12-02T23:00:00Z" }], accepted: false, failAgenda: false, failFinance: false, invalidFinance: false, writes: [],
-    detailedSummary:false, detailedInvites:false, failSentDetails:false, lineupClosed:false, lineupWrites:[], lineupSlots:[{id:threadA,label:"Bateria",invitation_id:invitationId,musician_id:otherUserId,musician_name:"Músico confirmado",invitation_status:"accepted",history:[]},{id:threadB,label:"Baixo",invitation_id:null,musician_id:null,musician_name:null,invitation_status:null,history:[]}], editorWrites:[], editorExpenses:[], teamWrites:[], bulkHistory:false, reads: new Map(), adminA: false, financeDelay: null, delayedFinanceStarted: 0, delayedFinanceCompleted: 0,
+    savedTeamsEnabled:false, savedTeams:[{id:threadA,name:"Banda de teste",notes:"Formação privada",created_at:"2026-11-01T12:00:00Z"}], savedMembers:{[threadA]:[{member_id:invitationId,musician_id:otherUserId,musician_name:"Contato profissional",instrument:"Violão"}]}, savedWrites:[], recurringSeries:[], recurringWrites:[], recurringFail:false, recurringInvalid:false, detailedSummary:false, detailedInvites:false, failSentDetails:false, lineupClosed:false, lineupWrites:[], lineupSlots:[{id:threadA,label:"Bateria",invitation_id:invitationId,musician_id:otherUserId,musician_name:"Músico confirmado",invitation_status:"accepted",history:[]},{id:threadB,label:"Baixo",invitation_id:null,musician_id:null,musician_name:null,invitation_status:null,history:[]}], editorWrites:[], editorExpenses:[], teamWrites:[], bulkHistory:false, reads: new Map(), adminA: false, financeDelay: null, delayedFinanceStarted: 0, delayedFinanceCompleted: 0,
     messageDelay: null, delayedMessagesStarted: 0, delayedMessagesCompleted: 0, failMessageId: null, failInvites: false, feeEnabled:false, feeAgreed:null, feeAmount:400, feeByMe:false, feeReadFail:false, feeOffers:[],
     failChatPreferences: false, showProposal: false, proposalReadFail:false, proposalDelay:null, proposalStarted:0, proposalCompleted:0, asRequester:false, prefillDelay:null, prefillStarted:0, prefillCompleted:0, scheduleDelay:null, scheduleCalls:[], sendResult:"schedule_conflict", proposalWrites:[], submittedProposal:null, proposalWithdrawn:false, proposalAccepted: false, guestStartsAt: guest.starts_at, sent: [],
     messages: Object.fromEntries([[threadA,"Mensagem privada A"],[threadB,"Mensagem privada B"]].map(([id,text])=>[id,[{id,body:text,is_mine:false,created_at:"2026-11-01T15:00:00Z"}]])) };
@@ -149,8 +149,27 @@ async function setup(width) {
       await delay(body.p_event_id === firstId ? 350 : 20);
       result = { status: "ok", items: [{ invitation_id: invitationId, musician_name: body.p_event_id === firstId ? "Equipe A" : "Equipe B", fee: 400, paid_amount: 0 }] };
     } else if (rpc === "stage_my_event_budget") result = { event_id: body.p_event_id, client_fee: 3000, received_amount: 1500, to_receive: 1500, expenses_total: 100, expenses_paid_total: 50, expenses_unpaid_total: 50, expenses: state.editorExpenses, musician_agreed_total: 800, musician_unpriced_count: 0, projected_partial_result: 2100 };
-    else if (rpc === "stage_my_teams") result=[{id:threadA,name:"Banda de teste",member_count:1}];
-    else if (rpc === "stage_team_members_for_owner") result=[{member_id:threadB,musician_id:otherUserId,musician_name:"Músico da formação",instrument:"Violão"}];
+    else if (rpc === "stage_my_teams") result=state.savedTeamsEnabled?state.savedTeams.map(t=>({...t,member_count:(state.savedMembers[t.id]??[]).length})):[{id:threadA,name:"Banda de teste",member_count:1}];
+    else if (rpc === "stage_team_members_for_owner") result=state.savedTeamsEnabled?(state.savedMembers[body.p_team_id]??[]):[{member_id:threadB,musician_id:otherUserId,musician_name:"Músico da formação",instrument:"Violão"}];
+    else if(rpc === "stage_create_team") {
+      if(state.savedTeams.some(t=>t.name===body.p_name))result={status:"duplicate"};
+      else {state.savedWrites.push({kind:"create",...body});state.savedTeams.push({id:threadB,name:body.p_name,notes:body.p_notes});state.savedMembers[threadB]=[];result={status:"created",id:threadB};}
+    }
+    else if(rpc === "stage_update_team") {state.savedWrites.push({kind:"update",...body});Object.assign(state.savedTeams.find(t=>t.id===body.p_team_id),{name:body.p_name,notes:body.p_notes});result="updated";}
+    else if(rpc === "stage_add_team_member") {assert.equal(body.p_musician_id,otherUserId);state.savedWrites.push({kind:"add",...body});state.savedMembers[body.p_team_id].push({member_id:proposalId,musician_id:body.p_musician_id,musician_name:"Contato profissional",instrument:body.p_instrument});result="added";}
+    else if(rpc === "stage_remove_team_member") {state.savedWrites.push({kind:"remove",...body});for(const id of Object.keys(state.savedMembers))state.savedMembers[id]=state.savedMembers[id].filter(m=>m.member_id!==body.p_member_id);result="removed";}
+    else if(rpc === "stage_delete_team") {state.savedWrites.push({kind:"delete",...body});state.savedTeams=state.savedTeams.filter(t=>t.id!==body.p_team_id);result="deleted";}
+    else if(rpc === "stage_recurring_show_list") {if(state.recurringFail){status=503;result={message:"Synthetic recurring read failure"};}else result=state.recurringSeries;}
+    else if(rpc === "stage_recurring_show_create") {
+      if(state.recurringInvalid)result={status:"invalid"};else{
+        state.recurringWrites.push({kind:"create",...body});
+        const occurrences=Array.from({length:8},(_,i)=>{const date=new Date("2026-11-06T23:00:00Z");date.setUTCDate(date.getUTCDate()+7*i);return {event_id:"81000000-0000-4000-8000-"+String(i+1).padStart(12,"0"),day:date.toISOString().slice(0,10),starts_at:date.toISOString(),status:"draft",invites_sent:0};});
+        state.recurringSeries=[{id:proposalId,title:body.p_title,description:body.p_description,venue:body.p_venue,city:body.p_city,weekday:body.p_weekday,starts_on:body.p_starts_on,ends_on:body.p_ends_on,local_start:body.p_start_time,duration_minutes:body.p_duration,team_id:body.p_team_id,team_name:"Banda de teste",team_members:1,active:true,occurrences}];
+        result={status:"created",series_id:proposalId,created:8,skipped_conflicts:0};
+      }
+    }
+    else if(rpc === "stage_recurring_show_pause") {state.recurringWrites.push({kind:"pause",...body});state.recurringSeries.find(s=>s.id===body.p_id).active=body.p_active;result="saved";}
+    else if(rpc === "stage_recurring_show_generate") {state.recurringWrites.push({kind:"generate",...body});result={status:"ok",created:0,skipped_conflicts:0};}
     else if (rpc === "stage_sent_invitations_with_whatsapp") {
       if(state.failSentDetails){status=503;result={message:"Synthetic sent-invites read failure"};}
       else result=state.detailedInvites?[
@@ -170,7 +189,7 @@ async function setup(width) {
       {invitation_id:threadB,musician_name:"Valor indefinido",invitation_status:"pending",agreed_amount:null,last_offer_amount:null},
       {invitation_id:proposalId,musician_name:"Convite inativo",invitation_status:"cancelled",agreed_amount:9000,last_offer_amount:9000}
     ]}:{event_id:body.p_event_id,invitation_count:0,active_count:0,accepted_count:0,confirmed_fee_count:0,agreed_waiting_count:0,pending_fee_count:0,open_offer_count:0,unquoted_count:0,inactive_count:0,confirmed_total:0,agreed_waiting_total:0,agreed_total:0,open_offer_total:0,items:[]};
-    else if (rpc === "stage_invite_team_to_event") {state.teamWrites.push(body);result={status:"sent",created:1,existing:0,total:1};}
+    else if (rpc === "stage_invite_team_to_event") {state.teamWrites.push(body);for(const series of state.recurringSeries){const event=series.occurrences.find(e=>e.event_id===body.p_event_id);if(event)event.invites_sent=1;}result={status:"sent",created:1,existing:0,total:1};}
     else if (rpc === "stage_save_event_expense") {
       assert.equal(actor,userId);assert.equal(body.p_paid_amount,50);assert.equal(body.p_amount,100);
       state.editorWrites.push(body);state.editorExpenses=[{id:proposalId,description:body.p_description,category:body.p_category,amount:body.p_amount,paid_amount:body.p_paid_amount}];result={status:"created"};
@@ -463,6 +482,77 @@ try {
       await page.screenshot({ path: `test-results/failure-${width}.png`, fullPage: true }).catch(() => {});
       throw error;
     } finally { await context.close(); }
+  }
+  // Part 18: saved formations and recurring drafts with explicit invitations.
+  for(const width of [360,768,1280]){
+    const {context,page,state,errors}=await setup(width);
+    async function readyAction(button){
+      await button.waitFor({state:"visible"});
+      for(let i=0;i<200&&!(await button.isEnabled());i++)await delay(25);
+      assert.equal(await button.isEnabled(),true,"action must be enabled after its pending request");await button.focus();
+    }
+    async function activate(button){await readyAction(button);await button.press("Enter");}
+    async function confirm(button,accept){await readyAction(button);const ready=page.waitForEvent("dialog");const press=button.press("Enter");const dialog=await ready;assert.equal(dialog.type(),"confirm");if(accept)await dialog.accept();else await dialog.dismiss();await press;}
+    try{
+      state.savedTeamsEnabled=true;
+      await page.goto(origin+"/equipes?evento="+secondId);
+      const name=page.getByLabel("Nome da equipe *",{exact:true});await name.waitFor();
+      await name.fill("Banda de teste");await activate(page.getByRole("button",{name:"Criar equipe",exact:true}));
+      const duplicate=page.getByRole("alert").filter({hasText:"Você já possui uma equipe com esse nome"});await duplicate.waitFor();await readable(duplicate,"duplicate team notice");assert.equal(state.savedWrites.length,0);
+      await name.fill("Formação acústica");await page.getByLabel("Observações (opcional)",{exact:true}).fill("Formação para eventos");
+      await activate(page.getByRole("button",{name:"Criar equipe",exact:true}));
+      await page.getByRole("heading",{name:"Formação acústica",exact:true}).waitFor();
+      await page.getByText("Equipe vazia. Adicione músicos já convidados por sua conta.",{exact:true}).waitFor();
+      assert.equal(await page.getByLabel("Equipe que deseja gerenciar",{exact:true}).inputValue(),threadB);
+      await page.getByLabel("Músico já convidado *",{exact:true}).selectOption(otherUserId);
+      await page.getByLabel("Instrumento na formação (opcional)",{exact:true}).fill("Cavaquinho");
+      await activate(page.getByRole("button",{name:"Adicionar integrante",exact:true}));
+      await page.getByText("Cavaquinho",{exact:true}).waitFor();assert.equal(state.teamWrites.length,0,"saving a formation must never invite anyone");
+      await activate(page.getByRole("button",{name:"Editar",exact:true}));
+      assert.equal(await page.getByRole("button",{name:"Editar",exact:true}).getAttribute("aria-expanded"),"true");
+      await page.getByLabel("Nome",{exact:true}).fill("Formação de sábado");await page.getByLabel("Observações",{exact:true}).fill("Uso em eventos");
+      await activate(page.getByRole("button",{name:"Salvar alteração",exact:true}));
+      await page.getByRole("heading",{name:"Formação de sábado",exact:true}).waitFor();
+      assert.equal(await page.getByLabel("Escolha um show seu *",{exact:true}).inputValue(),secondId);
+      await page.getByLabel("Mensagem para os convidados (opcional)",{exact:true}).fill("Passagem de som às 18h");
+      const invite=page.getByRole("button",{name:"Convidar equipe para este show",exact:true});await confirm(invite,false);assert.equal(state.teamWrites.length,0);
+      await confirm(invite,true);await page.getByRole("status").filter({hasText:"Convites registrados para 1"}).waitFor();
+      assert.equal(state.teamWrites.length,1);assert.equal(state.teamWrites[0].p_event_id,secondId);assert.equal(state.teamWrites[0].p_team_id,threadB);assert.equal(state.teamWrites[0].p_message,"Passagem de som às 18h");
+      await noHorizontalOverflow(page,"saved team "+width);
+      if(width===360)assert.ok(await page.getByLabel("Nome da equipe *",{exact:true}).evaluate(n=>parseFloat(getComputedStyle(n).fontSize))>=16);
+      await page.screenshot({path:`test-results/saved-team-${width}.png`,fullPage:true});
+      const remove=page.getByRole("button",{name:"Remover",exact:true});await confirm(remove,false);assert.equal(state.savedMembers[threadB].length,1);
+      await confirm(remove,true);await page.getByText("Integrante removido da equipe, sem alterar os convites anteriores.",{exact:true}).waitFor();assert.equal(state.teamWrites.length,1);assert.equal(state.savedMembers[threadA].length,1);
+      const del=page.getByRole("button",{name:"Excluir",exact:true});await confirm(del,false);assert.equal(state.savedTeams.length,2);
+      await confirm(del,true);await page.getByText("Equipe excluída. Os convites anteriores foram preservados.",{exact:true}).waitFor();assert.equal(state.savedTeams.length,1);assert.equal(state.teamWrites.length,1);
+      state.savedTeamsEnabled=false;state.recurringFail=true;
+      await page.goto(origin+"/shows-recorrentes");
+      await page.getByText("Programação indisponível",{exact:true}).waitFor();assert.equal(await page.getByText("Sem programação recorrente ainda",{exact:true}).count(),0);
+      await activate(page.getByRole("button",{name:"Tentar novamente",exact:true}));await page.getByText("Programação indisponível",{exact:true}).waitFor();assert.deepEqual(errors,[],"failed refresh must stay handled");
+      state.recurringFail=false;await activate(page.getByRole("button",{name:"Tentar novamente",exact:true}));await page.getByText("Sem programação recorrente ainda",{exact:true}).waitFor();
+      await page.getByLabel("Nome do show *",{exact:true}).fill("Sextas no palco");
+      await page.getByLabel("Dia da semana",{exact:true}).selectOption("5");await page.getByLabel("Horário do show",{exact:true}).fill("20:00");
+      await page.getByLabel("Início do período",{exact:true}).fill("2026-11-06");await page.getByLabel("Última data da temporada",{exact:true}).fill("2026-12-25");
+      await page.getByLabel("Local do show",{exact:true}).fill("Casa de teste");await page.getByLabel("Cidade",{exact:true}).fill("São Paulo");await page.getByLabel("Equipe fixa (opcional)",{exact:true}).selectOption(threadA);
+      state.recurringInvalid=true;const create=page.getByRole("button",{name:"Criar e gerar primeiras datas",exact:true});await activate(create);
+      await page.getByRole("alert").filter({hasText:"Revise datas, dia da semana"}).waitFor();assert.equal(state.recurringWrites.length,0);
+      state.recurringInvalid=false;await activate(create);
+      await page.getByRole("status").filter({hasText:"8 show(s) criado(s) como rascunho"}).waitFor();
+      const series=page.getByRole("article",{name:"Programação Sextas no palco",exact:true});await series.waitFor();
+      assert.equal(state.recurringSeries[0].occurrences.length,8);assert.ok(state.recurringSeries[0].occurrences.every(e=>e.status==="draft"&&e.invites_sent===0));assert.equal(state.teamWrites.length,1,"creating recurring drafts must not invite");
+      const pause=series.getByRole("button",{name:"Pausar programação Sextas no palco",exact:true});await confirm(pause,false);assert.equal(state.recurringSeries[0].active,true);
+      await confirm(pause,true);await series.getByText("Pausada",{exact:true}).waitFor();assert.equal(await series.getByRole("button",{name:"Gerar próximas 8",exact:true}).isDisabled(),true);assert.equal(state.recurringSeries[0].occurrences.length,8);
+      await confirm(series.getByRole("button",{name:"Reativar programação Sextas no palco",exact:true}),true);await series.getByText("Ativa",{exact:true}).waitFor();
+      await activate(series.getByRole("button",{name:"Gerar próximas 8",exact:true}));await page.getByRole("status").filter({hasText:"Não há novas datas disponíveis"}).waitFor();assert.equal(state.recurringSeries[0].occurrences.length,8);
+      const occurrence=series.locator(".recurring-occurrence").first();const occurrenceInvite=occurrence.getByRole("button",{name:"Convidar equipe",exact:true});await confirm(occurrenceInvite,false);assert.equal(state.teamWrites.length,1);
+      await confirm(occurrenceInvite,true);await page.getByRole("status").filter({hasText:"1 novo(s) convite(s) individual(is) registrado(s)"}).waitFor();
+      assert.equal(state.teamWrites.length,2);assert.equal(state.teamWrites[1].p_event_id,state.recurringSeries[0].occurrences[0].event_id);assert.equal(state.recurringSeries[0].occurrences.filter(e=>e.invites_sent>0).length,1);
+      const layout=await series.locator(".recurring-card-top").evaluate(n=>({available:n.clientWidth,textWidth:n.firstElementChild.getBoundingClientRect().width}));assert.ok(layout.textWidth>=Math.min(160,layout.available)-1,"recurring heading must stay readable");
+      assert.ok(await series.getByRole("button",{name:"Pausar programação Sextas no palco",exact:true}).evaluate(n=>n.getBoundingClientRect().height)>=44);
+      await noHorizontalOverflow(page,"recurring season "+width);await page.screenshot({path:`test-results/recurring-season-${width}.png`,fullPage:true});
+      assert.deepEqual(errors,[]);console.log(`PASS saved teams/recurring ${width}px: duplicate/create/edit/member removal, explicit invites, handled read retry, private drafts and pause preservation`);
+    }catch(error){await page.screenshot({path:`test-results/failure-recurring-${width}.png`,fullPage:true}).catch(()=>{});throw error;}
+    finally{await context.close();}
   }
   // Part 17: private summary, sent-invite filters and audited lineup presentation.
   for(const width of [360,768,1280]) {

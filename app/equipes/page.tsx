@@ -8,6 +8,8 @@ import {
   Pencil, Plus, RefreshCw, Send, Trash2, UserPlus, Users, ArrowRight, CalendarDays
 } from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
+import { Button, InlineNotice, Input, LoadingState, Select, Textarea } from "@/src/components/ui";
+import "./equipes.css";
 
 type Team = {
   id: string;
@@ -25,15 +27,6 @@ type TeamMember = {
 };
 type Candidate = { musician_id: string; musician_name: string };
 type EventOption = { id: string; title: string; starts_at: string };
-
-const fieldStyle = {
-  width: "100%",
-  padding: 12,
-  border: "1px solid var(--line)",
-  borderRadius: 11,
-  background: "var(--panel)",
-  color: "var(--text)",
-};
 
 export default function EquipesPage() {
   const router = useRouter();
@@ -341,207 +334,167 @@ export default function EquipesPage() {
     setSaving(false);
   }
 
-  if (loading) return <main><div className="container"
-    style={{ minHeight: "80vh", display: "grid", placeItems: "center" }}>
-    <p style={{ color: "var(--muted)" }}>
-      <LoaderCircle size={18} style={{ display: "inline", verticalAlign: "middle" }}/> Carregando suas equipes...
-    </p>
-  </div></main>;
+  if (loading) return <main className="teams-page"><LoadingState label="Carregando suas equipes..."/></main>;
 
-  return <main><div className="container" style={{ paddingBottom: 60 }}>
+  return <main className="teams-page"><div className="container teams-spacing" >
     <nav className="nav">
       <Link className="brand" href="/"><span className="brand-mark">S</span> stage flow</Link>
-      <Link className="btn btn-quiet" href="/painel"><ArrowLeft size={15}/> Meu painel</Link>
+      <Link className="sf-ui-button sf-ui-button-ghost" href="/painel"><ArrowLeft size={15}/> Meu painel</Link>
     </nav>
 
-    <section style={{ padding: "42px 0 24px" }}>
+    <section className="teams-hero">
       <div className="eyebrow"><span className="dot"/> ORGANIZAÇÃO MUSICAL</div>
-      <h1 style={{ fontSize: "clamp(34px,5vw,46px)", marginBottom: 12 }}>
+      <h1 className="teams-title">
         Minhas <span className="accent">equipes.</span>
       </h1>
-      <p className="lead">Salve a formação da banda uma vez e reutilize nos próximos shows. Cada músico recebe seu próprio convite e negocia o cachê em particular.</p><Link className="btn btn-quiet" href="/shows-recorrentes" style={{marginTop:14}}><CalendarDays size={15}/> Usar equipe em shows recorrentes</Link>
-      {events.find(event => event.id === eventId) && <div className="coming" style={{ maxWidth: 840, marginTop: 16 }}>
+      <p className="lead">Salve a formação da banda uma vez e reutilize nos próximos shows. Cada músico recebe seu próprio convite e negocia o cachê em particular.</p><Link className="sf-ui-button sf-ui-button-ghost teams-recurring-link" href="/shows-recorrentes" ><CalendarDays size={15}/> Usar equipe em shows recorrentes</Link>
+      {events.find(event => event.id === eventId) && <div className="sf-ui-notice teams-context" >
         <strong>Show selecionado:</strong> {events.find(event => event.id === eventId)?.title}. Escolha uma equipe abaixo e confirme o envio dos convites somente quando estiver pronto.
-        <Link href={"/convites?evento=" + encodeURIComponent(eventId)} className="btn btn-quiet" style={{ marginTop: 12 }}>
+        <Link href={"/convites?evento=" + encodeURIComponent(eventId)} className="sf-ui-button sf-ui-button-ghost teams-top-gap" >
           Ver convites deste show <ArrowRight size={15}/>
         </Link>
       </div>}
     </section>
 
-    {statusMessage && <div className="coming" role={isError ? "alert" : "status"}
-      style={isError
-        ? { borderColor: "#754343", background: "#281919", color: "#ffb5b5", maxWidth: 860 }
-        : { maxWidth: 860 }}>
-      {!isError && <CheckCircle2 size={16} style={{ display: "inline", verticalAlign: "middle", marginRight: 6 }}/>}
-      {statusMessage}
-    </div>}
+    {statusMessage && <div className="teams-feedback"><InlineNotice tone={isError?"danger":"success"}>{statusMessage}</InlineNotice></div>}
 
-    <section className="feature" style={{ maxWidth: 860, marginBottom: 22 }}>
-      <h2 style={{ fontSize: 23, marginTop: 0 }}>
-        <Plus size={20} style={{ display: "inline", verticalAlign: "middle" }}/> Nova formação
+    <section className="sf-ui-card teams-create-panel" >
+      <h2 className="teams-section-title">
+        <Plus size={20} className="teams-inline-icon"/> Nova formação
       </h2>
-      <form onSubmit={createTeam} style={{ display: "grid", gap: 12 }}>
-        <div className="field" style={{ margin: 0 }}>
-          <label htmlFor="new-team-name">Nome da equipe *</label>
-          <input id="new-team-name" value={newName} onChange={e=>setNewName(e.target.value)}
+      <form onSubmit={createTeam} className="teams-form">
+        <Input label="Nome da equipe *" id="new-team-name" value={newName} onChange={e=>setNewName(e.target.value)}
             minLength={2} maxLength={80} required placeholder="Ex.: Banda principal / Formação acústica"/>
-        </div>
-        <div className="field" style={{ margin: 0 }}>
-          <label htmlFor="new-team-notes">Observações (opcional)</label>
-          <input id="new-team-notes" value={newNotes} onChange={e=>setNewNotes(e.target.value)}
+        <Input label="Observações (opcional)" id="new-team-notes" value={newNotes} onChange={e=>setNewNotes(e.target.value)}
             maxLength={250} placeholder="Ex.: formação usada em eventos de pagode"/>
-        </div>
-        <button className="btn btn-primary" type="submit" disabled={saving}
-          style={{ justifyContent: "center", maxWidth: 250 }}>
+        <Button type="submit" disabled={saving}
+          className="teams-create-action">
           <Plus size={16}/>{saving ? "Salvando..." : "Criar equipe"}
-        </button>
+        </Button>
       </form>
     </section>
 
-    <section className="feature" style={{ maxWidth: 860 }}>
-      <div style={{ display: "flex", gap: 10, alignItems: "center", justifyContent: "space-between", flexWrap: "wrap" }}>
-        <h2 style={{ fontSize: 23, margin: 0 }}><Users size={21} style={{ display: "inline", verticalAlign: "middle" }}/> Minhas formações</h2>
-        <button type="button" className="btn btn-quiet" onClick={() => void refresh()}
+    <section className="sf-ui-card teams-panel" >
+      <div className="teams-heading">
+        <h2 className="teams-heading-title"><Users size={21} className="teams-inline-icon"/> Minhas formações</h2>
+        <Button variant="ghost" type="button" onClick={() => void refresh()}
           disabled={reloading || saving}>
           <RefreshCw size={16}/>{reloading ? "Atualizando..." : "Atualizar"}
-        </button>
+        </Button>
       </div>
-      {teams.length === 0 ? <div className="coming" style={{ marginTop: 18 }}>
-        <p style={{ margin: 0 }}>Você ainda não cadastrou uma equipe. Crie a primeira formação acima.</p>
+      {teams.length === 0 ? <div className="sf-ui-notice teams-empty" >
+        <p className="teams-zero">Você ainda não cadastrou uma equipe. Crie a primeira formação acima.</p>
       </div> : <>
-        <div className="field" style={{ marginTop: 20 }}>
-          <label htmlFor="team-select">Equipe que deseja gerenciar</label>
-          <select id="team-select" style={fieldStyle} value={selectedTeamId}
+        <Select label="Equipe que deseja gerenciar" id="team-select"  value={selectedTeamId}
             onChange={e=>setSelectedTeamId(e.target.value)}>
             {teams.map(team=><option key={team.id} value={team.id}>
               {team.name} · {team.member_count} integrante(s)
             </option>)}
-          </select>
-        </div>
+          </Select>
         {selectedTeam && <>
-          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", gap: 12, flexWrap: "wrap", marginTop: 20 }}>
+          <div className="teams-selected-heading">
             <div>
-              <h3 style={{ fontSize: 20, margin: "0 0 5px" }}>{selectedTeam.name}</h3>
-              <p style={{ color: "var(--muted)", fontSize: 13, margin: 0 }}>
+              <h3 className="teams-team-title">{selectedTeam.name}</h3>
+              <p className="teams-team-meta">
                 {selectedTeam.notes || "Formação privada do organizador"} · {selectedTeam.member_count} integrante(s)
               </p>
             </div>
-            <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
-              <button type="button" className="btn btn-quiet" onClick={()=>setEditing(x=>!x)}>
+            <div className="teams-actions">
+              <Button variant="ghost" type="button" aria-expanded={editing} aria-controls="team-edit-form" onClick={()=>setEditing(x=>!x)}>
                 <Pencil size={15}/> Editar
-              </button>
-              <button type="button" className="btn btn-quiet"
+              </Button>
+              <Button variant="ghost" type="button"
                 onClick={()=>void deleteTeam()} disabled={saving}>
                 <Trash2 size={15}/> Excluir
-              </button>
+              </Button>
             </div>
           </div>
-          {editing && <form onSubmit={updateTeam}
-            style={{ display: "grid", gap: 10, marginTop: 16, border: "1px solid var(--line)", borderRadius: 12, padding: 15 }}>
-            <div className="field" style={{ margin: 0 }}>
-              <label htmlFor="edit-team-name">Nome</label>
-              <input id="edit-team-name" value={editName} onChange={e=>setEditName(e.target.value)}
+          {editing && <form id="team-edit-form" onSubmit={updateTeam}
+            className="teams-edit-form">
+            <Input label="Nome" id="edit-team-name" value={editName} onChange={e=>setEditName(e.target.value)}
                 minLength={2} maxLength={80} required/>
-            </div>
-            <div className="field" style={{ margin: 0 }}>
-              <label htmlFor="edit-team-notes">Observações</label>
-              <input id="edit-team-notes" value={editNotes} onChange={e=>setEditNotes(e.target.value)} maxLength={250}/>
-            </div>
-            <button className="btn btn-primary" type="submit" disabled={saving}>Salvar alteração</button>
+            <Input label="Observações" id="edit-team-notes" value={editNotes} onChange={e=>setEditNotes(e.target.value)} maxLength={250}/>
+            <Button type="submit" disabled={saving}>Salvar alteração</Button>
           </form>}
 
-          <div style={{ marginTop: 25 }}>
-            <h3 style={{ fontSize: 18, marginBottom: 12 }}>Integrantes</h3>
-            {membersLoading ? <p style={{ fontSize: 13, color: "var(--muted)" }}>
-              <Clock3 size={16} style={{ verticalAlign: "middle" }}/> Carregando...
-            </p> : members.length === 0 ? <div className="coming">
-              <p style={{ margin: 0 }}>Equipe vazia. Adicione músicos já convidados por sua conta.</p>
-            </div> : <div style={{ display: "grid", gap: 8 }}>
+          <div className="teams-members-section">
+            <h3 className="teams-subheading">Integrantes</h3>
+            {membersLoading ? <LoadingState label="Carregando integrantes..."/> : members.length === 0 ? <div className="sf-ui-notice">
+              <p className="teams-zero">Equipe vazia. Adicione músicos já convidados por sua conta.</p>
+            </div> : <div className="teams-members">
               {members.map(member=><article key={member.member_id}
-                style={{ background: "var(--panel2)", border: "1px solid var(--line)", borderRadius: 12, padding: 12, display: "flex", gap: 10, alignItems: "center", justifyContent: "space-between", flexWrap: "wrap" }}>
-                <div style={{ flex: 1, minWidth: 140 }}>
-                  <strong style={{ display: "block" }}>{member.musician_name}</strong>
-                  <span style={{ fontSize: 12, color: "var(--muted)" }}>
+                className="teams-member-card">
+                <div className="teams-member-person">
+                  <strong className="teams-member-name">{member.musician_name}</strong>
+                  <span className="teams-member-meta">
                     {member.instrument || "Instrumento ainda não informado"}
                   </span>
                 </div>
-                <button type="button" className="btn btn-quiet" disabled={saving}
+                <Button variant="ghost" type="button" disabled={saving}
                   onClick={()=>void removeMember(member)} aria-label={"Remover " + member.musician_name}>
                   <Trash2 size={15}/> Remover
-                </button>
+                </Button>
               </article>)}
             </div>}
           </div>
 
-          <form onSubmit={addMusician} style={{ marginTop: 24 }}>
-            <h3 style={{ fontSize: 18, marginBottom: 12 }}>
-              <UserPlus size={19} style={{ display: "inline", verticalAlign: "middle" }}/> Adicionar músico
+          <form onSubmit={addMusician} className="teams-add-section">
+            <h3 className="teams-subheading">
+              <UserPlus size={19} className="teams-inline-icon"/> Adicionar músico
             </h3>
-            {availableCandidates.length === 0 ? <p style={{ color: "var(--muted)", fontSize: 13 }}>
+            {availableCandidates.length === 0 ? <p className="teams-hint">
               {candidates.length === 0
                 ? "Nenhum músico elegível encontrado ainda. Primeiro convide alguém para um show e aguarde o vínculo da conta."
                 : "Todos os músicos com convites anteriores já foram incluídos nesta formação."}
-              {" "}<Link href="/convites" style={{ color: "var(--lime)" }}>Ir para convites</Link>
+              {" "}<Link href="/convites" className="teams-text-link">Ir para convites</Link>
             </p> : <>
-              <div className="cards" style={{ gridTemplateColumns: "repeat(auto-fit,minmax(220px,1fr))" }}>
-                <div className="field" style={{ margin: 0 }}>
-                  <label htmlFor="team-musician">Músico já convidado *</label>
-                  <select id="team-musician" style={fieldStyle} value={newMusicianId}
+              <div className="teams-field-grid" >
+                <Select label="Músico já convidado *" id="team-musician"  value={newMusicianId}
                     onChange={e=>setNewMusicianId(e.target.value)} required>
                     <option value="">Selecione um músico</option>
                     {availableCandidates.map(candidate=><option key={candidate.musician_id} value={candidate.musician_id}>{candidate.musician_name}</option>)}
-                  </select>
-                </div>
-                <div className="field" style={{ margin: 0 }}>
-                  <label htmlFor="team-instrument">Instrumento na formação (opcional)</label>
-                  <input id="team-instrument" value={newInstrument}
+                  </Select>
+                <Input label="Instrumento na formação (opcional)" id="team-instrument" value={newInstrument}
                     onChange={e=>setNewInstrument(e.target.value)}
                     maxLength={60} placeholder="Ex.: Cavaquinho"/>
-                </div>
               </div>
-              <button type="submit" className="btn btn-quiet" style={{ marginTop: 12 }}
+              <Button variant="ghost" type="submit" className="teams-top-gap"
                 disabled={saving || !newMusicianId}>
                 <Plus size={16}/> Adicionar integrante
-              </button>
+              </Button>
             </>}
           </form>
 
-          <div style={{ borderTop: "1px solid var(--line)", marginTop: 27, paddingTop: 24 }}>
-            <h3 style={{ fontSize: 21, margin: "0 0 8px" }}>
-              <Send size={19} style={{ display: "inline", verticalAlign: "middle" }}/> Convidar a equipe para um show
+          <div className="teams-invite-section">
+            <h3 className="teams-invite-title">
+              <Send size={19} className="teams-inline-icon"/> Convidar a equipe para um show
             </h3>
-            <p style={{ color: "var(--muted)", fontSize: 13 }}>
+            <p className="teams-hint">
               Um convite separado para cada músico. Duplicados não serão enviados de novo.
               O cachê de cada participação será negociado individualmente, sem acesso dos colegas.
             </p>
-            <form onSubmit={inviteTeam} style={{ display: "grid", gap: 12 }}>
-              <div className="field" style={{ margin: 0 }}>
-                <label htmlFor="team-event">Escolha um show seu *</label>
-                <select id="team-event" style={fieldStyle} value={eventId}
+            <form onSubmit={inviteTeam} className="teams-form">
+              <Select label="Escolha um show seu *" id="team-event"  value={eventId}
                   onChange={e=>setEventId(e.target.value)} required>
                   <option value="">Selecione um evento</option>
                   {events.map(event=><option key={event.id} value={event.id}>
                     {event.title} · {new Date(event.starts_at).toLocaleDateString("pt-BR")}
                   </option>)}
-                </select>
-              </div>
-              <div className="field" style={{ margin: 0 }}>
-                <label htmlFor="team-invite-message">Mensagem para os convidados (opcional)</label>
-                <textarea id="team-invite-message" style={{ ...fieldStyle, resize: "vertical" }}
+                </Select>
+              <Textarea label="Mensagem para os convidados (opcional)" id="team-invite-message"
                   rows={3} maxLength={500} value={inviteMessage}
                   onChange={e=>setInviteMessage(e.target.value)}
                   placeholder="Ex.: apresentação com a banda completa, passagem de som às 18h"/>
-              </div>
-              {events.length === 0 && <p style={{ color: "var(--muted)", fontSize: 13 }}>
-                Você precisa <Link href="/eventos" style={{ color: "var(--lime)" }}>criar um evento</Link> antes.
+              {events.length === 0 && <p className="teams-hint">
+                Você precisa <Link href="/eventos" className="teams-text-link">criar um evento</Link> antes.
               </p>}
-              <button type="submit" className="btn btn-primary"
-                style={{ justifyContent: "center" }}
+              <Button type="submit"
+
                 disabled={saving || membersLoading || members.length === 0 || !eventId}>
                 <Send size={16}/>{saving ? "Registrando convites..." : "Convidar equipe para este show"}
-              </button>
+              </Button>
             </form>
-            <Link href="/convites" className="btn btn-quiet" style={{ marginTop: 14 }}>
+            <Link href="/convites" className="sf-ui-button sf-ui-button-ghost teams-recurring-link" >
               <Music2 size={16}/> Acompanhar respostas e negociar cachês
             </Link>
           </div>
@@ -549,7 +502,7 @@ export default function EquipesPage() {
       </>}
     </section>
 
-    <p className="fine" style={{ maxWidth: 860, marginTop: 22 }}>
+    <p className="teams-footnote" >
       Sua formação é um catálogo privado. Salvar alguém numa equipe não confirma uma apresentação
       nem cria compromisso permanente. A pessoa decide sobre cada convite no próprio Stage Flow.
       O envio não dispara e-mail ou WhatsApp automaticamente.

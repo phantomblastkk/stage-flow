@@ -9,6 +9,7 @@ import {
   PlayCircle, RefreshCw, Repeat2, Send, Users
 } from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
+import { Button, EmptyState, InlineNotice, Input, LoadingState, Select, StatusChip, Textarea } from "@/src/components/ui";
 import "./shows-recorrentes.css";
 
 type Team={id:string;name:string;member_count:number};
@@ -96,6 +97,12 @@ export default function RecurringShowsPage(){
   return()=>{mounted=false};
  },[load]);
 
+ async function refreshList(){
+  setLoading(true);setError("");
+  try{await load();}
+  catch(err){setError(err instanceof Error?err.message:"Não foi possível atualizar a programação.");}
+  finally{setLoading(false);}
+ }
  async function create(e:FormEvent<HTMLFormElement>){
   e.preventDefault();if(busy)return;
   setError("");setNotice("");setBusy("create");
@@ -171,119 +178,97 @@ export default function RecurringShowsPage(){
  return <main className="recurring-page"><div className="container">
    <nav className="nav">
     <Link className="brand" href="/"><span className="brand-mark">S</span> stage flow</Link>
-    <Link className="btn btn-quiet" href="/painel"><ArrowLeft size={15}/> Meu painel</Link>
+    <Link className="sf-ui-button sf-ui-button-ghost" href="/painel"><ArrowLeft size={15}/> Meu painel</Link>
    </nav>
    <header className="recurring-hero">
     <span className="eyebrow"><Repeat2 size={15}/> ORGANIZAÇÃO SEMANAL DE SHOWS</span>
     <h1>Shows <span className="accent">recorrentes.</span></h1>
     <p>Cadastre uma programação fixa uma única vez. O Stage Flow prepara as datas na agenda, permite reaproveitar sua equipe e mantém os convites individuais sob seu controle.</p>
     <div className="recurring-hero-actions">
-     <Link href="/eventos" className="btn btn-quiet"><CalendarDays size={16}/> Minha agenda</Link>
-     <Link href="/equipes" className="btn btn-quiet"><Users size={16}/> Minhas equipes</Link>
+     <Link href="/eventos" className="sf-ui-button sf-ui-button-ghost"><CalendarDays size={16}/> Minha agenda</Link>
+     <Link href="/equipes" className="sf-ui-button sf-ui-button-ghost"><Users size={16}/> Minhas equipes</Link>
     </div>
    </header>
-   {error&&<p className="recurring-feedback error" role="alert">{error}</p>}
-   {notice&&<p className="recurring-feedback" role="status">{notice}</p>}
+   {error&&<div className="recurring-feedback"><InlineNotice tone="danger">{error}</InlineNotice></div>}
+   {notice&&<div className="recurring-feedback"><InlineNotice tone="success">{notice}</InlineNotice></div>}
    <div className="recurring-layout">
     <section className="recurring-create">
      <h2><CalendarPlus2 size={19}/> Nova programação semanal</h2>
      <p>As oito primeiras datas são geradas como <strong>rascunhos privados</strong>. Você escolhe quando publicar ou convidar a equipe.</p>
      <form onSubmit={e=>void create(e)}>
-      <label>Nome do show *
-       <input value={title} onChange={e=>setTitle(e.target.value)} minLength={3} maxLength={140}
+      <Input label="Nome do show *" value={title} onChange={e=>setTitle(e.target.value)} minLength={3} maxLength={140}
         placeholder="Ex.: Pagode de toda sexta" required/>
-      </label>
       <div className="recurring-pair">
-       <label>Dia da semana
-        <select value={weekday} onChange={e=>setWeekday(Number(e.target.value))}>
+       <Select label="Dia da semana" value={weekday} onChange={e=>setWeekday(Number(e.target.value))}>
          {weekdays.map((w,i)=><option key={w} value={i+1}>{w}</option>)}
-        </select>
-       </label>
-       <label>Horário do show
-        <input type="time" value={startTime} onChange={e=>setStartTime(e.target.value)} required/>
-       </label>
+        </Select>
+       <Input label="Horário do show" type="time" value={startTime} onChange={e=>setStartTime(e.target.value)} required/>
       </div>
       <div className="recurring-pair">
-       <label>Início do período
-        <input type="date" min={today} value={startsOn}
+       <Input label="Início do período" type="date" min={today} value={startsOn}
          onChange={e=>{setStartsOn(e.target.value);if(endsOn<e.target.value)setEndsOn(inDays(e.target.value,56));}} required/>
-       </label>
-       <label>Última data da temporada
-        <input type="date" min={startsOn} max={inDays(startsOn,180)}
+       <Input label="Última data da temporada" type="date" min={startsOn} max={inDays(startsOn,180)}
          value={endsOn} onChange={e=>setEndsOn(e.target.value)} required/>
-       </label>
       </div>
       <div className="recurring-pair">
-       <label>Local do show
-        <input value={venue} onChange={e=>setVenue(e.target.value)}
+       <Input label="Local do show" value={venue} onChange={e=>setVenue(e.target.value)}
          maxLength={140} placeholder="Casa de show ou bar"/>
-       </label>
-       <label>Cidade
-        <input value={city} onChange={e=>setCity(e.target.value)}
+       <Input label="Cidade" value={city} onChange={e=>setCity(e.target.value)}
          maxLength={100} placeholder="São Paulo"/>
-       </label>
       </div>
       <div className="recurring-pair">
-       <label>Duração prevista
-        <select value={duration} onChange={e=>setDuration(e.target.value)}>
+       <Select label="Duração prevista" value={duration} onChange={e=>setDuration(e.target.value)}>
          <option value="120">2 horas</option>
          <option value="180">3 horas</option>
          <option value="240">4 horas</option>
          <option value="300">5 horas</option>
          <option value="360">6 horas</option>
          <option value="480">8 horas</option>
-        </select>
-       </label>
-       <label>Equipe fixa (opcional)
-        <select value={teamId} onChange={e=>setTeamId(e.target.value)}>
+        </Select>
+       <Select label="Equipe fixa (opcional)" value={teamId} onChange={e=>setTeamId(e.target.value)}>
          <option value="">Definir equipe depois</option>
          {teams.map(t=><option key={t.id} value={t.id}>{t.name} ({t.member_count})</option>)}
-        </select>
-       </label>
+        </Select>
       </div>
-      <label>Observações do show (opcional)
-       <textarea value={description} maxLength={500} rows={2}
+      <Textarea label="Observações do show (opcional)" value={description} maxLength={500} rows={2}
         onChange={e=>setDescription(e.target.value)}
         placeholder="Ex.: abertura da casa, equipamento e outras informações"/>
-      </label>
-      <button className="btn btn-primary" type="submit" disabled={!!busy||loading}>
+      <Button type="submit" disabled={!!busy||loading}>
        {busy==="create"?<LoaderCircle size={16}/>:<CalendarPlus2 size={16}/>}
        Criar e gerar primeiras datas
-      </button>
+      </Button>
       <p className="recurring-hint">Até 180 dias por temporada. Novas datas podem ser geradas em lotes de 8, até 52 por série. Shows antigos não são sobrescritos.</p>
      </form>
     </section>
     <section className="recurring-list">
      <div className="recurring-heading">
       <h2>Minhas programações</h2>
-      <button type="button" className="btn btn-quiet" disabled={!!busy||loading}
-       onClick={()=>void load()}><RefreshCw size={15}/> Atualizar</button>
+      <Button variant="ghost" type="button" disabled={!!busy||loading}
+       onClick={()=>void refreshList()}><RefreshCw size={15}/> Atualizar</Button>
      </div>
-     {loading?<p className="recurring-loading"><LoaderCircle size={19}/> Carregando programações...</p>:
-       series.length===0?<div className="recurring-empty">
-        <Repeat2 size={32}/><strong>Sem programação recorrente ainda</strong>
-        <p>Crie sua primeira agenda semanal no formulário ao lado.</p>
-       </div>:
+     {loading?<LoadingState label="Carregando programações..."/>:
+       series.length===0?(error?
+        <EmptyState title="Programação indisponível" description="Atualize os dados para consultar suas temporadas." action={<Button onClick={()=>void refreshList()}>Tentar novamente</Button>}/>:
+        <EmptyState icon={<Repeat2 size={32}/>} title="Sem programação recorrente ainda" description="Crie sua primeira agenda semanal no formulário ao lado."/>):
        <div className="recurring-cards">
-        {series.map(s=><article className="recurring-card" key={s.id}>
+        {series.map(s=><article className="recurring-card" aria-label={"Programação " + s.title} key={s.id}>
          <div className="recurring-card-top">
-          <div><span className={"recurring-state "+(s.active?"active":"paused")}>
-            {s.active?"Ativa":"Pausada"}</span><h3>{s.title}</h3></div>
-          <button type="button" disabled={!!busy} className="recurring-toggle" title={s.active?"Pausar":"Reativar"}
-           onClick={()=>void pause(s)}>{s.active?<PauseCircle size={20}/>:<PlayCircle size={20}/>}</button>
+          <div><StatusChip label={s.active?"Ativa":"Pausada"} status={s.active?"success":"warning"}/><h3>{s.title}</h3></div>
+          <Button variant="ghost" type="button" disabled={!!busy} className="recurring-toggle" aria-label={(s.active?"Pausar programação ":"Reativar programação ")+s.title} title={s.active?"Pausar":"Reativar"}
+           onClick={()=>void pause(s)}>{s.active?<PauseCircle size={20}/>:<PlayCircle size={20}/>}</Button>
          </div>
          <p><Clock3 size={15}/> Toda {weekdays[s.weekday-1]?.toLowerCase()}, às {s.local_start} · {s.duration_minutes/60}h previstas</p>
          <p><CalendarDays size={15}/> {showDay(s.starts_on)} até {showDay(s.ends_on)}</p>
          <p><Users size={15}/> {s.team_name?
            s.team_name+" · "+s.team_members+" músico(s)":"Sem equipe definida"}</p>
          <div className="recurring-card-actions">
-          <button type="button" className="btn btn-primary" disabled={!!busy||!s.active}
-           onClick={()=>void generate(s)}><CalendarPlus2 size={15}/> Gerar próximas 8</button>
-          <button type="button" className="btn btn-quiet" disabled={!!busy}
+          <Button type="button" disabled={!!busy||!s.active}
+           onClick={()=>void generate(s)}><CalendarPlus2 size={15}/> Gerar próximas 8</Button>
+          <Button variant="ghost" type="button" disabled={!!busy}
            aria-expanded={expanded===s.id}
            onClick={()=>setExpanded(v=>v===s.id?null:s.id)}>
            {s.occurrences.length} show(s) {expanded===s.id?<ChevronUp size={15}/>:<ChevronDown size={15}/>}
-          </button>
+          </Button>
          </div>
          {expanded===s.id&&<div className="recurring-occurrences">
           <h4>Eventos da temporada</h4>
@@ -292,14 +277,14 @@ export default function RecurringShowsPage(){
             <small>{statuses[e.status]} · {e.invites_sent} convite(s) registrado(s)</small></div>
            <div className="recurring-occurrence-actions">
             <Link href={"/eventos?evento="+encodeURIComponent(e.event_id)+"&equipe=1"}
-             className="btn btn-quiet">Ver show</Link>
+             className="sf-ui-button sf-ui-button-ghost">Ver show</Link>
             <Link href={"/eventos/equipe?evento="+encodeURIComponent(e.event_id)}
-             className="btn btn-quiet">Gerenciar escala</Link>
+             className="sf-ui-button sf-ui-button-ghost">Gerenciar escala</Link>
              <Link href={"/eventos/operacao?evento="+encodeURIComponent(e.event_id)}
-              className="btn btn-quiet">Checklist e operação</Link>
+              className="sf-ui-button sf-ui-button-ghost">Checklist e operação</Link>
             {s.team_id&&s.team_members>0&&e.status!=="cancelled"&&e.status!=="completed"&&
-             <button className="btn btn-quiet" type="button" disabled={!!busy}
-              onClick={()=>void invite(s,e)}><Send size={14}/> Convidar equipe</button>}
+             <Button variant="ghost" type="button" disabled={!!busy}
+              onClick={()=>void invite(s,e)}><Send size={14}/> Convidar equipe</Button>}
            </div>
           </div>)}
           {!s.occurrences.length&&<p>Sem datas geradas. Verifique se o período ainda tem datas futuras.</p>}
