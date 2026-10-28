@@ -35,6 +35,7 @@ type MarketMusician = {
   rating_count: number;
   is_favorite: boolean;
 };
+type MarketIdentity = {is_singer: boolean; avatar_path: string | null};
 type MarketResponse = {
   status: "ok" | "not_released" | "invalid" | "login_required";
   items: MarketMusician[];
@@ -111,12 +112,65 @@ function Availability({musician,date}:{musician:MarketMusician;date:string}) {
   return <span className="market-availability"><CircleHelp size={13}/> Disponibilidade sob consulta</span>;
 }
 
+function MarketplaceMusicianCard({ musician, identity, date, rank, favoriteBusy, onFavorite, onInvite, onReport }: {
+  musician: MarketMusician; identity?: MarketIdentity; date: string; rank?: number;
+  favoriteBusy: boolean; onFavorite: () => void; onInvite: () => void; onReport: () => void;
+}) {
+  const singerPhoto = identity?.is_singer && identity.avatar_path
+    ? createClient().storage.from("stage-artist-public").getPublicUrl(identity.avatar_path).data.publicUrl
+    : null;
+  const photo = singerPhoto || musician.avatar_url;
+  const role = identity?.is_singer ? "Cantor • Músico" : "Músico";
+  return <article className={"market-card market-artist-card"+(rank ? " is-featured" : "")}>
+    <div className="market-artist-main">
+      <div className="market-artist-head">
+        <div className="market-artist-avatar">
+          {photo ? <img src={photo} loading="lazy" alt={"Foto de "+musician.name}/>
+            : <span>{initials(musician.name)}</span>}
+        </div>
+        <div className="market-artist-identification">
+          {rank && <span className="market-artist-rank"><Trophy size={12}/> DESTAQUE #{rank}</span>}
+          <h3>{musician.name}</h3>
+          <p>{role}</p>
+        </div>
+        <button type="button" className={"market-favorite"+(musician.is_favorite?" is-saved":"")}
+          disabled={favoriteBusy} onClick={onFavorite}
+          aria-label={musician.is_favorite?"Remover dos favoritos":"Adicionar aos favoritos"}
+          title={musician.is_favorite?"Remover dos favoritos":"Salvar músico"}>
+          <Heart size={18} fill={musician.is_favorite?"currentColor":"none"}/>
+        </button>
+      </div>
+      <div className="market-artist-proof"><Rating musician={musician}/>
+        <span className="market-artist-city"><MapPin size={14}/>{musician.city||"Região não informada"}</span>
+      </div>
+      <div className="market-artist-tags" aria-label="Instrumentos e estilos">
+        {(musician.instruments||[]).slice(0,3).map(t=><span key={t}>{t}</span>)}
+        {(musician.instruments||[]).length>3&&<span className="market-artist-extra">+{musician.instruments.length-3}</span>}
+      </div>
+    </div>
+    <div className="market-artist-bottom">
+      <Availability musician={musician} date={date}/>
+      <div className="market-artist-fee"><Fee musician={musician}/></div>
+      <div className="market-card-actions">
+        <Link href={"/musico/"+encodeURIComponent(musician.slug)}
+          onClick={()=>void trackMarketplaceExposure([musician.musician_id],"profile_open")}>
+          Ver perfil <ArrowUpRight size={15}/></Link>
+        <button type="button" onClick={onInvite}>Convidar <ArrowRight size={16}/></button>
+      </div>
+      <button type="button" className="market-report-link" onClick={onReport}>
+        <Flag size={12}/> Denunciar perfil
+      </button>
+    </div>
+  </article>;
+}
+
 type Props = { preview?: boolean };
 export default function MarketplaceCatalog({preview=false}:Props) {
   const [filters,setFilters] = useState<FilterState>(defaultFilters);
   const [applied,setApplied] = useState<FilterState>(defaultFilters);
   const [page,setPage] = useState(0);
   const [items,setItems] = useState<MarketMusician[]>([]);
+  const [identities,setIdentities] = useState<Record<string,MarketIdentity>>({});
   const [total,setTotal] = useState(0);
   const [featured,setFeatured] = useState<MarketMusician[]>([]);
   const [featuredLoading,setFeaturedLoading] = useState(true);
@@ -309,6 +363,18 @@ export default function MarketplaceCatalog({preview=false}:Props) {
   },[selected?.musician_id,gate,authUser]);
 
   const pages = Math.max(1,Math.ceil(total/limit));
+  useEffect(()=>{
+    const ids=[...new Set([...items,...featured].map(m=>m.musician_id))];
+    if(!ids.length)return;
+    let active=true;
+    void createClient().rpc("stage_public_marketplace_identity",{p_ids:ids.slice(0,48)})
+      .then(({data,error})=>{
+        if(!active||error||!data||typeof data!=="object"||Array.isArray(data))return;
+        setIdentities(current=>({...current,...data as Record<string,MarketIdentity>}));
+      }).catch(()=>{});
+    return()=>{active=false;};
+  },[items,featured]);
+
   const selectedReviewable = useMemo(()=>reviewable.filter(r=>!r.reviewed),[reviewable]);
   function apply(e?:FormEvent<HTMLFormElement>) {
     e?.preventDefault();
@@ -515,52 +581,11 @@ export default function MarketplaceCatalog({preview=false}:Props) {
               : <>
                 <div className="market-featured-rail" ref={featuredRail}
                   role="region" aria-label="Carrossel dos músicos mais avaliados" tabIndex={0}>
-                  {featured.map((m,index)=><article className="market-featured-card" key={m.musician_id}>
-                    <div className="market-featured-photo">
-                      {m.cover_url||m.avatar_url
-                        ? <img src={m.cover_url||m.avatar_url||""} loading="lazy"
-                            alt={"Foto de "+m.name}/>
-                        : <div className="market-featured-photo-fallback"><Music2 size={51}/></div>}
-                      <span className="market-featured-rank"><Trophy size={12}/>
-                        TOP {String(index+1).padStart(2,"0")}
-                      </span>
-                    </div>
-                    <div className="market-featured-card-content">
-                      <div className="market-featured-person">
-                        <div className="market-featured-avatar">
-                          {m.avatar_url
-                            ? <img src={m.avatar_url} loading="lazy" alt=""/>
-                            : <span>{initials(m.name)}</span>}
-                        </div>
-                        <div>
-                          <h3>{m.name}</h3>
-                          <span>{m.headline||m.instruments?.[0]||"Músico profissional"}</span>
-                        </div>
-                      </div>
-                      <div className="market-featured-info">
-                        <span><MapPin size={13}/>{m.city||"Região não informada"}</span>
-                        <span><Music2 size={13}/>{m.instruments?.[0]||"Música ao vivo"}</span>
-                      </div>
-                      <div className="market-featured-proof">
-                        <span className="market-featured-stars"><Star size={17} fill="currentColor"/>
-                          <strong>{Number(m.rating_avg).toLocaleString("pt-BR",{minimumFractionDigits:1,maximumFractionDigits:1})}</strong><small>/ 5</small>
-                        </span>
-                        <span>{m.rating_count} {m.rating_count===1?"avaliação verificada":"avaliações verificadas"}</span>
-                      </div>
-                      <div className="market-featured-actions">
-                        <Link href={"/musico/"+encodeURIComponent(m.slug)} target="_blank"
-                          rel="noopener noreferrer"
-                          onClick={()=>void trackMarketplaceExposure([m.musician_id],"profile_open")}>
-                          Ver portfólio <ArrowUpRight size={14}/></Link>
-                        <button type="button" onClick={()=>openMusician(m)}>
-                          Convidar <ArrowRight size={15}/></button>
-                      </div>
-                      <button type="button" className="market-report-link"
-                        onClick={()=>setReportTarget({
-                          type:"musician",id:m.musician_id,label:m.name
-                        })}><Flag size={12}/> Denunciar perfil</button>
-                    </div>
-                  </article>)}
+                  {featured.map((m,index)=><MarketplaceMusicianCard key={m.musician_id}
+                    musician={m} identity={identities[m.musician_id]} date={applied.date}
+                    rank={index+1} favoriteBusy={favoriteBusy===m.musician_id}
+                    onFavorite={()=>void toggleFavorite(m)} onInvite={()=>openMusician(m)}
+                    onReport={()=>setReportTarget({type:"musician",id:m.musician_id,label:m.name})}/>)}
                 </div>
                 <p className="market-featured-swipe"><ArrowRight size={14}/>
                   Deslize para conhecer mais músicos em destaque.
@@ -670,55 +695,11 @@ export default function MarketplaceCatalog({preview=false}:Props) {
               <button type="button" className="market-apply" onClick={clear}>Ver todos os músicos</button>
             </div>:
             <div className="market-card-grid">
-              {items.map(m=><article key={m.musician_id} className="market-card">
-                <div className="market-card-cover">
-                  {m.cover_url?<img src={m.cover_url} alt="" loading="lazy"/>:<div className="market-card-cover-fallback">
-                    <Music2 size={35}/></div>}
-                  <button type="button" className={"market-favorite"+(m.is_favorite?" is-saved":"")}
-                    disabled={favoriteBusy===m.musician_id}
-                    onClick={()=>void toggleFavorite(m)}
-                    aria-label={m.is_favorite?"Remover dos favoritos":"Adicionar aos favoritos"}
-                    title={m.is_favorite?"Remover dos favoritos":"Salvar músico"}>
-                    <Heart size={18} fill={m.is_favorite?"currentColor":"none"}/>
-                  </button>
-                </div>
-                <div className="market-card-body">
-                  <div className="market-card-identity">
-                    <div className="market-card-avatar">
-                      {m.avatar_url?<img src={m.avatar_url} alt={"Foto de "+m.name} loading="lazy"/>:
-                        <span>{initials(m.name)}</span>}
-                    </div>
-                    <div>
-                      <h3>{m.name}</h3>
-                      <p>{m.headline || m.instruments[0] || "Músico profissional"}</p>
-                    </div>
-                  </div>
-                  <p className="market-card-location"><MapPin size={14}/>{m.city||"Região não informada"}</p>
-                  <div className="market-card-tags">
-                    {(m.instruments||[]).slice(0,3).map(t=><span key={t}>{t}</span>)}
-                    {(m.genres||[]).slice(0,2).map(t=><span key={t} className="is-genre">{t}</span>)}
-                  </div>
-                  <Availability musician={m} date={applied.date}/>
-                  <div className="market-card-divider"/>
-                  <div className="market-card-meta">
-                    <Fee musician={m}/>
-                    <Rating musician={m}/>
-                  </div>
-                  <div className="market-card-actions">
-                    <Link href={"/musico/"+encodeURIComponent(m.slug)} target="_blank"
-                      rel="noopener noreferrer"
-                      onClick={()=>void trackMarketplaceExposure([m.musician_id],"profile_open")}>
-                      Ver portfólio <ExternalLink size={14}/></Link>
-                    <button type="button" onClick={()=>openMusician(m)}>
-                      Convidar <ArrowRight size={15}/>
-                    </button>
-                  </div>
-                  <button type="button" className="market-report-link"
-                    onClick={()=>setReportTarget({
-                      type:"musician",id:m.musician_id,label:m.name
-                    })}><Flag size={12}/> Denunciar perfil</button>
-                </div>
-              </article>)}
+              {items.map(m=><MarketplaceMusicianCard key={m.musician_id}
+                musician={m} identity={identities[m.musician_id]} date={applied.date}
+                favoriteBusy={favoriteBusy===m.musician_id}
+                onFavorite={()=>void toggleFavorite(m)} onInvite={()=>openMusician(m)}
+                onReport={()=>setReportTarget({type:"musician",id:m.musician_id,label:m.name})}/>)}
             </div>}
 
           {!loading&&total>limit&&<nav className="market-pagination" aria-label="Páginas do marketplace">
@@ -756,7 +737,7 @@ export default function MarketplaceCatalog({preview=false}:Props) {
             <Link href={"/musico/"+encodeURIComponent(selected.slug)} target="_blank"
               rel="noopener noreferrer"
               onClick={()=>void trackMarketplaceExposure([selected.musician_id],"profile_open")}>
-              Ver portfólio completo <ArrowUpRight size={14}/></Link>
+              Ver perfil completo <ArrowUpRight size={14}/></Link>
             <Rating musician={selected}/>
           </div>
           <Availability musician={selected} date={applied.date}/>

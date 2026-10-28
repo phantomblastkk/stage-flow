@@ -597,3 +597,76 @@
  .market-development-banner{flex-direction:column;align-items:stretch;gap:18px;padding:23px 20px}
  .market-development-actions{min-width:0}
 }
+
+/* Marketplace 2026: compact, image-led identity without decorative cover banners. */
+.market-card-grid{gap:18px}
+.market-artist-card{
+  min-width:0;min-height:0;overflow:hidden;display:flex;flex-direction:column;
+  border-radius:21px;border:1px solid #353956;
+  background:linear-gradient(150deg,#20243b 0%,#171d30 60%,#151c2e 100%);
+  box-shadow:0 16px 36px #03061544;isolation:isolate;
+  transition:transform .2s,border-color .2s,box-shadow .2s;
+}
+.market-artist-card:hover{transform:translateY(-4px);border-color:#8f72e9;box-shadow:0 18px 44px #03061577}
+.market-artist-card:focus-within{border-color:#ab8fff}
+.market-artist-main{padding:21px 20px 0}
+.market-artist-head{display:flex;align-items:center;gap:13px;min-width:0}
+.market-artist-avatar{
+  width:73px;height:73px;flex:none;overflow:hidden;display:grid;place-items:center;
+  border:2px solid #655c93;border-radius:20px;
+  background:linear-gradient(130deg,#383358,#202743);
+  color:#f3edff;font:900 23px Manrope,sans-serif;
+}
+.market-artist-avatar img{display:block;width:100%;height:100%;object-fit:cover;object-position:center 37%;aspect-ratio:1/1}
+.market-artist-identification{min-width:0;flex:1}
+.market-artist-identification h3{font:850 clamp(15px,1.45vw,18px)/1.3 Manrope,sans-serif;margin:0;color:#f7f5ff;overflow-wrap:anywhere;letter-spacing:-.025em}
+.market-artist-identification p{color:#b5b4d0;margin:5px 0 0;font:650 12px/1.4 "DM Sans",sans-serif}
+.market-artist-card .market-favorite{
+  position:static;flex:none;width:37px;height:37px;align-self:flex-start;
+  background:#20243b;border:1px solid #545270;color:#dfd9f5;
+}
+.market-artist-card .market-favorite:focus-visible,
+.market-artist-card .market-card-actions>*:focus-visible,
+.market-artist-card .market-report-link:focus-visible{outline:2px solid #b9a5ff;outline-offset:3px}
+.market-artist-card .market-favorite.is-saved{color:#ffc1df;border-color:#c287d8}
+.market-artist-rank{display:inline-flex;gap:5px;align-items:center;margin-bottom:6px;color:#e4c3fc;font:900 9px Manrope,sans-serif;letter-spacing:.08em}
+.market-artist-proof{display:flex;flex-wrap:wrap;align-items:center;gap:8px 16px;margin:17px 0 13px;min-height:20px}
+.market-artist-proof .market-rating{font-size:12px;gap:6px;color:#c29cff}
+.market-artist-proof .market-rating svg{width:16px;height:16px}
+.market-artist-proof .market-rating strong{font:900 15px Manrope,sans-serif;color:#f6f2ff}
+.market-artist-proof .market-rating span{font-size:11px;color:#adadca}
+.market-artist-proof .market-unrated{font-size:11px;color:#adadca}
+.market-artist-city{display:inline-flex;align-items:center;gap:5px;color:#abb6cb;font:550 11px "DM Sans",sans-serif}
+.market-artist-city svg{color:#b59af7}
+.market-artist-tags{display:flex;align-items:center;gap:6px;flex-wrap:wrap;min-height:27px;margin-bottom:17px}
+.market-artist-tags span{font:700 10px/1.2 "DM Sans",sans-serif;color:#e9e4ff;padding:7px 10px;background:#2b304b;border:1px solid #474c71;border-radius:100px}
+.market-artist-tags .market-artist-extra{color:#bba8e9;background:transparent}
+.market-artist-bottom{padding:15px 20px 17px;border-top:1px solid #363950;display:flex;flex:1;flex-direction:column}
+.market-artist-bottom .market-availability{margin:0 0 12px;font-size:11px;font-weight:550}
+.market-artist-fee{margin-top:auto;display:flex;gap:7px}
+.market-artist-fee>span{display:flex;flex-direction:column;gap:3px}
+.market-artist-fee small{font:800 9px Manrope,sans-serif;color:#a3a9c2;letter-spacing:.1em}
+.market-artist-fee strong{font:850 19px/1.25 Manrope,sans-serif;color:#fbfaff;letter-spacing:-.02em}
+.market-artist-card .market-card-actions{margin-top:15px;gap:9px}
+.market-artist-card .market-card-actions>*{
+  min-height:44px;flex:1;border-radius:12px;font:800 11px Manrope,sans-serif;
+  transition:background .17s,box-shadow .17s;
+}
+.market-artist-card .market-card-actions>a{background:#292f48;border:1px solid #50577d;color:#f1edff}
+.market-artist-card .market-card-actions>button{
+  background:linear-gradient(135deg,#9562f2,#7234df);border:1px solid #9264ec;
+  box-shadow:0 5px 15px #6833d033;color:#fff
+}
+.market-artist-card .market-report-link{align-self:flex-end;margin:11px 0 -3px;font-size:10px;color:#8f9db4}
+.market-artist-card.is-featured{border-color:#6c568c}
+.market-featured-rail{grid-auto-columns:calc((100% - 28px)/3);align-items:stretch}
+.market-featured-rail>.market-artist-card{scroll-snap-align:start}
+.market-featured-rail>.market-artist-card:hover{border-color:#b79aeb}
+@media(max-width:1050px){.market-artist-main{padding:17px 16px 0}.market-artist-bottom{padding:14px 16px 16px}}
+@media(max-width:570px){
+  .market-card-grid{grid-template-columns:1fr;gap:13px}
+  .market-artist-avatar{width:66px;height:66px;border-radius:18px}
+  .market-artist-main{padding:17px 17px 0}
+  .market-artist-bottom{padding:13px 17px 15px}
+}
+@media(prefers-reduced-motion:reduce){.market-artist-card,.market-artist-card .market-card-actions>*{transition:none}.market-artist-card:hover{transform:none}}
