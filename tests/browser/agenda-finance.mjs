@@ -269,9 +269,13 @@ try {
       const zoom=flyer.getByRole("slider",{name:/^Zoom/});await zoom.focus();await page.keyboard.press("ArrowRight");
       assert.equal(await zoom.inputValue(),"1.1");
       assert.ok(await zoom.evaluate(n=>n.getBoundingClientRect().height)>=44);
-      const flyerDownload=page.waitForEvent("download");
-      await flyer.getByRole("button",{name:"Baixar Feed 1080×1350",exact:true}).click();
-      const flyerFile=await flyerDownload;
+      const feedDownloadButton=flyer.getByRole("button",{name:"Baixar Feed 1080×1350",exact:true});
+      await feedDownloadButton.focus();
+      assert.equal(await feedDownloadButton.evaluate(n=>n===document.activeElement),true);
+      const [flyerFile]=await Promise.all([
+        page.waitForEvent("download"),
+        feedDownloadButton.press("Enter")
+      ]);
       const jpeg=await readFile(await flyerFile.path());
       const dimensions=await page.evaluate(async b=>{const bytes=Uint8Array.from(atob(b),c=>c.charCodeAt(0));const bitmap=await createImageBitmap(new Blob([bytes],{type:"image/jpeg"}));const d=[bitmap.width,bitmap.height];bitmap.close();return d;},jpeg.toString("base64"));
       assert.deepEqual(dimensions,[1080,1350]);
