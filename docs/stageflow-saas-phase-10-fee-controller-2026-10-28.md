@@ -31,7 +31,10 @@ continua exclusivamente nas RPCs existentes; nenhum SQL foi alterado.
   confirmação é uma ação explícita posterior.
 - Em 360 px, falha de leitura oculta o acordo anterior e retry recupera a negociação.
 - Os sete cenários anteriores de Agenda/Financeiro/contratação/conta foram mantidos.
-- CI final: registrar evidência aprovada antes da entrega.
+- CI aprovado no commit `eb266736b88c5c639ccbb3e6f9564d2761063833`: contratos, TypeScript, build e dez cenários de navegador.
+- [Workflow aprovado](https://github.com/phantomblastkk/stage-flow/actions/runs/40624917465).
+- [Screenshots e log](https://github.com/phantomblastkk/stage-flow/actions/runs/40624917465/artifacts/12788907254), retenção de sete dias.
+- [Diff aplicado](https://github.com/phantomblastkk/stage-flow/compare/21f020d4eba77ca1326b50a53acf0dadfde2992a...eb266736b88c5c639ccbb3e6f9564d2761063833).
 
 Fixtures e respostas sintéticas; sem contas reais, pagamentos, WhatsApp ou testes
 de carga. Cancelar leitura não desfaz mutação já recebida pelo servidor. O hook
