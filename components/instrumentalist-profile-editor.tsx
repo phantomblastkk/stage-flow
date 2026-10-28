@@ -389,11 +389,20 @@ export default function MeuPortfolioDeMusico({unifiedSinger=false,username=null}
       <Link href="/perfil-artistico?aba=dados">Editar meus dados principais</Link>
     </section>}
 
+    <div className="mp-editor-mobile-toolbar">
+      <nav className="mp-editor-steps" aria-label="Ir para etapa da edição musical">
+        {!unifiedSinger&&<><a href="#mp-aparencia">Visual</a><a href="#mp-fotos">Fotos</a></>}
+        <a href="#mp-instrumentos">Instrumentos</a><a href="#mp-trajetoria">Trajetória</a>
+        <a href="#mp-midias">Mídia</a><a href="#mp-cache">Cachê</a><a href="#mp-publicacao">Publicar</a>
+      </nav>
+      <button type="submit" form="musician-portfolio-form" disabled={saving||Boolean(uploading)}
+        className="btn btn-primary">{saving?"Salvando…":"Salvar"}</button>
+    </div>
     <div className={"mp-editor-columns"+(unifiedSinger?" mp-unified-singer":"")}>
 
       <div>
         <form id="musician-portfolio-form" onSubmit={save} style={{ display: "grid", gap: 17 }}>
-          <section className="mp-editor-panel">
+          <section id="mp-aparencia" className="mp-editor-panel">
             <h2><Palette size={18} style={{ verticalAlign: "middle", marginRight: 7 }}/> Aparência da página</h2>
             <p>Escolha um visual que combine com sua música. Não precisa programar.</p>
 
@@ -445,7 +454,7 @@ export default function MeuPortfolioDeMusico({unifiedSinger=false,username=null}
             </div>
           </section>
 
-          <section className="mp-editor-panel">
+          <section id="mp-fotos" className="mp-editor-panel">
             <h2><ImagePlus size={18} style={{ verticalAlign: "middle", marginRight: 7 }}/> Suas fotos</h2>
             <p>Envie JPG, PNG ou WebP de até 5 MB, diretamente do celular ou computador.</p>
             <div className="field">
@@ -477,7 +486,7 @@ export default function MeuPortfolioDeMusico({unifiedSinger=false,username=null}
             </div>
           </section>
 
-          <section className="mp-editor-panel">
+          <section id="mp-instrumentos" className="mp-editor-panel">
             <h2><SlidersHorizontal size={18} style={{ verticalAlign: "middle", marginRight: 7 }}/> Informações profissionais</h2>
             <p>Seu nome exibido é <strong style={{ color: "var(--text)" }}>{portfolio.name}</strong>, definido na sua conta.</p>
             <div className="field">
@@ -529,7 +538,7 @@ export default function MeuPortfolioDeMusico({unifiedSinger=false,username=null}
             </div>
           </section>
 
-          <section className="mp-editor-panel">
+          <section id="mp-trajetoria" className="mp-editor-panel">
             <h2><BriefcaseBusiness size={18} style={{ verticalAlign: "middle", marginRight: 7 }}/> Experiência e trajetória</h2>
             <p>Mostre ao contratante onde você atua e as experiências que fazem parte da sua carreira.</p>
             <div className="field">
@@ -564,7 +573,7 @@ export default function MeuPortfolioDeMusico({unifiedSinger=false,username=null}
             </div>
           </section>
 
-          <section className="mp-editor-panel">
+          <section id="mp-midias" className="mp-editor-panel">
             <h2><Youtube size={18} style={{ verticalAlign: "middle", marginRight: 7 }}/> Vídeos e redes sociais</h2>
             <p>Seu portfólio gratuito pode mostrar até 5 vídeos e apresentações, com reprodução incorporada ao clicar no vídeo do YouTube. Não precisa fazer upload.</p>
             <div className="field">
@@ -599,7 +608,7 @@ export default function MeuPortfolioDeMusico({unifiedSinger=false,username=null}
           <BookingContactSettings kind="musician"
             instagramConfigured={Boolean(portfolio.instagram_url)}/>
 
-          <section className="mp-editor-panel">
+          <section id="mp-cache" className="mp-editor-panel">
             <h2>Seu cachê público</h2>
             <p>O valor mostrado aqui é apenas uma referência. A negociação de cada show continua privada.</p>
             <div className="mp-layout-options" style={{ marginTop: 13, marginBottom: 15 }}>
@@ -620,7 +629,7 @@ export default function MeuPortfolioDeMusico({unifiedSinger=false,username=null}
             </div>}
           </section>
 
-          <section className="mp-editor-panel">
+          <section id="mp-publicacao" className="mp-editor-panel">
             <h2>Publicação e privacidade</h2>
             <p>O perfil só aparece para outras pessoas depois que você escolher publicar e salvar.</p>
             <label style={{ display: "flex", alignItems: "flex-start", gap: 12, cursor: "pointer", padding: "12px 0" }}>
@@ -628,7 +637,7 @@ export default function MeuPortfolioDeMusico({unifiedSinger=false,username=null}
                 onChange={e=>update("is_published",e.target.checked)}
                 style={{ marginTop: 5, accentColor: "var(--accent)", flexShrink: 0 }}/>
               <span style={{ fontSize: 13, lineHeight: 1.6 }}>
-                <strong>Publicar meu portfólio</strong>
+                <strong>{unifiedSinger?"Publicar informações de músico":"Publicar meu perfil artístico"}</strong>
                 <span style={{ display: "block", color: "var(--muted)" }}>
                   Qualquer pessoa com o link poderá ver sua página, fotos, instrumentos e cachê de referência, quando escolhido.
                 </span>

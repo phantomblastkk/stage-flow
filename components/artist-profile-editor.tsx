@@ -317,7 +317,12 @@ export default function MeuPerfilArtistico() {
             </button>
           </form>}
 
-          <form onSubmit={save} style={{ display: "grid", gap: 12, marginTop: 21 }}>
+          <nav className="artist-mobile-edit-steps" aria-label="Atalhos para editar o Perfil Artístico">
+            <a href="#artist-edit-photo">Foto</a><a href="#artist-edit-bio">Apresentação</a>
+            <a href="#artist-edit-publicacao">Publicação</a><a href="#artist-edit-booking">Contratação</a>
+            <button type="submit" form="artist-main-form" disabled={saving || Boolean(uploading)}>Salvar</button>
+          </nav>
+          <form id="artist-main-form" onSubmit={save} style={{ display: "grid", gap: 12, marginTop: 21 }}>
             <div className="field">
               <label htmlFor="artist-headline">Frase de assinatura</label>
               <input id="artist-headline" maxLength={100} value={headline}
@@ -343,7 +348,7 @@ export default function MeuPerfilArtistico() {
               </div>
               <span className="field-help">Temas e layouts adicionais farão parte do Perfil Artístico premium.</span>
             </div>
-            <div className="artist-free-photo-fields">
+            <div id="artist-edit-photo" className="artist-free-photo-fields">
               <div className="field">
                 <label htmlFor="artist-avatar-upload">Foto de perfil</label>
                 <label className="mp-file-upload"><Upload size={16}/>
@@ -367,7 +372,7 @@ export default function MeuPerfilArtistico() {
             </div>
             <p className="field-help">Fotos são arquivos públicos de divulgação, mesmo quando o perfil ainda está em rascunho. Não envie documentos ou imagens privadas.</p>
             <div className="field">
-              <label htmlFor="artist-bio">Apresentação artística</label>
+              <label id="artist-edit-bio" htmlFor="artist-bio">Apresentação artística</label>
               <textarea id="artist-bio" value={bio} onChange={e => setBio(e.target.value)}
                 maxLength={1000} rows={5}
                 placeholder="Conte sua história, estilo musical e o que faz seus shows especiais..."
@@ -393,7 +398,7 @@ export default function MeuPerfilArtistico() {
               <input id="artist-spotify" type="url" value={spotify}
                 onChange={e => setSpotify(e.target.value)} placeholder="https://open.spotify.com/artist/..."/>
             </div>
-            <label style={{ display: "flex", alignItems: "flex-start", gap: 10, fontSize: 13, lineHeight: 1.6, marginBottom: 8 }}>
+            <label id="artist-edit-publicacao" style={{ display: "flex", alignItems: "flex-start", gap: 10, fontSize: 13, lineHeight: 1.6, marginBottom: 8 }}>
               <input type="checkbox" checked={published} onChange={e => setPublished(e.target.checked)}
                 style={{ marginTop: 4, accentColor: "var(--lime)" }}/>
               <span><strong>{published ? "Publicação ativada" : "Publicar minha página gratuita"}</strong>
@@ -407,7 +412,7 @@ export default function MeuPerfilArtistico() {
               {saving ? "Salvando..." : published ? "Salvar e publicar" : "Salvar rascunho"}
             </button>
           </form>
-          <section className="artist-booking-setting" aria-label="Recebimento de pedidos de contratação">
+          <section id="artist-edit-booking" className="artist-booking-setting" aria-label="Recebimento de pedidos de contratação">
             <div className="artist-free-label" style={{ marginBottom: 12 }}>CONTATO COM CONTRATANTES</div>
             <label className="artist-booking-setting-toggle">
               <input type="checkbox" checked={bookingEnabled}
