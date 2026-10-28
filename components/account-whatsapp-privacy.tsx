@@ -22,6 +22,7 @@ export default function AccountWhatsAppPrivacy(){
   const [phoneInput,setPhoneInput]=useState("");
   const [editing,setEditing]=useState(false);
   const [pending,setPending]=useState("");
+  const [otpType,setOtpType]=useState<"sms"|"phone_change">("phone_change");
   const [token,setToken]=useState("");
   const [busy,setBusy]=useState(false);
   const [loading,setLoading]=useState(true);
@@ -67,10 +68,12 @@ export default function AccountWhatsAppPrivacy(){
       if(userError||!user)throw new Error("Entre novamente para atualizar seu celular.");
       const current=digits(user.phone||"");
       const client=createClient();
-      const result=current===target && !user.phone_confirmed_at
+      const confirmingExisting=current===target && !user.phone_confirmed_at;
+      const result=confirmingExisting
         ? await client.auth.resend({type:"sms",phone:"+"+target})
         : await client.auth.updateUser({phone:"+"+target});
       if(result.error)throw result.error;
+      setOtpType(confirmingExisting?"sms":"phone_change");
       setPending("+"+target);setToken("");setEditing(false);
       setMessage("Código solicitado por SMS. Se o provedor ainda não estiver configurado, o envio não acontecerá.");
     }catch(err){setError(true);setMessage(err instanceof Error?err.message:"Não foi possível solicitar o código.");}
@@ -83,7 +86,7 @@ export default function AccountWhatsAppPrivacy(){
     setBusy(true);setMessage("");setError(false);
     try{
       const db=createClient();
-      const {error:verifyError}=await db.auth.verifyOtp({phone:pending,token,type:"phone_change"});
+      const {error:verifyError}=await db.auth.verifyOtp({phone:pending,token,type:otpType});
       if(verifyError)throw verifyError;
       await reload();
       setPending("");setToken("");
