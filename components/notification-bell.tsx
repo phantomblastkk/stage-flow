@@ -97,7 +97,7 @@ export default function NotificationBell() {
         if (open) {
           setLoading(true);
           const { data, error: rpcError } = await db.rpc("stage_notifications_list", {
-            p_filter: "all", p_limit: 5
+            p_filter: "unread", p_limit: 5
           });
           if (rpcError || data?.status !== "ok" || !Array.isArray(data.items)) {
             throw new Error("Não foi possível carregar seus avisos.");
@@ -161,10 +161,9 @@ export default function NotificationBell() {
           p_ids: [item.id], p_all: false
         });
         if (!rpcError && data?.status === "ok") {
-          setItems(previous=>previous.map(notice=>
-            notice.id===item.id?{...notice,read_at:new Date().toISOString()}:notice
-          ));
-          setUnread(count => count === null ? null : Math.max(0, count - Math.min(1,Number(data.marked)||0)));
+          // So os nao lidos aparecem na campainha; o historico fica em Todas.
+          setItems(previous=>previous.filter(notice=>notice.id!==item.id));
+          setUnread(count => count === null ? null : Math.max(0, count - 1));
         }
       } catch {
         // Mark-as-read failures must not block access to the original subject.
@@ -186,7 +185,7 @@ export default function NotificationBell() {
         <span className={styles.counter} aria-hidden="true">{unread > 99 ? "99+" : unread}</span>}
     </button>
     {open && <div id={panelId} className={styles.dropdown}
-      role="region" aria-label="Últimas notificações">
+      role="region" aria-label="Notificações não lidas">
       <div className={styles.header}>
         <div>
           <strong>Notificações</strong>
@@ -204,8 +203,8 @@ export default function NotificationBell() {
           : items.length === 0
           ? <div className={styles.empty}>
               <Bell size={22} />
-              <strong>Nenhuma notificação ainda</strong>
-              <span>Pedidos de contratação, convites, avaliações e atividades importantes aparecerão aqui.</span>
+              <strong>Tudo em dia!</strong>
+              <span>Você não tem notificações pendentes. Os avisos lidos ficam no histórico em “Ver todas”.</span>
             </div>
           : items.map(item =>
             <button key={item.id} type="button"

@@ -67,7 +67,7 @@ export default function NotificationsPage(){
  const router=useRouter();
  const [notifications,setNotifications]=useState<Notice[]>([]);
  const [unread,setUnread]=useState(0);
- const [filter,setFilter]=useState<Filter>("all");
+ const [filter,setFilter]=useState<Filter>("unread");
  const [loading,setLoading]=useState(true);
  const [busy,setBusy]=useState(false);
  const [error,setError]=useState("");
@@ -132,7 +132,9 @@ export default function NotificationsPage(){
    if(!item.read_at){
     try{
      await mark([item.id]);
-     setNotifications(items=>items.map(n=>n.id===item.id?{...n,read_at:new Date().toISOString()}:n));
+     setNotifications(items=>filter==="unread"
+       ?items.filter(n=>n.id!==item.id)
+       :items.map(n=>n.id===item.id?{...n,read_at:new Date().toISOString()}:n));
      setUnread(count=>Math.max(0,count-1));
     }catch{
      // Mark-as-read failures must not block the musician from the event briefing.
@@ -157,7 +159,7 @@ export default function NotificationsPage(){
   <header className="notifications-hero">
    <span className="eyebrow"><ShieldCheck size={14}/> AVISOS PRIVADOS · DENTRO DO SITE</span>
    <h1>Minhas <span className="accent">notificações.</span></h1>
-   <p>Pedidos de contratação, convites, respostas, avaliações, mensagens, recebimentos e outros avisos importantes em uma única caixa de entrada. O número na campainha desaparece quando você abre ou marca os avisos como lidos.</p>
+   <p>Pedidos de contratação, convites, respostas, avaliações, mensagens, recebimentos e outros avisos importantes em uma única caixa de entrada. Quando você abre um aviso, ele sai das pendências; o histórico continua disponível na aba Todas.</p>
    <div className="notifications-metrics">
     <span><Bell size={16}/><strong>{unread>99?"99+":unread}</strong> não lida{unread===1?"":"s"}</span>
     <span><Inbox size={16}/>{notifications.length} aviso{notifications.length===1?"":"s"} neste filtro</span>

@@ -89,7 +89,9 @@ export default function Dashboard() {
     : profile?.artist_kind === "support" ? "support" : "lead";
   const isSupport = Boolean(profile?.is_musician && kind === "support");
   const isLead = Boolean(profile?.is_singer && kind === "lead");
-  const accountPhoto=isSupport?(musicianPhoto||singerPhoto):(singerPhoto||musicianPhoto);
+  // O avatar da conta tem uma identidade independente do modo cantor/musico.
+  // Priorizar a foto artistica principal evita resgatar a miniatura antiga.
+  const accountPhoto=singerPhoto||musicianPhoto;
   const roleLabel = !profile ? "Conta"
     : isSupport ? "Músico de apoio" + (profile.is_producer ? " + Produtor" : "")
     : isLead ? "Cantor / artista" + (profile.is_producer ? " + Produtor" : "")

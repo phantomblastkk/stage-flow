@@ -88,7 +88,7 @@ test("bell opens a five-item preview and keeps full inbox available",()=>{
  assert.match(bell,/aria-controls=\{panelId\}/);
  assert.match(bell,/setOpen\(value => !value\)/);
  assert.match(bell,/stage_notifications_list/);
- assert.match(bell,/p_filter: "all", p_limit: 5/);
+ assert.match(bell,/p_filter: "unread", p_limit: 5/);
  assert.match(bell,/stage_notifications_unread_count/);
  assert.match(bell,/stage_notifications_mark/);
  assert.match(bell,/p_ids: \[item.id\], p_all: false/);

@@ -28,6 +28,10 @@
 
 .dashboard-profile-avatar,.dashboard-profile-summary-avatar{overflow:hidden;position:relative;border:1px solid #b38cd080}
 .dashboard-profile-avatar img,.dashboard-profile-summary-avatar img{
- display:block;width:100%;height:100%;object-fit:cover;object-position:center 28%;
- border-radius:inherit;background:#352647
+ display:block;position:absolute;inset:0;width:100%;height:100%;
+ max-width:none;max-height:none;object-fit:cover;object-position:50% 34%;
+ border:0;border-radius:inherit;background:#352647;
+ transform:scale(1.10);transform-origin:50% 40%
 }
+.dashboard-profile-avatar,.dashboard-profile-summary-avatar{isolation:isolate;min-width:33px}
+.dashboard-profile-summary-avatar{min-width:43px}
