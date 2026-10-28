@@ -175,7 +175,7 @@ grant execute on function public.stage_hiring_whatsapp_settings(text,boolean) to
 -- Old organiser-facing RPC must respect verification as well as sharing.
 create or replace function public.stage_sent_invitations_with_whatsapp()
 returns table (id uuid,event_id uuid,event_title text,event_starts_at timestamptz,
- venue text,city text,status text,musician_name text,musician_phone text,
+ event_venue text,event_city text,status text,musician_name text,musician_phone text,
  invite_code text,created_at timestamptz,responded_at timestamptz)
 language sql stable security definer set search_path='' as $$
 select i.id,e.id,e.title,e.starts_at,e.venue,e.city,i.status::text,
