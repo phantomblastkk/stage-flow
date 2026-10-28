@@ -15,7 +15,9 @@ const migration=read("supabase/migrations/20261028230000_unified_whatsapp_privac
 test("artist signup requires one phone and verifies Supabase OTP before entry",()=>{
  assert.match(signup,/const needsMusicianPhone = Boolean\(inviteCode\) \|\| isArtist/);
  assert.match(signup,/phone: "\+" \+ internationalPhone/);
- assert.match(signup,/channel: otpChannel/);
+ assert.match(signup,/const whatsappOtpEnabled = process\.env\.NEXT_PUBLIC_STAGEFLOW_OTP_WHATSAPP_ENABLED === "true"/);
+ assert.match(signup,/channel: whatsappOtpEnabled \? otpChannel : "sms"/);
+ assert.match(signup,/whatsappOtpEnabled \? <div className="field"/);
  assert.match(signup,/type:"sms"/);
  assert.match(signup,/phone_confirmed_at/);
  assert.match(signup,/pendingPhone \? <form onSubmit=\{verifySignupPhone\}/);
