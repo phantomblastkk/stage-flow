@@ -174,3 +174,15 @@
 @media(prefers-reduced-motion:reduce){
   .mp-editor-progress-bar span{transition:none}
 }
+
+/* A função de músico acrescenta dados ao perfil canônico do cantor, sem editor duplicado. */
+.mp-unified-singer .mp-editor-panel:has(.mp-preset-list),
+.mp-unified-singer .mp-editor-panel:has(#avatar-upload){display:none}
+.mp-unified-singer .field:has(#portfolio-slug),
+.mp-unified-singer .field:has(#portfolio-headline),
+.mp-unified-singer .field:has(#portfolio-bio),
+.mp-unified-singer .field:has(#portfolio-city),
+.mp-unified-singer .field:has(#mp-instagram),
+.mp-unified-singer .field:has(#mp-youtube),
+.mp-unified-singer .field:has(#mp-spotify){display:none}
+@media(min-width:850px){.mp-unified-singer{grid-template-columns:minmax(0,1fr) minmax(220px,.45fr)}}

@@ -60,7 +60,7 @@ function slugify(value: string) {
     .toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-+|-+$/g, "").slice(0, 30);
 }
 
-export default function MeuPortfolioDeMusico() {
+export default function MeuPortfolioDeMusico({unifiedSinger=false,username=null}:{unifiedSinger?:boolean;username?:string|null}) {
   const router = useRouter();
   const [portfolio, setPortfolio] = useState<EditorPortfolio>(blank);
   const [instrumentsText, setInstrumentsText] = useState("");
@@ -242,18 +242,21 @@ export default function MeuPortfolioDeMusico() {
       setSaving(false);
       return;
     }
+    const {data:mainArtist} = unifiedSinger
+      ? await createClient().rpc("stage_my_artist_page") : {data:null};
+    const shared=mainArtist as {bio?:string;city?:string;headline?:string;instagram_url?:string|null;youtube_url?:string|null;spotify_url?:string|null}|null;
     const { data, error: saveError } = await createClient().rpc(
       "stage_save_musician_portfolio_v4", {
         p_slug: portfolio.slug.trim(),
-        p_bio: portfolio.bio.trim(),
-        p_city: portfolio.city.trim(),
+        p_bio: shared?.bio ?? portfolio.bio.trim(),
+        p_city: shared?.city ?? portfolio.city.trim(),
         p_instruments: instrumentList,
         p_genres: genreList,
         p_media_url: portfolio.media_url || null,
         p_price_mode: portfolio.price_mode,
         p_reference_fee: amount,
         p_is_published: portfolio.is_published,
-        p_headline: portfolio.headline.trim(),
+        p_headline: shared?.headline ?? portfolio.headline.trim(),
         p_theme: portfolio.theme,
         p_accent: portfolio.accent,
         p_layout_style: portfolio.layout_style,
@@ -264,9 +267,9 @@ export default function MeuPortfolioDeMusico() {
         p_career_highlights: highlightList,
         p_availability_note: portfolio.availability_note.trim(),
         p_additional_media_urls: additionalLinks,
-        p_instagram_url: portfolio.instagram_url?.trim() || null,
-        p_youtube_url: portfolio.youtube_url?.trim() || null,
-        p_spotify_url: portfolio.spotify_url?.trim() || null
+        p_instagram_url: shared?.instagram_url ?? portfolio.instagram_url?.trim() ?? null,
+        p_youtube_url: shared?.youtube_url ?? portfolio.youtube_url?.trim() ?? null,
+        p_spotify_url: shared?.spotify_url ?? portfolio.spotify_url?.trim() ?? null
       }
     );
 
@@ -320,7 +323,7 @@ export default function MeuPortfolioDeMusico() {
     reference_fee: portfolio.price_mode === "from" && Number(referenceFeeText.replace(",", ".")) > 0
       ? Number(referenceFeeText.replace(",", ".")) : null
   };
-  const publicPath = "/musico/" + savedSlug;
+  const publicPath = unifiedSinger&&username ? "/"+encodeURIComponent(username) : "/musico/" + savedSlug;
   const completed = [
     Boolean(portfolio.avatar_url),
     Boolean(portfolio.bio.trim()),
@@ -352,8 +355,8 @@ export default function MeuPortfolioDeMusico() {
     </nav>
     <section style={{ padding: "38px 0 24px" }}>
       <div className="eyebrow"><span className="dot"/> SEU ESPAÇO NA MÚSICA</div>
-      <h1 style={{ fontSize: "clamp(32px,5vw,46px)", margin: "14px 0 12px" }}>Sua página. <span className="accent">Seu estilo.</span></h1>
-      <p className="lead" style={{ maxWidth: 760 }}>Deixe seu portfólio gratuito pronto para ser compartilhado com contratantes: fotos, instrumentos, trajetória, vídeos e redes sociais, tudo organizado em uma página profissional.</p>
+      <h1 style={{ fontSize: "clamp(32px,5vw,46px)", margin: "14px 0 12px" }}>Suas habilidades. <span className="accent">Um perfil só.</span></h1>
+      <p className="lead" style={{ maxWidth: 760 }}>Instrumentos, repertório e condições de contratação complementam sua única página artística. O Marketplace utiliza o mesmo perfil público.</p>
       <div className="mp-editor-progress" aria-label={"Perfil com " + completed + " de 6 informações essenciais"}>
         <div><ListChecks size={16}/><strong>{completed}/6</strong> informações essenciais preenchidas</div>
         <div className="mp-editor-progress-bar" aria-hidden="true"><span style={{ width: Math.round(completed / 6 * 100) + "%" }}/></div>
@@ -378,8 +381,14 @@ export default function MeuPortfolioDeMusico() {
     </section>
 
     <MarketplaceMusicianSettings portfolioPublished={portfolio.is_published}/>
+    {unifiedSinger&&<section className="mp-editor-panel" role="note" style={{marginBottom:17}}>
+      <h2>Seu perfil público é único</h2>
+      <p>Foto, apresentação, cidade e redes sociais são editadas em Dados do perfil único. Aqui você acrescenta instrumentos, formatos de apresentação, valores de referência e disponibilidade para o Marketplace.</p>
+      <Link href="/perfil-artistico?aba=dados">Editar meus dados principais</Link>
+    </section>}
 
-    <div className="mp-editor-columns">
+    <div className={"mp-editor-columns"+(unifiedSinger?" mp-unified-singer":"")}>
+
       <div>
         <form id="musician-portfolio-form" onSubmit={save} style={{ display: "grid", gap: 17 }}>
           <section className="mp-editor-panel">
@@ -651,20 +660,22 @@ export default function MeuPortfolioDeMusico() {
 
       <aside className="mp-editor-preview">
         <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 10, marginBottom: 12 }}>
-          <div className="mp-editor-title" style={{ margin: 0 }}><Sparkles size={17} color="#C0A7FF"/> Prévia em tempo real</div>
-          <button type="button" ref={openPreviewRef} className="btn btn-quiet" style={{ padding: "8px 11px", fontSize: 12 }}
+          <div className="mp-editor-title" style={{ margin: 0 }}><Sparkles size={17} color="#C0A7FF"/> Prévia das informações</div>
+          <button type="button" ref={openPreviewRef} className="btn btn-quiet" disabled={unifiedSinger} style={{ padding: "8px 11px", fontSize: 12 }}
             aria-haspopup="dialog" aria-expanded={previewTab}
             onClick={() => setPreviewTab(true)}>
             {previewTab ? "Prévia aberta" : "Abrir tela cheia"}
           </button>
         </div>
-        <MusicianPortfolioView portfolio={effectivePreview} preview instanceId="editor-compact"/>
+        {!unifiedSinger&&<MusicianPortfolioView portfolio={effectivePreview} preview instanceId="editor-compact"/>}
+        {unifiedSinger&&<p style={{color:"var(--muted)",lineHeight:1.7}}>Os dados salvos aparecem na seção <strong>Atuação musical</strong> do seu perfil público principal. A identidade visual é a mesma do cantor e não existe um segundo portfólio.</p>}
+        {unifiedSinger&&savedPublished&&<Link href={publicPath} target="_blank" className="btn btn-quiet">Ver meu perfil artístico</Link>}
         <p style={{ color: "var(--muted)", fontSize: 12, marginTop: 12, lineHeight: 1.6 }}>
-          Esta é uma prévia local. Outras pessoas só verão suas alterações depois de salvar e publicar.
+          {unifiedSinger?"As informações adicionais só aparecem após você salvar e publicar.":"Esta é uma prévia local. Outras pessoas só verão suas alterações depois de salvar e publicar."}
         </p>
       </aside>
     </div>
-    {previewTab && <div className="mp-preview-overlay">
+    {!unifiedSinger&&previewTab && <div className="mp-preview-overlay">
       <button type="button" className="mp-preview-backdrop"
         aria-label="Fechar prévia" onClick={() => setPreviewTab(false)}/>
       <section className="mp-preview-dialog" role="dialog" aria-modal="true" aria-label="Prévia ampliada do portfólio">
