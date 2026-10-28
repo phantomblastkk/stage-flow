@@ -49,7 +49,8 @@ test("WhatsApp is opted in, deferred and server-only",()=>{
  assert.match(worker,/type:"template"/);
  assert.match(worker,/messaging_product:"whatsapp"/);
  assert.doesNotMatch(inbox,/service_role|WHATSAPP_CLOUD_ACCESS_TOKEN/);
- assert.match(inbox,/stage_hiring_whatsapp_settings/);
+ assert.match(inbox,/minha-conta\\?aba=privacidade/);
+ assert.doesNotMatch(inbox,/p_phone:consent\\?phone/);
  assert.match(inbox,/saveThreadAvailability/);
  assert.match(read("src/domains/booking/services/booking-service.ts"),/stage_hiring_availability/);
  assert.match(catalog,/\/conversas\?musico=/);
