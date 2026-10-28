@@ -1,0 +1,25 @@
+name: WhatsApp feature isolated validation
+on:
+  push:
+    branches:
+      - feature/whatsapp-unico-otp-20261028
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    env:
+      NEXT_TELEMETRY_DISABLED: "1"
+      NEXT_PUBLIC_SUPABASE_URL: "https://example.supabase.co"
+      NEXT_PUBLIC_SUPABASE_ANON_KEY: "build-time-placeholder-not-a-real-secret"
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - run: npm ci --no-audit --no-fund
+      - run: node --test tests/unified-whatsapp-otp.test.mjs tests/chat-finance.test.mjs tests/signup-username-collision.test.mjs
+      - run: npx tsc --noEmit
+      - run: npm run build
