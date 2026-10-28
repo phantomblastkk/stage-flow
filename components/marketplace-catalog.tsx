@@ -519,7 +519,7 @@ export default function MarketplaceCatalog({preview=false}:Props) {
         <Link className="brand" href="/"><span className="brand-mark">S</span> stage flow</Link>
         <nav aria-label="Navegação do marketplace">
           <Link href="/painel" className="market-nav-link">Meu painel</Link>
-          <Link href="/marketplace" className="market-nav-soon">
+          <Link href="/marketplace" className={"market-nav-soon"+(preview?" is-preview":"")}>
             <ShieldCheck size={14}/> {preview?"PRÉVIA PRIVADA":"MARKETPLACE"}
           </Link>
         </nav>

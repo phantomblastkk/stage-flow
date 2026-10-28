@@ -81,8 +81,17 @@ try{
   if(width===360){
    for(const screen of [320,375,430]){
     await page.setViewportSize({width:screen,height:820});
-    assert.ok(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth+2),
-      "Marketplace has horizontal overflow at "+screen+"px");
+    const overflow=await page.evaluate(()=>{
+     const width=innerWidth;
+     const overflow=document.documentElement.scrollWidth-width;
+     const offenders=[...document.querySelectorAll("body *")]
+      .map(el=>({tag:el.tagName,className:typeof el.className==="string"?el.className.slice(0,80):"",
+        right:Math.round(el.getBoundingClientRect().right),left:Math.round(el.getBoundingClientRect().left)}))
+      .filter(x=>x.right>width+2||x.left< -2).sort((a,b)=>b.right-a.right).slice(0,10);
+     return {overflow,offenders};
+    });
+    assert.ok(overflow.overflow<=2,
+      "Marketplace has horizontal overflow at "+screen+"px: "+JSON.stringify(overflow));
     await page.screenshot({path:`test-results/mobile-marketplace-${screen}.png`,fullPage:true});
    }
    await page.setViewportSize({width:360,height:900});

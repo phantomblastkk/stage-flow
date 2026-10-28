@@ -750,3 +750,15 @@
  .market-favorite-toast{bottom:calc(91px + env(safe-area-inset-bottom))}
  .market-shell:not(.has-mobile-workspace-nav) .market-favorite-toast{bottom:calc(16px + env(safe-area-inset-bottom))}
 }
+
+/* Cabeçalho compacto: não forçar uma coluna de 320px a comportar três destinos. */
+@media(max-width:480px){
+ .market-container{width:calc(100% - 28px)}
+ .market-nav{gap:9px;min-width:0;height:68px}
+ .market-nav nav{gap:6px;min-width:0}
+ .market-nav .brand{font-size:17px;letter-spacing:-.7px;flex:none}
+ .market-nav .brand-mark{width:29px;height:29px;flex:none}
+ .market-shell.has-mobile-workspace-nav .market-nav-link{display:none}
+ .market-shell:not(.has-mobile-workspace-nav) .market-nav-soon:not(.is-preview){display:none}
+ .market-nav-soon{max-width:100%;padding:9px;font-size:9px}
+}
