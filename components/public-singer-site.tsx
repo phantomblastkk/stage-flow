@@ -122,6 +122,7 @@ export default function PublicSingerSite({musicianSlug}:{musicianSlug?:string}){
   const router=useRouter();
   const username=musicianSlug?undefined:routeUsername;
   const [musician,setMusician]=useState<MusicianPortfolio|null>(null);
+  const [singerRole,setSingerRole]=useState(!musicianSlug);
   const [data,setData]=useState<PublicPro|null>(null);
   const [media,setMedia]=useState<PremiumMediaItem[]>([]);
   const [loading,setLoading]=useState(true);
@@ -152,10 +153,11 @@ export default function PublicSingerSite({musicianSlug}:{musicianSlug?:string}){
           result=legacy?{username:null,is_singer:false,musician:legacy as MusicianPortfolio}:null;
         }
         if(!active)return;
-        if(result?.username&&result.is_singer){router.replace("/"+encodeURIComponent(result.username));return;}
+        if(result?.username){router.replace("/"+encodeURIComponent(result.username));return;}
         if(!result?.musician){setData(null);setMusician(null);setLoading(false);return;}
         const m=result.musician;
         setMusician(m);
+        setSingerRole(false);
         setData({
           artist:{name:m.name,username:musicianSlug,bio:m.bio||"",city:m.city||"",headline:m.headline||"",
             instagram_url:m.instagram_url||null,youtube_url:m.youtube_url||null,spotify_url:m.spotify_url||null,
@@ -254,6 +256,7 @@ export default function PublicSingerSite({musicianSlug}:{musicianSlug?:string}){
         if(!active||error)return;
         const result=data as PublicArtisticMusician|null;
         setMusician(result?.musician||null);
+        if(result?.musician)setSingerRole(Boolean(result.is_singer));
       },()=>{});
     return()=>{active=false};
   },[username,musicianSlug]);
@@ -287,7 +290,7 @@ export default function PublicSingerSite({musicianSlug}:{musicianSlug?:string}){
   const currentShows=selectedDay?
     events.filter(e=>showCode(e.starts_at)===selectedDay):events;
   const artist=data?.artist;
-  const artistRoles=musician?(musicianSlug?"Músico":"Cantor • Músico"):"Cantor";
+  const artistRoles=musician?(singerRole?"Cantor • Músico":"Músico"):"Cantor";
   const workLinks=musician?[...new Set([musician.media_url,...(musician.additional_media_urls||[])].filter((link):link is string=>Boolean(link&&/^https:\/\//i.test(link))))].slice(0,5):[];
   const biography=artist?distinctPublicBiography(artist.headline,artist.bio):"";
   const instagram=publicInstagramProfile(artist?.instagram_url);
