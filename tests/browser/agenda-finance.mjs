@@ -288,11 +288,20 @@ try {
       await teamPanel.getByText("Músico da formação",{exact:true}).waitFor();
       assert.equal(await teamPanel.getByLabel("Equipe salva",{exact:true}).inputValue(),threadA);
       await teamPanel.getByLabel("Mensagem aos convidados (opcional)",{exact:true}).fill("Ensaio de teste");
-      page.once("dialog",dialog=>dialog.dismiss());
-      await teamPanel.getByRole("button",{name:"Convidar esta equipe",exact:true}).click();
+      const inviteTeamButton=teamPanel.getByRole("button",{name:"Convidar esta equipe",exact:true});
+      async function confirmTeam(accept){
+        await inviteTeamButton.focus();
+        const dialogReady=page.waitForEvent("dialog");
+        const activation=inviteTeamButton.press("Enter");
+        const dialog=await dialogReady;
+        assert.equal(dialog.type(),"confirm");
+        assert.ok(dialog.message().includes("Banda de teste"));
+        if(accept)await dialog.accept();else await dialog.dismiss();
+        await activation;
+      }
+      await confirmTeam(false);
       assert.equal(state.teamWrites.length,0,"dismissed confirmation must not invite anyone");
-      page.once("dialog",dialog=>dialog.accept());
-      await teamPanel.getByRole("button",{name:"Convidar esta equipe",exact:true}).click();
+      await confirmTeam(true);
       await teamPanel.getByRole("status").filter({hasText:"1 novo(s) convite(s) registrado(s)"}).waitFor();
       assert.equal(state.teamWrites.length,1);assert.equal(state.teamWrites[0].p_event_id,firstId);assert.equal(state.teamWrites[0].p_message,"Ensaio de teste");
       await noHorizontalOverflow(page,"team editor "+width);
