@@ -538,7 +538,11 @@ try {
     await page.locator(".agenda-event-list").first().waitFor();
     await page.getByRole("link", { name: "Voltar ao painel", exact: true }).click();
     await page.getByRole("heading", { name: /^(Bom dia|Boa tarde|Boa noite), Teste/ }).waitFor();
-    await page.getByRole("link", { name: "Financeiro", exact: true }).first().click();
+    // A barra inferior foca Inicio, Agenda, Chats, Explorar e Conta.
+    // Financeiro permanece disponivel no menu completo do celular.
+    await page.getByRole("button", { name: "Menu", exact: true }).click();
+    await page.getByRole("navigation", { name: "Navegação do StageFlow" })
+      .getByRole("link", { name: "Financeiro", exact: true }).click();
     await page.getByRole("region", { name: "Resumo financeiro" }).waitFor();
     for (const name of ["profiles", "stage_owner_admin_status", "stage_venue_partner_access"])
       assert.equal(reads(userId, name), 1, name + " should be shared across client navigation");
