@@ -19,7 +19,7 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: 22
-      - run: npm ci --no-audit --no-fund
+      - run: npm install --no-package-lock --no-audit --no-fund
       - run: node --test tests/unified-whatsapp-otp.test.mjs tests/chat-finance.test.mjs tests/signup-username-collision.test.mjs
       - run: npx tsc --noEmit
       - run: npm run build
