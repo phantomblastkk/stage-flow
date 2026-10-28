@@ -56,7 +56,7 @@ test("step controls stay disabled until React has hydrated on slow mobile connec
 });
 
 test("tab changes do not animate scroll and swallow fast taps",()=>{
- assert.ok(component.includes('scrollIntoView({block:"start",behavior:"auto"})'));
+ assert.ok(component.includes('scrollIntoView({block:"start",behavior:"instant"})'));
  assert.ok(!component.includes('behavior:"smooth"'));
  assert.ok(read("components/mobile-editor-wizard.css").includes(".sf-editor-wizard>p{display:none}"));
 });
@@ -64,7 +64,7 @@ test("tab changes do not animate scroll and swallow fast taps",()=>{
 test("a focused field follows visual viewport resize on mobile without changing desktop",()=>{
  const helper=read("components/mobile-editor-focus.ts");
  assert.ok(helper.includes('window.innerWidth>850'));
- assert.ok(helper.includes('element.scrollIntoView({block:"center",behavior:"auto"})'));
+ assert.ok(helper.includes('element.scrollIntoView({block:"center",behavior:"instant"})'));
  assert.ok(helper.includes('window.visualViewport'));
  assert.ok(helper.includes('viewport.addEventListener("resize",onResize)'));
  assert.ok(singer.includes('onFocusCapture={event=>revealMobileEditorField(event.target)}'));

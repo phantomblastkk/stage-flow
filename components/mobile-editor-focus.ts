@@ -16,7 +16,7 @@ export function revealMobileEditorField(element:EventTarget|null){
   const top=viewport?.offsetTop??0;
   const bottom=top+(viewport?.height??window.innerHeight);
   if(rect.top<top+18||rect.bottom>bottom-18)
-   element.scrollIntoView({block:"center",behavior:"auto"});
+   element.scrollIntoView({block:"center",behavior:"instant"});
  });
 }
 

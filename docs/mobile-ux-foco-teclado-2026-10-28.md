@@ -7,3 +7,5 @@ Ajustes: barra de etapas torna-se não fixa enquanto um campo tem foco e em altu
 Regressões automatizadas: simulação de viewport reduzido a 375x520, teste do campo de instrumento e de mensagem, verificação de scroll horizontal, barra não sobreposta e botão Enviar dentro do painel. Capturas ficam nos artefatos de QA. Não equivale a teste no Safari/iPhone físico: viewport reduzido é apenas um proxy do teclado.
 
 Sem alterações SQL, permissões ou produção. **Deploy apenas após autorização explícita.**
+
+Complemento: o Stage Flow usa `html{scroll-behavior:smooth}`. Para troca de etapas e exposição do campo focado, `scrollIntoView({behavior:"instant"})` sobrepõe essa animação global e evita o campo abaixo do visor durante a abertura do teclado.

@@ -19,7 +19,7 @@ export default function MobileEditorWizard({
  function go(value:number){
   if(!ready||disabled)return;
   onChange(value);
-  root.current?.scrollIntoView({block:"start",behavior:"auto"});
+  root.current?.scrollIntoView({block:"start",behavior:"instant"});
  }
  function save(){
   if(!ready||disabled||saveDisabled)return;
