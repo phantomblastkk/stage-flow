@@ -38,7 +38,10 @@ pagamentos, WhatsApp ou liberação de marketplace nesta etapa.
   título; alterar horário invalida consulta; conflito preserva o rascunho; retry
   envia cachê desconhecido como null; retirada mantém o registro no histórico.
 - Os dez cenários de navegador anteriores foram preservados.
-- CI final: registrar o resultado aprovado antes da entrega.
+- CI aprovado no commit `6d6d6aaf98307b6cd8f11f3df9eaa0e828b56728`: contratos, TypeScript, build e onze cenários de navegador.
+- [Workflow aprovado](https://github.com/phantomblastkk/stage-flow/actions/runs/40627455777).
+- [Screenshots e log](https://github.com/phantomblastkk/stage-flow/actions/runs/40627455777/artifacts/12789474666), retenção de sete dias.
+- [Diff aplicado](https://github.com/phantomblastkk/stage-flow/compare/41555d6340cc17d4e9640cf4d22fe816b1b1143d...6d6d6aaf98307b6cd8f11f3df9eaa0e828b56728).
 
 Somente fixtures sintéticas. Sem contas reais, banco remoto ou benchmark de carga.
 
