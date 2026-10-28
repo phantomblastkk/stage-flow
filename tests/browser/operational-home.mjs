@@ -177,7 +177,11 @@ try{
    assert.ok(venueForm.valid&&venueForm.kind==="venue",
     "Venue form must be valid and selected before save: "+JSON.stringify(venueForm));
    const beforeVenueSave=writes.length;
-   await form.getByRole("button",{name:"Salvar perfil",exact:true}).click();
+   const venueSaveButton=form.getByRole("button",{name:"Salvar perfil",exact:true});
+   await venueSaveButton.focus();
+   assert.equal(await venueSaveButton.evaluate(button=>button===document.activeElement),true,
+    "Venue save must be activated from the focused submit button");
+   await venueSaveButton.press("Enter");
    for(let check=0;check<35&&writes.length===beforeVenueSave;check++)await delay(100);
    const submitted=await form.evaluate(el=>({
     kind:el.querySelector("#managed-profile-kind")?.value,
