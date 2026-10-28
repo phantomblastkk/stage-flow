@@ -59,7 +59,10 @@ ativação de envios automáticos, pagamentos ou mudança de acesso ao marketpla
 - No celular: preferência de WhatsApp indisponível não bloqueia inbox; link de conversa alheia não consulta mensagens; convites recuperam de falha sem exibir estado vazio enganoso.
 - Os testes anteriores de Agenda, Financeiro, CSV e troca de conta entre abas foram mantidos.
 - A primeira rodada aprovada identificou visualmente um recorte do compositor em 768 px; o cenário de regressão agora exige que o botão de envio fique dentro do painel nas três larguras.
-- CI/navegador final: registrar o resultado aprovado após verificar o compositor.
+- CI final aprovado no commit `a409368ac5e1011503b77cd01d60b3bce2ce5ef1`, incluindo contratos, TypeScript, build e os sete cenários de navegador. A verificação do botão de envio dentro do painel passou em 360/768/1280 px.
+- [Workflow aprovado](https://github.com/phantomblastkk/stage-flow/actions/runs/40620461956).
+- [Dez screenshots e log do servidor](https://github.com/phantomblastkk/stage-flow/actions/runs/40620461956/artifacts/12787620872), retenção de sete dias.
+- [Diff aplicado dos 19 arquivos](https://github.com/phantomblastkk/stage-flow/compare/11b00674c891d872516dd0f1cb00177555c047a4...a409368ac5e1011503b77cd01d60b3bce2ce5ef1).
 
 Os cenários usam somente contas e respostas sintéticas. Não houve teste com
 Auth/RLS reais, alteração de banco ou benchmark de carga. O polling visível ainda
