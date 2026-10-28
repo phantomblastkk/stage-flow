@@ -103,8 +103,13 @@ try{
    const instruments=page.locator("#portfolio-instruments");
    await instruments.fill("Cavaquinho, Pandeiro");
    await wizard.getByRole("button",{name:/Experiência/}).click();
+   await page.locator('.mp-editor-workspace[data-editor-active="2"]').waitFor();
+   if(await instruments.isVisible()){
+    await page.screenshot({path:"test-results/operational-editor-experience-360.png",fullPage:true});
+   }
    assert.equal(await instruments.isVisible(),false,"Wizard must show only the active step on mobile");
    await wizard.getByRole("button",{name:/Instrumentos/}).click();
+   await page.locator('.mp-editor-workspace[data-editor-active="1"]').waitFor();
    assert.equal(await instruments.inputValue(),"Cavaquinho, Pandeiro",
     "Switching steps must preserve the musician's unsaved draft");
    assert.equal(await instruments.isVisible(),true);
