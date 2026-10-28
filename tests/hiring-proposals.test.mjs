@@ -4,7 +4,7 @@ import { readFileSync } from "node:fs";
 import { resolve } from "node:path";
 const read=path=>readFileSync(resolve(process.cwd(),path),"utf8");
 const sql=read("supabase/hiring_formal_proposals_migration.sql");
-const component=read("components/hiring-proposals.tsx")+read("src/domains/booking/services/negotiation-service.ts");
+const component=read("components/hiring-proposals.tsx")+read("src/domains/booking/hooks/use-hiring-proposals.ts")+read("src/domains/booking/services/negotiation-service.ts");
 const inbox=read("app/conversas/page.tsx");
 function fn(name){
  const at=sql.indexOf("create or replace function public."+name+"(");

@@ -50,3 +50,9 @@ test('a private pending offer is valid without inventing an agreement',()=>{asse
 test('malformed or forbidden fee responses cannot appear as agreed amounts',()=>{for(const value of [null,{},[],{status:'forbidden'},{...snapshot,agreed_amount:undefined},{...snapshot,agreed_amount:'400'},{...snapshot,last_amount:NaN},{...snapshot,history:[{amount:-1}]}])assert.equal(isFeeSnapshot(value),false);});
 
 test('an invitation without an offer accepts the SQL null author flag',()=>{assert.equal(isFeeSnapshot({...snapshot,has_offer:false,last_amount:null,last_by_me:null}),true);assert.equal(isFeeSnapshot({...snapshot,has_offer:true,last_amount:null}),false);});
+
+const {isProposalSnapshot}=await loadTsModule('src/domains/booking/model/proposal-snapshot.ts');
+const proposal={id:'aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa',title:'Show',venue:null,city:null,details:null,starts_at:'2026-12-02T23:00:00Z',created_at:'2026-11-01T15:00:00Z',responded_at:null,status:'pending',fee_amount:null,linked_event_id:null,linked_invitation_id:null};
+test('formal snapshot distinguishes an empty inbox from an invalid response',()=>{assert.equal(isProposalSnapshot([]),true);for(const value of [null,{},[{status:'forbidden'}]])assert.equal(isProposalSnapshot(value),false);});
+test('formal snapshot preserves unknown fees and accepted linked show IDs',()=>{assert.equal(isProposalSnapshot([proposal]),true);assert.equal(isProposalSnapshot([{...proposal,status:'accepted',fee_amount:400.25,linked_event_id:proposal.id,linked_invitation_id:proposal.id}]),true);});
+test('formal snapshot rejects malformed money, dates, status and links',()=>{for(const invalid of [{fee_amount:'400'},{fee_amount:NaN},{fee_amount:0},{starts_at:'invalid'},{status:'forbidden'},{linked_event_id:'javascript:alert(1)'},{id:'bad'}])assert.equal(isProposalSnapshot([{...proposal,...invalid}]),false);});

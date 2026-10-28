@@ -59,7 +59,7 @@ async function setup(width) {
   const state = { events: [...initialEvents(), ...moreEvents(), { ...initialEvents()[1], id: "77777777-7777-4777-8777-777777777777", title: "Show de dezembro", starts_at: "2026-12-02T23:00:00Z" }], accepted: false, failAgenda: false, failFinance: false, invalidFinance: false, writes: [],
     reads: new Map(), adminA: false, financeDelay: null, delayedFinanceStarted: 0, delayedFinanceCompleted: 0,
     messageDelay: null, delayedMessagesStarted: 0, delayedMessagesCompleted: 0, failMessageId: null, failInvites: false, feeEnabled:false, feeAgreed:null, feeAmount:400, feeByMe:false, feeReadFail:false, feeOffers:[],
-    failChatPreferences: false, showProposal: false, proposalAccepted: false, guestStartsAt: guest.starts_at, sent: [],
+    failChatPreferences: false, showProposal: false, proposalReadFail:false, proposalDelay:null, proposalStarted:0, proposalCompleted:0, asRequester:false, prefillDelay:null, prefillStarted:0, prefillCompleted:0, scheduleDelay:null, scheduleCalls:[], sendResult:"schedule_conflict", proposalWrites:[], submittedProposal:null, proposalWithdrawn:false, proposalAccepted: false, guestStartsAt: guest.starts_at, sent: [],
     messages: Object.fromEntries([[threadA,"Mensagem privada A"],[threadB,"Mensagem privada B"]].map(([id,text])=>[id,[{id,body:text,is_mine:false,created_at:"2026-11-01T15:00:00Z"}]])) };
   await context.route(api + "/**", async route => {
     const request = route.request();
@@ -99,7 +99,7 @@ async function setup(width) {
     else if (rpc === "stage_owner_admin_status") result = actor === userId && state.adminA;
     else if (rpc === "stage_workspace_overview") result = { status: "ok", metrics: { shows_week: 0, pending_invites: 0, unread_conversations: 0, pending_contacts: 0, received_month: 0 }, upcoming: [], activity: [], updated_at: "2026-11-01T15:00:00Z" };
     else if (rpc === "stage_accepted_shows") result = filtered(state.accepted ? [{...guest,starts_at:state.guestStartsAt}] : [],url);
-    else if (rpc === "stage_hiring_list") result = [threadA,threadB].map((id,index)=>({id,requested_date:"2026-12-02",event_id:null,availability:"awaiting",last_message_at:"2026-11-01T15:00:00Z",other_id:otherUserId,other_name:index?"Contratante B":"Contratante A",acting_as:"musician",unread:0,last_message:index?"Mensagem privada B":"Mensagem privada A"}));
+    else if (rpc === "stage_hiring_list") result = [threadA,threadB].map((id,index)=>({id,requested_date:"2026-12-02",event_id:state.asRequester?firstId:null,availability:"awaiting",last_message_at:"2026-11-01T15:00:00Z",other_id:otherUserId,other_name:index?"Contratante B":"Contratante A",acting_as:state.asRequester?"requester":"musician",unread:0,last_message:index?"Mensagem privada B":"Mensagem privada A"}));
     else if (rpc === "stage_hiring_messages") {
       assert.ok([threadA,threadB].includes(body.p_thread_id));
       const pending=body.p_thread_id===threadA?state.messageDelay:null;
@@ -115,11 +115,26 @@ async function setup(width) {
     else if (rpc === "stage_hiring_whatsapp_settings") {
       if(state.failChatPreferences){status=503;result={message:"Fixture unavailable"};}
       else result={status:"ok",opted_in:false,phone:null};
-    } else if (rpc === "stage_hiring_proposals") result={status:"ok",items:state.showProposal&&body.p_thread_id===threadA?[{
+    } else if (rpc === "stage_hiring_proposal_prefill") {
+      const pending=state.prefillDelay;if(pending){state.prefillStarted++;await pending;state.prefillCompleted++;}
+      result={status:"ok",event:{title:"Título sugerido antigo",venue:"Local sugerido",city:"São Paulo",starts_at:"2026-12-02T21:00:00Z"}};
+    } else if(rpc === "stage_musician_schedule_check"){
+      state.scheduleCalls.push(body);const pending=state.scheduleDelay;if(pending)await pending;result="free";
+    } else if(rpc === "stage_hiring_proposal_send"){
+      state.proposalWrites.push(body);result={status:state.sendResult};if(state.sendResult==="ok")state.submittedProposal=body;
+    } else if(rpc === "stage_hiring_proposal_withdraw"){
+      assert.equal(body.p_proposal_id,proposalId);state.proposalWithdrawn=true;result="saved";
+    } else if (rpc === "stage_hiring_proposals") {
+      const pending=body.p_thread_id===threadA?state.proposalDelay:null;
+      if(pending){state.proposalStarted++;await pending;state.proposalCompleted++;}
+      if(state.proposalReadFail){status=503;result={message:"Fixture unavailable"};}
+      else if(state.submittedProposal)result={status:"ok",items:[{id:proposalId,title:state.submittedProposal.p_title,venue:null,city:null,starts_at:state.submittedProposal.p_starts_at,fee_amount:state.submittedProposal.p_fee,details:null,status:state.proposalWithdrawn?"withdrawn":"pending",created_at:"2026-11-01T15:00:00Z",responded_at:null,linked_event_id:null,linked_invitation_id:null}]};
+      else result={status:"ok",items:state.showProposal&&body.p_thread_id===threadA?[{
       id:proposalId,title:"Proposta de show de teste",venue:guest.venue,city:guest.city,starts_at:state.guestStartsAt,fee_amount:400,details:null,
       status:state.proposalAccepted?"accepted":"pending",created_at:"2026-11-01T15:00:00Z",responded_at:null,
       linked_event_id:state.proposalAccepted?guestId:null,linked_invitation_id:state.proposalAccepted?invitationId:null
     }]:[]};
+    }
     else if (rpc === "stage_hiring_proposal_decide") {
       assert.equal(body.p_proposal_id,proposalId);assert.equal(body.p_accept,true);
       state.proposalAccepted=true;state.accepted=true;result={status:"ok"};
@@ -303,7 +318,7 @@ try {
   }
   for(const width of [360,768,1280]) {
     const {context,page,state,errors}=await setup(width);
-    let releaseMessages;
+    let releaseMessages,releaseProposals;
     const choose=async(name)=>{
       if(width<=750&&await page.locator(".hiring-layout.has-active").count())
         await page.getByRole("button",{name:"Todas as conversas",exact:true}).click();
@@ -312,6 +327,7 @@ try {
     try{
       state.showProposal=true;state.guestStartsAt="2026-12-02T23:00:00Z";
       state.failChatPreferences=width===360;
+      state.proposalDelay=new Promise(resolve=>{releaseProposals=resolve;});
       await page.goto(origin+"/conversas");
       await choose("Contratante A");
       await page.locator(".hiring-messages").getByText("Mensagem privada A",{exact:true}).waitFor();
@@ -325,8 +341,10 @@ try {
       assert.equal(await page.getByLabel("Sua mensagem",{exact:true}).inputValue(),"");
       await page.getByLabel("Sua mensagem",{exact:true}).fill("Rascunho exclusivo B");
       releaseMessages();await until(()=>state.delayedMessagesCompleted===1);state.messageDelay=null;
+      releaseProposals();await until(()=>state.proposalCompleted===1);state.proposalDelay=null;
       await delay(100);
       assert.equal(await page.locator(".hiring-messages").getByText("Mensagem privada A",{exact:true}).count(),0);
+      assert.equal(await page.getByText("Proposta de show de teste",{exact:true}).count(),0);
       await choose("Contratante A");
       await page.locator(".hiring-messages").getByText("Mensagem privada A",{exact:true}).waitFor();
       assert.equal(await page.getByLabel("Sua mensagem",{exact:true}).inputValue(),"Rascunho exclusivo A");
@@ -351,6 +369,12 @@ try {
       await page.evaluate(()=>scrollTo(0,0));
       await page.screenshot({path:`test-results/booking-${width}.png`,fullPage:true});
       await choose("Contratante A");
+      state.proposalReadFail=true;
+      await page.getByRole("button",{name:"Atualizar propostas",exact:true}).click();
+      await page.locator(".hiring-proposals").getByRole("alert").waitFor();
+      assert.equal(await page.getByText("Ainda não há proposta formal nesta conversa.",{exact:true}).count(),0);
+      state.proposalReadFail=false;
+      await page.getByRole("button",{name:"Atualizar propostas",exact:true}).click();
       page.once("dialog",dialog=>void dialog.accept());
       await page.getByRole("button",{name:"Aceitar proposta",exact:true}).click();
       await page.getByRole("link",{name:"Ver show na agenda",exact:true}).click();
@@ -375,7 +399,45 @@ try {
       assert.deepEqual(errors,[],"booking browser errors");
       console.log(`PASS booking ${width}px: thread response/draft isolation, retry/send, private deep links, accepted proposal to selected participation in another month`);
     }catch(error){await page.screenshot({path:`test-results/failure-booking-${width}.png`,fullPage:true}).catch(()=>{});throw error;}
-    finally{releaseMessages?.();await context.close();}
+    finally{releaseMessages?.();releaseProposals?.();await context.close();}
+  }
+  {
+    const {context,page,state,errors}=await setup(360);
+    let releasePrefill,releaseSchedule;
+    try{
+      state.asRequester=true;
+      state.prefillDelay=new Promise(resolve=>{releasePrefill=resolve;});
+      await page.goto(origin+"/conversas?conversa="+threadA);
+      await page.getByRole("button",{name:"Montar proposta",exact:true}).click();
+      await page.getByLabel("Nome da apresentação *",{exact:true}).fill("Meu rascunho preservado");
+      await until(()=>state.prefillStarted===1);releasePrefill();await until(()=>state.prefillCompleted===1);await delay(100);
+      assert.equal(await page.getByLabel("Nome da apresentação *",{exact:true}).inputValue(),"Meu rascunho preservado");
+      state.scheduleDelay=new Promise(resolve=>{releaseSchedule=resolve;});
+      await page.getByRole("button",{name:"Verificar conflito antes de enviar",exact:true}).click();
+      await until(()=>state.scheduleCalls.length===1);
+      await page.getByLabel("Data e horário *",{exact:true}).fill("2026-12-02T20:00");
+      releaseSchedule();state.scheduleDelay=null;await delay(100);
+      assert.equal(await page.getByText("Sem conflito registrado — confirme com o músico",{exact:true}).count(),0);
+      await page.getByRole("button",{name:"Verificar conflito antes de enviar",exact:true}).click();
+      await page.getByText("Sem conflito registrado — confirme com o músico",{exact:true}).waitFor();
+      assert.equal(state.scheduleCalls.at(-1).p_start,"2026-12-02T23:00:00.000Z");
+      await page.getByRole("button",{name:"Enviar proposta",exact:true}).click();
+      await page.locator(".hiring-proposals").getByRole("alert").filter({hasText:"compromisso confirmado"}).waitFor();
+      assert.equal(await page.getByLabel("Nome da apresentação *",{exact:true}).inputValue(),"Meu rascunho preservado");
+      state.sendResult="ok";
+      await page.getByRole("button",{name:"Enviar proposta",exact:true}).click();
+      await page.getByText("Proposta enviada. O show só entrará na agenda após o músico aceitar.",{exact:true}).waitFor();
+      assert.equal(state.proposalWrites.length,2);assert.equal(state.proposalWrites.at(-1).p_fee,null);
+      page.once("dialog",dialog=>void dialog.accept());
+      await page.getByRole("button",{name:"Retirar proposta",exact:true}).click();
+      await page.getByText("Proposta retirada. Você pode enviar outra com novos detalhes.",{exact:true}).waitFor();
+      await page.getByText("Retirada",{exact:true}).waitFor();
+      await noHorizontalOverflow(page,"formal proposal editor 360");
+      await page.evaluate(()=>scrollTo(0,0));await page.screenshot({path:"test-results/proposal-editor-360.png",fullPage:true});
+      assert.deepEqual(errors,[]);
+      console.log("PASS proposal editor 360px: late prefill preserves draft, stale schedule discarded, conflict recovery, unknown fee and withdrawal");
+    }catch(error){await page.screenshot({path:"test-results/failure-proposal-editor.png",fullPage:true}).catch(()=>{});throw error;}
+    finally{releasePrefill?.();releaseSchedule?.();await context.close();}
   }
   const { context, page, state, errors } = await setup(360);
   let releaseFinance;

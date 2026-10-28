@@ -1,26 +1,12 @@
 "use client";
 
-import { parseProposalFee } from "@/src/domains/booking/model/fee-input";
-import { FormEvent, useCallback, useEffect, useState } from "react";
+import {useHiringProposals} from "@/src/domains/booking/hooks/use-hiring-proposals";
 import Link from "next/link";
 import { CalendarClock, CheckCircle2, ClipboardList, FileCheck2, Handshake, LoaderCircle, RotateCcw, Send, XCircle } from "lucide-react";
-import { createClient } from "@/lib/supabase/client";
-import { readProposals, readProposalPrefill, checkProposalSchedule, sendProposal, decideProposal, withdrawProposal } from "@/src/domains/booking/services/negotiation-service";
 import { invitationAgendaHref } from "@/src/domains/booking/model/booking-links";
 import "./hiring-proposals.css";
 
-type HiringThread = {
-  id:string;requested_date:string|null;event_id:string|null;
-  availability:"awaiting"|"available"|"unavailable"|"ask_later";
-  acting_as:"requester"|"musician";other_id:string;
-};
-type ProposalStatus="pending"|"accepted"|"declined"|"withdrawn";
-type Proposal={
-  id:string; title:string;venue:string|null;city:string|null;
-  starts_at:string;fee_amount:number|null;details:string|null;
-  status:ProposalStatus;created_at:string;responded_at:string|null;
-  linked_event_id:string|null;linked_invitation_id:string|null
-};
+import type {HiringThread,ProposalStatus} from "@/src/domains/booking/proposal-types";
 type Props={thread:HiringThread; onUpdate?:()=>void};
 const brl=new Intl.NumberFormat("pt-BR",{style:"currency",currency:"BRL"});
 const formatFee=(fee:number|null)=>fee==null?"Cachê a combinar":brl.format(fee);
@@ -30,160 +16,8 @@ const when=(date:string)=>new Date(date).toLocaleString("pt-BR",{
 const statusNames:Record<ProposalStatus,string>={
   pending:"Aguardando resposta",accepted:"Aceita",declined:"Recusada",withdrawn:"Retirada"
 };
-function initialDate(day:string|null){
-  if(!day)return "";
-  return day+"T18:00";
-}
-
-export default function HiringProposals({thread,onUpdate}:Props){
- const [items,setItems]=useState<Proposal[]>([]);
- const [loading,setLoading]=useState(true);
- const [busy,setBusy]=useState(false);
- const [error,setError]=useState("");
- const [notice,setNotice]=useState("");
- const [showForm,setShowForm]=useState(false);
- const [title,setTitle]=useState("");
- const [venue,setVenue]=useState("");
- const [city,setCity]=useState("");
- const [starts,setStarts]=useState(()=>initialDate(thread.requested_date));
- const [fee,setFee]=useState("");
- const [details,setDetails]=useState("");
- const [scheduleCheck,setScheduleCheck]=useState<"idle"|"checking"|"free"|"busy"|"possible_conflict"|"error">("idle");
-
- const load=useCallback(async()=>{
-  const {data,error:rpcError}=await readProposals(createClient(), {
-   p_thread_id:thread.id
-  });
-  if(rpcError)throw rpcError;
-  if(data?.status!=="ok"||!Array.isArray(data.items))throw Error("Não foi possível carregar as propostas.");
-  setItems(data.items as Proposal[]);
- },[thread.id]);
- useEffect(()=>{
-  let alive=true;
-  setLoading(true);setItems([]);setError("");setShowForm(false);
-  setTitle("");setVenue("");setCity("");setDetails("");setFee("");
-  setStarts(initialDate(thread.requested_date));
-  setScheduleCheck("idle");
-  void load().catch(e=>{if(alive)setError(e instanceof Error?e.message:"Não foi possível carregar as propostas.");})
-   .finally(()=>{if(alive)setLoading(false);});
-  if(thread.event_id&&thread.acting_as==="requester") {
-    void Promise.resolve(readProposalPrefill(createClient(), {p_thread_id:thread.id}))
-      .then(({data,error})=>{
-        if(!alive||error||data?.status!=="ok"||!data.event)return;
-        const saved=data.event as {title:string;venue:string|null;city:string|null;starts_at:string};
-        setTitle(saved.title||"");
-        setVenue(saved.venue||"");
-        setCity(saved.city||"");
-        const local=new Intl.DateTimeFormat("sv-SE",{
-          timeZone:"America/Sao_Paulo",year:"numeric",month:"2-digit",
-          day:"2-digit",hour:"2-digit",minute:"2-digit",hour12:false
-        }).format(new Date(saved.starts_at)).replace(" ","T");
-        setStarts(local);
-      }).catch(()=>{});
-  }
-  const timer=setInterval(()=>{if(alive)void load().catch(()=>{});},16000);
-  return()=>{alive=false;clearInterval(timer);};
- },[load,thread.requested_date,thread.event_id,thread.acting_as]);
-
- async function checkSchedule(){
-  if(!starts||busy)return;
-  const local=new Date(starts+"-03:00");
-  if(Number.isNaN(local.getTime())){setError("Informe a data antes de consultar.");return;}
-  setScheduleCheck("checking");setError("");
-  try{
-    const {data,error:rpcError}=await checkProposalSchedule(createClient(), {
-      p_musician_id:thread.other_id,
-      p_start:local.toISOString(),p_end:new Date(local.getTime()+4*60*60*1000).toISOString(),
-      p_thread_id:thread.id,p_ignore_event:thread.event_id
-    });
-    if(rpcError)throw rpcError;
-    setScheduleCheck(["free","busy","possible_conflict"].includes(data)?data:"error");
-  }catch{setScheduleCheck("error");}
- }
- async function submit(e:FormEvent<HTMLFormElement>){
-  e.preventDefault();if(busy)return;
-  setError("");setNotice("");
-  const amount=parseProposalFee(fee);
-  if(amount===undefined){setError("Digite um cachê válido ou deixe vazio para combinar depois.");return;}
-  const timestamp=new Date(starts+"-03:00");
-  if(!starts||Number.isNaN(timestamp.getTime())){
-   setError("Informe a data e a hora corretas.");return;
-  }
-  setBusy(true);
-  try{
-   const {data,error:rpcError}=await sendProposal(createClient(), {
-    p_thread_id:thread.id,p_title:title.trim(),p_venue:venue.trim()||null,
-    p_city:city.trim()||null,p_starts_at:timestamp.toISOString(),
-    p_fee:amount,p_details:details.trim()||null
-   });
-   if(rpcError)throw rpcError;
-   if(data?.status!=="ok"){
-    const reasons:Record<string,string>={
-     pending_exists:"Já existe uma proposta aguardando resposta. Retire-a antes de enviar outra.",
-     unavailable:"O músico informou que está indisponível para esta conversa.",
-     different_day:"A data da proposta precisa ser a mesma escolhida na consulta.",
-     event_mismatch:"O dia e horário precisam coincidir com o evento vinculado.",
-     already_confirmed:"Esta conversa já possui uma contratação aceita.",
-     daily_limit:"Limite diário de propostas atingido.",
-     invalid:"Revise data, hora, título e valores.",
-     schedule_conflict:"O músico já tem um compromisso confirmado nesse horário. Escolha outra data ou horário.",
-     schedule_unavailable:"Não foi possível verificar a agenda agora. Tente novamente."
-    };
-    throw Error(reasons[data?.status]||"Não foi possível enviar a proposta.");
-   }
-   setShowForm(false);setNotice(data?.availability_warning?
-    "Proposta enviada, mas há um compromisso ainda não confirmado nesta data. Verifique diretamente com o músico antes do aceite.":
-    "Proposta enviada. O show só entrará na agenda após o músico aceitar.");
-   await load();onUpdate?.();
-  }catch(e){setError(e instanceof Error?e.message:"Erro ao enviar proposta.");}
-  finally{setBusy(false);}
- }
-
- async function decide(p:Proposal,accept:boolean){
-  if(busy)return;
-  if(!window.confirm(accept?
-   "Confirmar esta proposta? O show será criado ou vinculado à agenda e o convite ficará aceito.":
-   "Recusar esta proposta? O contratante poderá enviar outra."))return;
-  setBusy(true);setError("");setNotice("");
-  try{
-   const {data,error:rpcError}=await decideProposal(createClient(), {
-    p_proposal_id:p.id,p_accept:accept
-   });
-   if(rpcError)throw rpcError;
-   if(data?.status!=="ok"){
-    const reasons:Record<string,string>={
-      existing_invite:"Já existe um convite deste músico para este evento. Resolva o convite na agenda antes de confirmar.",
-      unavailable:"A disponibilidade está marcada como indisponível.",
-      expired:"A data e hora do show passaram. Solicite uma nova proposta.",
-      closed:"Essa proposta já foi respondida.",
-      event_unavailable:"O evento original não está mais disponível.",
-      schedule_conflict:"Há outro compromisso confirmado nesse horário. Confira Minha disponibilidade.",
-      schedule_unavailable:"Não foi possível verificar a agenda agora; tente novamente."
-    };
-    throw Error(reasons[data?.status]||"Não foi possível responder à proposta.");
-   }
-   setNotice(accept?
-    "Proposta aceita! O show foi registrado na agenda privada com a participação confirmada.":
-    "Proposta recusada. O histórico ficará disponível nesta conversa.");
-   await load();onUpdate?.();
-  }catch(e){setError(e instanceof Error?e.message:"Não foi possível responder.");}
-  finally{setBusy(false);}
- }
-
- async function withdraw(p:Proposal){
-  if(busy)return;
-  if(!window.confirm("Retirar esta proposta? Ela ficará no histórico, mas deixará de estar ativa."))return;
-  setBusy(true);setError("");setNotice("");
-  try{
-   const {data,error:rpcError}=await withdrawProposal(createClient(), {
-    p_proposal_id:p.id
-   });
-   if(rpcError||data!=="saved")throw Error("Não foi possível retirar a proposta.");
-   setNotice("Proposta retirada. Você pode enviar outra com novos detalhes.");
-   await load();onUpdate?.();
-  }catch(e){setError(e instanceof Error?e.message:"Erro ao retirar.");}
-  finally{setBusy(false);}
- }
+function HiringProposalsPanel({thread,onUpdate}:Props){
+ const {items,loading,busy,error,notice,readError,showForm,setShowForm,title,setTitle,venue,setVenue,city,setCity,starts,setStarts,fee,setFee,details,setDetails,scheduleCheck,setScheduleCheck,load,checkSchedule,submit,decide,withdraw}=useHiringProposals(thread,onUpdate);
 
  const pending=items.find(x=>x.status==="pending");
  const accepted=items.find(x=>x.status==="accepted");
@@ -191,17 +25,20 @@ export default function HiringProposals({thread,onUpdate}:Props){
   <div className="hiring-proposals-header">
    <div><span><Handshake size={16}/> NEGOCIAÇÃO FORMAL</span>
     <h3>Propostas de show</h3></div>
-   {thread.acting_as==="requester"&&!pending&&!accepted&&
+   {thread.acting_as==="requester"&&!readError&&!loading&&!pending&&!accepted&&
     <button type="button" className="btn btn-quiet" disabled={busy}
      onClick={()=>setShowForm(v=>!v)}><ClipboardList size={15}/>
       {showForm?"Fechar formulário":"Montar proposta"}
     </button>}
   </div>
   <p className="hiring-proposals-hint">Converse antes de formalizar. Uma resposta de disponibilidade não significa contratação; o aceite da proposta registra o show e o cachê combinado.</p>
+  {readError&&<div className="hiring-proposals-error" role="alert">{readError}</div>}
+  <button type="button" className="btn btn-quiet" disabled={busy||loading} onClick={()=>void load()}>Atualizar propostas</button>
   {error&&<p className="hiring-proposals-error" role="alert">{error}</p>}
   {notice&&<p className="hiring-proposals-notice" role="status">{notice}</p>}
-  {showForm&&thread.acting_as==="requester"&&!pending&&!accepted&&
+  {showForm&&thread.acting_as==="requester"&&!readError&&!loading&&!pending&&!accepted&&
    <form className="hiring-proposals-form" onSubmit={e=>void submit(e)}>
+    <fieldset disabled={busy} style={{border:0,padding:0,margin:0,minWidth:0,display:"contents"}}>
     <label>Nome da apresentação *
       <input required minLength={3} maxLength={140} value={title} onChange={e=>setTitle(e.target.value)}
        placeholder="Ex.: Pagode de sábado"/>
@@ -243,9 +80,10 @@ export default function HiringProposals({thread,onUpdate}:Props){
       {busy?<LoaderCircle size={15}/>:<Send size={15}/>} Enviar proposta
      </button>
     </div>
+    </fieldset>
    </form>}
   {loading?<p className="hiring-proposals-hint">Carregando propostas...</p>:
-   items.length?<div className="hiring-proposals-list">
+   readError?null:items.length?<div className="hiring-proposals-list">
     {items.map(p=><article key={p.id} className="hiring-proposal-card">
      <div className="hiring-proposal-top">
       <strong>{p.title}</strong>
@@ -281,3 +119,5 @@ export default function HiringProposals({thread,onUpdate}:Props){
    </div>:<p className="hiring-proposals-empty">Ainda não há proposta formal nesta conversa.</p>}
  </section>;
 }
+
+export default function HiringProposals(props:Props){return <HiringProposalsPanel key={props.thread.id} {...props}/>;}
