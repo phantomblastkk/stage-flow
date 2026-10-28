@@ -58,3 +58,17 @@ test("bell and full inbox route each new category to its owner-facing location",
   assert.match(booking,/getElementById\("booking-"\+focusedBooking\)/);
   assert.match(booking,/focusedBooking\?" is-notification-focus"/);
 });
+
+test("dashboard recent activity uses notification destinations without duplicating known events",()=>{
+  const overview=read("supabase/stage_workspace_activity_notification_links_20261028.sql");
+  for(const type of ["booking","review","verification","finance"])
+    assert.match(overview,new RegExp("n\\.source_type='"+type+"'"));
+  assert.match(overview,/meu-perfil-artistico\\/solicitacoes\\?pedido=/);
+  assert.match(overview,/n\\.source_id=b\\.id/);
+  assert.match(overview,/n\\.source_id=v\\.target_id/);
+  assert.match(overview,/n\\.source_id=f\\.invitation_id/);
+  assert.match(overview,/n\\.source_id=b\\.event_id/);
+  assert.match(overview,/n\\.source_id=i\\.id/);
+  assert.match(overview,/where n\\.recipient_id=v_uid/);
+  assert.match(overview,/limit 8/);
+});
