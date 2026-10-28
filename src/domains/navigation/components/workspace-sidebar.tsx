@@ -89,7 +89,7 @@ export default function WorkspaceSidebar({role}:{role:WorkspaceRole}){
  const bottom=[
   homeItem,
   {label:"Agenda",href:"/eventos",icon:CalendarDays},
-  {label:"Convites",href:role.isMusician?"/meus-convites":"/conversas",icon:Inbox},
+  {label:"Convites",href:"/meus-convites",icon:Inbox},
   {label:"Marketplace",href:"/marketplace",icon:Store},
   {label:"Financeiro",href:"/financeiro",icon:Wallet}
  ];
