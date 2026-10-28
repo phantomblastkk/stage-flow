@@ -91,7 +91,7 @@ test("marketplace público abre o catálogo com aviso de desenvolvimento e portf
  const preview=read("app/marketplace/preview/page.tsx");
  const styles=read("components/marketplace-catalog.css");
  assert.match(route,/<MarketplaceCatalog\s*\/>/);
- assert.match(catalog,/NOVIDADE EM DESENVOLVIMENTO/);
+ assert.match(catalog,/MARKETPLACE ABERTO/);
  assert.match(catalog,/Preparar meu portfólio/);
  assert.match(catalog,/href="\/perfil-artistico\?aba=instrumentista"/);
  assert.match(catalog,/id="market-results"/);

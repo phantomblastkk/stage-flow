@@ -112,7 +112,7 @@ test("both roles require an additional explicit, accessible confirmation at sign
  assert.match(signup,/const \[hybridConfirmed,setHybridConfirmed\] = useState\(false\)/);
  assert.match(signup,/artistKind==="lead" && alsoMusician && !hybridConfirmed/);
  assert.match(signup,/checked=\{hybridConfirmed\} required/);
- assert.match(signup,/somente a administração pode revertê-la/);
+ assert.match(signup,/só poderá ser revertida pela administração/);
  assert.match(hub,/role="dialog" aria-modal="true"/);
  assert.match(hub,/confirmationText\.trim\(\)\.toLocaleUpperCase\("pt-BR"\)!=="ATIVAR"/);
  assert.match(hub,/confirmationChecked/);
