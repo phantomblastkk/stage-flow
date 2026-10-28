@@ -5,6 +5,7 @@ import "./styles/legacy-base-responsive.css";
 import "@/src/domains/artists/styles/legacy-musician-portfolio.css";
 import "./styles/legacy-global-tail.css";
 import "@/src/domains/artists/styles/legacy-free-singer.css";
+import "@/src/domains/auth/styles/legacy-signup-roles.css";
 import "./styles/legacy-after-free-singer.css";
 import WorkspaceBoundary from "@/src/domains/navigation/components/workspace-boundary";
 
