@@ -106,6 +106,12 @@ export default function CadastroPage() {
         }
       });
       if (signUpError) {
+        const duplicateAccount =
+          signUpError.code === "user_already_exists" ||
+          /user already (?:registered|exists)/i.test(signUpError.message);
+        if (duplicateAccount) {
+          throw new Error("Este usuário já existe. Use Entrar para acessar sua conta ou recuperar a senha.");
+        }
         // O Auth não expõe a violação UNIQUE do @: ela chega como erro 500 genérico.
         // Não alteramos a unicidade no banco nem afirmamos que todo erro 500 é colisão.
         const databaseSignupFailure =
@@ -114,7 +120,7 @@ export default function CadastroPage() {
             /database error saving new user/i.test(signUpError.message));
         if (databaseSignupFailure && artistKind === "lead" && !inviteCode && cleanUsername) {
           throw new Error(
-            "Não foi possível cadastrar este @ artístico. Ele pode já estar em uso. Escolha outro @ e tente novamente. Se o perfil já é seu, use Entrar para acessar sua conta."
+            "Este usuário já existe ou o @ artístico informado está em uso. Se a conta é sua, use Entrar. Caso contrário, escolha outro @. Se continuar com outro @, contate o suporte."
           );
         }
         if (databaseSignupFailure) {
