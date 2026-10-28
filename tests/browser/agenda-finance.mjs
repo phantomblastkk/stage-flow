@@ -175,6 +175,18 @@ async function setup(width) {
 async function noHorizontalOverflow(page, label) {
   assert.ok(await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth + 1), label + " overflows horizontally");
 }
+async function readable(locator,label){
+  const ratio=await locator.evaluate(node=>{
+    const style=getComputedStyle(node);
+    const luminance=color=>{
+      const channels=color.match(/[\d.]+/g).slice(0,3).map(Number).map(n=>{const c=n/255;return c<=0.04045?c/12.92:Math.pow((c+0.055)/1.055,2.4);});
+      return channels[0]*0.2126+channels[1]*0.7152+channels[2]*0.0722;
+    };
+    const fg=luminance(style.color),bg=luminance(style.backgroundColor);
+    return (Math.max(fg,bg)+0.05)/(Math.min(fg,bg)+0.05);
+  });
+  assert.ok(ratio>=4.5,label+" contrast is "+ratio);
+}
 async function until(predicate) {
   for (let attempt = 0; attempt < 100; attempt++) { if (predicate()) return;await delay(25); }
   throw Error("Timed out waiting for synthetic account request");
@@ -286,6 +298,13 @@ try {
       await page.getByText(/Antes de confirmar sua presença/).waitFor();
       await page.getByRole("button",{name:"Contraproposta",exact:true}).click();
       await page.getByLabel("Sua contraproposta (R$)",{exact:true}).fill("350.25");
+      await readable(page.getByRole("button",{name:"Enviar proposta",exact:true}),"booking primary action");
+      await page.keyboard.press("Tab");
+      assert.equal(await page.getByLabel("Mensagem (opcional)",{exact:true}).evaluate(node=>node===document.activeElement),true,"shared textarea must follow the fee input in keyboard order");
+      await page.keyboard.press("Shift+Tab");
+      await noHorizontalOverflow(page,"negotiation form "+width);
+      assert.ok(await page.getByRole("button",{name:"Enviar proposta",exact:true}).evaluate(node=>node.getBoundingClientRect().height>=44));
+      await page.evaluate(()=>scrollTo(0,0));await page.screenshot({path:`test-results/negotiation-form-${width}.png`,fullPage:true});
       await page.getByRole("button",{name:"Enviar proposta",exact:true}).click();
       await page.getByText("Aguardando resposta do contratante.",{exact:true}).waitFor();
       assert.equal(state.feeOffers.length,1);assert.equal(state.feeOffers[0].p_amount,350.25);
@@ -294,11 +313,14 @@ try {
       await page.getByRole("button",{name:/^Aceitar R/}).click();
       await page.getByText(/Valor fechado:/).waitFor();
       assert.equal(state.accepted,false,"fee agreement cannot confirm participation");
+      await readable(page.locator(".sf-ui-notice-success").filter({hasText:"Valor fechado:"}),"booking success notice");
       if(width===360){
         state.feeReadFail=true;
         await page.getByRole("button",{name:"Atualizar negociação",exact:true}).click();
         await page.getByRole("alert").filter({hasText:"Não foi possível consultar a negociação"}).waitFor();
         assert.equal(await page.getByText(/Valor fechado:/).count(),0);
+        await readable(page.locator(".sf-ui-notice-danger").filter({hasText:"Não foi possível consultar a negociação"}),"booking error notice");
+        await page.evaluate(()=>scrollTo(0,0));await page.screenshot({path:"test-results/negotiation-error-360.png",fullPage:true});
         state.feeReadFail=false;
         await page.getByRole("button",{name:"Atualizar negociação",exact:true}).click();
         await page.getByText(/Valor fechado:/).waitFor();
@@ -422,6 +444,8 @@ try {
       await page.getByRole("button",{name:"Verificar conflito antes de enviar",exact:true}).click();
       await page.getByText("Sem conflito registrado — confirme com o músico",{exact:true}).waitFor();
       assert.equal(state.scheduleCalls.at(-1).p_start,"2026-12-02T23:00:00.000Z");
+      await noHorizontalOverflow(page,"formal proposal form 360");
+      await page.evaluate(()=>scrollTo(0,0));await page.screenshot({path:"test-results/proposal-form-360.png",fullPage:true});
       await page.getByRole("button",{name:"Enviar proposta",exact:true}).click();
       await page.locator(".hiring-proposals").getByRole("alert").filter({hasText:"compromisso confirmado"}).waitFor();
       assert.equal(await page.getByLabel("Nome da apresentação *",{exact:true}).inputValue(),"Meu rascunho preservado");

@@ -60,6 +60,9 @@ export function Badge({children,tone="neutral"}:{children:ReactNode;tone?:"neutr
 export function StatusChip({label,status}:{label:string;status:"neutral"|"success"|"warning"|"danger"}){
  return <Badge tone={status}><span className="sf-ui-status-dot"/>{label}</Badge>;
 }
+export function InlineNotice({children,tone="neutral"}:{children:ReactNode;tone?:"neutral"|"success"|"warning"|"danger"}){
+ return <div role={tone==="danger"?"alert":"status"} className={"sf-ui-notice sf-ui-notice-"+tone}>{children}</div>;
+}
 export function Avatar({name,src,size="md"}:{name:string;src?:string|null;size?:"sm"|"md"|"lg"}){
  const [broken,setBroken]=useState(false);
  useEffect(()=>setBroken(false),[src]);

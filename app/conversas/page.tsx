@@ -7,7 +7,7 @@ import { ArrowLeft, Bell, CalendarDays, CheckCircle2, Clock3, LoaderCircle, Mess
 import { createClient } from "@/lib/supabase/client";
 import HiringProposals from "@/components/hiring-proposals";
 import { useAccount } from "@/src/domains/account/account-context";
-import { Button, LoadingState } from "@/src/components/ui";
+import { Button, LoadingState,Input,Textarea,InlineNotice,StatusChip,Badge,Avatar } from "@/src/components/ui";
 import { useConversationMessages } from "@/src/domains/booking/hooks/use-conversation-messages";
 import { conversationHref } from "@/src/domains/booking/model/booking-links";
 import { BookingSessionRequired, loadThreads as readThreads, saveThreadAvailability, sendThreadMessage, startConversation } from "@/src/domains/booking/services/booking-service";
@@ -155,45 +155,44 @@ export default function HiringConversations(){
 
  return <main className="hiring-page"><div className="container">
   <nav className="nav"><Link className="brand" href="/"><span className="brand-mark">S</span> stage flow</Link>
-   <Link className="btn btn-quiet" href="/painel"><ArrowLeft size={15}/> Painel</Link></nav>
+   <Link className="sf-ui-button sf-ui-button-ghost" href="/painel"><ArrowLeft size={15}/> Painel</Link></nav>
   <header className="hiring-heading">
     <span className="eyebrow"><ShieldCheck size={14}/> NEGOCIAÇÃO PRIVADA</span>
     <h1>Conversas de <span className="accent">contratação.</span></h1>
     <p>Consulte datas, converse com músicos e formalize uma proposta de apresentação. Seu WhatsApp pessoal não é divulgado aqui.</p>
-    <Link className="btn btn-quiet" href="/meus-convites">Ver convites de shows</Link>{" "}
-    <button className="btn btn-quiet" type="button" aria-expanded={showSettings}
-      onClick={()=>setShowSettings(v=>!v)}><Bell size={15}/> Avisos por WhatsApp (opcional)</button>
+    <Link className="sf-ui-button sf-ui-button-ghost" href="/meus-convites">Ver convites de shows</Link>{" "}
+    <Button variant="ghost" type="button" aria-expanded={showSettings}
+      onClick={()=>setShowSettings(v=>!v)}><Bell size={15}/> Avisos por WhatsApp (opcional)</Button>
   </header>
-  {error&&<div role="alert" className="hiring-feedback is-error">{error}{" "}
-    <Button variant="ghost" onClick={()=>void refreshThreads()}>Atualizar conversas</Button></div>}
-  {notice&&<p role="status" className="hiring-feedback">{notice}</p>}
+  {error&&<InlineNotice tone="danger">{error}{" "}
+    <Button variant="ghost" onClick={()=>void refreshThreads()}>Atualizar conversas</Button></InlineNotice>}
+  {notice&&<InlineNotice tone="success">{notice}</InlineNotice>}
   {showSettings&&<form className="hiring-settings" onSubmit={e=>void savePrefs(e)}>
    <h2>Notificações no WhatsApp</h2>
-   {prefsError&&<div role="alert">{prefsError}{" "}<Button variant="ghost" onClick={()=>void loadPrefs().catch(()=>{})}>Tentar novamente</Button></div>}
+   {prefsError&&<InlineNotice tone="danger">{prefsError}{" "}<Button variant="ghost" onClick={()=>void loadPrefs().catch(()=>{})}>Tentar novamente</Button></InlineNotice>}
    <p>Quando a API oficial estiver conectada, podemos avisar sobre novas mensagens com um modelo aprovado, direcionando você de volta ao Stage Flow. Sem compartilhar o telefone com outros usuários.</p>
    <label className="hiring-accept"><input type="checkbox" checked={consent} disabled={!settings||savingSettings}
      onChange={e=>setConsent(e.target.checked)}/> Autorizo receber notificações transacionais deste chat pelo WhatsApp. Posso cancelar a qualquer momento.</label>
-   {consent&&<label className="hiring-input">WhatsApp com DDD
-     <input value={phone} onChange={e=>setPhone(e.target.value)} placeholder="11 99999-9999" required/></label>}
-   <button className="btn btn-primary" disabled={savingSettings||!settings} type="submit">Salvar preferência</button>
+   {consent&&<Input label="WhatsApp com DDD" value={phone} onChange={e=>setPhone(e.target.value)} placeholder="11 99999-9999" required/>}
+   <Button  disabled={savingSettings||!settings} type="submit">Salvar preferência</Button>
    {settings?.opted_in&&<small>Consentimento ativo. O envio automático ainda não foi habilitado.</small>}
   </form>}
   {loading?<div className="hiring-loading"><LoaderCircle size={20}/> Carregando conversas...</div>:
     <div className={"hiring-layout"+(active?" has-active":"")}>
      <aside className="hiring-sidebar" aria-label="Suas conversas">
       <div className="hiring-sidebar-heading"><strong>Caixa de entrada</strong>
-       <button type="button" title="Atualizar conversas" onClick={()=>void refreshThreads()} aria-label="Atualizar conversas"><RefreshCw size={15}/></button></div>
+       <Button variant="ghost" title="Atualizar conversas" onClick={()=>void refreshThreads()} aria-label="Atualizar conversas"><RefreshCw size={15}/></Button></div>
       <p className="hiring-empty" role="status">{threadRows.length} de {threads.length} conversas recebidas nesta consulta</p>
-      {snapshotMayBeLimited(threads.length,THREAD_SNAPSHOT_LIMIT)&&<p className="hiring-feedback" role="status">A consulta atingiu o limite de conversas recentes. Conversas mais antigas podem não aparecer nesta lista.</p>}
+      {snapshotMayBeLimited(threads.length,THREAD_SNAPSHOT_LIMIT)&&<InlineNotice tone="warning">A consulta atingiu o limite de conversas recentes. Conversas mais antigas podem não aparecer nesta lista.</InlineNotice>}
       {threadRows.map(thread=><button key={thread.id} type="button"
        className={"hiring-thread"+(thread.id===activeId?" is-selected":"")}
        aria-label={"Abrir conversa com "+thread.other_name}
        aria-pressed={thread.id===activeId} onClick={()=>selectThread(thread.id)}>
-       <span className="hiring-avatar"><UserRound size={20}/></span>
+       <Avatar name={thread.other_name} size="sm"/>
        <span className="hiring-thread-detail"><strong>{thread.other_name}</strong>
         <small>{thread.acting_as==="requester"?"Músico":"Contratante"} · {thread.requested_date?dateBR(thread.requested_date):"Data a combinar"}</small>
         <small>{thread.last_message||"Conversa iniciada — envie sua pergunta"}</small>
-       </span>{thread.unread>0&&<span className="hiring-unread">{thread.unread}</span>}
+       </span>{thread.unread>0&&<Badge tone="warning">{thread.unread}</Badge>}
       </button>)}
       {hiddenThreads>0&&<Button variant="ghost" onClick={()=>setVisibleThreads(n=>n+THREAD_RENDER_STEP)}>Mostrar mais conversas recebidas ({hiddenThreads})</Button>}
       {!threads.length&&!error&&<p className="hiring-empty">Nenhuma conversa por enquanto. Abra um perfil no marketplace de testes para consultar a disponibilidade do músico.</p>}
@@ -203,26 +202,26 @@ export default function HiringConversations(){
         <Button className="hiring-back" variant="ghost" onClick={()=>selectThread(null)}><ArrowLeft size={15}/> Todas as conversas</Button>
         <div><h2>{active.other_name}</h2>
         <p><CalendarDays size={14}/> {active.requested_date?dateBR(active.requested_date):"Data a combinar"}
-         <span className={"hiring-availability "+active.availability}>{availabilityLabels[active.availability]}</span></p></div>
+         <StatusChip label={availabilityLabels[active.availability]} status={active.availability==="available"?"success":active.availability==="unavailable"?"danger":active.availability==="ask_later"?"warning":"neutral"}/></p></div>
         <Button variant="ghost" disabled={messagesLoading} onClick={()=>void loadMessages(active.id)}><RefreshCw size={15}/> Atualizar mensagens</Button>
-        {active.event_id&&active.acting_as==="requester"&&<Link className="btn btn-quiet"
+        {active.event_id&&active.acting_as==="requester"&&<Link className="sf-ui-button sf-ui-button-ghost"
           href={"/eventos?evento="+encodeURIComponent(active.event_id)+"&equipe=1"}>Abrir evento</Link>}
       </div>
       {active.acting_as==="musician"&&<div className="hiring-answers">
        <span><Clock3 size={14}/> Sua disponibilidade:</span>
-       <button type="button" disabled={busy} onClick={()=>void setAvailability("available")}><CheckCircle2 size={14}/> Disponível</button>
-       <button type="button" disabled={busy} onClick={()=>void setAvailability("unavailable")}>Indisponível</button>
-       <button type="button" disabled={busy} onClick={()=>void setAvailability("ask_later")}>A combinar</button>
+       <Button variant="ghost" disabled={busy} onClick={()=>void setAvailability("available")}><CheckCircle2 size={14}/> Disponível</Button>
+       <Button variant="ghost" disabled={busy} onClick={()=>void setAvailability("unavailable")}>Indisponível</Button>
+       <Button variant="ghost" disabled={busy} onClick={()=>void setAvailability("ask_later")}>A combinar</Button>
       </div>}
       <HiringProposals key={active.id} thread={active} onUpdate={()=>{
         void refreshThreads();void loadMessages(active.id);
        }}/>
       <div className="hiring-messages" aria-busy={messagesLoading}>
        {messages.length>0&&<p className="hiring-empty" role="status">{messageView.items.length} de {messages.length} mensagens recebidas nesta consulta</p>}
-       {snapshotMayBeLimited(messages.length,MESSAGE_SNAPSHOT_LIMIT)&&<p className="hiring-feedback" role="status">A consulta atingiu o limite de mensagens recentes. Mensagens anteriores podem não estar disponíveis nesta tela.</p>}
+       {snapshotMayBeLimited(messages.length,MESSAGE_SNAPSHOT_LIMIT)&&<InlineNotice tone="warning">A consulta atingiu o limite de mensagens recentes. Mensagens anteriores podem não estar disponíveis nesta tela.</InlineNotice>}
        {messageView.hidden>0&&<Button variant="ghost" onClick={()=>setMessageWindow({id:active.id,count:(messageWindow.id===active.id?messageWindow.count:MESSAGE_RENDER_STEP)+MESSAGE_RENDER_STEP})}>Mostrar mensagens anteriores recebidas ({messageView.hidden})</Button>}
        {messagesLoading&&<LoadingState label="Carregando mensagens…"/>}
-       {messagesError&&<div role="alert">{messagesError}{" "}<Button variant="ghost" onClick={()=>void loadMessages(active.id)}>Tentar novamente</Button></div>}
+       {messagesError&&<InlineNotice tone="danger">{messagesError}{" "}<Button variant="ghost" onClick={()=>void loadMessages(active.id)}>Tentar novamente</Button></InlineNotice>}
        {!messagesLoading&&!messagesError&&!messages.length&&<p className="hiring-empty">Conversa privada. Pergunte sobre disponibilidade, repertório e cachê. A contratação só acontece após os dois confirmarem os detalhes.</p>}
        {messageView.items.map(message=><article key={message.id}
          className={"hiring-bubble "+(message.is_mine?"mine":"theirs")}>
@@ -230,17 +229,16 @@ export default function HiringConversations(){
        </article>)}
       </div>
       <form className="hiring-composer" onSubmit={e=>void send(e)}>
-       <label htmlFor="hiring-message">Sua mensagem</label>
-       <div><textarea id="hiring-message" placeholder="Ex.: Você está disponível para tocar neste sábado? Qual seria seu cachê?"
+       <div><Textarea label="Sua mensagem" id="hiring-message" placeholder="Ex.: Você está disponível para tocar neste sábado? Qual seria seu cachê?"
         value={text} onChange={e=>setText(e.target.value)} maxLength={1500} rows={3}
         disabled={busy||messagesLoading} required/>
-        <button type="submit" className="btn btn-primary" disabled={busy||messagesLoading||!text.trim()}>
-         <Send size={16}/> Enviar</button></div>
+        <Button type="submit"  disabled={busy||messagesLoading||!text.trim()}>
+         <Send size={16}/> Enviar</Button></div>
        <small>O chat não compartilha seu telefone. Use uma proposta formal para confirmar o show; o financeiro continua privado.</small>
       </form></>:<div className="hiring-start-prompt">
        <MessageCircle size={30}/>
        <h2>Selecione uma conversa</h2><p>Escolha uma conversa à esquerda para ver as mensagens e responder.</p>
-       <Link href="/marketplace/preview" className="btn btn-quiet">Marketplace de testes</Link>
+       <Link href="/marketplace/preview" className="sf-ui-button sf-ui-button-ghost">Marketplace de testes</Link>
       </div>}
      </section>
     </div>}

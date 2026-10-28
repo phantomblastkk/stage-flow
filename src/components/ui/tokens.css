@@ -1,5 +1,11 @@
 /* StageFlow UI v1: scoped semantic primitives. Legacy screens keep their CSS until migrated. */
 :root{
+ --sf-ui-focus:#c8a7ff;--sf-ui-accent-surface:#322449;
+ --sf-ui-success:#9ef5cd;--sf-ui-success-bg:#15362b;--sf-ui-success-border:#37765d;
+ --sf-ui-warning:#ffe0a1;--sf-ui-warning-bg:#3c2d15;--sf-ui-warning-border:#82673a;
+ --sf-ui-danger-contrast:#ffb8c7;--sf-ui-danger-bg:#3c1c2a;--sf-ui-danger-border:#803e51;
+ --sf-ui-radius-pill:999px;--sf-ui-text-xs:12px;--sf-ui-text-sm:13px;--sf-ui-text-md:14px;
+
  --sf-ui-bg:#10101c;--sf-ui-surface:#19192b;--sf-ui-surface-raised:#212038;
  --sf-ui-border:#403953;--sf-ui-text:#f7f4ff;--sf-ui-muted:#b3abc8;
  --sf-ui-brand:#bd9aff;--sf-ui-brand-contrast:#191125;--sf-ui-danger:#f4a5a5;
@@ -26,9 +32,9 @@
 .sf-ui-card-header h2{font:850 17px/1.3 Manrope,sans-serif;margin:0}
 .sf-ui-card-header p{color:var(--sf-ui-muted);font-size:12px;line-height:1.6;margin:6px 0 16px}
 .sf-ui-badge{display:inline-flex;align-items:center;gap:7px;padding:5px 9px;min-height:26px;font-size:10px;line-height:1.3;font-weight:800;border-radius:999px;border:1px solid var(--sf-ui-border);color:var(--sf-ui-muted);background:#272337}
-.sf-ui-badge-success{border-color:#37765d;color:#9ef5cd;background:#15362b}
-.sf-ui-badge-warning{border-color:#82673a;color:#ffe0a1;background:#3c2d15}
-.sf-ui-badge-danger{border-color:#803e51;color:#ffb8c7;background:#3c1c2a}
+.sf-ui-badge-success{border-color:var(--sf-ui-success-border);color:var(--sf-ui-success);background:var(--sf-ui-success-bg)}
+.sf-ui-badge-warning{border-color:var(--sf-ui-warning-border);color:var(--sf-ui-warning);background:var(--sf-ui-warning-bg)}
+.sf-ui-badge-danger{border-color:var(--sf-ui-danger-border);color:var(--sf-ui-danger-contrast);background:var(--sf-ui-danger-bg)}
 .sf-ui-status-dot{width:6px;height:6px;border-radius:50%;background:currentColor}
 .sf-ui-avatar{flex:none;display:inline-grid;place-items:center;overflow:hidden;width:42px;height:42px;border-radius:13px;background:#53416f;color:#fff;font-size:13px;font-weight:850}
 .sf-ui-avatar img{display:block;width:100%;height:100%;object-fit:cover}
@@ -68,3 +74,9 @@
 @keyframes sf-ui-shimmer{to{background-position-x:-210%}}
 @media(max-width:640px){.sf-ui-card{padding:16px;border-radius:17px}.sf-ui-modal-layer{align-items:flex-end;padding:0}.sf-ui-modal{border-radius:20px 20px 0 0;max-height:90dvh}}
 @media(prefers-reduced-motion:reduce){.sf-ui-spin,.sf-ui-skeleton{animation:none}.sf-ui-button{transition:none}}
+
+.sf-ui-notice{min-width:0;border:1px solid var(--sf-ui-border);border-radius:var(--sf-ui-radius-sm);padding:var(--sf-ui-space-3) var(--sf-ui-space-4);background:var(--sf-ui-surface-raised);color:var(--sf-ui-text);font-size:var(--sf-ui-text-sm);line-height:1.6;overflow-wrap:anywhere}
+.sf-ui-notice p{margin:var(--sf-ui-space-2) 0 0;font-size:inherit;line-height:inherit}
+.sf-ui-notice-success{color:var(--sf-ui-success);background:var(--sf-ui-success-bg);border-color:var(--sf-ui-success-border)}
+.sf-ui-notice-warning{color:var(--sf-ui-warning);background:var(--sf-ui-warning-bg);border-color:var(--sf-ui-warning-border)}
+.sf-ui-notice-danger{color:var(--sf-ui-danger-contrast);background:var(--sf-ui-danger-bg);border-color:var(--sf-ui-danger-border)}

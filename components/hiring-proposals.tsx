@@ -1,5 +1,7 @@
 "use client";
 
+import {Button,Input,Textarea,InlineNotice,StatusChip} from "@/src/components/ui";
+import "@/src/domains/booking/components/booking-ui.css";
 import {useHiringProposals} from "@/src/domains/booking/hooks/use-hiring-proposals";
 import Link from "next/link";
 import { CalendarClock, CheckCircle2, ClipboardList, FileCheck2, Handshake, LoaderCircle, RotateCcw, Send, XCircle } from "lucide-react";
@@ -26,42 +28,32 @@ function HiringProposalsPanel({thread,onUpdate}:Props){
    <div><span><Handshake size={16}/> NEGOCIAÇÃO FORMAL</span>
     <h3>Propostas de show</h3></div>
    {thread.acting_as==="requester"&&!readError&&!loading&&!pending&&!accepted&&
-    <button type="button" className="btn btn-quiet" disabled={busy}
+    <Button type="button" variant="ghost" disabled={busy}
      onClick={()=>setShowForm(v=>!v)}><ClipboardList size={15}/>
       {showForm?"Fechar formulário":"Montar proposta"}
-    </button>}
+    </Button>}
   </div>
   <p className="hiring-proposals-hint">Converse antes de formalizar. Uma resposta de disponibilidade não significa contratação; o aceite da proposta registra o show e o cachê combinado.</p>
-  {readError&&<div className="hiring-proposals-error" role="alert">{readError}</div>}
-  <button type="button" className="btn btn-quiet" disabled={busy||loading} onClick={()=>void load()}>Atualizar propostas</button>
-  {error&&<p className="hiring-proposals-error" role="alert">{error}</p>}
-  {notice&&<p className="hiring-proposals-notice" role="status">{notice}</p>}
+  {readError&&<InlineNotice tone="danger">{readError}</InlineNotice>}
+  <Button type="button" variant="ghost" disabled={busy||loading} onClick={()=>void load()}>Atualizar propostas</Button>
+  {error&&<InlineNotice tone="danger">{error}</InlineNotice>}
+  {notice&&<InlineNotice tone="success">{notice}</InlineNotice>}
   {showForm&&thread.acting_as==="requester"&&!readError&&!loading&&!pending&&!accepted&&
    <form className="hiring-proposals-form" onSubmit={e=>void submit(e)}>
-    <fieldset disabled={busy} style={{border:0,padding:0,margin:0,minWidth:0,display:"contents"}}>
-    <label>Nome da apresentação *
-      <input required minLength={3} maxLength={140} value={title} onChange={e=>setTitle(e.target.value)}
+    <fieldset disabled={busy} className="sf-booking-fieldset">
+    <Input label="Nome da apresentação *" required minLength={3} maxLength={140} value={title} onChange={e=>setTitle(e.target.value)}
        placeholder="Ex.: Pagode de sábado"/>
-    </label>
     <div className="hiring-proposals-fields">
-     <label>Data e horário *
-      <input required type="datetime-local" value={starts} onChange={e=>{setStarts(e.target.value);setScheduleCheck("idle");}}/>
-     </label>
-     <label>Cachê combinado (R$, opcional)
-      <input value={fee} inputMode="decimal" placeholder="Ex.: 250,00" onChange={e=>setFee(e.target.value)}/>
-     </label>
-     <label>Local
-      <input value={venue} maxLength={140} onChange={e=>setVenue(e.target.value)} placeholder="Nome da casa"/>
-     </label>
-     <label>Cidade
-      <input value={city} maxLength={80} onChange={e=>setCity(e.target.value)} placeholder="Cidade"/>
-     </label>
+     <Input label="Data e horário *" required type="datetime-local" value={starts} onChange={e=>{setStarts(e.target.value);setScheduleCheck("idle");}}/>
+     <Input label="Cachê combinado (R$, opcional)" value={fee} inputMode="decimal" placeholder="Ex.: 250,00" onChange={e=>setFee(e.target.value)}/>
+     <Input label="Local" value={venue} maxLength={140} onChange={e=>setVenue(e.target.value)} placeholder="Nome da casa"/>
+     <Input label="Cidade" value={city} maxLength={80} onChange={e=>setCity(e.target.value)} placeholder="Cidade"/>
     </div>
     <div className="hiring-schedule-availability">
-     <button type="button" className="btn btn-quiet" onClick={()=>void checkSchedule()}
+     <Button type="button" variant="ghost" onClick={()=>void checkSchedule()}
       disabled={busy||scheduleCheck==="checking"||!starts}>
       <CalendarClock size={15}/> {scheduleCheck==="checking"?"Consultando agenda...":"Verificar conflito antes de enviar"}
-     </button>
+     </Button>
      {scheduleCheck!=="idle"&&scheduleCheck!=="checking"&&
       <span className={"hiring-schedule-status "+scheduleCheck}>
        {scheduleCheck==="busy"?"Ocupado: existe um compromisso confirmado":
@@ -70,15 +62,13 @@ function HiringProposalsPanel({thread,onUpdate}:Props){
         "Não foi possível consultar a agenda"}
       </span>}
     </div>
-    <label>Observações (opcional)
-     <textarea rows={2} maxLength={800} value={details}
+    <Textarea label="Observações (opcional)" rows={2} maxLength={800} value={details}
       onChange={e=>setDetails(e.target.value)} placeholder="Horário de chegada, formação, repertório, transporte..."/>
-    </label>
     <div className="hiring-proposals-submit">
      <p>Se existir um show vinculado à conversa, a proposta usará esse evento. Caso contrário, o sistema criará um rascunho privado somente após o aceite.</p>
-     <button type="submit" className="btn btn-primary" disabled={busy}>
+     <Button type="submit"  disabled={busy}>
       {busy?<LoaderCircle size={15}/>:<Send size={15}/>} Enviar proposta
-     </button>
+     </Button>
     </div>
     </fieldset>
    </form>}
@@ -87,7 +77,7 @@ function HiringProposalsPanel({thread,onUpdate}:Props){
     {items.map(p=><article key={p.id} className="hiring-proposal-card">
      <div className="hiring-proposal-top">
       <strong>{p.title}</strong>
-      <span className={"hiring-proposal-status is-"+p.status}>{statusNames[p.status]}</span>
+      <StatusChip label={statusNames[p.status]} status={p.status==="accepted"?"success":p.status==="pending"?"warning":"neutral"}/>
      </div>
      <p><CalendarClock size={14}/> {when(p.starts_at)}</p>
      {(p.venue||p.city)&&<p>{[p.venue,p.city].filter(Boolean).join(" · ")}</p>}
@@ -95,23 +85,23 @@ function HiringProposalsPanel({thread,onUpdate}:Props){
      {p.details&&<p className="hiring-proposal-details">{p.details}</p>}
      {p.status==="pending"&&thread.acting_as==="musician"&&
       <div className="hiring-proposal-actions">
-       <button type="button" className="btn btn-primary" disabled={busy}
-        onClick={()=>void decide(p,true)}><CheckCircle2 size={15}/> Aceitar proposta</button>
-       <button type="button" className="btn btn-quiet" disabled={busy}
-        onClick={()=>void decide(p,false)}><XCircle size={15}/> Recusar</button>
+       <Button type="button"  disabled={busy}
+        onClick={()=>void decide(p,true)}><CheckCircle2 size={15}/> Aceitar proposta</Button>
+       <Button type="button" variant="ghost" disabled={busy}
+        onClick={()=>void decide(p,false)}><XCircle size={15}/> Recusar</Button>
       </div>}
      {p.status==="pending"&&thread.acting_as==="requester"&&
       <div className="hiring-proposal-actions">
-       <button type="button" className="btn btn-quiet" disabled={busy}
-        onClick={()=>void withdraw(p)}><RotateCcw size={14}/> Retirar proposta</button>
+       <Button type="button" variant="ghost" disabled={busy}
+        onClick={()=>void withdraw(p)}><RotateCcw size={14}/> Retirar proposta</Button>
       </div>}
      {p.status==="accepted"&&<div className="hiring-proposal-actions">
        <span className="hiring-proposal-confirmed"><FileCheck2 size={15}/> Participação confirmada</span>
        {p.linked_event_id&&thread.acting_as==="requester"&&
-        <Link className="btn btn-quiet" href={"/eventos?evento="+encodeURIComponent(p.linked_event_id)+"&equipe=1"}>
+        <Link className="sf-ui-button sf-ui-button-ghost" href={"/eventos?evento="+encodeURIComponent(p.linked_event_id)+"&equipe=1"}>
           Ver show e financeiro
         </Link>}
-       {thread.acting_as==="musician"&&<Link className="btn btn-quiet"
+       {thread.acting_as==="musician"&&<Link className="sf-ui-button sf-ui-button-ghost"
         href={p.linked_event_id?invitationAgendaHref(p.linked_event_id):"/meus-shows"}>
          {p.linked_event_id?"Ver show na agenda":"Meus shows"}</Link>}
       </div>}

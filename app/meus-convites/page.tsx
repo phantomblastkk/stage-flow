@@ -7,10 +7,12 @@ import { ArrowLeft, CalendarDays, Check, CheckCircle2, Clock3, LoaderCircle, Map
 import { createClient } from "@/lib/supabase/client";
 import FeeNegotiation from "@/components/fee-negotiation";
 import { useAccount } from "@/src/domains/account/account-context";
-import { Button } from "@/src/components/ui";
+import { Button,Input,StatCard,StatusChip,InlineNotice,EmptyState,LoadingState,Card } from "@/src/components/ui";
 import type { Invite } from "@/src/domains/booking/types";
 import { invitationAgendaHref } from "@/src/domains/booking/model/booking-links";
 import { BookingSessionRequired, loadInvitations, respondToInvitation } from "@/src/domains/booking/services/booking-service";
+
+import "@/src/domains/booking/components/booking-ui.css";
 
 type Filter = "all" | "pending" | "accepted" | "declined";
 
@@ -190,119 +192,80 @@ export default function MeusConvitesPage() {
     } finally { if (alive.current) setProcessingId(null); }
   }
 
-  if (loading) return <main><div className="container" style={{ minHeight: "85vh", display: "grid", placeItems: "center" }}>
-    <p style={{ color: "var(--muted)", display: "flex", alignItems: "center", gap: 10 }}><LoaderCircle size={20}/> Carregando seus convites...</p>
-  </div></main>;
+  if (loading) return <main className="sf-booking-page"><div className="container sf-booking-loading"><LoadingState label="Carregando seus convites..."/></div></main>;
 
-  return <main><div className="container" style={{ paddingBottom: 60 }}>
+  return <main className="sf-booking-page"><div className="container">
     <nav className="nav">
       <Link className="brand" href="/"><span className="brand-mark">S</span> stage flow</Link>
-      <Link className="btn btn-quiet" href="/painel"><ArrowLeft size={15}/> Meu painel</Link>
+      <Link className="sf-ui-button sf-ui-button-ghost" href="/painel"><ArrowLeft size={15}/> Meu painel</Link>
     </nav>
-
-    <section style={{ padding: "40px 0 26px" }}>
+    <header className="sf-booking-hero">
       <div className="eyebrow"><span className="dot"/> PARTICIPAÇÕES MUSICAIS</div>
-      <h1 style={{ fontSize: "clamp(32px,5vw,46px)", marginBottom: 14 }}>Meus <span className="accent">convites.</span></h1>
+      <h1>Meus <span className="accent">convites.</span></h1>
       <p className="lead">Veja quem convidou você, confira os detalhes do show e confirme sua participação. Tudo funciona pelo celular.</p>
-      <Link href="/conversas" className="btn btn-quiet"><MessageCircle size={16}/> Conversas de contratação</Link>
-    </section>
-
-    <div className="stat-row" style={{ marginBottom: 26 }}>
-      <div className="stat"><strong>{invites.length}</strong><span>Recebidos</span></div>
-      <div className="stat"><strong>{pendingCount}</strong><span>Para responder</span></div>
-      <div className="stat"><strong>{acceptedCount}</strong><span>Confirmados</span></div>
+      <Link href="/conversas" className="sf-ui-button sf-ui-button-ghost"><MessageCircle size={16}/> Conversas de contratação</Link>
+    </header>
+    <div className="sf-booking-stats">
+      <StatCard label="Recebidos" value={invites.length}/><StatCard label="Para responder" value={pendingCount}/><StatCard label="Confirmados" value={acceptedCount}/>
     </div>
-
-    {feedback && <div className="coming" role={isError ? "alert" : "status"} style={isError ? { borderColor: "#754343", background: "#281919", color: "#ffb5b5" } : {}}>{feedback}</div>}
-
-    <div style={{ display: "flex", flexWrap: "wrap", gap: 9, marginBottom: 20 }}>
-      {([
-        ["all", "Todos"],
-        ["pending", "Pendentes"],
-        ["accepted", "Confirmados"],
-        ["declined", "Recusados"],
-      ] as const).map(([value, label]) => (
-        <button type="button" key={value} className={filter === value ? "btn btn-primary" : "btn btn-quiet"}
-          onClick={() => setFilter(value)} aria-pressed={filter === value} style={{ padding: "10px 13px" }}>{label}</button>
+    {feedback && <InlineNotice tone={isError ? "danger" : "success"}>{feedback}</InlineNotice>}
+    <div className="sf-booking-filters" role="group" aria-label="Filtrar convites">
+      {([ ["all", "Todos"], ["pending", "Pendentes"], ["accepted", "Confirmados"], ["declined", "Recusados"] ] as const).map(([value, label]) => (
+        <Button key={value} variant={filter === value ? "primary" : "ghost"} onClick={() => setFilter(value)} aria-pressed={filter === value}>{label}</Button>
       ))}
     </div>
-
-    {listError && <div className="coming" role="alert">{listError}{" "}
-      <Button variant="ghost" onClick={() => void reload()}>Tentar carregar convites novamente</Button></div>}
-    {!listError && filtered.length === 0 && <section className="feature" style={{ maxWidth: 680 }}>
-      <Music2 size={27} style={{ color: "var(--lime)", marginBottom: 14 }}/>
-      <h2 style={{ fontSize: 21 }}>{invites.length === 0 ? "Nenhum convite por enquanto" : "Nada nesta categoria"}</h2>
-      <p>{invites.length === 0 ? "Quando um cantor ou produtor convidar você para um show, ele aparecerá aqui após você vincular o convite à sua conta." : "Escolha outro filtro para ver seus convites."}</p>
-    </section>}
-
-    <div style={{ display: "grid", gap: 16, maxWidth: 800 }}>
+    {listError && <InlineNotice tone="danger">{listError}{" "}<Button variant="ghost" onClick={() => void reload()}>Tentar carregar convites novamente</Button></InlineNotice>}
+    {!listError && filtered.length === 0 && <EmptyState icon={<Music2 size={27}/>} title={invites.length === 0 ? "Nenhum convite por enquanto" : "Nada nesta categoria"}
+      description={invites.length === 0 ? "Quando um cantor ou produtor convidar você para um show, ele aparecerá aqui após você vincular o convite à sua conta." : "Escolha outro filtro para ver seus convites."}/>}
+    <div className="sf-booking-invites">
       {filtered.map((invite) => (
-        <article key={invite.id} id={"convite-" + invite.id} tabIndex={-1} className="feature"
-          style={{ padding: "22px 20px", scrollMarginTop: 24,
-            outline: highlightedInvite === invite.id ? "2px solid var(--accent-solid)" : undefined,
-            outlineOffset: highlightedInvite === invite.id ? 4 : undefined }}>
-          <div style={{ display: "flex", justifyContent: "space-between", flexWrap: "wrap", gap: 10, alignItems: "center", marginBottom: 12 }}>
-            <span style={{ fontSize: 12, color: "var(--muted)" }}>Convite de <strong style={{ color: "var(--text)" }}>{invite.organizer_name}</strong></span>
-            <span style={{
-              fontSize: 12, fontWeight: 700, padding: "6px 10px", borderRadius: 99,
-              border: "1px solid var(--line)",
-              background: invite.status === "accepted" ? "#263620" : "var(--panel2)",
-              color: invite.status === "accepted" ? "var(--lime)" : "var(--text)",
-            }}>{statusNames[invite.status] || invite.status}</span>
+        <article key={invite.id} id={"convite-" + invite.id} tabIndex={-1} className={"sf-ui-card sf-booking-invite"+(highlightedInvite === invite.id ? " is-highlighted" : "")}>
+          <div className="sf-booking-invite-head">
+            <span className="sf-booking-muted">Convite de <strong>{invite.organizer_name}</strong></span>
+            <StatusChip status={invite.status === "accepted" ? "success" : invite.status === "pending" ? "warning" : "neutral"} label={statusNames[invite.status] || invite.status}/>
           </div>
-
-          <h2 style={{ fontSize: "clamp(20px,4vw,25px)", letterSpacing: "-.5px", margin: "0 0 15px" }}>{invite.event_title}</h2>
-          <div style={{ display: "grid", gap: 9, fontSize: 14, color: "var(--muted)" }}>
-            <div style={{ display: "flex", alignItems: "flex-start", gap: 9 }}><CalendarDays size={17} style={{ flexShrink: 0 }}/>{dateTime(invite.event_starts_at)}</div>
-            {(invite.event_venue || invite.event_city) && <div style={{ display: "flex", alignItems: "flex-start", gap: 9 }}><MapPin size={17} style={{ flexShrink: 0 }}/>{[invite.event_venue, invite.event_city].filter(Boolean).join(" · ")}</div>}
-            {invite.message && <p style={{ margin: "8px 0", overflowWrap: "anywhere", color: "var(--text)" }}><strong>Recado:</strong> {invite.message}</p>}
+          <h2>{invite.event_title}</h2>
+          <div className="sf-booking-event-details">
+            <div><CalendarDays size={17}/>{dateTime(invite.event_starts_at)}</div>
+            {(invite.event_venue || invite.event_city) && <div><MapPin size={17}/>{[invite.event_venue, invite.event_city].filter(Boolean).join(" · ")}</div>}
+            {invite.message && <p><strong>Recado:</strong> {invite.message}</p>}
           </div>
-
           <FeeNegotiation invitationId={invite.id} perspective="musician" onChanged={() => { setFeedback("");setIsError(false);void reload(); }}
             openRequest={feeFocus.invitationId === invite.id ? feeFocus.request : 0}
             invitationStatus={invite.status}
             onConfirmParticipation={invite.status === "pending" ? () => void respond(invite, true) : undefined}
             confirmingParticipation={processingId === invite.id}/>
-
-          {invite.status === "pending" && <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit,minmax(150px,1fr))", gap: 10, marginTop: 22 }}>
-            <button type="button" className="btn btn-primary" disabled={Boolean(processingId)} onClick={() => void respond(invite, true)}>
+          {invite.status === "pending" && <div className="sf-booking-action-grid sf-booking-invite-actions">
+            <Button disabled={Boolean(processingId)} onClick={() => void respond(invite, true)}>
               {processingId === invite.id ? <LoaderCircle size={16}/> : <Check size={16}/>} {processingId === invite.id ? "Registrando..." : "Aceitar convite"}
-            </button>
-            <button type="button" className="btn btn-quiet" disabled={Boolean(processingId)} onClick={() => void respond(invite, false)}>
-              <X size={16}/> Recusar
-            </button>
+            </Button>
+            <Button variant="ghost" disabled={Boolean(processingId)} onClick={() => void respond(invite, false)}><X size={16}/> Recusar</Button>
           </div>}
-
-          {invite.status === "accepted" && <div style={{ marginTop: 18, display: "grid", gap: 10 }}><p style={{ display: "flex", alignItems: "center", gap: 8, margin: 0, fontSize: 13, color: "var(--lime)" }}><CheckCircle2 size={17}/> Sua participação está confirmada.</p><Link className="btn btn-quiet" href={invitationAgendaHref(invite.event_id)} style={{ justifyContent: "center" }}><CalendarDays size={16}/> Ver show na minha agenda</Link><Link className="btn btn-quiet" href={"/eventos/operacao?evento="+encodeURIComponent(invite.event_id)} style={{ justifyContent: "center" }}><Music2 size={16}/> Ver briefing e logística do show</Link></div>}
-          {invite.status === "declined" && <p style={{ display: "flex", alignItems: "center", gap: 8, margin: "18px 0 0", fontSize: 13, color: "var(--muted)" }}><Clock3 size={16}/> Você recusou este convite.</p>}
+          {invite.status === "accepted" && <div className="sf-booking-confirmed">
+            <p className="sf-booking-inline"><CheckCircle2 size={17}/> Sua participação está confirmada.</p>
+            <Link className="sf-ui-button sf-ui-button-ghost" href={invitationAgendaHref(invite.event_id)}><CalendarDays size={16}/> Ver show na minha agenda</Link>
+            <Link className="sf-ui-button sf-ui-button-ghost" href={"/eventos/operacao?evento="+encodeURIComponent(invite.event_id)}><Music2 size={16}/> Ver briefing e logística do show</Link>
+          </div>}
+          {invite.status === "declined" && <p className="sf-booking-declined sf-booking-inline"><Clock3 size={16}/> Você recusou este convite.</p>}
         </article>
       ))}
     </div>
-
-    <section className="feature" style={{ maxWidth: 800, marginTop: 30 }}>
+    <Card className="sf-booking-preferences">
       <div className="eyebrow"><span className="dot"/> WHATSAPP E PRIVACIDADE</div>
-      <h2 style={{ fontSize: 23, margin: "16px 0 10px" }}><MessageCircle size={21} style={{ display: "inline", verticalAlign: "middle", marginRight: 8 }}/> Lembretes no WhatsApp</h2>
-      <p style={{ marginBottom: 18 }}>A autorização para contato é registrada no cadastro. Aqui você pode corrigir seu número ou desativar os contatos a qualquer momento. Os lembretes são enviados manualmente pelo organizador.</p>
-      {whatsappLoading ? <p style={{ color: "var(--muted)" }}>Carregando preferências...</p> :
-        <form onSubmit={saveWhatsappPreferences}>
-          <div className="field" style={{ maxWidth: 430 }}>
-            <label htmlFor="my-whatsapp-number">Seu WhatsApp com DDD</label>
-            <input id="my-whatsapp-number" type="tel" autoComplete="tel" value={whatsappPhone} onChange={e=>setWhatsappPhone(e.target.value)} placeholder="(11) 99999-9999" required={whatsappConsent}/>
-          </div>
-          <p style={{ fontSize: 13, color: "var(--muted)", margin: "8px 0 18px" }}>
-            {whatsappConsent
-              ? "Contato pelo WhatsApp ativado no cadastro. Seu número só fica disponível aos organizadores de convites pendentes ou aceitos."
-              : "Contato pelo WhatsApp desativado. Se quiser voltar a receber lembretes, ative novamente abaixo."}
-          </p>
-          <div style={{ display: "flex", gap: 10, flexWrap: "wrap" }}>
-            <button type="submit" className="btn btn-primary" disabled={whatsappSaving}>
-              {whatsappSaving ? "Salvando..." : whatsappConsent ? "Atualizar meu número" : "Ativar contato pelo WhatsApp"}
-            </button>
-            {whatsappConsent && <button type="button" className="btn btn-quiet" disabled={whatsappSaving} onClick={() => void disableWhatsapp()}>Desativar contatos</button>}
-          </div>
-          {whatsappMessage && <div role={whatsappError ? "alert" : "status"} className="coming" style={whatsappError ? { borderColor: "#754343", background: "#281919", color: "#ffb5b5" } : {}}>{whatsappMessage}</div>}
-        </form>}
-    </section>
-    <p className="fine" style={{ marginTop: 26 }}>Os convites são gratuitos. Aceitar um show não libera marketplace ou endereço personalizado.</p>
+      <h2 className="sf-booking-inline"><MessageCircle size={21}/> Lembretes no WhatsApp</h2>
+      <p>A autorização para contato é registrada no cadastro. Aqui você pode corrigir seu número ou desativar os contatos a qualquer momento. Os lembretes são enviados manualmente pelo organizador.</p>
+      {whatsappLoading ? <LoadingState label="Carregando preferências..."/> : <form onSubmit={saveWhatsappPreferences} className="sf-booking-form">
+        <Input label="Seu WhatsApp com DDD" id="my-whatsapp-number" type="tel" autoComplete="tel" value={whatsappPhone} onChange={e=>setWhatsappPhone(e.target.value)} placeholder="(11) 99999-9999" required={whatsappConsent}/>
+        <p className="sf-booking-muted">{whatsappConsent
+          ? "Contato pelo WhatsApp ativado no cadastro. Seu número só fica disponível aos organizadores de convites pendentes ou aceitos."
+          : "Contato pelo WhatsApp desativado. Se quiser voltar a receber lembretes, ative novamente abaixo."}</p>
+        <div className="sf-booking-actions">
+          <Button type="submit" disabled={whatsappSaving}>{whatsappSaving ? "Salvando..." : whatsappConsent ? "Atualizar meu número" : "Ativar contato pelo WhatsApp"}</Button>
+          {whatsappConsent && <Button variant="ghost" disabled={whatsappSaving} onClick={() => void disableWhatsapp()}>Desativar contatos</Button>}
+        </div>
+        {whatsappMessage && <InlineNotice tone={whatsappError ? "danger" : "success"}>{whatsappMessage}</InlineNotice>}
+      </form>}
+    </Card>
+    <p className="sf-booking-footnote">Os convites são gratuitos. Aceitar um show não libera marketplace ou endereço personalizado.</p>
   </div></main>;
 }
