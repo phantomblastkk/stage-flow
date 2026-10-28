@@ -6,6 +6,8 @@ import { useRouter } from "next/navigation";
 import { ArrowLeft, CheckCircle2, Copy, LoaderCircle, MessageCircle, RefreshCw, Send, Share2, Users } from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
 import FeeNegotiation from "@/components/fee-negotiation";
+import { Button, InlineNotice, Input, LoadingState, Select, StatCard, StatusChip, Textarea } from "@/src/components/ui";
+import "./convites.css";
 
 type EventOption = { id: string; title: string; starts_at: string };
 type SentInvite = {
@@ -233,120 +235,113 @@ export default function ConvitesPage() {
     }
   }
 
-  if (loading) return <main><div className="container" style={{ minHeight: "70vh", display: "grid", placeItems: "center" }}><p style={{ color: "var(--muted)" }}><LoaderCircle size={17} style={{ display: "inline", verticalAlign: "middle" }}/> Carregando convites...</p></div></main>;
+  if (loading) return <main className="sent-invites-page"><LoadingState label="Carregando convites..."/></main>;
 
-  return <main><div className="container">
-    <nav className="nav"><Link className="brand" href="/"><span className="brand-mark">S</span> stage flow</Link><Link className="btn btn-quiet" href="/painel"><ArrowLeft size={15}/> Voltar ao painel</Link></nav>
-    <section style={{ padding: "42px 0 24px" }}>
+  return <main className="sent-invites-page"><div className="container">
+    <nav className="nav"><Link className="brand" href="/"><span className="brand-mark">S</span> stage flow</Link><Link className="sf-ui-button sf-ui-button-ghost" href="/painel"><ArrowLeft size={15}/> Voltar ao painel</Link></nav>
+    <section className="sent-invites-hero">
       <div className="eyebrow"><span className="dot"/> EQUIPE DO EVENTO</div>
-      <h1 style={{ fontSize: "clamp(34px,5vw,46px)" }}>Convidar <span className="accent">músicos.</span></h1>
+      <h1 className="sent-invites-title">Convidar <span className="accent">músicos.</span></h1>
       <p className="lead">Sem precisar saber o e-mail: gere um link único e compartilhe pelo WhatsApp ou pelo aplicativo que preferir.</p>
       <Link href={eventId ? "/equipes?evento=" + encodeURIComponent(eventId) : "/equipes"}
-        className="btn btn-quiet" style={{ marginTop: 14 }}>
+        className="sf-ui-button sf-ui-button-ghost sent-invites-shortcut" >
         <Users size={16}/> Usar uma equipe salva
       </Link>
-      {chosenEvent && <p style={{ color: "var(--lime)", fontSize: 12, lineHeight: 1.6, marginTop: 13 }}>
-        <CheckCircle2 size={15} style={{ display: "inline", verticalAlign: "middle" }}/>
+      {chosenEvent && <p className="sent-invites-selected">
+        <CheckCircle2 size={15} className="sent-invites-inline-icon"/>
         {" "}Show selecionado: <strong>{chosenEvent.title}</strong>. Os convites e os cachês são individuais.
       </p>}
     </section>
-    <section className="feature" style={{ maxWidth: 760 }}>
+    <section className="sf-ui-card sent-invites-create-panel" >
       {events.length === 0 && !isError ? <>
         <h2>Crie um evento primeiro</h2>
         <p>Cadastre o show na sua agenda para poder enviar um convite à equipe.</p>
-        <Link className="btn btn-primary" href="/eventos">Ir para a agenda</Link>
+        <Link className="sf-ui-button sf-ui-button-primary" href="/eventos">Ir para a agenda</Link>
       </> : <form onSubmit={generateInvite}>
-        <div className="field">
-          <label htmlFor="invite-event">Qual show? *</label>
-          <select id="invite-event" value={eventId} onChange={(e) => {
+        <Select label="Qual show? *" id="invite-event" value={eventId} onChange={(e) => {
             setEventId(e.target.value); setInviteLink(""); setCopied(false); setStatusMessage(""); setIsError(false);
-          }} required style={{ width: "100%", padding: 13, border: "1px solid var(--line)", background: "var(--panel)", borderRadius: 11, color: "var(--text)" }}>
+          }} required >
             <option value="">Selecione um evento</option>
             {events.map((ev) => <option key={ev.id} value={ev.id}>{ev.title} · {new Date(ev.starts_at).toLocaleDateString("pt-BR")}</option>)}
-          </select>
-        </div>
-        <div className="field">
-          <label htmlFor="invite-message">Mensagem para o músico (opcional)</label>
-          <textarea id="invite-message" value={message} onChange={(e) => setMessage(e.target.value)} rows={3} maxLength={500} placeholder="Ex.: quero você no tantã nesse show!" style={{ width: "100%", padding: 13, border: "1px solid var(--line)", background: "var(--panel)", borderRadius: 11, color: "var(--text)", resize: "vertical" }}/>
-        </div>
-        {statusMessage && <div className="coming" role="status" style={isError ? { borderColor: "#754343", background: "#281919", color: "#ffb5b5" } : {}}>{!isError && <CheckCircle2 size={16} style={{ display: "inline", verticalAlign: "middle", marginRight: 6 }}/>} {statusMessage}</div>}
-        {!inviteLink && <button className="btn btn-primary" type="submit" disabled={saving || !eventId} style={{ width: "100%", justifyContent: "center" }}>
+          </Select>
+        <Textarea label="Mensagem para o músico (opcional)" id="invite-message" value={message} onChange={(e) => setMessage(e.target.value)} rows={3} maxLength={500} placeholder="Ex.: quero você no tantã nesse show!" />
+        {statusMessage && <InlineNotice tone={isError?"danger":"success"}>{statusMessage}</InlineNotice>}
+        {!inviteLink && <Button type="submit" disabled={saving || !eventId} className="sent-invites-full-width">
           <Send size={17}/>{saving ? "Gerando convite..." : "Gerar link e compartilhar"}
-        </button>}
-        {inviteLink && <div style={{ display: "grid", gap: 12, marginTop: 16 }}>
-          <button className="btn btn-primary" type="button" onClick={() => void shareInvite()} style={{ width: "100%", justifyContent: "center" }}><Share2 size={17}/> Compartilhar convite</button>
-          <a className="btn btn-quiet" href={whatsappUrl} target="_blank" rel="noopener noreferrer" style={{ justifyContent: "center" }}>Enviar pelo WhatsApp</a>
-          <div className="field"><label htmlFor="generated-link">Seu link exclusivo</label><input id="generated-link" readOnly value={inviteLink} onFocus={(e) => e.currentTarget.select()}/></div>
-          <button className="btn btn-quiet" type="button" onClick={() => void copyInvite()} style={{ justifyContent: "center" }}><Copy size={16}/>{copied ? "Link copiado!" : "Copiar link"}</button>
-          <button className="btn btn-quiet" type="button" onClick={() => {setInviteLink("");setStatusMessage("");setCopied(false);setMessage("");}}>Gerar convite para outro músico</button>
+        </Button>}
+        {inviteLink && <div className="sent-invites-share-actions">
+          <Button type="button" onClick={() => void shareInvite()} className="sent-invites-full-width"><Share2 size={17}/> Compartilhar convite</Button>
+          <a className="sf-ui-button sf-ui-button-ghost" href={whatsappUrl} target="_blank" rel="noopener noreferrer" >Enviar pelo WhatsApp</a>
+          <Input label="Seu link exclusivo" id="generated-link" readOnly value={inviteLink} onFocus={(e) => e.currentTarget.select()}/>
+          <Button variant="ghost" type="button" onClick={() => void copyInvite()} ><Copy size={16}/>{copied ? "Link copiado!" : "Copiar link"}</Button>
+          <Button variant="ghost" type="button" onClick={() => {setInviteLink("");setStatusMessage("");setCopied(false);setMessage("");}}>Gerar convite para outro músico</Button>
         </div>}
       </form>}
     </section>
-    <section style={{ maxWidth: 820, marginTop: 34 }} aria-label="Convites enviados">
-      <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 12, marginBottom: 16, flexWrap: "wrap" }}>
+    <section className="sent-invites-tracking" aria-label="Convites enviados">
+      <div className="sent-invites-tracking-head">
         <div>
           <div className="eyebrow"><span className="dot"/> ORGANIZAÇÃO DA EQUIPE</div>
-          <h2 style={{ fontSize: 25, margin: "12px 0 0" }}>Respostas dos músicos</h2>
+          <h2 className="sent-invites-tracking-title">Respostas dos músicos</h2>
         </div>
-        <button type="button" className="btn btn-quiet" onClick={() => void reloadSent()} disabled={reloading}>
+        <Button variant="ghost" type="button" onClick={() => void reloadSent()} disabled={reloading}>
           <RefreshCw size={16}/>{reloading ? "Atualizando..." : "Atualizar respostas"}
-        </button>
+        </Button>
       </div>
-      <p style={{ fontSize: 13, color: "var(--muted)", lineHeight: 1.6 }}>
+      <p className="sent-invites-lead">
         Veja quem aceitou, recusou ou ainda não respondeu. Os lembretes abrem o WhatsApp com uma mensagem pronta; você confirma o envio no aplicativo.
       </p>
-      {sentError && <div className="coming" role="alert" style={{ borderColor: "#754343", background: "#281919", color: "#ffb5b5" }}>{sentError}</div>}
+      {sentError && <InlineNotice tone="danger">{sentError}</InlineNotice>}
       {!sentError && <>
-        <div className="field" style={{ maxWidth: 520 }}>
-          <label htmlFor="tracking-event">Acompanhar qual show?</label>
-          <select id="tracking-event" value={trackingEventId} onChange={e=>setTrackingEventId(e.target.value)}>
+        <div className="sent-invites-filter sent-invites-event-filter" >
+          <Select label="Acompanhar qual show?" id="tracking-event" value={trackingEventId} onChange={e=>setTrackingEventId(e.target.value)}>
             <option value="">Todos os shows</option>
             {events.map(event=><option key={event.id} value={event.id}>{event.title} · {new Date(event.starts_at).toLocaleDateString("pt-BR")}</option>)}
-          </select>
+          </Select>
         </div>
-        <div className="stat-row" style={{ marginBottom: 18 }}>
-          <div className="stat"><strong>{acceptedCount}</strong><span>Aceitaram</span></div>
-          <div className="stat"><strong>{declinedCount}</strong><span>Recusaram</span></div>
-          <div className="stat"><strong>{pendingCount}</strong><span>Sem resposta</span></div>
+        <div className="sent-invites-stats sent-invites-stats-margin" >
+          <StatCard label="Aceitaram" value={acceptedCount}/>
+          <StatCard label="Recusaram" value={declinedCount}/>
+          <StatCard label="Sem resposta" value={pendingCount}/>
         </div>
-        <p style={{ fontSize: 12, color: "var(--muted)", margin: "0 0 12px" }}>{unclaimedCount} link(s) ainda sem músico cadastrado.</p>
-        <div style={{ display: "flex", flexWrap: "wrap", gap: 8, marginBottom: 20 }}>
+        <p className="sent-invites-unclaimed">{unclaimedCount} link(s) ainda sem músico cadastrado.</p>
+        <div className="sent-invites-filters">
           {([
             ["all", "Todos"],
             ["accepted", "Aceitaram"],
             ["declined", "Recusaram"],
             ["pending", "Sem resposta"],
             ["unclaimed", "Links não utilizados"],
-          ] as const).map(([value,label])=><button key={value} type="button" className={trackingFilter===value?"btn btn-primary":"btn btn-quiet"} onClick={()=>setTrackingFilter(value)} aria-pressed={trackingFilter===value} style={{ padding: "10px 12px" }}>{label}</button>)}
+          ] as const).map(([value,label])=><Button key={value} type="button" variant={trackingFilter===value?"primary":"ghost"} onClick={()=>setTrackingFilter(value)} aria-pressed={trackingFilter===value} >{label}</Button>)}
         </div>
-        {filteredInvites.length===0 && <div className="feature"><p style={{ margin: 0 }}>Nenhum convite nesta categoria.</p></div>}
-        <div style={{ display: "grid", gap: 18 }}>
-          {groupedInvites.map(group=><div key={group.event.id} className="feature" style={{ padding: "20px 16px" }}>
-            <h3 style={{ margin: "0 0 5px" }}>{group.event.title}</h3>
-            <p style={{ fontSize: 12, color: "var(--muted)", marginBottom: 14 }}>{new Date(group.event.starts_at).toLocaleString("pt-BR", { dateStyle: "medium", timeStyle: "short" })} · {group.rows.length} convite(s)</p>
-            <div style={{ display: "grid", gap: 10 }}>
+        {filteredInvites.length===0 && <div className="sf-ui-card"><p className="sent-invites-zero">Nenhum convite nesta categoria.</p></div>}
+        <div className="sent-invites-groups">
+          {groupedInvites.map(group=><div key={group.event.id} className="sf-ui-card sent-invites-group-card" >
+            <h3 className="sent-invites-group-title">{group.event.title}</h3>
+            <p className="sent-invites-group-meta">{new Date(group.event.starts_at).toLocaleString("pt-BR", { dateStyle: "medium", timeStyle: "short" })} · {group.rows.length} convite(s)</p>
+            <div className="sent-invites-list">
               {group.rows.map(invite=>{
                 const assigned=Boolean(invite.musician_name);
                 const statusLabel=invite.status==="accepted"?"Aceitou":invite.status==="declined"?"Recusou":invite.status==="cancelled"?"Cancelado":assigned?"Aguardando resposta":"Link não utilizado";
                 const canRemind=assigned && (invite.status==="pending"||invite.status==="accepted");
                 const directWhatsApp=reminderLink(invite);
-                return <article key={invite.id} style={{ border: "1px solid var(--line)", borderRadius: 14, background: "var(--panel2)", padding: 14 }}>
-                  <div style={{ display: "flex", gap: 10, alignItems: "center", justifyContent: "space-between", flexWrap: "wrap" }}>
-                    <div style={{ flex: 1, minWidth: 140 }}>
-                      <strong style={{ display: "block", fontSize: 15 }}>{invite.musician_name || "Convite por link"}</strong>
-                      <span style={{ color: "var(--muted)", fontSize: 12 }}>{assigned ? (invite.musician_phone ? "WhatsApp autorizado" : "WhatsApp não autorizado") : "Aguardando o músico abrir o link"}</span>
+                return <article key={invite.id} className="sent-invites-invite-card">
+                  <div className="sent-invites-invite-row">
+                    <div className="sent-invites-person">
+                      <strong className="sent-invites-name">{invite.musician_name || "Convite por link"}</strong>
+                      <span className="sent-invites-muted">{assigned ? (invite.musician_phone ? "WhatsApp autorizado" : "WhatsApp não autorizado") : "Aguardando o músico abrir o link"}</span>
                     </div>
-                    <div style={{ display: "flex", alignItems: "center", flexWrap: "wrap", gap: 8 }}>
-                      <span style={{ fontSize: 12, fontWeight: 700, padding: "6px 10px", border: "1px solid var(--line)", borderRadius: 99, color: invite.status==="accepted"?"var(--lime)":invite.status==="declined"?"#ffb5b5":"var(--text)" }}>{statusLabel}</span>
+                    <div className="sent-invites-actions">
+                      <StatusChip label={statusLabel} status={invite.status==="accepted"?"success":invite.status==="declined"||invite.status==="cancelled"?"danger":"warning"}/>
                       {canRemind && (directWhatsApp
-                        ? <a className="btn btn-primary" href={directWhatsApp} target="_blank" rel="noopener noreferrer" style={{ padding: "10px 12px", whiteSpace: "nowrap" }}><MessageCircle size={16}/> Enviar lembrete</a>
-                        : <button className="btn btn-quiet" type="button" disabled title="O músico precisa autorizar lembretes pelo WhatsApp em Meus convites" style={{ padding: "10px 12px", opacity: 0.55, cursor: "not-allowed", whiteSpace: "nowrap" }}><MessageCircle size={16}/> Enviar lembrete</button>
+                        ? <a className="sf-ui-button sf-ui-button-primary" href={directWhatsApp} target="_blank" rel="noopener noreferrer" ><MessageCircle size={16}/> Enviar lembrete</a>
+                        : <Button variant="ghost" type="button" disabled title="O músico precisa autorizar lembretes pelo WhatsApp em Meus convites" ><MessageCircle size={16}/> Enviar lembrete</Button>
                       )}
                     </div>
                   </div>
                   <FeeNegotiation invitationId={invite.id} perspective="organizer" onChanged={() => void reloadSent()}/>
-                  {canRemind && !directWhatsApp && <p style={{ fontSize: 12, color: "var(--muted)", margin: "10px 0 0" }}>O músico ainda precisa autorizar lembretes pelo WhatsApp na área Meus convites.</p>}
-                  {invite.invite_code && <button type="button" className="btn btn-quiet" style={{ width: "100%", marginTop: 13 }} onClick={()=>void shareExisting(invite)}><Share2 size={16}/> Reenviar link de convite</button>}
+                  {canRemind && !directWhatsApp && <p className="sent-invites-reminder-hint">O músico ainda precisa autorizar lembretes pelo WhatsApp na área Meus convites.</p>}
+                  {invite.invite_code && <Button variant="ghost" type="button" className="sent-invites-resend" onClick={()=>void shareExisting(invite)}><Share2 size={16}/> Reenviar link de convite</Button>}
                 </article>;
               })}
             </div>
@@ -355,8 +350,8 @@ export default function ConvitesPage() {
       </>}
     </section>
 
-    <div className="coming" style={{ maxWidth: 760, marginTop: 20 }}>
-      <Users size={16} style={{ display: "inline", verticalAlign: "middle", marginRight: 7 }}/>
+    <div className="sf-ui-notice sent-invites-footnote" >
+      <Users size={16} className="sent-invites-footnote-icon"/>
       Um link é válido para apenas uma conta. O músico pode entrar com uma conta existente ou se cadastrar gratuitamente. O convite não libera marketplace ou subdomínio próprio.
     </div>
   </div></main>;

@@ -8,6 +8,7 @@ import {
   Wallet
 } from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
+import { Button, InlineNotice, LoadingState, StatusChip } from "@/src/components/ui";
 import "./event-financial-summary.css";
 
 type InvitationStatus = "pending" | "accepted" | "declined" | "cancelled";
@@ -122,18 +123,14 @@ export default function EventFinancialSummary({ eventId, refreshToken = 0 }: Pro
         <h4><Wallet size={19}/> Cachês da banda</h4>
         <p>Valores reais das negociações do Stage Flow, sem estimar cachês que ainda não foram acordados.</p>
       </div>
-      <button className="event-financial-refresh" type="button" onClick={reload} disabled={loading}>
+      <Button variant="ghost" className="event-financial-refresh" type="button" onClick={reload} disabled={loading}>
         <RefreshCw size={15}/>{loading ? "Consultando..." : "Atualizar valores"}
-      </button>
+      </Button>
     </div>
 
-    {loading && <p className="event-financial-loading" role="status">
-      <LoaderCircle size={17}/> Consultando cachês privados...
-    </p>}
+    {loading && <LoadingState label="Consultando cachês privados..."/>}
 
-    {!loading && error && <p role="alert" className="event-financial-error">
-      <FileWarning size={16}/> {error}
-    </p>}
+    {!loading && error && <InlineNotice tone="danger">{error}</InlineNotice>}
 
     {!loading && summary && <>
       <div className="event-financial-total">
@@ -190,11 +187,11 @@ export default function EventFinancialSummary({ eventId, refreshToken = 0 }: Pro
         </p>}
 
       {summary.invitation_count > 0 && <>
-        <button type="button" className="event-financial-breakdown-toggle"
+        <Button variant="ghost" type="button" className="event-financial-breakdown-toggle"
           aria-expanded={showBreakdown} onClick={() => setShowBreakdown(value => !value)}>
           <span>Ver cachês por músico ({summary.invitation_count} convite(s))</span>
           {showBreakdown ? <ChevronUp size={17}/> : <ChevronDown size={17}/>}
-        </button>
+        </Button>
 
         {showBreakdown && <div className="event-financial-breakdown">
           {summary.items.map(item => {
@@ -205,9 +202,7 @@ export default function EventFinancialSummary({ eventId, refreshToken = 0 }: Pro
               (inactive ? " is-inactive" : "")}>
               <div className="event-financial-person">
                 <strong>{item.musician_name}</strong>
-                <span className={"event-financial-badge is-" + status.type}>
-                  {status.text}
-                </span>
+                <StatusChip label={status.text} status={status.type==="confirmed"?"success":status.type==="agreed"||status.type==="proposed"||status.type==="missing"?"warning":"neutral"}/>
               </div>
               <div className="event-financial-person-amount">
                 {inactive

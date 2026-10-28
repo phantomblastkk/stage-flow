@@ -5,6 +5,7 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { ArrowLeft, CalendarDays, CheckCheck, CircleAlert, Clock3, History, LoaderCircle, Plus, RefreshCw, Send, ShieldCheck, Trash2, UserRound, UserRoundX, Users } from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
+import { Button, InlineNotice, Input, LoadingState, Select, StatCard, StatusChip, Textarea } from "@/src/components/ui";
 import "./equipe-show.css";
 
 type InviteStatus="pending"|"accepted"|"declined"|"cancelled";
@@ -162,23 +163,23 @@ export default function ShowLineupPage(){
  }
  return <main className="lineup-page"><div className="container">
   <nav className="nav"><Link className="brand" href="/"><span className="brand-mark">S</span> stage flow</Link>
-   <Link className="btn btn-quiet" href="/eventos"><ArrowLeft size={16}/> Agenda</Link></nav>
+   <Link className="sf-ui-button sf-ui-button-ghost" href="/eventos"><ArrowLeft size={16}/> Agenda</Link></nav>
   <header className="lineup-hero">
    <span className="eyebrow"><ShieldCheck size={14}/> GESTÃO PRIVADA POR SHOW</span>
    <h1>Formação do <span className="accent">show.</span></h1>
    <p>Convites, confirmações, vagas abertas e substituições em um só lugar. O cachê continua individual no financeiro.</p>
    {info&&<div className="lineup-context"><h2>{info.event_title}</h2><p><CalendarDays size={15}/> {date(info.event_starts_at)} · {info.event_status==="draft"?"Rascunho privado":info.event_status==="published"?"Publicado":info.event_status==="completed"?"Concluído":"Cancelado"}</p></div>}
   </header>
-  {error&&<p className="lineup-feedback error" role="alert">{error}</p>}
-  {notice&&<p className="lineup-feedback" role="status">{notice}</p>}
-  {loading?<p className="lineup-loading"><LoaderCircle size={18}/> Carregando equipe...</p>:info&&<>
+  {error&&<div className="lineup-feedback"><InlineNotice tone="danger">{error}</InlineNotice></div>}
+  {notice&&<div className="lineup-feedback"><InlineNotice tone="success">{notice}</InlineNotice></div>}
+  {loading?<LoadingState label="Carregando equipe..."/>:info&&<>
    <div className="lineup-stats">
     {[
      ["Confirmados",tally.confirmed,"confirmed"],
      ["Aguardando resposta",tally.pending,"pending"],
      ["Vagas livres / canceladas",tally.open,"open"],
      ["Recusados",tally.declined,"declined"]
-    ].map(([name,total,kind])=><div key={name} className={"lineup-stat "+kind}><strong>{total}</strong><span>{name}</span></div>)}
+    ].map(([name,total,kind])=><StatCard key={name} label={String(name)} value={total}/>)}
    </div>
    {closed&&<p className="lineup-callout"><CircleAlert size={17}/> Este show já passou ou está encerrado. Os registros permanecem disponíveis, mas não é possível enviar ou cancelar novos convites.</p>}
    <div className="lineup-layout">
@@ -186,74 +187,63 @@ export default function ShowLineupPage(){
      <h2><Users size={19}/> Montar a formação</h2>
      <p>Copie posições de uma banda salva ou crie vagas separadas. Importar uma equipe não convida ninguém.</p>
      <div className="lineup-team-import">
-      <label>Formação salva
-       <select value={teamId} onChange={e=>setTeamId(e.target.value)} disabled={busy||closed}>
+      <Select label="Formação salva" value={teamId} onChange={e=>setTeamId(e.target.value)} disabled={busy||closed}>
         {teams.length===0&&<option value="">Nenhuma formação salva</option>}
         {teams.map(t=><option key={t.id} value={t.id}>{t.name} · {t.member_count} integrantes</option>)}
-       </select>
-      </label>
-      <button type="button" className="btn btn-quiet" onClick={importTeam}
-       disabled={busy||closed||!teamId}><Users size={15}/> Importar vagas</button>
+       </Select>
+      <Button variant="ghost" type="button" onClick={importTeam}
+       disabled={busy||closed||!teamId}><Users size={15}/> Importar vagas</Button>
      </div>
      <Link href={"/equipes?evento="+encodeURIComponent(id)} className="lineup-secondary-link">Editar formações salvas</Link>
      <form onSubmit={add} className="lineup-add">
-      <label>Adicionar uma posição
-       <input value={label} onChange={e=>setLabel(e.target.value)}
+      <Input label="Adicionar uma posição" value={label} onChange={e=>setLabel(e.target.value)}
         maxLength={80} minLength={2} required disabled={busy||closed}
         placeholder="Ex.: Bateria, baixo, backing vocal..."/>
-      </label>
-      <button className="btn btn-primary" disabled={busy||closed||label.trim().length<2} type="submit"><Plus size={15}/> Adicionar vaga</button>
+      <Button disabled={busy||closed||label.trim().length<2} type="submit"><Plus size={15}/> Adicionar vaga</Button>
      </form>
      <p className="lineup-footnote">Você também pode <Link href={"/convites?evento="+encodeURIComponent(id)}>consultar todos os convites do show</Link>, inclusive os enviados fora deste painel.</p>
     </section>
     <section className="lineup-section">
      <div className="lineup-heading"><h2><CheckCheck size={19}/> Escala de músicos</h2>
-      <button className="btn btn-quiet" disabled={busy} onClick={()=>void refresh(id)} type="button"><RefreshCw size={14}/> Atualizar</button>
+      <Button variant="ghost" disabled={busy} onClick={()=>void refresh(id)} type="button"><RefreshCw size={14}/> Atualizar</Button>
      </div>
      {slots.length===0?<div className="lineup-empty"><Users size={26}/>
        <p>Nenhuma posição cadastrada. Comece importando uma equipe ou adicionando uma vaga.</p></div>:
-      <div className="lineup-slots">{slots.map(slot=><article className="lineup-slot" key={slot.id}>
+      <div className="lineup-slots">{slots.map(slot=><article className="lineup-slot" aria-label={"Vaga " + slot.label} key={slot.id}>
        <div className="lineup-slot-head">
         <div><strong>{slot.label}</strong>{slot.suggested_musician_name&&
          <small>Formação original: {slot.suggested_musician_name}</small>}</div>
-        <span className={"lineup-tag "+statusKind(slot)}>{slot.invitation_status?
-          statusLabels[slot.invitation_status]:"Vaga sem confirmação"}</span>
+        <StatusChip status={slot.invitation_status==="accepted"?"success":slot.invitation_status==="declined"||slot.invitation_status==="cancelled"?"danger":slot.invitation_status==="pending"?"warning":"neutral"} label={slot.invitation_status?statusLabels[slot.invitation_status]:"Vaga sem confirmação"}/>
        </div>
        {slot.invitation_id&&<div className="lineup-member">
         <UserRound size={17}/> {slot.musician_name||"Músico convidado"}
        </div>}
        {!closed&&(!slot.invitation_id||slot.invitation_status==="declined"||slot.invitation_status==="cancelled")&&
         <div className="lineup-invite">
-         <label>Escolher músico
-          <select value={picks[slot.id]??(slot.suggested_musician_id&&candidates.some(c=>c.musician_id===slot.suggested_musician_id)?slot.suggested_musician_id:"")}
+         <Select label="Escolher músico" value={picks[slot.id]??(slot.suggested_musician_id&&candidates.some(c=>c.musician_id===slot.suggested_musician_id)?slot.suggested_musician_id:"")}
            disabled={busy} onChange={e=>setPicks(x=>({...x,[slot.id]:e.target.value}))}>
            <option value="">Selecione um contato profissional</option>
            {candidates.map(c=><option key={c.musician_id} value={c.musician_id}>{c.musician_name}</option>)}
-          </select>
-         </label>
-         <label>Mensagem do convite (opcional)
-          <input value={messages[slot.id]||""} disabled={busy} maxLength={500}
+          </Select>
+         <Input label="Mensagem do convite (opcional)" value={messages[slot.id]||""} disabled={busy} maxLength={500}
            placeholder="Ex.: consegue tocar sábado?"
            onChange={e=>setMessages(x=>({...x,[slot.id]:e.target.value}))}/>
-         </label>
-         <button className="btn btn-primary" disabled={busy||candidates.length===0}
-          type="button" onClick={()=>invite(slot)}><Send size={14}/> Convidar músico</button>
+         <Button disabled={busy||candidates.length===0}
+          type="button" onClick={()=>invite(slot)}><Send size={14}/> Convidar músico</Button>
         </div>}
        {!closed&&slot.invitation_id&&
         <div className="lineup-release">
-         <button className="lineup-expander" aria-expanded={expanded===slot.id} type="button"
+         <Button variant="ghost" className="lineup-expander" aria-expanded={expanded===slot.id} type="button"
           onClick={()=>setExpanded(v=>v===slot.id?null:slot.id)}>
           <UserRoundX size={15}/> Liberar vaga / substituir músico
-         </button>
+         </Button>
          {expanded===slot.id&&<>
           <p>Esta ação cancela a participação atual no Stage Flow, inclusive quando já confirmada. Combine a mudança diretamente com o músico.</p>
-          <label>Motivo da substituição
-           <textarea maxLength={250} rows={2} value={reasons[slot.id]||""}
+          <Textarea label="Motivo da substituição" maxLength={250} rows={2} value={reasons[slot.id]||""}
             onChange={e=>setReasons(o=>({...o,[slot.id]:e.target.value}))}
             placeholder="Ex.: músico não poderá comparecer" />
-          </label>
-          <button type="button" className="btn btn-quiet" disabled={busy||!reasons[slot.id]||reasons[slot.id].trim().length<5}
-           onClick={()=>release(slot)}>Cancelar participação e abrir vaga</button>
+          <Button variant="ghost" type="button" disabled={busy||!reasons[slot.id]||reasons[slot.id].trim().length<5}
+           onClick={()=>release(slot)}>Cancelar participação e abrir vaga</Button>
          </>}
         </div>}
        {slot.history?.length>0&&<details className="lineup-history">
@@ -263,10 +253,10 @@ export default function ShowLineupPage(){
           {h.released_at&&<small>Saída registrada em {date(h.released_at)}{h.reason?" · "+h.reason:""}</small>}
         </div>)}
        </details>}
-       {!closed&&!slot.invitation_id&&!(slot.history?.length)&&<button type="button"
+       {!closed&&!slot.invitation_id&&!(slot.history?.length)&&<Button variant="ghost" type="button"
         className="lineup-remove" disabled={busy} onClick={()=>remove(slot)}>
         <Trash2 size={14}/> Remover vaga vazia
-       </button>}
+       </Button>}
       </article>)}</div>}
      {unassigned.length>0&&<div className="lineup-outside">
       <h3>Convites fora da escala</h3>

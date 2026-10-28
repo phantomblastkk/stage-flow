@@ -1,0 +1,48 @@
+.sent-invites-hero{padding:42px 0 24px}
+.sent-invites-title{font-size:clamp(34px,5vw,46px)}
+.sent-invites-shortcut{margin-top:14px}
+.sent-invites-selected{color:var(--sf-ui-brand);font-size:12px;line-height:1.6;margin-top:13px}
+.sent-invites-inline-icon{display:inline;vertical-align:middle}
+.sent-invites-create-panel{max-width:760px}
+.sent-invites-full-width{width:100%;justify-content:center}
+.sent-invites-share-actions{display:grid;gap:12px;margin-top:16px}
+.sent-invites-tracking{max-width:820px;margin-top:34px}
+.sent-invites-tracking-head{display:flex;align-items:center;justify-content:space-between;gap:12px;margin-bottom:16px;flex-wrap:wrap}
+.sent-invites-tracking-title{font-size:25px;margin:12px 0 0}
+.sent-invites-lead{font-size:13px;color:var(--sf-ui-muted);line-height:1.6}
+.sent-invites-event-filter{max-width:520px}
+.sent-invites-stats-margin{margin-bottom:18px}
+.sent-invites-unclaimed{font-size:12px;color:var(--sf-ui-muted);margin:0 0 12px}
+.sent-invites-filters{display:flex;flex-wrap:wrap;gap:8px;margin-bottom:20px}
+.sent-invites-zero{margin:0}
+.sent-invites-groups{display:grid;gap:18px}
+.sent-invites-group-card{padding:20px 16px}
+.sent-invites-group-title{margin:0 0 5px}
+.sent-invites-group-meta{font-size:12px;color:var(--sf-ui-muted);margin-bottom:14px}
+.sent-invites-list{display:grid;gap:10px}
+.sent-invites-invite-card{border:1px solid var(--sf-ui-border);border-radius:14px;background:var(--sf-ui-surface-raised);padding:14px}
+.sent-invites-invite-row{display:flex;gap:10px;align-items:center;justify-content:space-between;flex-wrap:wrap}
+.sent-invites-person{flex:1;min-width:140px}
+.sent-invites-name{display:block;font-size:15px}
+.sent-invites-muted{color:var(--sf-ui-muted);font-size:12px}
+.sent-invites-actions{display:flex;align-items:center;flex-wrap:wrap;gap:8px}
+.sent-invites-reminder-hint{font-size:12px;color:var(--sf-ui-muted);margin:10px 0 0}
+.sent-invites-resend{width:100%;margin-top:13px}
+.sent-invites-footnote{max-width:760px;margin-top:20px}
+.sent-invites-footnote-icon{display:inline;vertical-align:middle;margin-right:7px}
+
+.sent-invites-page{min-height:100vh;background:var(--sf-ui-bg);color:var(--sf-ui-text);padding-bottom:32px}
+.sent-invites-create-panel>form{display:grid;gap:18px}
+.sent-invites-stats{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:12px}
+.sent-invites-stats .sf-ui-stat{padding:16px}.sent-invites-stats .sf-ui-stat>strong{font-size:28px}
+.sent-invites-filter{min-width:0;margin:16px 0}
+.sent-invites-page .sf-ui-field{min-width:0}
+.sent-invites-page textarea{resize:vertical}
+.sent-invites-page .sf-ui-button{max-width:100%;white-space:normal}
+.sent-invites-page svg{flex-shrink:0}
+.sent-invites-person{min-width:0;flex:1 1 150px}
+.sent-invites-group-title,.sent-invites-name,.sent-invites-selected{overflow-wrap:anywhere}
+.sent-invites-filters:focus-visible{outline:3px solid var(--sf-ui-focus)}
+@media(max-width:600px){.sent-invites-hero{padding-top:24px}.sent-invites-stats{gap:8px}.sent-invites-stats .sf-ui-stat{padding:10px}.sent-invites-page .sf-ui-input{font-size:16px}.sent-invites-group-card,.sent-invites-invite-card{padding:14px 12px}.sent-invites-actions{width:100%}.sent-invites-actions>.sf-ui-button{flex:1 1 auto}}
+
+@media(max-width:600px){.sent-invites-page .nav{height:auto;min-height:64px;gap:8px;flex-wrap:wrap;padding-block:10px}}

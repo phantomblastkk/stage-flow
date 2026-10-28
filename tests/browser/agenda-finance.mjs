@@ -58,7 +58,7 @@ async function setup(width) {
   const context = await browser.newContext({ viewport: { width, height: 900 }, timezoneId: "America/Sao_Paulo" });
   await context.addCookies([{ name: "sb-example-auth-token", value: "base64-" + encoded(session), url: origin, sameSite: "Lax" }]);
   const state = { events: [...initialEvents(), ...moreEvents(), { ...initialEvents()[1], id: "77777777-7777-4777-8777-777777777777", title: "Show de dezembro", starts_at: "2026-12-02T23:00:00Z" }], accepted: false, failAgenda: false, failFinance: false, invalidFinance: false, writes: [],
-    editorWrites:[], editorExpenses:[], teamWrites:[], bulkHistory:false, reads: new Map(), adminA: false, financeDelay: null, delayedFinanceStarted: 0, delayedFinanceCompleted: 0,
+    detailedSummary:false, detailedInvites:false, failSentDetails:false, lineupClosed:false, lineupWrites:[], lineupSlots:[{id:threadA,label:"Bateria",invitation_id:invitationId,musician_id:otherUserId,musician_name:"Músico confirmado",invitation_status:"accepted",history:[]},{id:threadB,label:"Baixo",invitation_id:null,musician_id:null,musician_name:null,invitation_status:null,history:[]}], editorWrites:[], editorExpenses:[], teamWrites:[], bulkHistory:false, reads: new Map(), adminA: false, financeDelay: null, delayedFinanceStarted: 0, delayedFinanceCompleted: 0,
     messageDelay: null, delayedMessagesStarted: 0, delayedMessagesCompleted: 0, failMessageId: null, failInvites: false, feeEnabled:false, feeAgreed:null, feeAmount:400, feeByMe:false, feeReadFail:false, feeOffers:[],
     failChatPreferences: false, showProposal: false, proposalReadFail:false, proposalDelay:null, proposalStarted:0, proposalCompleted:0, asRequester:false, prefillDelay:null, prefillStarted:0, prefillCompleted:0, scheduleDelay:null, scheduleCalls:[], sendResult:"schedule_conflict", proposalWrites:[], submittedProposal:null, proposalWithdrawn:false, proposalAccepted: false, guestStartsAt: guest.starts_at, sent: [],
     messages: Object.fromEntries([[threadA,"Mensagem privada A"],[threadB,"Mensagem privada B"]].map(([id,text])=>[id,[{id,body:text,is_mine:false,created_at:"2026-11-01T15:00:00Z"}]])) };
@@ -151,8 +151,25 @@ async function setup(width) {
     } else if (rpc === "stage_my_event_budget") result = { event_id: body.p_event_id, client_fee: 3000, received_amount: 1500, to_receive: 1500, expenses_total: 100, expenses_paid_total: 50, expenses_unpaid_total: 50, expenses: state.editorExpenses, musician_agreed_total: 800, musician_unpriced_count: 0, projected_partial_result: 2100 };
     else if (rpc === "stage_my_teams") result=[{id:threadA,name:"Banda de teste",member_count:1}];
     else if (rpc === "stage_team_members_for_owner") result=[{member_id:threadB,musician_id:otherUserId,musician_name:"Músico da formação",instrument:"Violão"}];
-    else if (rpc === "stage_sent_invitations_with_whatsapp") result=[];
-    else if (rpc === "stage_event_financial_summary") result={event_id:body.p_event_id,invitation_count:0,active_count:0,accepted_count:0,confirmed_fee_count:0,agreed_waiting_count:0,pending_fee_count:0,open_offer_count:0,unquoted_count:0,inactive_count:0,confirmed_total:0,agreed_waiting_total:0,agreed_total:0,open_offer_total:0,items:[]};
+    else if (rpc === "stage_sent_invitations_with_whatsapp") {
+      if(state.failSentDetails){status=503;result={message:"Synthetic sent-invites read failure"};}
+      else result=state.detailedInvites?[
+        {id:invitationId,status:"accepted",musician_name:"Músico autorizado",musician_phone:"5511999999999",invite_code:threadA},
+        {id:threadA,status:"pending",musician_name:"Músico sem autorização",musician_phone:null,invite_code:threadB},
+        {id:threadB,status:"pending",musician_name:null,musician_phone:null,invite_code:proposalId}
+      ].map(x=>({...x,event_id:secondId,event_title:"Segundo show",event_starts_at:"2035-11-02T20:00:00Z",created_at:"2026-11-01T12:00:00Z"})):[];
+    }
+    else if(rpc === "stage_show_lineup_overview") result={status:"ok",event_title:"Escala de teste",event_starts_at:"2035-11-02T20:00:00Z",event_status:state.lineupClosed?"completed":"draft",slots:state.lineupSlots,unassigned:[]};
+    else if(rpc === "stage_team_candidates") result=[{musician_id:otherUserId,musician_name:"Contato profissional"}];
+    else if(rpc === "stage_show_lineup_add_slot") {assert.equal(body.p_event_id,secondId);state.lineupWrites.push({kind:"add",...body});state.lineupSlots.push({id:proposalId,label:body.p_label,invitation_id:null,invitation_status:null,history:[]});result={status:"ok"};}
+    else if(rpc === "stage_show_lineup_invite") {assert.equal(body.p_slot_id,threadB);assert.equal(body.p_musician_id,otherUserId);state.lineupWrites.push({kind:"invite",...body});Object.assign(state.lineupSlots[1],{invitation_id:threadB,musician_id:otherUserId,musician_name:"Contato profissional",invitation_status:"pending"});result={status:"ok",new_invitation:true};}
+    else if(rpc === "stage_show_lineup_release") {assert.equal(body.p_slot_id,threadA);state.lineupWrites.push({kind:"release",...body});Object.assign(state.lineupSlots[0],{invitation_id:null,musician_id:null,musician_name:null,invitation_status:null,history:[{musician_name:"Músico confirmado",status:"cancelled",assigned_at:"2026-11-01T12:00:00Z",released_at:"2026-11-01T13:00:00Z",reason:body.p_reason}]});result="released";}
+    else if (rpc === "stage_event_financial_summary") result=state.detailedSummary?{event_id:body.p_event_id,invitation_count:4,active_count:3,accepted_count:1,confirmed_fee_count:1,agreed_waiting_count:0,pending_fee_count:2,open_offer_count:1,unquoted_count:1,inactive_count:1,confirmed_total:500,agreed_waiting_total:0,agreed_total:500,open_offer_total:200,items:[
+      {invitation_id:invitationId,musician_name:"Cachê confirmado",invitation_status:"accepted",agreed_amount:500,last_offer_amount:500},
+      {invitation_id:threadA,musician_name:"Proposta pendente",invitation_status:"pending",agreed_amount:null,last_offer_amount:200},
+      {invitation_id:threadB,musician_name:"Valor indefinido",invitation_status:"pending",agreed_amount:null,last_offer_amount:null},
+      {invitation_id:proposalId,musician_name:"Convite inativo",invitation_status:"cancelled",agreed_amount:9000,last_offer_amount:9000}
+    ]}:{event_id:body.p_event_id,invitation_count:0,active_count:0,accepted_count:0,confirmed_fee_count:0,agreed_waiting_count:0,pending_fee_count:0,open_offer_count:0,unquoted_count:0,inactive_count:0,confirmed_total:0,agreed_waiting_total:0,agreed_total:0,open_offer_total:0,items:[]};
     else if (rpc === "stage_invite_team_to_event") {state.teamWrites.push(body);result={status:"sent",created:1,existing:0,total:1};}
     else if (rpc === "stage_save_event_expense") {
       assert.equal(actor,userId);assert.equal(body.p_paid_amount,50);assert.equal(body.p_amount,100);
@@ -446,6 +463,73 @@ try {
       await page.screenshot({ path: `test-results/failure-${width}.png`, fullPage: true }).catch(() => {});
       throw error;
     } finally { await context.close(); }
+  }
+  // Part 17: private summary, sent-invite filters and audited lineup presentation.
+  for(const width of [360,768,1280]) {
+    const {context,page,state,errors}=await setup(width);
+    async function confirm(button,accept){
+      await button.focus();const dialogReady=page.waitForEvent("dialog");const activation=button.press("Enter");
+      const dialog=await dialogReady;assert.equal(dialog.type(),"confirm");
+      if(accept)await dialog.accept();else await dialog.dismiss();await activation;
+    }
+    try{
+      state.detailedSummary=true;
+      await page.goto(origin+"/eventos");
+      const card=page.locator("#stage-event-"+firstId);
+      await card.getByRole("button",{name:"Equipe, convites e financeiro",exact:true}).click();
+      const summary=card.getByRole("region",{name:"Resumo financeiro privado deste show",exact:true});
+      await summary.locator(".event-financial-total strong").waitFor();
+      assert.match(await summary.locator(".event-financial-total strong").innerText(),/R\$\s*500,00/);
+      const breakdown=summary.getByRole("button",{name:/Ver cachês por músico/});await breakdown.focus();await breakdown.press("Enter");
+      const rows=summary.locator(".event-financial-row");assert.equal(await rows.count(),4);
+      assert.equal(await rows.filter({hasText:"Valor indefinido"}).getByText("A definir",{exact:true}).count(),1);
+      assert.equal(await rows.filter({hasText:"Convite inativo"}).getByText("Não computado",{exact:true}).count(),1);
+      assert.ok(!/9\.000/.test(await summary.innerText()));
+      await noHorizontalOverflow(page,"fee summary "+width);await summary.screenshot({path:`test-results/fee-summary-${width}.png`});
+      state.detailedInvites=true;
+      await page.goto(origin+"/convites?evento="+secondId);
+      const sent=page.getByRole("region",{name:"Convites enviados",exact:true});
+      await sent.getByText("Músico autorizado",{exact:true}).waitFor();
+      assert.equal(await sent.locator("article").count(),3);
+      const permitted=sent.getByRole("link",{name:"Enviar lembrete",exact:true});assert.ok((await permitted.getAttribute("href")).startsWith("https://wa.me/5511999999999?text="));
+      assert.equal(await sent.getByRole("button",{name:"Enviar lembrete",exact:true}).isDisabled(),true);
+      const unused=sent.getByRole("button",{name:"Links não utilizados",exact:true});await unused.focus();await unused.press("Enter");
+      assert.equal(await unused.getAttribute("aria-pressed"),"true");assert.equal(await sent.locator("article").count(),1);
+      await sent.getByLabel("Acompanhar qual show?",{exact:true}).selectOption(firstId);
+      await sent.getByText("Nenhum convite nesta categoria.",{exact:true}).waitFor();
+      await sent.getByLabel("Acompanhar qual show?",{exact:true}).selectOption(secondId);
+      const all=sent.getByRole("button",{name:"Todos",exact:true});await all.focus();await all.press("Enter");
+      assert.equal(await sent.locator("article").count(),3);
+      await noHorizontalOverflow(page,"sent invites "+width);await sent.screenshot({path:`test-results/sent-invites-${width}.png`});
+      if(width===360){state.failSentDetails=true;const reload=sent.getByRole("button",{name:"Atualizar respostas",exact:true});await reload.focus();await reload.press("Enter");
+        const readError=sent.getByRole("alert");await readError.waitFor();await readable(readError,"sent-invite read error");assert.equal(await sent.locator("article").count(),0);state.failSentDetails=false;}
+      await page.goto(origin+"/eventos/equipe?evento="+secondId);
+      await page.getByRole("heading",{name:"Escala de teste",exact:true}).waitFor();
+      await page.getByLabel("Adicionar uma posição",{exact:true}).fill("Percussão");
+      const add=page.getByRole("button",{name:"Adicionar vaga",exact:true});await add.focus();await add.press("Enter");
+      await page.getByRole("article",{name:"Vaga Percussão",exact:true}).waitFor();assert.equal(state.lineupWrites.filter(x=>x.kind==="invite").length,0);
+      const bass=page.getByRole("article",{name:"Vaga Baixo",exact:true});
+      await bass.getByLabel("Escolher músico",{exact:true}).selectOption(otherUserId);
+      await bass.getByLabel("Mensagem do convite (opcional)",{exact:true}).fill("Confirma o horário?");
+      const invite=bass.getByRole("button",{name:"Convidar músico",exact:true});await confirm(invite,false);assert.equal(state.lineupWrites.filter(x=>x.kind==="invite").length,0);
+      await confirm(invite,true);await bass.getByText("Aguardando resposta",{exact:true}).waitFor();
+      assert.equal(state.lineupWrites.filter(x=>x.kind==="invite").length,1);
+      assert.equal(state.lineupWrites.find(x=>x.kind==="invite").p_message,"Confirma o horário?");
+      const drums=page.getByRole("article",{name:"Vaga Bateria",exact:true});
+      const releaseToggle=drums.getByRole("button",{name:"Liberar vaga / substituir músico",exact:true});await releaseToggle.focus();await releaseToggle.press("Enter");
+      const reason=drums.getByLabel("Motivo da substituição",{exact:true});await reason.fill("curt");
+      const release=drums.getByRole("button",{name:"Cancelar participação e abrir vaga",exact:true});assert.equal(await release.isDisabled(),true);
+      await reason.fill("Músico não poderá comparecer");await confirm(release,false);assert.equal(state.lineupWrites.filter(x=>x.kind==="release").length,0);
+      await confirm(release,true);await page.getByRole("status").filter({hasText:"Participação cancelada e liberada"}).waitFor();
+      assert.equal(state.lineupWrites.filter(x=>x.kind==="release").length,1);
+      await drums.locator("summary").click();await drums.getByText(/Músico não poderá comparecer/).waitFor();
+      await noHorizontalOverflow(page,"lineup "+width);await page.screenshot({path:`test-results/lineup-${width}.png`,fullPage:true});
+      state.lineupClosed=true;await page.reload();await page.getByText(/Este show já passou ou está encerrado/).waitFor();
+      assert.equal(await page.getByRole("button",{name:"Adicionar vaga",exact:true}).isDisabled(),true);
+      assert.equal(await page.getByRole("button",{name:"Convidar músico",exact:true}).count(),0);
+      assert.deepEqual(errors,[]);console.log(`PASS lineup/summary/invites ${width}px: unknown/inactive fees, filters, authorized reminder link, slot creation, explicit invite/release and closed-show guards`);
+    }catch(error){await page.screenshot({path:`test-results/failure-lineup-${width}.png`,fullPage:true}).catch(()=>{});throw error;}
+    finally{await context.close();}
   }
   for(const width of [360,768,1280]) {
     const {context,page,state,errors}=await setup(width);
