@@ -2,7 +2,8 @@
 
 import { useEffect, useMemo, useState } from "react";
 import Link from "next/link";
-import { useParams } from "next/navigation";
+import { useParams, useRouter } from "next/navigation";
+import type {MusicianPortfolio} from "@/components/musician-portfolio-view";
 import {
   ArrowLeft, ArrowRight, ArrowUpRight, CalendarDays, CheckCircle2,
   ChevronLeft, ChevronRight, Copy, Instagram, LoaderCircle,
@@ -115,8 +116,12 @@ function LockedProFeature({type,eligible=false}:{type:"photos"|"videos";eligible
   </div>;
 }
 
-export default function PublicSingerSite(){
-  const {username}=useParams<{username:string}>();
+type PublicArtisticMusician={username:string|null;is_singer:boolean;musician:MusicianPortfolio};
+export default function PublicSingerSite({musicianSlug}:{musicianSlug?:string}){
+  const {username:routeUsername}=useParams<{username?:string}>();
+  const router=useRouter();
+  const username=musicianSlug?undefined:routeUsername;
+  const [musician,setMusician]=useState<MusicianPortfolio|null>(null);
   const [data,setData]=useState<PublicPro|null>(null);
   const [media,setMedia]=useState<PremiumMediaItem[]>([]);
   const [loading,setLoading]=useState(true);
@@ -129,15 +134,36 @@ export default function PublicSingerSite(){
     new Date().getFullYear(),new Date().getMonth(),1
   ));
   const [selectedDay,setSelectedDay]=useState<string|null>(null);
-  const verified=useStageVerified("singer",username,Boolean(data));
+  const verified=useStageVerified(musicianSlug?"musician":"singer",musicianSlug||username||"",Boolean(data));
 
   useEffect(()=>{
     let active=true;
     const blobUrls:string[]=[];
     async function load(){
-      if(!username){setLoading(false);return;}
+      if(!username&&!musicianSlug){setLoading(false);return;}
       setLoading(true);setError("");
       const client=createClient();
+      if(musicianSlug){
+        const {data:merged,error:mergedError}=await client.rpc("stage_public_artistic_musician",{p_slug:musicianSlug});
+        let result=(!mergedError?merged:null) as PublicArtisticMusician|null;
+        if(!result?.musician){
+          const {data:legacy}=await client.rpc("stage_public_musician_portfolio",{p_slug:musicianSlug});
+          result=legacy?{username:null,is_singer:false,musician:legacy as MusicianPortfolio}:null;
+        }
+        if(!active)return;
+        if(result?.username&&result.is_singer){router.replace("/"+encodeURIComponent(result.username));return;}
+        if(!result?.musician){setData(null);setMusician(null);setLoading(false);return;}
+        const m=result.musician;
+        setMusician(m);
+        setData({
+          artist:{name:m.name,username:musicianSlug,bio:m.bio||"",city:m.city||"",headline:m.headline||"",
+            instagram_url:m.instagram_url||null,youtube_url:m.youtube_url||null,spotify_url:m.spotify_url||null,
+            avatar_path:null,cover_path:null,bookings_enabled:false},
+          design:{theme:"midnight",accent:"violet",section_order:[...sectionIds],visible_sections:[...sectionIds]},
+          media:[],events:[]
+        });
+        setProUnlocked(false);setProEligible(false);setMedia([]);setLoading(false);return;
+      }
       // A Pro snapshot is the only source allowed to unlock paid sections.
       // If no entitled, published snapshot exists, use public singer data
       // without loading draft galleries, private media or payment fields.
@@ -217,22 +243,34 @@ export default function PublicSingerSite(){
       active=false;
       blobUrls.forEach(url=>URL.revokeObjectURL(url));
     };
-  },[username]);
+  },[username,musicianSlug,router]);
+
+  useEffect(()=>{
+    if(!username||musicianSlug)return;
+    let active=true;
+    void createClient().rpc("stage_public_artistic_musician",{p_username:username})
+      .then(({data,error})=>{
+        if(!active||error)return;
+        const result=data as PublicArtisticMusician|null;
+        setMusician(result?.musician||null);
+      }).catch(()=>{});
+    return()=>{active=false};
+  },[username,musicianSlug]);
 
   useEffect(()=>{
     let active=true;
-    if(!username){setBookingContact(null);return;}
+    if(!username&&!musicianSlug){setBookingContact(null);return;}
     setBookingContact(undefined);
     void (async()=>{
       const {data,error}=await createClient().rpc("stage_public_booking_contact",{
-        p_kind:"singer",p_slug:username
+        p_kind:musicianSlug?"musician":"singer",p_slug:musicianSlug||username
       });
       if(!active)return;
       setBookingContact(!error&&data&&typeof data.mode==="string"
         ?data as PublicBookingContact:null);
     })();
     return()=>{active=false};
-  },[username]);
+  },[username,musicianSlug]);
 
   const design=useMemo(()=>safeDesign(data?.design || {
     theme:"midnight",accent:"violet",
@@ -248,6 +286,8 @@ export default function PublicSingerSite(){
   const currentShows=selectedDay?
     events.filter(e=>showCode(e.starts_at)===selectedDay):events;
   const artist=data?.artist;
+  const artistRoles=musician?(musicianSlug?"Músico":"Cantor • Músico"):"Cantor";
+  const workLinks=musician?[...new Set([musician.media_url,...(musician.additional_media_urls||[])].filter((link):link is string=>Boolean(link&&/^https:\/\//i.test(link))))].slice(0,5):[];
   const biography=artist?distinctPublicBiography(artist.headline,artist.bio):"";
   const instagram=publicInstagramProfile(artist?.instagram_url);
   const contactMode=bookingContact?.mode;
@@ -256,7 +296,7 @@ export default function PublicSingerSite(){
     :contactMode==="instagram"?instagram?.url||null
     :(bookingContact===null||contactMode==="auto")&&!artist?.bookings_enabled?instagram?.url||null:null;
   const contactIsForm=(contactMode==="form"&&Boolean(artist?.bookings_enabled))||((bookingContact===null||contactMode==="auto")&&Boolean(artist?.bookings_enabled));
-  const contactTitle=contactMode==="whatsapp"?"Contratar pelo WhatsApp":contactMode==="instagram"?"Chamar no Instagram":"Contrate o cantor";
+  const contactTitle=contactMode==="whatsapp"?"Contratar pelo WhatsApp":contactMode==="instagram"?"Chamar no Instagram":"Contratar artista";
   function imageUrl(path:string|null|undefined){
     return path?createClient().storage.from("stage-artist-public")
       .getPublicUrl(path).data.publicUrl:"";
@@ -282,7 +322,7 @@ export default function PublicSingerSite(){
     <div>
       <Mic2 size={34}/>
       <h1>Perfil artístico indisponível.</h1>
-      <p>{error||"Este cantor ainda não publicou seu perfil ou este @ não existe."}</p>
+      <p>{error||"Este artista ainda não publicou seu perfil ou este endereço não existe."}</p>
       <Link href="/" className="btn btn-primary"><ArrowLeft size={16}/> Voltar ao Stage Flow</Link>
     </div>
   </main>;
@@ -295,6 +335,7 @@ export default function PublicSingerSite(){
         </Link>
         <nav aria-label="Navegação do Perfil Artístico">
           {visible.map(id=><a key={id} href={anchor(id)}>{sectionLabels[id]}</a>)}
+          {musician&&<a href="#premium-musico">Atuação musical</a>}
         </nav>
         <button type="button" className="pro-public-share" onClick={()=>void share()}>
           {copied?<Copy size={15}/>:<Share2 size={15}/>}
@@ -306,21 +347,24 @@ export default function PublicSingerSite(){
         <div className="premium-site-photo">
           {artist.cover_path&&<img src={imageUrl(artist.cover_path)}
             className="premium-site-cover" alt=""/>}
-          {artist.avatar_path&&<img src={imageUrl(artist.avatar_path)}
+          {(artist.avatar_path||musician?.avatar_url)&&<img src={artist.avatar_path?imageUrl(artist.avatar_path):musician!.avatar_url!}
             className="premium-site-portrait" alt={"Foto de "+artist.name}/>}
-          {!artist.cover_path&&!artist.avatar_path&&
+          {!artist.cover_path&&!artist.avatar_path&&!musician?.avatar_url&&
             <span className="premium-site-initials">
               {artist.name.split(/\s+/).slice(0,2).map(w=>w[0]?.toUpperCase()).join("")}
             </span>}
           <span className="premium-site-photo-caption">MÚSICA, IDENTIDADE E PALCO.</span>
         </div>
         <div className="premium-site-identity">
-          <div className="premium-site-small-label"><span/> ARTISTA / STAGE FLOW</div>
+          <div className="premium-site-small-label"><span/> {artistRoles.toUpperCase()} / STAGE FLOW</div>
           <div className="premium-site-name-row">
             <h1>{artist.name}{verified&&<StageVerifiedBadge compact/>}</h1>
             {artist.headline&&<p className="premium-site-signature">{artist.headline}</p>}
           </div>
           {artist.city&&<p className="premium-site-city"><MapPin size={16}/>{artist.city}</p>}
+          {musician&&<div className="premium-site-musician-pills" aria-label="Especialidades musicais">
+            <span>{artistRoles}</span>{(musician.instruments||[]).slice(0,3).map(i=><span key={i}>{i}</span>)}
+          </div>}
           <p className="premium-site-intro">{biography
             ?biography.length>210?biography.slice(0,207)+"…":biography
             :"Conheça os shows, o repertório e as novidades deste artista."}</p>
@@ -350,7 +394,7 @@ export default function PublicSingerSite(){
                 target={contactHref?"_blank":undefined}
                 rel={contactHref?"noopener noreferrer":undefined}>
                 {contactMode==="whatsapp"?<MessageCircle size={17}/>:contactMode==="instagram"?<Instagram size={17}/>:<Mic2 size={17}/>}
-                {contactHref?contactTitle:"Contrate o cantor"} <ArrowUpRight size={16}/>
+                {contactHref?contactTitle:"Contratar artista"} <ArrowUpRight size={16}/>
               </a>}
             {design.visible_sections.includes("agenda")&&
               <a className="premium-site-secondary-action" href="#premium-agenda">
@@ -367,6 +411,7 @@ export default function PublicSingerSite(){
 
       <div className="premium-site-tabs" aria-label="Seções do site">
         {visible.map(id=><a href={anchor(id)} key={id}>{sectionLabels[id]}</a>)}
+        {musician&&<a href="#premium-musico">Atuação musical</a>}
       </div>
 
       <div className="premium-site-sections">
@@ -529,11 +574,35 @@ export default function PublicSingerSite(){
           {!proEligible&&<Link href="/planos" className="btn btn-primary">Ver planos e benefícios <ArrowUpRight size={16}/></Link>}
         </section>}
       </div>
+      {musician&&<section className="premium-musician-section" id="premium-musico" aria-label="Atuação musical">
+        <div className="premium-musician-heading"><span className="premium-site-section-overline">INSTRUMENTOS, REPERTÓRIO E CONTRATAÇÃO</span>
+          <h2>Minha atuação <em>musical.</em></h2><p>Uma única trajetória artística, com especialidades para shows e eventos.</p></div>
+        <div className="premium-musician-layout">
+          <div className="premium-musician-details"><h3><Music2 size={18}/> Instrumentos e especialidades</h3>
+            <div className="premium-musician-tags">{(musician.instruments||[]).map(i=><span key={i}>{i}</span>)}</div>
+            {musician.genres?.length>0&&<><h3>Estilos musicais</h3><div className="premium-musician-tags is-genre">{musician.genres.map(g=><span key={g}>{g}</span>)}</div></>}
+            {musician.performance_types?.length>0&&<><h3>Formatos de apresentação</h3><div className="premium-musician-tags">{musician.performance_types.map(p=><span key={p}>{p}</span>)}</div></>}
+            {musician.career_highlights?.length>0&&<><h3>Trajetória e destaques</h3><ul>{musician.career_highlights.map(h=><li key={h}>{h}</li>)}</ul></>}
+          </div>
+          <div className="premium-musician-booking"><span>CONVITES E PROPOSTAS</span>
+            <strong>{musician.price_mode==="from"&&musician.reference_fee!=null
+              ?new Intl.NumberFormat("pt-BR",{style:"currency",currency:"BRL"}).format(musician.reference_fee)
+              :"Cachê sob consulta"}</strong>
+            {musician.price_mode==="from"&&musician.reference_fee!=null&&<small>Valor de referência a partir de</small>}
+            <p><CalendarDays size={16}/>{musician.availability_note||"Disponibilidade sob consulta"}</p>
+            {workLinks.length>0&&<div className="premium-musician-work"><h3>Ouça e assista ao meu trabalho</h3>
+              {workLinks.map((link,index)=><a key={link} href={link} target="_blank" rel="noopener noreferrer">
+                <PlayCircle size={16}/> {index===0?"Apresentação principal":"Apresentação "+(index+1)} <ArrowUpRight size={15}/>
+              </a>)}
+            </div>}
+          </div>
+        </div>
+      </section>}
       <footer className="premium-site-footer">
         <span><Music2 size={18}/> STAGE FLOW
           <small>Conectando artistas, músicos e produtores</small>
         </span>
-        <span>{proUnlocked?"Perfil de cantor · Pro publicado":proEligible?"Perfil de cantor · Pro liberado":"Perfil de cantor · Recursos Pro opcionais"} · Stage Flow</span>
+        <span>{proUnlocked?"Perfil artístico · Pro publicado":proEligible?"Perfil artístico · Pro liberado":"Perfil artístico · Recursos Pro opcionais"} · Stage Flow</span>
       </footer>
     </div>
     {error&&<p className="pro-public-error" role="alert">{error}</p>}

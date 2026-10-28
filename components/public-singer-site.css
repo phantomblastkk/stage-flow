@@ -206,3 +206,32 @@
  .pro-public-page .pro-public-spotlight{transition:none}
  .pro-public-page .pro-public-spotlight:hover{transform:none}
 }
+
+/* Singer and musician share one professional public page; extras are opt-in/public. */
+.pro-public-page .premium-site-musician-pills{display:flex;gap:7px;flex-wrap:wrap;margin:14px 0 4px}
+.pro-public-page .premium-site-musician-pills span{padding:7px 11px;border-radius:40px;background:#41305f8c;border:1px solid #786397;color:#eee3ff;font-size:11px;font-weight:700}
+.pro-public-page .premium-site-portrait{object-fit:cover!important;object-position:center 35%!important}
+.premium-musician-section{scroll-margin-top:24px;padding:clamp(24px,4vw,50px);background:linear-gradient(135deg,#1a1a30,#101828);border-top:1px solid #393750}
+.premium-musician-heading{max-width:720px}
+.premium-musician-heading h2{font:850 clamp(27px,3.6vw,43px)/1.2 Manrope,sans-serif;color:#fff;margin:12px 0}
+.premium-musician-heading h2 em{color:#c6aaff}
+.premium-musician-heading p{color:#aeb9d0;font-size:13px;line-height:1.8}
+.premium-musician-layout{display:grid;grid-template-columns:minmax(0,1.25fr) minmax(0,.75fr);gap:20px;margin-top:24px}
+.premium-musician-details,.premium-musician-booking{border:1px solid #484563;border-radius:19px;padding:25px;background:#202139b3}
+.premium-musician-details h3{display:flex;gap:8px;align-items:center;margin:19px 0 11px;font:800 13px Manrope,sans-serif;color:#e5e0fa}
+.premium-musician-details h3:first-child{margin-top:0}
+.premium-musician-tags{display:flex;gap:8px;flex-wrap:wrap}
+.premium-musician-tags>span{padding:9px 12px;border:1px solid #5e577c;border-radius:100px;color:#e9e0f7;background:#302c4a;font:750 11px "DM Sans",sans-serif}
+.premium-musician-tags.is-genre>span{border-color:#436568;background:#244047}
+.premium-musician-details li{line-height:1.7;font-size:12px;color:#cdd1e4;margin-bottom:6px}
+.premium-musician-booking{display:flex;flex-direction:column;gap:14px}
+.premium-musician-booking>span{font:900 10px Manrope,sans-serif;letter-spacing:.1em;color:#c2a2fa}
+.premium-musician-booking>strong{font:850 clamp(20px,2.3vw,30px) Manrope,sans-serif;color:#fff}
+.premium-musician-booking>small{color:#adb6d0;font-size:11px;margin-top:-10px}
+.premium-musician-booking>p{display:flex;gap:8px;color:#c2cee2;font-size:12px;line-height:1.6;align-items:flex-start}
+.premium-musician-booking>p svg{flex:none;color:#b99bf0}
+.premium-musician-work{border-top:1px solid #4b4761;padding-top:12px}
+.premium-musician-work h3{font-size:13px;color:#ebe6fb;margin-bottom:12px}
+.premium-musician-work>a{display:flex;align-items:center;gap:9px;margin:10px 0;color:#cbb9ff;text-decoration:none;font-size:12px}
+.premium-musician-work>a:focus-visible{outline:2px solid #bb9bff;outline-offset:4px}
+@media(max-width:700px){.premium-musician-layout{grid-template-columns:1fr}.premium-musician-section{padding:24px 17px}.premium-musician-details,.premium-musician-booking{padding:20px}}
