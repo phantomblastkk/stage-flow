@@ -251,6 +251,39 @@ try {
   }
   assert.ok(ready, "Next server did not start: " + serverLog);
   browser = await chromium.launch({ headless: true });
+  // Global CSS cleanup: exercise the current public home and signup controls.
+  // A fresh anonymous context keeps this independent from workspace fixtures.
+  for (const width of [360, 768, 1280]) {
+    const context = await browser.newContext({ viewport: { width, height: 900 } });
+    await context.route(api + "/**", route => route.fulfill({ status: 401,
+      contentType: "application/json", body: JSON.stringify({ message: "Anonymous test" }) }));
+    const page = await context.newPage();
+    const errors = [];
+    page.on("pageerror", error => errors.push(error.message));
+    try {
+      await page.goto(origin + "/");
+      await page.getByRole("heading", { level: 1, name: /Mais música/ }).waitFor();
+      const start = page.getByRole("link", { name: "Começar gratuitamente", exact: true });
+      await start.waitFor();
+      await noHorizontalOverflow(page, "public home " + width);
+      await page.screenshot({ path: `test-results/public-home-${width}.png`, fullPage: true });
+      await start.focus();
+      await start.press("Enter");
+      await page.getByRole("heading", { name: "Crie sua conta", exact: true }).waitFor();
+      const roles = page.getByRole("group", { name: "Sua atividade principal" });
+      for (const name of [/^Músico de apoio/, /^Produtor \/ contratante/, /^Cantor \/ artista principal/]) {
+        const choice = roles.getByRole("button", { name });
+        await choice.focus();
+        await choice.press("Enter");
+        assert.equal(await choice.getAttribute("aria-pressed"), "true");
+        assert.equal(await roles.locator('[aria-pressed="true"]').count(), 1);
+        await noHorizontalOverflow(page, "signup role " + name + " " + width);
+      }
+      await page.screenshot({ path: `test-results/public-signup-${width}.png`, fullPage: true });
+      assert.deepEqual(errors, []);
+      console.log(`PASS public home/signup ${width}px: anonymous navigation, keyboard roles and overflow`);
+    } finally { await context.close(); }
+  }
   for (const width of [360, 768, 1280]) {
     const { context, page, state, errors } = await setup(width);
     try {
