@@ -305,6 +305,12 @@ try {
       await page.locator(".hiring-messages").getByText("Rascunho exclusivo B",{exact:true}).waitFor();
       assert.deepEqual(state.sent,[{p_thread_id:threadB,p_body:"Rascunho exclusivo B"}]);
       await noHorizontalOverflow(page,"booking "+width);
+      assert.ok(await page.locator(".hiring-composer").evaluate(form=>{
+        const panel=form.closest(".hiring-layout").getBoundingClientRect();
+        const send=form.querySelector('button[type="submit"]').getBoundingClientRect();
+        return send.bottom<=panel.bottom+1;
+      }),"message composer must not be clipped by the panel at "+width+"px");
+      await page.evaluate(()=>scrollTo(0,0));
       await page.screenshot({path:`test-results/booking-${width}.png`,fullPage:true});
       await choose("Contratante A");
       page.once("dialog",dialog=>void dialog.accept());

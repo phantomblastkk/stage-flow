@@ -17,7 +17,7 @@
 .hiring-thread-detail{flex:1;min-width:0;display:grid;gap:5px}.hiring-thread-detail strong{font-size:13px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .hiring-thread-detail small{font-size:10px;color:#ada1c1;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .hiring-unread{display:grid;place-items:center;border-radius:999px;padding:4px 7px;background:#8450e8;color:#fff;font-size:10px;font-weight:800}
-.hiring-main{display:flex;flex-direction:column;min-height:0;max-height:720px}
+.hiring-main{display:flex;flex-direction:column;min-height:0}
 .hiring-chat-header{display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:12px;border-bottom:1px solid #49395d;padding:18px}
 .hiring-chat-header h2{font:800 17px Manrope;margin:0 0 8px}.hiring-chat-header p{display:flex;align-items:center;flex-wrap:wrap;gap:8px;font-size:11px;color:#ad9fc1;margin:0}
 .hiring-availability{padding:5px 9px;border:1px solid #695187;border-radius:100px;background:#282038;font-size:10px;font-weight:800;color:#d1b5f6}

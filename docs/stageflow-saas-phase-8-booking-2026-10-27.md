@@ -15,6 +15,7 @@ Sem develop, homologação, banco remoto, migrations ou deploy.
 | Erros de leitura eram ignorados ou pareciam uma caixa vazia | Usuário não sabia se faltava informação | Erro recuperável nas mensagens, lista e convites; retry explícito, sem detalhes SQL/migrations no fluxo |
 | Preferência opcional de WhatsApp podia bloquear a abertura da conversa | Configuração secundária interrompia contratação | Carregamento separado; falha fica no formulário opcional, que não permite salvar antes de carregar o estado |
 | Lista e conversa ficavam empilhadas em uma tela estreita | Rolagem e perda de espaço para responder | Até 750 px, navegação lista → conversa → “Todas as conversas”; alvos principais com mínimo de 44 px |
+| Limite fixo de altura cortava o compositor com cabeçalhos/propostas maiores | Campo de mensagem e envio podiam ficar inacessíveis, especialmente em 768 px | Painel cresce com os controles; a área de mensagens mantém sua rolagem limitada; regressão verifica o botão dentro dos limites do painel |
 | Convite aceito abria a agenda geral; proposta aceita levava o músico ao histórico | Usuário precisava procurar o show novamente | Links com o ID exato do evento; seleção de conversa também fica na URL para reabertura |
 | A agenda resolvia links apenas para o produtor | Link de um músico não encontrava sua participação | Resolução primeiro pela consulta do proprietário e depois pela RPC de participações aceitas, limitada a um ID; pin independente do mês e da página carregados |
 | O destaque podia aparecer antes de iniciar a consulta do novo mês | Show selecionado sumia durante a transição | Leitura do mês anterior é cancelada e o carregamento começa junto da mudança de mês, antes do efeito de consulta |
@@ -57,7 +58,8 @@ ativação de envios automáticos, pagamentos ou mudança de acesso ao marketpla
 - Navegador ampliado em 360/768/1280 px: uma leitura inicial, troca A/B com resposta atrasada, rascunhos separados, erro/retry, envio para o ID correto e aceite de proposta até participação selecionada em outro mês.
 - No celular: preferência de WhatsApp indisponível não bloqueia inbox; link de conversa alheia não consulta mensagens; convites recuperam de falha sem exibir estado vazio enganoso.
 - Os testes anteriores de Agenda, Financeiro, CSV e troca de conta entre abas foram mantidos.
-- CI/navegador: registrar o resultado aprovado antes da entrega.
+- A primeira rodada aprovada identificou visualmente um recorte do compositor em 768 px; o cenário de regressão agora exige que o botão de envio fique dentro do painel nas três larguras.
+- CI/navegador final: registrar o resultado aprovado após verificar o compositor.
 
 Os cenários usam somente contas e respostas sintéticas. Não houve teste com
 Auth/RLS reais, alteração de banco ou benchmark de carga. O polling visível ainda
