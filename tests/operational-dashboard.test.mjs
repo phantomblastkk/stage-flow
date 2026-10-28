@@ -18,6 +18,7 @@ test("cancelled shows never appear as receipts or pending payments and missing a
 });
 test("greeting follows Brazil local time independently of the execution host",()=>{
  assert.equal(greeting(new Date("2026-10-28T02:00:00Z")),"Boa noite");
+ assert.equal(greeting(new Date("2026-10-28T05:00:00Z")),"Boa noite");
  assert.equal(greeting(new Date("2026-10-28T13:00:00Z")),"Bom dia");
  assert.equal(greeting(new Date("2026-10-28T18:00:00Z")),"Boa tarde");
 });

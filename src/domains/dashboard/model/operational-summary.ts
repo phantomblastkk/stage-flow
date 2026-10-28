@@ -15,5 +15,5 @@ export function operationalSummary(organized:Organized[],participations:Particip
 }
 export function greeting(now=new Date()) {
  const hour=Number(new Intl.DateTimeFormat("pt-BR",{hour:"numeric",hourCycle:"h23",timeZone:"America/Sao_Paulo"}).format(now));
- return hour<12?"Bom dia":hour<18?"Boa tarde":"Boa noite";
+ return hour<6||hour>=18?"Boa noite":hour<12?"Bom dia":"Boa tarde";
 }
