@@ -50,7 +50,21 @@ CSS global e outras rotas ainda têm consumidores legados: migração geral segu
   alvo mínimo de toque e contraste do aviso de erro nos estados exercitados.
 - Revisão React: sem novos efeitos ou dependências; refresh reutiliza o carregamento
   existente e trata falhas de atualização sem novas consultas paralelas.
-- CI e inspeção visual: registrar após a execução.
+- CI aprovado no commit integrado `ed1f19716735f5f6e96b820548a2d4459673a92d`:
+  [Integration and build](https://github.com/phantomblastkk/stage-flow/actions/runs/40736155572)
+  e [Operational UX](https://github.com/phantomblastkk/stage-flow/actions/runs/40736155745).
+- Dezoito cenários de navegador passaram, incluindo as três larguras da Parte 18.
+  [Evidências finais](https://github.com/phantomblastkk/stage-flow/actions/runs/40736155572/artifacts/12838025954).
+- Inspeção visual das telas de equipes e recorrentes em 360/1280 px realizada
+  nas [capturas da mesma implementação de UI](https://github.com/phantomblastkk/stage-flow/actions/runs/40735467887/artifacts/12837112501):
+  48 PNGs e log do servidor, com retenção de sete dias. Cabeçalhos, campos,
+  integrantes e ações permanecem dentro dos cards; elementos fixos aparecem
+  na posição da viewport nas capturas de páginas longas.
+- O teste de remoção de integrante usa o nome acessível completo do botão.
+  Também foi estabilizada a ativação de salvar casa no teste operacional de perfis:
+  foco explícito + Enter no botão submit, preservando validade do formulário e
+  assertivas de RPC/payload. Nenhum código de produção de perfis foi alterado.
+- [Diff completo](https://github.com/phantomblastkk/stage-flow/compare/0e7fbb9019b28ef4b24b09c9dbc06fc63ff3888d...ed1f19716735f5f6e96b820548a2d4459673a92d).
 
 Os cenários confirmam apresentação e integração com respostas simuladas. A idempotência,
 os limites e a autorização reais do banco continuam cobertos pelos contratos existentes;
