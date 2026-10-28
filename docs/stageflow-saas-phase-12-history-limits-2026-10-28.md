@@ -44,7 +44,10 @@ legados passa a estar acessível nesta etapa.
   verifica contagem DOM, ausência de consulta extra na expansão e reinício da
   janela ao trocar conversa. ID fora da lista limitada não consulta mensagens.
 - Os onze cenários anteriores foram mantidos.
-- CI final: registrar o resultado aprovado antes da entrega.
+- CI aprovado no commit `379cf3e0e5c7aa93f8e6ede9a5c9a5869eed7324`: contratos, TypeScript, build e doze cenários de navegador.
+- [Workflow aprovado](https://github.com/phantomblastkk/stage-flow/actions/runs/40628606945).
+- [Screenshots e log](https://github.com/phantomblastkk/stage-flow/actions/runs/40628606945/artifacts/12790322551), retenção de sete dias.
+- [Diff aplicado](https://github.com/phantomblastkk/stage-flow/compare/bc0ed0c62be0dd65bfbbc1f76c719c71d7bbace6...379cf3e0e5c7aa93f8e6ede9a5c9a5869eed7324).
 
 Somente fixtures sintéticas; sem contas reais ou benchmark. O custo de rede e
 banco das RPCs legadas não foi reduzido: a melhoria atual limita renderização e
