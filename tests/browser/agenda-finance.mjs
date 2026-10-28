@@ -583,7 +583,8 @@ try {
     assert.equal(await page.locator(".finance-event").count(), 0);
     const privateReads = [...state.reads].filter(([key]) => /:(profiles|stage_owner_admin_status|stage_venue_partner_access)$/.test(key));
     await page.goto(origin + "/marketplace");
-    await page.getByText("Em breve", { exact: true }).waitFor();
+    await page.getByText("NOVIDADE EM DESENVOLVIMENTO", { exact: true }).waitFor();
+    await page.getByRole("link", { name: /Preparar meu portfólio/ }).waitFor();
     assert.deepEqual([...state.reads].filter(([key]) => /:(profiles|stage_owner_admin_status|stage_venue_partner_access)$/.test(key)), privateReads,
       "public marketplace must not query private account data");
     assert.deepEqual(errors, [], "account scenario browser errors");
