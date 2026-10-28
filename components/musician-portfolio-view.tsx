@@ -6,7 +6,7 @@ import {
   CheckCircle2, Clock3, ExternalLink, Headphones, Instagram, MapPin, Mic2,
   Music2, Play, Share2, Sparkles, Wallet, Youtube, MessageCircle, CalendarCheck2
 } from "lucide-react";
-import "./musician-portfolio-polish.css";
+import "@/src/domains/artists/styles/musician-portfolio.css";
 import StageVerifiedBadge from "@/components/stage-verified-badge";
 import {distinctPublicBiography} from "@/lib/profile-presentation";
 import {publicInstagramProfile} from "@/lib/artist-social";

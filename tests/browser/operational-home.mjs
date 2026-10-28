@@ -97,6 +97,47 @@ try{
    await page.setViewportSize({width:360,height:900});
   }
   await page.goto(origin+"/meu-portfolio");await page.waitForURL(/\/perfil-artistico\?aba=instrumentista/);await page.getByRole("heading",{name:"Perfil Artístico",exact:true}).waitFor();
+  // Domain CSS must preserve dynamically composed theme/layout classes.
+  await page.locator(".mp-editor-workspace").waitFor();
+  const editorSteps=page.getByLabel("Etapas de edição do perfil");
+  if(mobile)await page.locator('.sf-editor-wizard[data-wizard-ready="true"]').waitFor();
+  const activate=async button=>{await button.focus();await button.press("Enter");};
+  for(const [theme,label,bg] of [["midnight","Midnight","#0a0d14"],["ivory","Ivory","#f7f4ec"],["stage","Stage","#0b0712"]]){
+   for(const [layout,layoutLabel] of [["spotlight","Destaque"],["minimal","Minimalista"]]){
+    if(mobile)await activate(editorSteps.getByRole("button",{name:/Visual e fotos/}));
+    const themeButton=page.locator(".mp-preset-list").getByRole("button",{name:new RegExp("^"+label)});
+    await activate(themeButton);
+    assert.equal(await themeButton.getAttribute("aria-pressed"),"true");
+    await activate(page.locator("#mp-aparencia").getByRole("button",{name:new RegExp("^"+layoutLabel)}));
+    if(mobile)await activate(editorSteps.getByRole("button",{name:/Contratação e publicação/}));
+    const preview=page.locator(".mp-editor-preview .mp-shell");
+    await preview.waitFor({state:"visible"});
+    assert.ok((await preview.getAttribute("class")).includes("mp-theme-"+theme));
+    assert.ok((await preview.getAttribute("class")).includes("mp-layout-"+layout));
+    const style=await preview.evaluate(el=>({bg:getComputedStyle(el).getPropertyValue("--mp-bg").trim(),
+     display:getComputedStyle(el.querySelector(".mp-identity")).display,
+     overflow:el.scrollWidth-el.clientWidth}));
+    assert.equal(style.bg,bg,"Theme variables must survive CSS extraction");
+    assert.equal(style.display,"flex");
+    assert.ok(style.overflow<=2,"Portfolio preview overflows: "+JSON.stringify(style));
+    assert.ok(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth+2),"Editor overflows at "+width);
+    await preview.screenshot({path:`test-results/operational-portfolio-${theme}-${layout}-${width}.png`});
+   }
+  }
+  const openPreview=page.getByRole("button",{name:"Abrir tela cheia",exact:true});
+  await activate(openPreview);
+  const previewDialog=page.getByRole("dialog",{name:"Prévia ampliada do portfólio"});
+  await previewDialog.waitFor();
+  const full=previewDialog.locator(".mp-shell");
+  assert.ok((await full.getAttribute("class")).includes("mp-layout-minimal"));
+  assert.equal(await full.locator(".mp-avatar").evaluate(el=>getComputedStyle(el).borderRadius),"50%");
+  assert.ok(await previewDialog.evaluate(el=>el.scrollWidth<=el.clientWidth+2),"Full preview overflows at "+width);
+  await previewDialog.screenshot({path:`test-results/operational-portfolio-full-${width}.png`});
+  await page.keyboard.press("Escape");
+  await previewDialog.waitFor({state:"hidden"});
+  assert.equal(await openPreview.evaluate(el=>el===document.activeElement),true,"Closing preview restores focus");
+  assert.equal(writes.length,0,"Preview changes must not save or publish profiles");
+  console.log(`PASS portfolio ${width}px: three themes, two layouts, expanded preview and no publication`);
   if(width===360){
    const wizard=page.getByLabel("Etapas de edição do perfil");
    await page.locator('.sf-editor-wizard[data-wizard-ready="true"]').waitFor();

@@ -74,7 +74,7 @@ test("musician offers direct bookable contact and inline consent-gated Youtube p
  assert.match(musician,/MEU INSTRUMENTO PRINCIPAL/);
  assert.match(musician,/instagram\.handle/);
  assert.match(src("components/public-singer-site.tsx"),/p_kind:musicianSlug\?"musician":"singer"/);
- assert.match(src("components/musician-portfolio-polish.css"),/object-position:center 22%/);
+ assert.match(src("src/domains/artists/styles/musician-portfolio.css"),/object-position:center 22%/);
 });
 
 test("free musician editor expanded limits are validated by the database, not just React",()=>{

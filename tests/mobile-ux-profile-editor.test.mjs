@@ -17,12 +17,12 @@ test("musician editor uses in-page sections without creating a second identity o
  assert.ok(edit.includes('formId="musician-portfolio-form"'));
  assert.ok(edit.includes('unifiedSinger?"Publicar informações de músico"'));
  assert.ok(edit.includes('!unifiedSinger&&'));
- assert.ok(get("app/meu-portfolio/musician-portfolio-editor.css").includes("scroll-margin-top:90px"));
+ assert.ok(get("src/domains/artists/styles/musician-portfolio-editor.css").includes("scroll-margin-top:90px"));
 });
 
 test("the actual mobile wizard hides inactive sections only on small screens",()=>{
  const singerCss=get("app/meu-perfil-artistico/singer-unified-editor.css");
- const musicianCss=get("app/meu-portfolio/musician-portfolio-editor.css");
+ const musicianCss=get("src/domains/artists/styles/musician-portfolio-editor.css");
  assert.ok(singerCss.includes('.artist-wizard-mode [data-editor-step]{display:none!important}'));
  assert.ok(singerCss.includes('.artist-wizard-mode[data-editor-active="3"] .artist-wizard-extras'));
  assert.ok(musicianCss.includes('.mp-editor-workspace [data-editor-step]{display:none!important}'));

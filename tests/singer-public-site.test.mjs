@@ -117,8 +117,8 @@ test("singer has one editing workspace for free identity and Pro features",()=>{
 test("musician showcase has calm colors, safe previews, and a real full-screen editor",()=>{
  const view=source("components/musician-portfolio-view.tsx");
  const musicianEditor=source("components/instrumentalist-profile-editor.tsx");
- const musicianCss=source("components/musician-portfolio-polish.css");
- const editorCss=source("app/meu-portfolio/musician-portfolio-editor.css");
+ const musicianCss=source("src/domains/artists/styles/musician-portfolio.css");
+ const editorCss=source("src/domains/artists/styles/musician-portfolio-editor.css");
  const singerCss=source("app/meu-perfil-artistico/site-profissional/premium-preview.css");
  assert.doesNotMatch(view,/#c6f36b|label: "Lima"/);
  assert.doesNotMatch(musicianCss,/#c6f36b|#b2e65f/);
@@ -192,7 +192,7 @@ test("singer headline is written once in the autograph area, not repeated in the
 
 test("musician bio is distinct from its featured headline",()=>{
  const musician=source("components/musician-portfolio-view.tsx");
- const musicianCss=source("components/musician-portfolio-polish.css");
+ const musicianCss=source("src/domains/artists/styles/musician-portfolio.css");
  assert.match(musician,/distinctPublicBiography\(portfolio\.headline,portfolio\.bio\)/);
  assert.match(musician,/mp-description">\{biography \|\|/);
  assert.match(musicianCss,/scroll-snap-type:x proximity/);

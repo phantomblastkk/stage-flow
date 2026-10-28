@@ -14,7 +14,7 @@ import MusicianPortfolioView, {
   MusicianPortfolio, MusicianLayout,
   musicianThemes, musicianAccents
 } from "@/components/musician-portfolio-view";
-import "@/app/meu-portfolio/musician-portfolio-editor.css";
+import "@/src/domains/artists/styles/musician-portfolio-editor.css";
 import MarketplaceMusicianSettings from "@/components/marketplace-musician-settings";
 import BookingContactSettings from "@/components/booking-contact-settings";
 import MobileEditorWizard from "@/components/mobile-editor-wizard";

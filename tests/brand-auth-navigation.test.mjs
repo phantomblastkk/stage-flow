@@ -34,7 +34,7 @@ test("login page does not ask for password when a user already has a valid sessi
 test("legacy lemon accent colors are replaced in key Stage Flow experiences",()=>{
   const files=[
     "app/meu-desempenho/performance.css",
-    "app/meu-portfolio/musician-portfolio-editor.css",
+    "src/domains/artists/styles/musician-portfolio-editor.css",
     "components/marketplace-catalog.css",
     "app/marketplace/coming-soon.css",
     "components/marketplace-musician-settings.css",
