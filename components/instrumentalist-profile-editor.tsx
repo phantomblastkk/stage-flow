@@ -17,6 +17,7 @@ import MusicianPortfolioView, {
 import "@/app/meu-portfolio/musician-portfolio-editor.css";
 import MarketplaceMusicianSettings from "@/components/marketplace-musician-settings";
 import BookingContactSettings from "@/components/booking-contact-settings";
+import MobileEditorWizard from "@/components/mobile-editor-wizard";
 
 type EditorPortfolio = MusicianPortfolio & { is_published: boolean };
 
@@ -64,6 +65,7 @@ function slugify(value: string) {
 export default function MeuPortfolioDeMusico({unifiedSinger=false,username=null}:{unifiedSinger?:boolean;username?:string|null}) {
   const router = useRouter();
   const [portfolio, setPortfolio] = useState<EditorPortfolio>(blank);
+  const [mobileStep,setMobileStep]=useState(unifiedSinger?1:0);
   const [instrumentsText, setInstrumentsText] = useState("");
   const [genresText, setGenresText] = useState("");
   const [performancesText, setPerformancesText] = useState("");
@@ -350,7 +352,7 @@ export default function MeuPortfolioDeMusico({unifiedSinger=false,username=null}
     <p style={{ color: "var(--muted)" }}><LoaderCircle size={17} style={{ display: "inline", verticalAlign: "middle" }}/> Carregando personalização...</p>
   </main>;
 
-  return <main><div className="container" style={{ paddingBottom: 60 }}>
+  return <main className="mp-editor-workspace" data-editor-active={mobileStep}><div className="container" style={{ paddingBottom: 60 }}>
     <nav className="nav">
       <Link className="brand" href="/"><span className="brand-mark">S</span> stage flow</Link>
       <Link className="btn btn-quiet" href="/painel"><ArrowLeft size={15}/> Voltar</Link>
@@ -371,7 +373,7 @@ export default function MeuPortfolioDeMusico({unifiedSinger=false,username=null}
       {status}
     </div>}
 
-    <section className="mp-reach-link" aria-label="Painel de desempenho do músico">
+    <section className="mp-reach-link" data-editor-step="4" aria-label="Painel de desempenho do músico">
       <div>
         <span className="mp-reach-eyebrow"><ChartNoAxesCombined size={16}/> SEU ALCANCE</span>
         <h2>Veja quem seu trabalho está alcançando.</h2>
@@ -382,27 +384,25 @@ export default function MeuPortfolioDeMusico({unifiedSinger=false,username=null}
       </Link>
     </section>
 
-    <MarketplaceMusicianSettings portfolioPublished={portfolio.is_published}/>
+    <div data-editor-step="4" className="mp-marketplace-wizard-setting"><MarketplaceMusicianSettings portfolioPublished={portfolio.is_published}/></div>
     {unifiedSinger&&<section className="mp-editor-panel" role="note" style={{marginBottom:17}}>
       <h2>Seu perfil público é único</h2>
       <p>Foto, apresentação, cidade e redes sociais são editadas em Dados do perfil único. Aqui você acrescenta instrumentos, formatos de apresentação, valores de referência e disponibilidade para o Marketplace.</p>
       <Link href="/perfil-artistico?aba=dados">Editar meus dados principais</Link>
     </section>}
 
-    <div className="mp-editor-mobile-toolbar">
-      <nav className="mp-editor-steps" aria-label="Ir para etapa da edição musical">
-        {!unifiedSinger&&<><a href="#mp-aparencia">Visual</a><a href="#mp-fotos">Fotos</a></>}
-        <a href="#mp-instrumentos">Instrumentos</a><a href="#mp-trajetoria">Trajetória</a>
-        <a href="#mp-midias">Mídia</a><a href="#mp-cache">Cachê</a><a href="#mp-publicacao">Publicar</a>
-      </nav>
-      <button type="submit" form="musician-portfolio-form" disabled={saving||Boolean(uploading)}
-        className="btn btn-primary">{saving?"Salvando…":"Salvar"}</button>
-    </div>
+    <MobileEditorWizard
+      steps={[...(!unifiedSinger?[{value:0,label:"Visual e fotos"}]:[]),
+        {value:1,label:"Instrumentos"},{value:2,label:"Experiência"},
+        {value:3,label:"Mídias"},{value:4,label:"Contratação e publicação"}]}
+      active={mobileStep} onChange={setMobileStep}
+      formId="musician-portfolio-form" disabled={saving||Boolean(uploading)}
+    />
     <div className={"mp-editor-columns"+(unifiedSinger?" mp-unified-singer":"")}>
 
       <div>
         <form id="musician-portfolio-form" onSubmit={save} style={{ display: "grid", gap: 17 }}>
-          <section id="mp-aparencia" className="mp-editor-panel">
+          <section id="mp-aparencia" data-editor-step="0" className="mp-editor-panel">
             <h2><Palette size={18} style={{ verticalAlign: "middle", marginRight: 7 }}/> Aparência da página</h2>
             <p>Escolha um visual que combine com sua música. Não precisa programar.</p>
 
@@ -454,7 +454,7 @@ export default function MeuPortfolioDeMusico({unifiedSinger=false,username=null}
             </div>
           </section>
 
-          <section id="mp-fotos" className="mp-editor-panel">
+          <section id="mp-fotos" data-editor-step="0" className="mp-editor-panel">
             <h2><ImagePlus size={18} style={{ verticalAlign: "middle", marginRight: 7 }}/> Suas fotos</h2>
             <p>Envie JPG, PNG ou WebP de até 5 MB, diretamente do celular ou computador.</p>
             <div className="field">
@@ -486,14 +486,14 @@ export default function MeuPortfolioDeMusico({unifiedSinger=false,username=null}
             </div>
           </section>
 
-          <section id="mp-instrumentos" className="mp-editor-panel">
+          <section id="mp-instrumentos" data-editor-step="1" className="mp-editor-panel">
             <h2><SlidersHorizontal size={18} style={{ verticalAlign: "middle", marginRight: 7 }}/> Informações profissionais</h2>
             <p>Seu nome exibido é <strong style={{ color: "var(--text)" }}>{portfolio.name}</strong>, definido na sua conta.</p>
             <div className="field">
               <label htmlFor="portfolio-slug">Endereço da página *</label>
               <input id="portfolio-slug" value={portfolio.slug}
                 onChange={e => update("slug", e.target.value.toLowerCase().replace(/[^a-z0-9-]/g,""))}
-                minLength={3} maxLength={30} pattern="[a-z0-9-]{3,30}" placeholder="joao-cavaquinho" required/>
+                minLength={3} maxLength={30} pattern="[a-z0-9-]{3,30}" placeholder="joao-cavaquinho" required={!unifiedSinger}/>
               <span className="field-help">Seu endereço público será <strong>/musico/{portfolio.slug || "seu-nome"}</strong> no domínio do StageFlow.</span>
             </div>
             <div className="field">
@@ -538,7 +538,7 @@ export default function MeuPortfolioDeMusico({unifiedSinger=false,username=null}
             </div>
           </section>
 
-          <section id="mp-trajetoria" className="mp-editor-panel">
+          <section id="mp-trajetoria" data-editor-step="2" className="mp-editor-panel">
             <h2><BriefcaseBusiness size={18} style={{ verticalAlign: "middle", marginRight: 7 }}/> Experiência e trajetória</h2>
             <p>Mostre ao contratante onde você atua e as experiências que fazem parte da sua carreira.</p>
             <div className="field">
@@ -573,7 +573,7 @@ export default function MeuPortfolioDeMusico({unifiedSinger=false,username=null}
             </div>
           </section>
 
-          <section id="mp-midias" className="mp-editor-panel">
+          <section id="mp-midias" data-editor-step="3" className="mp-editor-panel">
             <h2><Youtube size={18} style={{ verticalAlign: "middle", marginRight: 7 }}/> Vídeos e redes sociais</h2>
             <p>Seu portfólio gratuito pode mostrar até 5 vídeos e apresentações, com reprodução incorporada ao clicar no vídeo do YouTube. Não precisa fazer upload.</p>
             <div className="field">
@@ -605,10 +605,10 @@ export default function MeuPortfolioDeMusico({unifiedSinger=false,username=null}
             </div>
           </section>
 
-          <BookingContactSettings kind="musician"
-            instagramConfigured={Boolean(portfolio.instagram_url)}/>
+          <div data-editor-step="4"><BookingContactSettings kind="musician"
+            instagramConfigured={Boolean(portfolio.instagram_url)}/></div>
 
-          <section id="mp-cache" className="mp-editor-panel">
+          <section id="mp-cache" data-editor-step="4" className="mp-editor-panel">
             <h2>Seu cachê público</h2>
             <p>O valor mostrado aqui é apenas uma referência. A negociação de cada show continua privada.</p>
             <div className="mp-layout-options" style={{ marginTop: 13, marginBottom: 15 }}>
@@ -629,7 +629,7 @@ export default function MeuPortfolioDeMusico({unifiedSinger=false,username=null}
             </div>}
           </section>
 
-          <section id="mp-publicacao" className="mp-editor-panel">
+          <section id="mp-publicacao" data-editor-step="4" className="mp-editor-panel">
             <h2>Publicação e privacidade</h2>
             <p>O perfil só aparece para outras pessoas depois que você escolher publicar e salvar.</p>
             <label style={{ display: "flex", alignItems: "flex-start", gap: 12, cursor: "pointer", padding: "12px 0" }}>
@@ -656,7 +656,7 @@ export default function MeuPortfolioDeMusico({unifiedSinger=false,username=null}
           </section>
         </form>
 
-        {savedSlug && <section className="mp-editor-panel" style={{ marginTop: 17 }}>
+        {savedSlug && <section className="mp-editor-panel" data-editor-step="4" style={{ marginTop: 17 }}>
           <h2>{savedPublished ? "Sua página está publicada" : "Seu rascunho foi salvo"}</h2>
           <p>{savedPublished ? "Compartilhe o link do seu portfólio com contratantes." : "Ative a publicação e salve para liberar seu link."}</p>
           {savedPublished && <div style={{ display: "flex", flexWrap: "wrap", gap: 9, marginTop: 15 }}>
@@ -669,7 +669,7 @@ export default function MeuPortfolioDeMusico({unifiedSinger=false,username=null}
         </section>}
       </div>
 
-      <aside className="mp-editor-preview">
+      <aside className="mp-editor-preview" data-editor-step="4">
         <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 10, marginBottom: 12 }}>
           <div className="mp-editor-title" style={{ margin: 0 }}><Sparkles size={17} color="#C0A7FF"/> Prévia das informações</div>
           <button type="button" ref={openPreviewRef} className="btn btn-quiet" disabled={unifiedSinger} style={{ padding: "8px 11px", fontSize: 12 }}
