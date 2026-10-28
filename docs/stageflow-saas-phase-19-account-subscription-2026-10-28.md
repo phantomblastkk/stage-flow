@@ -14,6 +14,7 @@ Sem deploy, migrations, alterações em contas reais, pagamentos ou autorizaçã
 | Texto mencionava dois perfis independentes | Inconsistência com o Perfil Artístico único | Textos de visão geral e confirmação alinhados à conta e ao perfil únicos |
 | Revelar senha e fechar confirmação tinham alvos pequenos | Dificuldade por toque e teclado | Alvos de 44 px; composição da senha e input com ref mantidos |
 | CTA público dizia assinar apesar de não haver checkout | Expectativa comercial incorreta | Consultar acesso Pro, mantendo destino /assinatura e indisponibilidade comercial |
+| Link direto para uma aba podia deixá-la fora da barra horizontal no celular | Seção ativa não ficava visível na navegação | Rolagem horizontal da barra para revelar aria-current, sem rolar a página |
 
 ## Preservado
 
@@ -58,9 +59,21 @@ continua parcial. Não há medição de ganho de latência ou redução equivale
 - Pro com erro, recuperação sem direito, acesso autorizado e comparação pública
   sem nova consulta privada de direito. Nenhuma chamada a endpoint de cobrança.
 - Overflow, contraste do erro e alvo do botão de senha nos estados exercitados.
-- Revisão React: sem novas dependências ou efeitos adicionais; recuperação reutiliza
-  consultas existentes. Sem mudanças de autorização, SQL ou políticas RLS.
-- CI e inspeção visual: registrar após a execução.
+- Revisão React: sem novas dependências; recuperação reutiliza consultas existentes.
+  Um efeito local sincroniza a rolagem horizontal da navegação com a aba ativa e o
+  fim do carregamento, sem novos listeners ou consultas. Sem mudanças de autorização, SQL ou RLS.
+- CI aprovado no commit `65ca4f7d88ba407ccf00fd88ef39efd3ae2519ab`:
+  [Integration and build](https://github.com/phantomblastkk/stage-flow/actions/runs/40739396086)
+  e [Operational UX](https://github.com/phantomblastkk/stage-flow/actions/runs/40739396084).
+- Os vinte e um cenários de navegador passaram. [Evidências com 63 PNGs e log do servidor](https://github.com/phantomblastkk/stage-flow/actions/runs/40739396086/artifacts/12838762398),
+  com retenção de sete dias.
+- Inspeção visual: dados pessoais, segurança e confirmação em 360 px; planos em
+  360 px; segurança e assinatura em 1280 px. A aba ativa fica visível na barra
+  horizontal, sem comprimir os controles. Navegação fixa aparece na posição da
+  viewport nas capturas de páginas longas.
+- O teste do alerta de acesso está limitado ao painel de assinatura para não
+  confundir o aviso real com o anunciador de navegação do Next.js.
+- [Diff completo](https://github.com/phantomblastkk/stage-flow/compare/0b858b8a009ae213178231de5bb73337e071a7b7...65ca4f7d88ba407ccf00fd88ef39efd3ae2519ab).
 
 A verificação é de integração com respostas simuladas; não altera Auth, identidade
 ou acesso Pro no Supabase real e não certifica entrega real de e-mails.
