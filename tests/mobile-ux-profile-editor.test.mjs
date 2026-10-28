@@ -28,3 +28,14 @@ test("the actual mobile wizard hides inactive sections only on small screens",()
  assert.ok(musicianCss.includes('.mp-editor-workspace [data-editor-step]{display:none!important}'));
  assert.ok(musicianCss.includes('.mp-editor-workspace[data-editor-active="4"] [data-editor-step="4"]'));
 });
+
+test("fast mobile edits never reset the previously selected group or venue kind",()=>{
+ const profiles=get("app/perfis/page.tsx");
+ assert.ok(profiles.includes("setForm(previous=>({...previous,[key]:value}))"));
+ assert.ok(profiles.includes('setForm(previous=>({...previous,kind,musical_type:kind==="group"?"Grupo de Pagode":"Cantor"}))'));
+ assert.ok(!profiles.includes("onChange={e=>setForm({...form,"));
+ for(const field of ["name","city","bio","members","musical_type","producerConsent","is_public"])
+  assert.ok(profiles.includes('updateForm("'+field+'",e.currentTarget.'),"missing "+field);
+ assert.ok(profiles.includes('"stage_save_performance_profile"'));
+ assert.ok(profiles.includes('data?.status==="producer_required"'));
+});
