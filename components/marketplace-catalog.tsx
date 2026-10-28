@@ -745,7 +745,7 @@ export default function MarketplaceCatalog({preview=false}:Props) {
             href={"/conversas?musico="+encodeURIComponent(selected.musician_id)+
               (applied.date?"&data="+encodeURIComponent(applied.date):"")+
               (selectedEvent?"&evento="+encodeURIComponent(selectedEvent):"")}>
-            <MessageCircle size={16}/> Conversar e consultar disponibilidade
+            <MessageCircle size={16}/> Iniciar chat privado · Consultar disponibilidade
           </Link>}
           <p className="fine" style={{marginTop:10}}>
             Fale no chat antes de convidar. Seu WhatsApp pessoal permanece privado.

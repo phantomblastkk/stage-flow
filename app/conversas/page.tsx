@@ -71,6 +71,14 @@ export default function HiringConversations(){
   setSettings(next);setConsent(Boolean(next.opted_in));setPhone(next.phone||"");
  },[]);
  useEffect(()=>{
+  if(account.status==="loading")return;
+  if(account.status==="signed_out"){router.replace("/login");return;}
+  if(account.status==="error"){
+    setError("Não foi possível validar sua sessão. Atualize a página para tentar novamente.");
+    setLoading(false);return;
+  }
+  // Um link do Marketplace so abre o chat depois que o perfil autenticado estiver pronto.
+  if(account.status!=="ready"||!accountId)return;
   let active=true;
   async function firstLoad(){
    try{
@@ -97,7 +105,7 @@ export default function HiringConversations(){
   }
   void firstLoad();
   return()=>{active=false};
- },[accountId,loadThreads,selectThread]);
+ },[accountId,account.status,router,loadThreads,selectThread]);
 
  useEffect(()=>{
   void loadPrefs().catch(()=>{if(alive.current)setPrefsError("Não foi possível carregar as preferências de WhatsApp.");});
@@ -195,7 +203,7 @@ export default function HiringConversations(){
        </span>{thread.unread>0&&<Badge tone="warning">{thread.unread}</Badge>}
       </button>)}
       {hiddenThreads>0&&<Button variant="ghost" onClick={()=>setVisibleThreads(n=>n+THREAD_RENDER_STEP)}>Mostrar mais conversas recebidas ({hiddenThreads})</Button>}
-      {!threads.length&&!error&&<p className="hiring-empty">Nenhuma conversa por enquanto. Abra um perfil no marketplace de testes para consultar a disponibilidade do músico.</p>}
+      {!threads.length&&!error&&<p className="hiring-empty">Nenhuma conversa por enquanto. Explore o Marketplace e abra um músico para iniciar uma conversa privada.</p>}
      </aside>
      <section className="hiring-main" aria-label="Mensagens da conversa">
       {active?<><div className="hiring-chat-header">
@@ -238,7 +246,7 @@ export default function HiringConversations(){
       </form></>:<div className="hiring-start-prompt">
        <MessageCircle size={30}/>
        <h2>Selecione uma conversa</h2><p>Escolha uma conversa à esquerda para ver as mensagens e responder.</p>
-       <Link href="/marketplace/preview" className="sf-ui-button sf-ui-button-ghost">Marketplace de testes</Link>
+       <Link href="/marketplace" className="sf-ui-button sf-ui-button-ghost">Explorar músicos</Link>
       </div>}
      </section>
     </div>}
