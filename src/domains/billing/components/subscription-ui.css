@@ -1,0 +1,35 @@
+.plans-spacing{padding-bottom:80px}
+.plans-nav{padding-top:22px}
+.plans-hero{max-width:850px;margin:65px auto 30px;text-align:center}
+.plans-title{font-size:clamp(32px,5vw,52px);margin:16px 0}
+.plans-comparison{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,310px),1fr));gap:20px;max-width:980px;margin:0 auto}
+.plans-card{padding:28px}
+.plans-card-title{margin:16px 0 8px}
+.plans-free-price{font-size:25px;font-weight:800;margin:0 0 18px}
+.plans-features{list-style:none;padding:0;display:grid;gap:12px;margin:22px 0}
+.plans-feature{display:flex;align-items:flex-start;gap:9px}
+.plans-icon{flex-shrink:0;color:var(--sf-ui-brand)}
+.plans-action{width:100%;justify-content:center}
+.plans-pro-card{padding:28px;border-color:var(--sf-ui-brand)}
+.plans-inline-icon{display:inline;vertical-align:middle}
+.plans-pro-price{font-size:20px;font-weight:750;margin:0 0 18px}
+.plans-hint{font-size:12px;margin-top:15px}
+.plans-footer{max-width:980px;margin:24px auto;padding:22px}
+.plans-footer-content{display:flex;gap:9px;align-items:center;margin:0}
+
+/* Public plans stay server-rendered. Access reads use the same visual primitives. */
+.subscription-page{max-width:800px;padding-bottom:80px;color:var(--sf-ui-text)}
+.subscription-card{margin:55px auto;padding:clamp(22px,5vw,48px)}
+.subscription-title{margin:18px 0}
+.subscription-stack{display:grid;gap:18px;min-width:0}
+.subscription-stack>p{color:var(--sf-ui-muted);font-size:var(--sf-ui-text-md);line-height:1.7;margin:0}
+.subscription-stack>.sf-ui-button{justify-self:start;max-width:100%;white-space:normal}
+.subscription-footnote{display:flex;gap:9px;align-items:flex-start;margin-top:6px}
+.subscription-page svg,.plans-page svg{flex-shrink:0}
+.subscription-page .nav,.plans-page .nav{height:auto;min-height:64px;gap:8px;flex-wrap:wrap;padding-block:10px}
+.plans-page{color:var(--sf-ui-text)}
+.plans-page .sf-ui-card{min-width:0}
+.plans-features{font-size:var(--sf-ui-text-sm);line-height:1.7;color:var(--sf-ui-muted)}
+.plans-page .sf-ui-button{max-width:100%;white-space:normal}
+.plans-footer-content{flex-wrap:wrap;font-size:var(--sf-ui-text-sm);line-height:1.7}
+@media(max-width:600px){.subscription-card{margin:24px auto;padding:22px 16px}.subscription-title{font-size:32px}.subscription-stack>.sf-ui-button{width:100%}.plans-hero{margin:30px auto 24px}.plans-card,.plans-pro-card{padding:20px 16px}.plans-footer{padding:18px 16px}}

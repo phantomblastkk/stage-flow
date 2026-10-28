@@ -58,7 +58,7 @@ async function setup(width) {
   const context = await browser.newContext({ viewport: { width, height: 900 }, timezoneId: "America/Sao_Paulo" });
   await context.addCookies([{ name: "sb-example-auth-token", value: "base64-" + encoded(session), url: origin, sameSite: "Lax" }]);
   const state = { events: [...initialEvents(), ...moreEvents(), { ...initialEvents()[1], id: "77777777-7777-4777-8777-777777777777", title: "Show de dezembro", starts_at: "2026-12-02T23:00:00Z" }], accepted: false, failAgenda: false, failFinance: false, invalidFinance: false, writes: [],
-    savedTeamsEnabled:false, savedTeams:[{id:threadA,name:"Banda de teste",notes:"Formação privada",created_at:"2026-11-01T12:00:00Z"}], savedMembers:{[threadA]:[{member_id:invitationId,musician_id:otherUserId,musician_name:"Contato profissional",instrument:"Violão"}]}, savedWrites:[], recurringSeries:[], recurringWrites:[], recurringFail:false, recurringInvalid:false, detailedSummary:false, detailedInvites:false, failSentDetails:false, lineupClosed:false, lineupWrites:[], lineupSlots:[{id:threadA,label:"Bateria",invitation_id:invitationId,musician_id:otherUserId,musician_name:"Músico confirmado",invitation_status:"accepted",history:[]},{id:threadB,label:"Baixo",invitation_id:null,musician_id:null,musician_name:null,invitation_status:null,history:[]}], editorWrites:[], editorExpenses:[], teamWrites:[], bulkHistory:false, reads: new Map(), adminA: false, financeDelay: null, delayedFinanceStarted: 0, delayedFinanceCompleted: 0,
+    accountReadFail:false, accountWrites:[], authWrites:[], proReadFail:false, proEntitled:false, billingCalls:[], accountIdentity:{display_name:"Conta de teste",username:"conta-teste",is_singer:true,is_musician:false,is_producer:true,artist_kind:"lead",is_public:false,name_changed_at:"2026-10-15T12:00:00Z",username_changed_at:null,musician_slug:"conta-teste",musician_published:false}, savedTeamsEnabled:false, savedTeams:[{id:threadA,name:"Banda de teste",notes:"Formação privada",created_at:"2026-11-01T12:00:00Z"}], savedMembers:{[threadA]:[{member_id:invitationId,musician_id:otherUserId,musician_name:"Contato profissional",instrument:"Violão"}]}, savedWrites:[], recurringSeries:[], recurringWrites:[], recurringFail:false, recurringInvalid:false, detailedSummary:false, detailedInvites:false, failSentDetails:false, lineupClosed:false, lineupWrites:[], lineupSlots:[{id:threadA,label:"Bateria",invitation_id:invitationId,musician_id:otherUserId,musician_name:"Músico confirmado",invitation_status:"accepted",history:[]},{id:threadB,label:"Baixo",invitation_id:null,musician_id:null,musician_name:null,invitation_status:null,history:[]}], editorWrites:[], editorExpenses:[], teamWrites:[], bulkHistory:false, reads: new Map(), adminA: false, financeDelay: null, delayedFinanceStarted: 0, delayedFinanceCompleted: 0,
     messageDelay: null, delayedMessagesStarted: 0, delayedMessagesCompleted: 0, failMessageId: null, failInvites: false, feeEnabled:false, feeAgreed:null, feeAmount:400, feeByMe:false, feeReadFail:false, feeOffers:[],
     failChatPreferences: false, showProposal: false, proposalReadFail:false, proposalDelay:null, proposalStarted:0, proposalCompleted:0, asRequester:false, prefillDelay:null, prefillStarted:0, prefillCompleted:0, scheduleDelay:null, scheduleCalls:[], sendResult:"schedule_conflict", proposalWrites:[], submittedProposal:null, proposalWithdrawn:false, proposalAccepted: false, guestStartsAt: guest.starts_at, sent: [],
     messages: Object.fromEntries([[threadA,"Mensagem privada A"],[threadB,"Mensagem privada B"]].map(([id,text])=>[id,[{id,body:text,is_mine:false,created_at:"2026-11-01T15:00:00Z"}]])) };
@@ -74,6 +74,7 @@ async function setup(width) {
     state.reads.set(readKey, (state.reads.get(readKey) ?? 0) + 1);
     if (url.pathname === "/auth/v1/user") {
       assert.ok(actor === userId || actor === otherUserId, "Auth must carry a synthetic user token");
+      if(request.method()==="PUT")state.authWrites.push(body);
       result = sessionFor(actor).user;
     } else if (url.pathname.endsWith("/profiles")) {
       assert.equal(url.searchParams.get("id"), "eq." + actor, "profile read must match the authenticated account");
@@ -149,6 +150,10 @@ async function setup(width) {
       await delay(body.p_event_id === firstId ? 350 : 20);
       result = { status: "ok", items: [{ invitation_id: invitationId, musician_name: body.p_event_id === firstId ? "Equipe A" : "Equipe B", fee: 400, paid_amount: 0 }] };
     } else if (rpc === "stage_my_event_budget") result = { event_id: body.p_event_id, client_fee: 3000, received_amount: 1500, to_receive: 1500, expenses_total: 100, expenses_paid_total: 50, expenses_unpaid_total: 50, expenses: state.editorExpenses, musician_agreed_total: 800, musician_unpriced_count: 0, projected_partial_result: 2100 };
+    else if(rpc === "stage_my_account_identity") {if(state.accountReadFail){status=503;result={message:"Synthetic account read failure"};}else result=state.accountIdentity;}
+    else if(rpc === "stage_update_account_identity") {state.accountWrites.push(body);assert.equal(body.p_display_name,"Conta de teste");state.accountIdentity.username=body.p_username;state.accountIdentity.username_changed_at="2026-11-01T15:00:00Z";result="saved";}
+    else if(rpc === "stage_account_enable_role") {state.accountWrites.push(body);assert.equal(body.p_role,"musician");state.accountIdentity.is_musician=true;result="enabled";}
+    else if(rpc === "stage_my_pro_site_publication") {if(state.proReadFail){status=503;result={message:"Synthetic access read failure"};}else result={entitled:state.proEntitled,published:false};}
     else if (rpc === "stage_my_teams") result=state.savedTeamsEnabled?state.savedTeams.map(t=>({...t,member_count:(state.savedMembers[t.id]??[]).length})):[{id:threadA,name:"Banda de teste",member_count:1}];
     else if (rpc === "stage_team_members_for_owner") result=state.savedTeamsEnabled?(state.savedMembers[body.p_team_id]??[]):[{member_id:threadB,musician_id:otherUserId,musician_name:"Músico da formação",instrument:"Violão"}];
     else if(rpc === "stage_create_team") {
@@ -482,6 +487,59 @@ try {
       await page.screenshot({ path: `test-results/failure-${width}.png`, fullPage: true }).catch(() => {});
       throw error;
     } finally { await context.close(); }
+  }
+  // Part 19: account controls and Pro access, with Auth and billing fully mocked.
+  for(const width of [360,768,1280]){
+    const {context,page,state,errors}=await setup(width);
+    await context.route(origin+"/api/**",async route=>{state.billingCalls.push(route.request().url());await route.abort();});
+    async function activate(button){await button.waitFor({state:"visible"});for(let i=0;i<200&&!(await button.isEnabled());i++)await delay(25);assert.equal(await button.isEnabled(),true);await button.focus();await button.press("Enter");}
+    async function tab(label){await activate(page.getByRole("button",{name:new RegExp("^"+label)}));}
+    try{
+      state.accountReadFail=true;await page.goto(origin+"/minha-conta?aba=dados");
+      await page.getByText("Conta indisponível",{exact:true}).waitFor();
+      state.accountReadFail=false;await activate(page.getByRole("button",{name:"Tentar novamente",exact:true}));
+      const publicName=page.getByLabel("Nome público",{exact:true});await publicName.waitFor();
+      assert.equal(await publicName.isDisabled(),true,"name cooldown must remain active");
+      const username=page.getByLabel("@ do cantor",{exact:true});assert.equal(await username.isDisabled(),false,"username has an independent cooldown");
+      await username.fill("novo-artista");await activate(page.getByRole("button",{name:"Salvar alterações",exact:true}));
+      await page.getByRole("status").filter({hasText:"Alterações salvas!"}).waitFor();assert.equal(state.accountWrites.length,1);assert.equal(state.accountWrites[0].p_username,"novo-artista");assert.equal(await username.isDisabled(),true);
+      await noHorizontalOverflow(page,"account identity "+width);await page.screenshot({path:`test-results/account-settings-${width}.png`,fullPage:true});
+      await tab("E-mail e segurança");
+      const password=page.getByLabel("Nova senha",{exact:true}),repeat=page.getByLabel("Confirmar nova senha",{exact:true});
+      await password.fill("Fixture-only-pass-123");await repeat.fill("Different-fixture-123");
+      assert.equal(await page.getByRole("button",{name:"Atualizar senha",exact:true}).isDisabled(),true);assert.equal(state.authWrites.length,0);
+      await activate(page.getByRole("button",{name:"Mostrar senha",exact:true}));assert.equal(await password.getAttribute("type"),"text");assert.equal(await repeat.getAttribute("type"),"text");
+      assert.ok(await page.getByRole("button",{name:"Ocultar senha",exact:true}).evaluate(n=>n.getBoundingClientRect().height)>=44);
+      await repeat.fill("Fixture-only-pass-123");await activate(page.getByRole("button",{name:"Atualizar senha",exact:true}));
+      await page.getByRole("status").filter({hasText:"Senha atualizada."}).waitFor();assert.equal(state.authWrites.length,1);assert.equal(await password.inputValue(),"");assert.equal(await repeat.inputValue(),"");
+      await page.getByLabel("Novo e-mail de acesso",{exact:true}).fill("novo@example.test");await activate(page.getByRole("button",{name:"Solicitar mudança de e-mail",exact:true}));
+      await page.getByRole("status").filter({hasText:"Solicitação enviada."}).waitFor();assert.equal(state.authWrites.length,2);assert.equal(state.authWrites[1].email,"novo@example.test");
+      await noHorizontalOverflow(page,"account security "+width);await page.screenshot({path:`test-results/account-security-${width}.png`,fullPage:true});
+      await tab("Atuação como músico");const enable=page.getByRole("button",{name:"Ativar função de músico",exact:false});await activate(enable);
+      let dialog=page.getByRole("dialog");await dialog.waitFor();
+      const confirm=dialog.getByRole("button",{name:"Confirmar ativação",exact:true});assert.equal(await confirm.isDisabled(),true);
+      await dialog.locator("#account-confirm-role").fill("ATIVAR");assert.equal(await confirm.isDisabled(),true,"text alone must never activate a role");
+      await page.keyboard.press("Escape");await dialog.waitFor({state:"hidden"});
+      await page.waitForFunction(()=>document.activeElement?.textContent?.includes("Ativar função de músico"));assert.equal(state.accountWrites.length,1);
+      await activate(enable);dialog=page.getByRole("dialog");await dialog.getByRole("checkbox").check();await dialog.locator("#account-confirm-role").fill("ATIVAR");
+      const first=dialog.getByRole("button",{name:"Cancelar ativação",exact:true});await first.focus();await page.keyboard.press("Shift+Tab");assert.equal(await dialog.getByRole("button",{name:"Confirmar ativação",exact:true}).evaluate(n=>n===document.activeElement),true,"dialog must retain keyboard focus");
+      await noHorizontalOverflow(page,"role confirmation "+width);await dialog.screenshot({path:`test-results/account-role-dialog-${width}.png`});
+      await activate(dialog.getByRole("button",{name:"Confirmar ativação",exact:true}));await page.getByRole("status").filter({hasText:"Função de músico ativada"}).waitFor();assert.equal(state.accountWrites.length,2);assert.equal(state.accountWrites[1].p_role,"musician");
+      assert.equal(await page.getByRole("link",{name:"Editar instrumentos e atuação",exact:true}).count(),1);
+      state.proReadFail=true;await page.goto(origin+"/assinatura");const accessError=page.getByRole("alert");await accessError.waitFor();await readable(accessError,"Pro access read error");
+      assert.equal(await page.getByText("Assinatura ainda indisponível.",{exact:false}).count(),0,"read failure must not be represented as unavailable entitlement");
+      state.proReadFail=false;await activate(page.getByRole("button",{name:"Tentar novamente",exact:true}));await page.getByRole("status").filter({hasText:"Assinatura ainda indisponível"}).waitFor();
+      assert.equal(await page.getByRole("link",{name:"Acessar meu Perfil Artístico",exact:true}).count(),0);assert.equal(state.billingCalls.length,0);
+      await noHorizontalOverflow(page,"subscription unavailable "+width);await page.screenshot({path:`test-results/subscription-unavailable-${width}.png`,fullPage:true});
+      state.proEntitled=true;await page.reload();await page.getByRole("status").filter({hasText:"Sua conta já possui acesso Pro autorizado"}).waitFor();
+      assert.equal(await page.getByRole("link",{name:"Acessar meu Perfil Artístico",exact:true}).getAttribute("href"),"/perfil-artistico?aba=midia");
+      const accessReads=state.reads.get(userId+":stage_my_pro_site_publication");await page.goto(origin+"/planos");
+      await page.getByRole("link",{name:"Consultar acesso Pro",exact:true}).waitFor();assert.equal(state.reads.get(userId+":stage_my_pro_site_publication"),accessReads,"public plan comparison must not fetch private entitlement");
+      assert.ok((await page.getByRole("main").innerText()).includes("Não há checkout, assinatura automática"));assert.equal(state.billingCalls.length,0);
+      await noHorizontalOverflow(page,"public plans "+width);await page.screenshot({path:`test-results/plans-${width}.png`,fullPage:true});assert.deepEqual(errors,[]);
+      console.log(`PASS account/subscription ${width}px: independent cooldowns, mocked Auth updates, role confirmation/focus, recoverable entitlement and no checkout`);
+    }catch(error){await page.screenshot({path:`test-results/failure-account-subscription-${width}.png`,fullPage:true}).catch(()=>{});throw error;}
+    finally{await context.close();}
   }
   // Part 18: saved formations and recurring drafts with explicit invitations.
   for(const width of [360,768,1280]){
