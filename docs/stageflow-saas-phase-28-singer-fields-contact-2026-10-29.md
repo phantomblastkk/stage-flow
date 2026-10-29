@@ -51,7 +51,21 @@ A UI dos componentes compartilhados de contratação foi preservada nesta etapa.
 
 ## Verificação
 
-- 265 testes Node aprovados localmente; TypeScript, build e CI em validação.
+- 265 testes Node, TypeScript e build aprovados localmente. Revisão final no commit
+  `e6ae58c1d3624707e9b57ec49c0e58e5f1406aff`, com ambos os workflows aprovados:
+  [Integration and build](https://github.com/phantomblastkk/stage-flow/actions/runs/40815575187)
+  e [Operational UX](https://github.com/phantomblastkk/stage-flow/actions/runs/40815575179).
+  O operacional também aprovou os 265 testes e PostgreSQL temporário.
+- Três novos cenários de cantor passaram; os cenários anteriores de músico,
+  preferências, uploads e jornada operacional permanecem aprovados. Evidência:
+  [48 PNGs e log](https://github.com/phantomblastkk/stage-flow/actions/runs/40815575179/artifacts/12871744912).
+  Inspeção visual do editor em 1280 px e do contato de cantor em 360/1280 px;
+  capturas de página incluem controles fixos do workspace. Sem Safari físico.
+- Os 24 cenários PASS de agenda-finance continuam aprovados:
+  [Artefato](https://github.com/phantomblastkk/stage-flow/actions/runs/40815575187/artifacts/12872875043).
+  Retenção de sete dias para os artefatos de navegador.
+- O teste retorna à etapa Publicar e contratar antes de consultar o botão que
+  fica oculto nas etapas de dados, preservando a verificação de pré-requisito.
 - Teste do cantor: sem @, publicação fica bloqueada; reserva rejeitada por @ ocupado,
   nova tentativa aceita e normalização para minúsculas preservada.
 - Campos compartilhados e aria-describedby da biografia; validação nativa de URL;
