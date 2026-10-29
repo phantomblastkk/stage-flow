@@ -55,7 +55,7 @@ bundle, gzip ou latência. Outros componentes e CSS da plataforma ainda são leg
 
 ## Validação
 
-- 266 testes Node, TypeScript e build aprovados localmente na main integrada; CI em validação.
+- 266 testes Node, TypeScript e build aprovados localmente e no CI da main integrada.
 - Três novos cenários de aparência em 360/768/1280 px: arquivo visível/focável,
   tipo inválido e mais de 5 MB recusados antes de Storage, retrato JPG simulado,
   envio ocupando controles, capa, prévia com URL da pasta do ator e retirada local
@@ -70,6 +70,19 @@ bundle, gzip ou latência. Outros componentes e CSS da plataforma ainda são leg
   contratos de visibilidade; não foi acrescentado um teste novo completo do editor Pro.
 - Revisão React: sem novo hook/listener/dependência, mesmos controles e handlers,
   botões de opções/remoção type=button e submit explícito nas gravações.
+
+## Evidências finais
+
+Código: ad1c85e49b28ab7501f498d092f6d5271db3926f.
+Ajuste do contrato de navegação do chat: 8cadd2d5b1bfdf4d160b6f419fcf472201a83dda.
+
+- [Diff completo desta parte](https://github.com/phantomblastkk/stage-flow/compare/a0e9e085e0261442a67f337420a23aba2915b4ea...8cadd2d5b1bfdf4d160b6f419fcf472201a83dda).
+- [Integration and build aprovado](https://github.com/phantomblastkk/stage-flow/actions/runs/40818047951): TypeScript, build e jornada completa de agenda, financeiro, negociação e conversas.
+- [Operational UX aprovado](https://github.com/phantomblastkk/stage-flow/actions/runs/40818047969): 266 testes Node, PostgreSQL temporário e jornadas operacionais com APIs sintéticas.
+- Artefato operational-ux-evidence, ID 12873402262; 63 capturas PNG na execução, incluindo uploads, prévia e cores do cantor.
+- Revisão visual de uploads em 360 px e de prévias em 360/1280 px; sem overflow nos três tamanhos testados.
+- tests/browser/agenda-finance.mjs: removida a expectativa antiga de ocultar a barra ao digitar. Agora exige barra visível e textarea/botão Enviar acima dela em 375 × 520 px. Passou sem alterar o CSS do chat.
+- O teste de viewport reduzido não substitui validação manual de teclado físico/virtual em Safari/iOS.
 
 ## Continuidade
 
