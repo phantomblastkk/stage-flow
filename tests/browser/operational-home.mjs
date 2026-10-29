@@ -1064,6 +1064,84 @@ try{
   assert.doesNotMatch(await previewAgenda.innerText(),/private_backend_detail|migration|Supabase|SQL/);
   assert.ok(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth+2),"Preview agenda overflows at "+width);
   console.log(`PASS preview agenda ${width}px: independent read retries, cached shows, bounded flyer IDs, thumbnail recovery, feed/story downloads, late metadata discarded, calendar selection preserved and 40-show limit`);
+  const appearanceReads={artistReads,draftReads,mediaReads,publicationReads,agendaReads,flyerReads};
+  const appearanceWrites=designWrites.length;
+  const themeGroup=design.getByRole("group",{name:"Tema do perfil",exact:true});
+  const colorGroup=design.getByRole("group",{name:"Cor de destaque",exact:true});
+  const sectionsGroup=design.getByRole("group",{name:"Organizar seções",exact:true});
+  const profilePreview=advanced.locator(".premium-site");
+  for(const [label,id] of [["Midnight","midnight"],["Concert","concert"],["Ivory","ivory"]]){
+   const option=themeGroup.getByRole("button",{name:new RegExp("^"+label)});
+   await activate(option);
+   assert.equal(await option.getAttribute("aria-pressed"),"true");
+   assert.equal(await themeGroup.locator('button[aria-pressed="true"]').count(),1);
+   assert.ok((await profilePreview.getAttribute("class")).split(" ").includes("premium-theme-"+id));
+   assert.equal(designWrites.length,appearanceWrites,"Selecting a theme must not save it");
+  }
+  for(const [label,id] of [["Roxo","violet"],["Rosa","lime"],["Ciano","cyan"],["Dourado","gold"],["Coral","coral"]]){
+   const option=colorGroup.getByRole("button",{name:"Cor "+label,exact:true});
+   await option.focus();await option.press("Space");
+   assert.equal(await option.getAttribute("aria-pressed"),"true");
+   assert.equal(await colorGroup.locator('button[aria-pressed="true"]').count(),1);
+   assert.ok((await profilePreview.getAttribute("class")).split(" ").includes("premium-site-"+id));
+  }
+  const controlSizes=await design.locator("button").evaluateAll(buttons=>buttons.map(button=>{
+   const rect=button.getBoundingClientRect();return {name:button.getAttribute("aria-label")||button.textContent,width:rect.width,height:rect.height,shared:button.classList.contains("sf-ui-button"),type:button.type};
+  }));
+  assert.ok(controlSizes.every(button=>button.shared&&button.type==="button"&&button.width>=43.5&&button.height>=43.5),"Shared controls need 44px touch targets: "+JSON.stringify(controlSizes));
+  assert.ok(await sectionsGroup.locator("label").evaluateAll(labels=>labels.every(label=>label.getBoundingClientRect().height>=44)),"Section labels need 44px touch areas");
+  const contactSection=sectionsGroup.getByRole("checkbox",{name:"Exibir seção Contato",exact:true});
+  for(const label of ["Sobre","Galeria de fotos","Vídeos","Agenda"]){
+   const option=sectionsGroup.getByRole("checkbox",{name:"Exibir seção "+label,exact:true});
+   if(await option.isChecked()){await option.focus();assert.ok(await option.evaluate(el=>parseFloat(getComputedStyle(el).outlineWidth)>=2));await option.press("Space");}
+  }
+  assert.equal(await sectionsGroup.locator('input:checked').count(),1);
+  assert.equal(await contactSection.isDisabled(),true,"The last visible section must remain visible");
+  assert.deepEqual(await profilePreview.getByRole("navigation",{name:"Seções do perfil de cantor",exact:true}).getByRole("link").allTextContents(),["Contato"]);
+  const resetAppearance=design.getByRole("button",{name:"Restaurar padrão",exact:true});
+  await activate(resetAppearance);
+  await design.getByRole("status").filter({hasText:"Padrão restaurado na prévia."}).waitFor();
+  assert.equal(await sectionsGroup.locator('input:checked').count(),5);assert.equal(designWrites.length,appearanceWrites);
+  assert.equal(await sectionsGroup.getByRole("button",{name:"Subir Sobre",exact:true}).isDisabled(),true);
+  assert.equal(await sectionsGroup.getByRole("button",{name:"Descer Contato",exact:true}).isDisabled(),true);
+  const moveContact=sectionsGroup.getByRole("button",{name:"Subir Contato",exact:true});
+  await moveContact.focus();
+  assert.ok(await moveContact.evaluate(el=>el===document.activeElement&&el.matches(":focus-visible")&&parseFloat(getComputedStyle(el).outlineWidth)>=2),"Keyboard focus must be visible on reordering controls");
+  await moveContact.press("Enter");
+  assert.deepEqual(await sectionsGroup.locator("label strong").allTextContents(),["Sobre","Galeria de fotos","Vídeos","Contato","Agenda"]);
+  await design.screenshot({path:`test-results/operational-appearance-keyboard-${width}.png`});
+  await activate(themeGroup.getByRole("button",{name:/^Concert/}));
+  await activate(colorGroup.getByRole("button",{name:"Cor Coral",exact:true}));
+  const collapseAppearance=design.getByRole("button",{name:"Ocultar opções",exact:true});
+  assert.equal(await collapseAppearance.getAttribute("aria-controls"),"premium-appearance-options");
+  await activate(collapseAppearance);
+  const expandAppearance=design.getByRole("button",{name:"Personalizar",exact:true});
+  assert.equal(await expandAppearance.getAttribute("aria-expanded"),"false");
+  assert.equal(await design.locator("#premium-appearance-options").getAttribute("hidden"),"");
+  assert.equal(await design.getByRole("group",{name:"Opções de aparência",exact:true}).count(),0);
+  await activate(expandAppearance);
+  assert.equal(await themeGroup.getByRole("button",{name:/^Concert/}).getAttribute("aria-pressed"),"true");
+  assert.equal(await colorGroup.getByRole("button",{name:"Cor Coral",exact:true}).getAttribute("aria-pressed"),"true");
+  assert.deepEqual(await sectionsGroup.locator("label strong").allTextContents(),["Sobre","Galeria de fotos","Vídeos","Contato","Agenda"]);
+  assert.equal(designWrites.length,appearanceWrites);assert.equal(proPublishWrites.length,6);
+  await activate(resetAppearance);
+  assert.equal(await publishPro.isDisabled(),true,"Resetting the local preview is not a saved draft");
+  let releaseAppearanceSave;draftSaveGate=new Promise(resolve=>releaseAppearanceSave=resolve);
+  await activate(designSave);
+  await design.getByRole("button",{name:"Salvando...",exact:true}).waitFor();
+  await activate(collapseAppearance);await activate(expandAppearance);
+  assert.equal(await themeGroup.getByRole("button",{name:/^Midnight/}).isDisabled(),true);
+  assert.equal(await contactSection.isDisabled(),true,"Collapse/expand must not bypass a pending save");
+  releaseAppearanceSave();draftSaveGate=undefined;
+  await design.getByRole("status").filter({hasText:"Rascunho salvo!"}).waitFor();
+  assert.equal(designWrites.length,appearanceWrites+1);
+  assert.deepEqual(designWrites.at(-1),{p_theme:"midnight",p_accent:"violet",p_section_order:["about","photos","videos","agenda","contact"],p_visible_sections:["about","photos","videos","agenda","contact"]});
+  assert.equal(await designSave.isDisabled(),true);assert.equal(await publishPro.isEnabled(),true);
+  assert.equal(proPublishWrites.length,6,"Explicit design save still never publishes");
+  assert.deepEqual({artistReads,draftReads,mediaReads,publicationReads,agendaReads,flyerReads},appearanceReads,"Presentation controls must not introduce additional reads");
+  assert.ok(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth+2),"Appearance controls overflow at "+width);
+  await design.screenshot({path:`test-results/operational-appearance-controls-${width}.png`});
+  console.log(`PASS appearance controls ${width}px: shared 44px buttons, three themes/five colors, keyboard focus/reorder, last-section guard, collapse preservation, explicit reset/save and no publication`);
   assert.deepEqual(errors,[],"Browser exceptions at "+width);await context.close();
  }
  console.log("PASS: dashboard at 360/768/1280, navigation, receipt failure, legacy profile, group creation, availability and invitation.");

@@ -8,7 +8,7 @@ import { useRouter } from "next/navigation";
 import {
   ArrowLeft, ArrowRight, ArrowUpRight, CalendarDays, CheckCircle2,
   ChevronLeft, ChevronRight, Crown, ExternalLink, Globe2, Instagram,
-  LockKeyhole, LoaderCircle, MapPin, Mic2, Music2, PlayCircle,
+  LockKeyhole, MapPin, Mic2, Music2, PlayCircle,
   Sparkles, Youtube, Palette, Save, Eye, EyeOff, RotateCcw, ArrowUp, ArrowDown
 } from "lucide-react";
 import {Button,InlineNotice,LoadingState} from "@/src/components/ui";
@@ -338,53 +338,51 @@ export default function SiteProfissionalPreview({ active = true, onEditData }: {
       <section className="premium-design-editor" aria-label="Personalização Pro do perfil de cantor">
         <div className="premium-design-heading">
           <div>
-            <span className="premium-design-eyebrow"><Palette size={15}/> VISUAL E RECURSOS DO MESMO PERFIL</span>
+            <span className="premium-design-eyebrow"><Palette aria-hidden="true" size={15}/> VISUAL E RECURSOS DO MESMO PERFIL</span>
             <h2>Seu estilo, seu palco.</h2>
             <p>Este é o mesmo perfil público do cantor. Configure aqui os temas, as galerias e a ordem das seções Pro, sem criar outro site ou endereço.</p>
           </div>
-          <button type="button" className="premium-design-collapse"
+          <Button variant="secondary" className="premium-design-collapse"
             onClick={() => setEditorOpen(current => !current)}
-            aria-expanded={editorOpen}>{editorOpen ? "Ocultar opções" : "Personalizar"} <ArrowRight size={15}/></button>
+            aria-controls={draftLoaded ? "premium-appearance-options" : undefined} aria-expanded={editorOpen}>{editorOpen ? "Ocultar opções" : "Personalizar"} <ArrowRight aria-hidden="true" size={15}/></Button>
         </div>
         {draftLoading && <LoadingState label="Carregando seu rascunho de aparência..."/>}
         {!draftLoaded && !draftLoading && <Button variant="secondary"
           onClick={() => setDraftAttempt(attempt => attempt + 1)}>Tentar carregar rascunho</Button>}
-        {editorOpen && draftLoaded && <fieldset className="premium-design-controls" aria-label="Opções de aparência"
+        {draftLoaded && <fieldset hidden={!editorOpen} id="premium-appearance-options" className="premium-design-controls" aria-label="Opções de aparência"
           disabled={!draftLoaded || draftLoading || savingDraft}>
           <div className="premium-design-options">
-            <div className="premium-design-group">
-              <h3>Tema do site</h3>
+            <fieldset className="premium-design-group">
+              <legend>Tema do perfil</legend>
               <div className="premium-design-themes">
                 {themeChoices.map(choice =>
-                  <button key={choice.id} type="button" className={"premium-design-theme premium-design-theme-" + choice.id}
+                  <Button key={choice.id} variant="secondary" className={"premium-design-theme premium-design-theme-" + choice.id}
                     aria-pressed={draft.theme === choice.id}
                     onClick={() => { setDraft(prev => ({ ...prev, theme: choice.id })); setDraftMessage(""); }}>
-                    <span className="premium-design-theme-swatch"><i/><b/></span>
+                    <span className="premium-design-theme-swatch" aria-hidden="true"><i/><b/></span>
                     <strong>{choice.title}</strong><small>{choice.description}</small>
-                  </button>
+                  </Button>
                 )}
               </div>
-            </div>
-            <div className="premium-design-group">
-              <h3>Cor de destaque</h3>
+            </fieldset>
+            <fieldset className="premium-design-group">
+              <legend>Cor de destaque</legend>
               <div className="premium-design-colors">
                 {accentChoices.map(choice =>
-                  <button key={choice.id} type="button" aria-pressed={draft.accent === choice.id}
+                  <Button key={choice.id} variant="secondary" aria-pressed={draft.accent === choice.id}
                     className="premium-design-color"
                     onClick={() => { setDraft(prev => ({...prev, accent: choice.id})); setDraftMessage(""); }}
                     aria-label={"Cor " + choice.name}>
-                    <span style={{backgroundColor:choice.color}}/>
+                    <span aria-hidden="true" style={{backgroundColor:choice.color}}/>
                     {choice.name}
-                  </button>
+                  </Button>
                 )}
               </div>
-            </div>
+            </fieldset>
           </div>
-          <div className="premium-design-sections">
-            <div className="premium-design-sections-heading">
-              <h3>Organizar seções</h3>
-              <span>Fotos e vídeos são duas seções independentes. Desmarque qualquer uma sem ocultar a outra.</span>
-            </div>
+          <fieldset className="premium-design-sections" aria-describedby="premium-section-order-help">
+            <legend>Organizar seções</legend>
+            <p id="premium-section-order-help">Fotos e vídeos são duas seções independentes. Desmarque qualquer uma sem ocultar a outra.</p>
             {draft.section_order.map((section, index) =>
               <div className="premium-design-section-item" key={section}>
                 <label>
@@ -392,35 +390,35 @@ export default function SiteProfissionalPreview({ active = true, onEditData }: {
                     onChange={() => toggleSection(section)}
                     disabled={draft.visible_sections.length === 1 && draft.visible_sections.includes(section)}
                     aria-label={"Exibir seção " + SECTION_LABELS[section]}/>
-                  <span>{draft.visible_sections.includes(section) ? <Eye size={15}/> : <EyeOff size={15}/>}</span>
+                  <span>{draft.visible_sections.includes(section) ? <Eye aria-hidden="true" size={15}/> : <EyeOff aria-hidden="true" size={15}/>}</span>
                   <strong>{SECTION_LABELS[section]}</strong>
                 </label>
-                <div>
-                  <button type="button" aria-label={"Subir " + SECTION_LABELS[section]}
-                    disabled={index === 0} onClick={() => moveSection(section,-1)}><ArrowUp size={15}/></button>
-                  <button type="button" aria-label={"Descer " + SECTION_LABELS[section]}
-                    disabled={index === draft.section_order.length - 1} onClick={() => moveSection(section,1)}><ArrowDown size={15}/></button>
+                <div className="premium-design-section-actions">
+                  <Button variant="secondary" className="premium-design-order-button" aria-label={"Subir " + SECTION_LABELS[section]}
+                    disabled={index === 0} onClick={() => moveSection(section,-1)}><ArrowUp aria-hidden="true" size={15}/></Button>
+                  <Button variant="secondary" className="premium-design-order-button" aria-label={"Descer " + SECTION_LABELS[section]}
+                    disabled={index === draft.section_order.length - 1} onClick={() => moveSection(section,1)}><ArrowDown aria-hidden="true" size={15}/></Button>
                 </div>
               </div>
             )}
-          </div>
+          </fieldset>
           <div className="premium-design-footer">
             <span className="premium-design-save-status">
               {unsaved ? "Alterações ainda não salvas" : draftReady ? "Seu rascunho está salvo" : "Experimente o editor"}
             </span>
-            <button type="button" className="premium-design-reset"
+            <Button variant="secondary" className="premium-design-reset"
               onClick={() => {setDraft(defaultDraft());setDraftMessage("Padrão restaurado na prévia. Salve para manter.");}}>
-              <RotateCcw size={15}/> Restaurar padrão
-            </button>
-            <button type="button" className="btn btn-primary" onClick={() => void saveDraft()}
+              <RotateCcw aria-hidden="true" size={15}/> Restaurar padrão
+            </Button>
+            <Button loading={savingDraft} onClick={() => void saveDraft()}
               disabled={!draftLoaded || draftLoading || savingDraft || (!unsaved && draftReady)}>
-              {savingDraft ? <LoaderCircle size={16}/> : <Save size={16}/>}
+              {!savingDraft&&<Save aria-hidden="true" size={16}/>}
               {savingDraft ? "Salvando..." : "Salvar rascunho"}
-            </button>
+            </Button>
           </div>
         </fieldset>}
-        {draftError && <p className="premium-design-feedback premium-design-error" role="alert">{draftError}</p>}
-        {draftMessage && <p className="premium-design-feedback" role="status">{draftMessage}</p>}
+        {draftError && <div className="premium-design-feedback"><InlineNotice tone="danger">{draftError}</InlineNotice></div>}
+        {draftMessage && <div className="premium-design-feedback"><InlineNotice>{draftMessage}</InlineNotice></div>}
       </section>
       <PremiumGalleryEditor gallery={gallery}/>
       <ProSitePublicationControls

@@ -329,11 +329,6 @@
   letter-spacing:-.05em;margin:9px 0 7px;
 }
 .premium-design-heading p{font-size:12px;line-height:1.7;color:#b2bed2;margin:0}
-.premium-design-collapse{
-  display:inline-flex;align-items:center;gap:8px;white-space:nowrap;
-  color:#ded4fb;background:#30304c;border:1px solid #555174;
-  border-radius:10px;padding:12px 14px;font-size:11px;font-weight:800;cursor:pointer
-}
 .premium-design-collapse[aria-expanded="false"] svg{transform:rotate(90deg)}
 .premium-design-controls{
   display:grid;grid-template-columns:minmax(0,1.24fr) minmax(255px,.76fr);
@@ -341,18 +336,17 @@
   border-top:1px solid #42435f
 }
 .premium-design-options{display:flex;flex-direction:column;gap:22px}
-.premium-design-group h3,.premium-design-sections h3{
-  font:800 13px "Manrope",sans-serif;margin:0 0 13px
+.premium-design-group,.premium-design-sections{min-width:0;border:0;padding:0;margin:0}
+.premium-design-group legend,.premium-design-sections legend{
+  font:800 var(--sf-ui-text-sm) "Manrope",sans-serif;margin-bottom:13px;padding:0
 }
 .premium-design-themes{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:9px}
-.premium-design-theme{
-  display:flex;flex-direction:column;gap:5px;
-  text-align:left;padding:8px;background:#1a2234;
-  border-radius:12px;border:1px solid #34415a;
-  color:#e4e8f1;cursor:pointer
+.premium-design-editor .premium-design-theme{
+  width:100%;min-width:0;flex-direction:column;align-items:stretch;justify-content:flex-start;
+  text-align:left;white-space:normal;gap:5px;padding:8px
 }
-.premium-design-theme[aria-pressed="true"]{
-  border-color:#c2a4fe;box-shadow:0 0 0 1px #c2a4fe
+.premium-design-editor .premium-design-theme[aria-pressed="true"]{
+  border-color:var(--sf-ui-brand);box-shadow:0 0 0 1px var(--sf-ui-brand)
 }
 .premium-design-theme-swatch{
   height:64px;display:block;border-radius:7px;position:relative;
@@ -376,47 +370,31 @@
 .premium-design-theme strong{font:800 11px "Manrope",sans-serif;margin:4px 0 0}
 .premium-design-theme small{font-size:10px;line-height:1.45;color:#acb8cd}
 .premium-design-colors{display:flex;gap:9px;flex-wrap:wrap}
-.premium-design-color{
-  display:inline-flex;align-items:center;gap:7px;cursor:pointer;
-  padding:8px 10px;border:1px solid #39445c;border-radius:99px;
-  background:#192437;color:#c7d2e7;font-size:11px
+.premium-design-editor .premium-design-color{border-radius:99px}
+.premium-design-editor .premium-design-color[aria-pressed="true"]{
+  border-color:var(--sf-ui-brand);box-shadow:0 0 0 1px var(--sf-ui-brand)
 }
-.premium-design-color[aria-pressed="true"]{border-color:#c4abff;background:#343052;color:white}
-.premium-design-color span{display:block;width:16px;height:16px;border-radius:99px}
-.premium-design-sections-heading{display:flex;flex-direction:column;gap:4px;margin-bottom:14px}
-.premium-design-sections-heading h3{margin:0}
-.premium-design-sections-heading>span{font-size:11px;color:#acb8cd;line-height:1.5}
+.premium-design-color span{display:block;flex:none;width:16px;height:16px;border-radius:99px}
+.premium-design-sections>p{font-size:var(--sf-ui-text-xs);color:var(--sf-ui-muted);line-height:1.6;margin:0 0 14px}
 .premium-design-section-item{
   border:1px solid #39435b;border-radius:10px;
   background:#171f31;display:flex;align-items:center;justify-content:space-between;
   gap:12px;padding:10px 11px;margin-bottom:8px
 }
-.premium-design-section-item label{display:flex;align-items:center;gap:9px;cursor:pointer;min-width:0}
-.premium-design-section-item label>input{width:16px;height:16px;accent-color:#be9fff;flex:none}
-.premium-design-section-item label>span{display:flex;color:#a9b8cf;align-items:center}
-.premium-design-section-item label strong{font-size:12px;font-weight:700}
-.premium-design-section-item>div{display:flex;gap:6px}
-.premium-design-section-item>div button{
-  width:30px;height:30px;display:grid;place-items:center;
-  border:1px solid #384562;border-radius:8px;background:#26324a;
-  color:#d6e0f5;cursor:pointer
-}
-.premium-design-section-item button:disabled{opacity:.25;cursor:not-allowed}
+.premium-design-section-item label{display:flex;align-items:center;gap:8px;cursor:pointer;min-width:0;min-height:44px;flex:1}
+.premium-design-controls[hidden]{display:none!important}
+.premium-design-section-item input:focus-visible{outline:3px solid var(--sf-ui-brand);outline-offset:3px}
+.premium-design-section-item label>input{width:16px;height:16px;accent-color:var(--sf-ui-brand);flex:none}
+.premium-design-section-item label>span{display:flex;flex:none;color:var(--sf-ui-muted);align-items:center}
+.premium-design-section-item label strong{min-width:0;overflow-wrap:anywhere;font-size:12px;font-weight:700}
+.premium-design-section-actions{display:flex;flex:none;gap:6px}
+.premium-design-editor .premium-design-order-button{width:44px;min-width:44px;padding:0}
 .premium-design-footer{
   grid-column:1/-1;border-top:1px solid #42435f;padding-top:17px;
   display:flex;flex-wrap:wrap;align-items:center;gap:10px
 }
 .premium-design-save-status{color:#aab8cc;font-size:11px;margin-right:auto}
-.premium-design-reset{
-  display:inline-flex;align-items:center;gap:7px;border:1px solid #3e4962;
-  color:#c2cde0;background:none;padding:10px 13px;
-  border-radius:10px;font-size:11px;font-weight:700;cursor:pointer
-}
-.premium-design-feedback{
-  margin:13px 0 0;padding:11px 13px;border:1px solid #4c604a;
-  background:#1b2b24;border-radius:11px;font-size:12px;color:#bde6bf;line-height:1.6
-}
-.premium-design-error{border-color:#764d58;background:#34212b;color:#ffc0cc}
+.premium-design-feedback{margin-top:var(--sf-ui-space-3)}
 .premium-site-sections{display:flex;flex-direction:column}
 .premium-site-sections > section{min-width:0;scroll-margin-top:20px}
 /* Cores personalizáveis independentes da página artística gratuita. */
@@ -530,10 +508,10 @@
   .premium-design-heading{flex-direction:column;align-items:stretch}
   .premium-design-collapse{align-self:flex-start}
   .premium-design-themes{gap:6px}
-  .premium-design-theme{padding:5px}
+  .premium-design-editor .premium-design-theme{padding:6px}
   .premium-design-theme-swatch{height:48px}
-  .premium-design-theme strong{font-size:10px}
-  .premium-design-theme small{font-size:9px}
+  .premium-design-theme strong{font-size:11px}
+  .premium-design-theme small{font-size:10px}
   .premium-design-colors{gap:7px}
   .premium-design-section-item{padding:9px}
   .premium-design-footer .btn{flex:1;justify-content:center}
