@@ -27,7 +27,8 @@ try{
   await context.addCookies([{name:"sb-example-auth-token",value:"base64-"+encode(session),url:origin,sameSite:"Lax"}]);
   const writes=[],portfolioWrites=[],storageWrites=[],contactWrites=[],marketWrites=[],artistWrites=[],claimWrites=[],bookingSettingWrites=[],errors=[],unhandled=[];let savedProfiles=[],failFinance=false,producer=width!==360,portfolioResult="invalid_price",storageImage,uploadGate,
    contactReadFail=true,marketReadFail=true,contactResult="invalid_phone",marketResult="publish_portfolio_first",contactGate,
-   singerMode=false,singerUsername=null,singerBooking=false,claimResult="taken",artistResult="invalid_link";
+   singerMode=false,singerUsername=null,singerBooking=false,claimResult="taken",artistResult="invalid_link",
+   artistReadMode="ok",artistReads=0,bookingReadFail=false,bookingReads=0,bookingReadGate,bookingWriteFail=false,artistWriteFail=false;
   await context.route(api+"/**",async route=>{
    const req=route.request(),url=new URL(req.url()),rpc=url.pathname.split("/").at(-1);let data=[],status=200;
    if(req.method()==="OPTIONS"){await route.fulfill({status:204,headers:{"access-control-allow-origin":"*","access-control-allow-headers":"*"}});return;}
@@ -55,11 +56,14 @@ try{
     if(contactReadFail){status=503;data={message:"Fixture read failure"};}
     else data=singerMode?{status:"ok",mode:"auto",phone:"",greeting:"Olá {artista}"}:{status:"ok",mode:"whatsapp",phone:"11987654321",greeting:"Olá {artista}"};
    }
-   else if(rpc==="stage_my_artist_page")data={name:"Artista de teste",username:singerUsername,bio:"Biografia inicial",headline:"Assinatura inicial",city:"São Paulo",instagram_url:null,youtube_url:null,spotify_url:null,is_public:false,custom_subdomain_enabled:false,accent:"violet",avatar_path:null,cover_path:null};
-   else if(rpc==="stage_my_artist_booking_settings")data=singerBooking;
-   else if(rpc==="stage_set_artist_bookings_enabled"){bookingSettingWrites.push(body);singerBooking=body.p_enabled;data="saved";}
+   else if(rpc==="stage_my_artist_page"){artistReads++;if(artistReadMode==="failed"){status=503;data={message:"private_backend_detail.sql"};}
+    else if(artistReadMode==="missing")data=null;else data={name:"Artista de teste",username:singerUsername,bio:"Biografia inicial",headline:"Assinatura inicial",city:"São Paulo",instagram_url:null,youtube_url:null,spotify_url:null,is_public:false,custom_subdomain_enabled:false,accent:"violet",avatar_path:null,cover_path:null};}
+   else if(rpc==="stage_my_artist_booking_settings"){bookingReads++;if(bookingReadGate)await bookingReadGate;
+    if(bookingReadFail){status=503;data={message:"private_backend_detail.sql"};}else data=singerBooking;}
+   else if(rpc==="stage_set_artist_bookings_enabled"){bookingSettingWrites.push(body);if(bookingWriteFail){status=503;data={message:"private_backend_detail.sql"};}
+    else{singerBooking=body.p_enabled;data="saved";}}
    else if(rpc==="stage_claim_artist_username"){claimWrites.push(body);if(claimResult==="claimed")singerUsername=body.p_username;data=claimResult;}
-   else if(rpc==="stage_save_artist_page_v2"){artistWrites.push(body);data=artistResult;}
+   else if(rpc==="stage_save_artist_page_v2"){artistWrites.push(body);if(artistWriteFail){status=503;data={message:"private_backend_detail.sql"};}else data=artistResult;}
    else if(rpc==="stage_save_booking_contact"){contactWrites.push(body);if(contactGate)await contactGate;data=contactResult;}
    else if(rpc==="stage_my_marketplace_settings"){
     if(marketReadFail){status=503;data={message:"Fixture read failure"};}
@@ -431,13 +435,47 @@ try{
   await page.screenshot({path:`test-results/operational-hiring-${width}.png`,fullPage:true});
   failFinance=true;await page.goto(origin+"/painel");await page.getByRole("alert").filter({hasText:"Não foi possível atualizar os recebimentos"}).waitFor();
   // Reload the real route with a singer-only account; no component is mounted artificially.
-  singerMode=true;contactReadFail=false;contactResult="saved";
+  singerMode=true;contactReadFail=false;contactResult="saved";artistReadMode="failed";bookingReadFail=true;
   await page.goto(origin+"/perfil-artistico?aba=dados");
   const singer=page.locator(".singer-unified-editor");
+  await singer.getByRole("alert").filter({hasText:"Não foi possível carregar seu perfil artístico."}).waitFor();
+  assert.equal(artistReads,1);assert.equal(bookingReads,0);
+  assert.equal(await singer.locator("#artist-main-form").count(),0,"A failed read must never become an empty editable profile");
+  assert.equal(await singer.getByRole("button",{name:/Aparência e galerias/}).count(),0);
+  assert.doesNotMatch(await singer.innerText(),/private_backend_detail|migration|Supabase/);
+  await singer.screenshot({path:`test-results/operational-singer-read-failure-${width}.png`});
+  artistReadMode="missing";
+  await activate(singer.getByRole("button",{name:"Tentar novamente",exact:true}));
+  await singer.getByRole("alert").filter({hasText:"Esta conta não tem a função de artista habilitada."}).waitFor();
+  assert.equal(await singer.getByRole("link",{name:"Conferir minha conta"}).getAttribute("href"),"/minha-conta");
+  assert.equal(artistReads,2);assert.equal(bookingReads,0);assert.equal(artistWrites.length,0);
+  artistReadMode="ok";
+  await activate(singer.getByRole("button",{name:"Tentar novamente",exact:true}));
   const claim=singer.getByLabel("Escolher meu @ gratuito *",{exact:true});await claim.waitFor();
   const singerSteps=singer.getByLabel("Etapas de edição do perfil");
   if(mobile)await singer.locator('.sf-editor-wizard[data-wizard-ready="true"]').waitFor();
   const singerStep=async name=>{if(mobile)await activate(singerSteps.getByRole("button",{name}));};
+  await singer.getByLabel("Frase de assinatura",{exact:true}).fill("Rascunho preservado após falha");
+  await singerStep(/Publicar e contratar/);
+  const bookingRegion=singer.getByRole("region",{name:"Recebimento de pedidos de contratação",exact:true});
+  const bookingRetry=bookingRegion.getByRole("button",{name:"Tentar carregar preferência",exact:true});
+  await bookingRetry.waitFor();
+  assert.equal(await bookingRegion.getByRole("checkbox").isDisabled(),true);
+  assert.equal(artistReads,3);assert.equal(bookingReads,1);
+  await bookingRegion.screenshot({path:`test-results/operational-singer-preference-failure-${width}.png`});
+  bookingReadFail=false;
+  let releaseBookingRead;bookingReadGate=new Promise(resolve=>releaseBookingRead=resolve);
+  await activate(bookingRetry);
+  await bookingRegion.getByRole("status").filter({hasText:"Carregando preferência"}).waitFor();
+  assert.equal(await bookingRegion.getByRole("checkbox").isDisabled(),true);
+  assert.equal(await bookingRetry.count(),0,"No duplicate retry while loading");
+  releaseBookingRead();bookingReadGate=undefined;
+  await page.waitForFunction(()=>!document.querySelector("#artist-edit-booking input")?.disabled);
+  assert.equal(bookingReads,2);assert.equal(artistReads,3,"Preference recovery must not reread the profile");
+  assert.equal(artistWrites.length,0);assert.equal(bookingSettingWrites.length,0,"Reading false is not consent to write");
+  await singerStep(/Identidade e fotos/);
+  assert.equal(await singer.getByLabel("Frase de assinatura",{exact:true}).inputValue(),"Rascunho preservado após falha");
+  console.log(`PASS singer read recovery ${width}px: failed/missing profile, explicit retries, independent preference retry and preserved draft`);
   const artistAvatar=singer.getByLabel("Foto de perfil",{exact:true}),artistCover=singer.getByLabel("Imagem de capa",{exact:true});
   await artistAvatar.focus();
   assert.equal(await artistAvatar.evaluate(el=>el===document.activeElement&&getComputedStyle(el).opacity!=="0"),true);
@@ -511,9 +549,16 @@ try{
   const singerContactSave=singerContact.getByRole("button",{name:"Salvar contato",exact:true});
   assert.equal(await singerContactSave.isDisabled(),true,"Do not offer an inactive internal form");
   const enableBookings=singer.locator("#artist-edit-booking input[type=checkbox]");
+  bookingWriteFail=true;
+  await enableBookings.focus();await enableBookings.press("Space");
+  await bookingRegion.getByRole("status").filter({hasText:"Não foi possível alterar esta preferência."}).waitFor();
+  assert.equal(await enableBookings.isChecked(),false,"Rejected preference must keep its confirmed state");
+  assert.equal(await singerContactSave.isDisabled(),true);
+  assert.doesNotMatch(await bookingRegion.innerText(),/private_backend_detail|migration|Supabase/);
+  bookingWriteFail=false;
   await enableBookings.focus();await enableBookings.press("Space");
   await page.waitForFunction(()=>document.querySelector("#artist-edit-booking input[type=checkbox]")?.checked===true);
-  assert.deepEqual(bookingSettingWrites,[{p_enabled:true}]);
+  assert.deepEqual(bookingSettingWrites,[{p_enabled:true},{p_enabled:true}]);
   for(let i=0;i<100&&!(await singerContactSave.isEnabled());i++)await delay(25);
   assert.equal(await singerContactSave.isEnabled(),true,"Confirmed form activation must unlock the contact action");
   await activate(singerContactSave);
@@ -562,6 +607,15 @@ try{
   await activate(singerSave);
   await singer.getByRole("status").filter({hasText:"Perfil salvo em modo privado."}).waitFor();
   assert.equal(artistWrites.length,4);assert.equal(artistWrites.at(-1).p_is_public,false);
+  artistWriteFail=true;
+  await activate(singerSave);
+  await singer.getByRole("alert").filter({hasText:"Seus dados continuam aqui para tentar novamente."}).waitFor();
+  assert.doesNotMatch(await singer.innerText(),/private_backend_detail|migration|Supabase/);
+  assert.equal(await singer.getByLabel("Frase de assinatura",{exact:true}).inputValue(),"Samba no palco");
+  artistWriteFail=false;
+  await activate(singerSave);
+  await singer.getByRole("status").filter({hasText:"Perfil salvo em modo privado."}).waitFor();
+  assert.equal(artistWrites.length,6);assert.deepEqual(artistWrites[4],artistWrites[5],"Retry preserves the unsaved payload");
   assert.ok(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth+2),"Singer editor overflows at "+width);
   await singer.screenshot({path:`test-results/operational-singer-editor-${width}.png`});
   await singerContact.screenshot({path:`test-results/operational-singer-contact-${width}.png`});

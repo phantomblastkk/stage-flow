@@ -161,3 +161,5 @@
 .artist-editor-pro-hint{color:var(--sf-ui-muted);font-size:var(--sf-ui-text-xs);line-height:1.6;margin-top:10px}
 .artist-wizard-mode .artist-booking-setting-toggle{min-height:44px}
 .artist-wizard-mode .artist-booking-setting-toggle input{width:20px;height:20px}
+
+.singer-unified-editor .artist-editor-recovery-actions{display:flex;flex-wrap:wrap;gap:var(--sf-ui-space-3);margin-top:var(--sf-ui-space-4)}

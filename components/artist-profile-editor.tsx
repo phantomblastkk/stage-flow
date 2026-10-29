@@ -80,6 +80,11 @@ export default function MeuPerfilArtistico() {
   const [requestedUsername, setRequestedUsername] = useState("");
   const [claimingUsername, setClaimingUsername] = useState(false);
   const [loading, setLoading] = useState(true);
+  const [loadAttempt, setLoadAttempt] = useState(0);
+  const [loadIssue, setLoadIssue] = useState<"failed" | "role" | null>(null);
+  const [bookingAttempt, setBookingAttempt] = useState(0);
+  const [bookingLoading, setBookingLoading] = useState(false);
+  const profileReady = Boolean(config);
   const [saving, setSaving] = useState(false);
   const [message, setMessage] = useState("");
   const [error, setError] = useState(false);
@@ -87,19 +92,19 @@ export default function MeuPerfilArtistico() {
   useEffect(() => {
     let active = true;
     async function load() {
-      const supabase = createClient();
-      const { data: { user } } = await supabase.auth.getUser();
-      if (!active) return;
-      if (!user) { router.replace("/login"); return; }
-      const { data, error: requestError } = await supabase.rpc("stage_my_artist_page");
-      if (!active) return;
-      if (requestError) {
-        setError(true);
-        setMessage("Para configurar sua página de cantor, execute free_artist_pages_migration.sql no Supabase. " + requestError.message);
-      } else if (!data) {
-        setError(true);
-        setMessage("Você precisa ter uma conta com função de artista para configurar esta página.");
-      } else {
+      setLoading(true);
+      setLoadIssue(null);
+      try {
+        const supabase = createClient();
+        const { data: { user }, error: authError } = await supabase.auth.getUser();
+        if (!active) return;
+        if (authError?.name === "AuthSessionMissingError") { router.replace("/login"); return; }
+        if (authError) { setLoadIssue("failed"); return; }
+        if (!user) { router.replace("/login"); return; }
+        const { data, error: requestError } = await supabase.rpc("stage_my_artist_page");
+        if (!active) return;
+        if (requestError) { setLoadIssue("failed"); return; }
+        if (!data) { setLoadIssue("role"); return; }
         const p = data as ArtistConfig;
         setConfig(p);
         setBio(p.bio || "");
@@ -113,36 +118,61 @@ export default function MeuPerfilArtistico() {
         setSpotify(p.spotify_url || "");
         setPublished(Boolean(p.is_public));
         setSavedPublished(Boolean(p.is_public));
-        const { data: bookingSetting, error: bookingError } =
-          await supabase.rpc("stage_my_artist_booking_settings");
-        if (!active) return;
-        if (!bookingError && typeof bookingSetting === "boolean") {
-          setBookingAvailable(true);
-          setBookingEnabled(bookingSetting);
-        }
+      } catch {
+        if (active) setLoadIssue("failed");
+      } finally {
+        if (active) setLoading(false);
       }
-      setLoading(false);
     }
     void load();
     return () => { active = false; };
-  }, [router]);
+  }, [router, loadAttempt]);
+
+  // Retrying this preference must never reload the profile or replace its draft.
+  useEffect(() => {
+    if (!profileReady) return;
+    let active = true;
+    async function loadBooking() {
+      setBookingLoading(true);
+      setBookingAvailable(false);
+      try {
+        const { data, error: requestError } = await createClient().rpc("stage_my_artist_booking_settings");
+        if (!active) return;
+        if (!requestError && typeof data === "boolean") {
+          setBookingEnabled(data);
+          setBookingAvailable(true);
+        }
+      } catch {
+        // The editor stays usable and offers an independent retry below.
+      } finally {
+        if (active) setBookingLoading(false);
+      }
+    }
+    void loadBooking();
+    return () => { active = false; };
+  }, [profileReady, bookingAttempt]);
 
   async function changeBookingEnabled(nextValue: boolean) {
     if (!bookingAvailable || bookingBusy) return;
     setBookingBusy(true);
     setBookingNotice("");
-    const { data, error: preferenceError } = await createClient().rpc(
-      "stage_set_artist_bookings_enabled", { p_enabled: nextValue }
-    );
-    if (preferenceError || data !== "saved") {
-      setBookingNotice("Não foi possível alterar agora. Confira se artist_booking_requests_migration.sql foi executado.");
-    } else {
-      setBookingEnabled(nextValue);
-      setBookingNotice(nextValue
-        ? "Pedidos habilitados. O formulário aparece assim que seu perfil gratuito estiver publicado."
-        : "Pedidos desativados. O formulário não aparece mais na página pública.");
+    try {
+      const { data, error: preferenceError } = await createClient().rpc(
+        "stage_set_artist_bookings_enabled", { p_enabled: nextValue }
+      );
+      if (preferenceError || data !== "saved") {
+        setBookingNotice("Não foi possível alterar esta preferência. Tente novamente; sua escolha anterior foi mantida.");
+      } else {
+        setBookingEnabled(nextValue);
+        setBookingNotice(nextValue
+          ? "Pedidos habilitados. O formulário aparece assim que seu perfil gratuito estiver publicado."
+          : "Pedidos desativados. O formulário não aparece mais na página pública.");
+      }
+    } catch {
+      setBookingNotice("Não foi possível alterar esta preferência. Tente novamente; sua escolha anterior foi mantida.");
+    } finally {
+      setBookingBusy(false);
     }
-    setBookingBusy(false);
   }
 
   async function claimUsername(e: FormEvent<HTMLFormElement>) {
@@ -163,7 +193,7 @@ export default function MeuPerfilArtistico() {
         already_set: "Sua conta já possui um @. Reabra a página para conferir."
       };
       setError(true);
-      setMessage(claimError?.message || reasons[String(data)] || "Não foi possível definir seu @.");
+      setMessage((!claimError && reasons[String(data)]) || "Não foi possível definir seu @. Tente novamente.");
     } else {
       setConfig(prev => prev ? { ...prev, username: clean } : prev);
       setMessage("Seu @ gratuito foi registrado! Agora você já pode publicar seu perfil.");
@@ -201,7 +231,7 @@ export default function MeuPerfilArtistico() {
     );
     if (uploadError) {
       setError(true);
-      setMessage("Falha ao enviar. Execute free_artist_visuals_migration.sql no Supabase. Detalhes: " + uploadError.message);
+      setMessage("Não foi possível enviar a imagem. Tente novamente; a imagem anterior foi mantida.");
     } else {
       if (kind === "avatar") setAvatarPath(imagePath);
       else setCoverPath(imagePath);
@@ -245,7 +275,7 @@ export default function MeuPerfilArtistico() {
     };
     if (requestError || data !== "saved") {
       setError(true);
-      setMessage(requestError?.message || messages[String(data)] || "Não foi possível salvar.");
+      setMessage((!requestError && messages[String(data)]) || "Não foi possível salvar. Seus dados continuam aqui para tentar novamente.");
     } else {
       setConfig(previous=>previous?{...previous,instagram_url:instagram||null}:previous);
       setSavedPublished(published);
@@ -258,6 +288,24 @@ export default function MeuPerfilArtistico() {
 
   if (loading) return <main className="container artist-editor-loading">
     <LoadingState label="Carregando perfil artístico..."/>
+  </main>;
+
+  if (!config) return <main className="singer-unified-editor">
+    <div className="container artist-editor-container">
+      <section className="singer-editor-intro">
+        <h1>Perfil Artístico</h1>
+        <InlineNotice tone="danger">{loadIssue === "role"
+          ? "Esta conta não tem a função de artista habilitada. Confira suas funções na conta."
+          : "Não foi possível carregar seu perfil artístico. Tente novamente."}</InlineNotice>
+        <div className="artist-editor-recovery-actions">
+          <Button onClick={() => setLoadAttempt(attempt => attempt + 1)}>Tentar novamente</Button>
+          <Link href={loadIssue === "role" ? "/minha-conta" : "/painel"}
+            className="sf-ui-button sf-ui-button-secondary">
+            {loadIssue === "role" ? "Conferir minha conta" : "Voltar ao painel"}
+          </Link>
+        </div>
+      </section>
+    </div>
   </main>;
 
   return <main className="singer-unified-editor" onFocusCapture={event=>revealMobileEditorField(event.target)}>
@@ -409,7 +457,13 @@ export default function MeuPerfilArtistico() {
                 <small>Se ativado, o público poderá enviar propostas pelo formulário da página gratuita. Seus dados pessoais não aparecem no site; você receberá os contatos na sua caixa privada.</small>
               </span>
             </label>
-            {!bookingAvailable && <p className="artist-editor-hint">Não foi possível carregar esta preferência. Atualize a página para tentar novamente.</p>}
+            {bookingLoading && <p role="status" className="artist-editor-hint">Carregando preferência de contratação...</p>}
+            {!bookingAvailable && !bookingLoading && <InlineNotice tone="warning">
+              Não foi possível carregar esta preferência. Você pode continuar editando seu perfil.
+              <Button variant="secondary" onClick={() => setBookingAttempt(attempt => attempt + 1)}>
+                Tentar carregar preferência
+              </Button>
+            </InlineNotice>}
             {bookingAvailable && !savedPublished && <p className="field-help">O formulário ficará visível somente depois de publicar sua página gratuita.</p>}
             {bookingNotice && <p className="field-help" role="status">{bookingNotice}</p>}
           </section>
