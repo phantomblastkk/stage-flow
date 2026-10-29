@@ -386,7 +386,7 @@ export default function SiteProfissionalPreview({ active = true, onEditData }: {
         {draftLoading && <LoadingState label="Carregando seu rascunho de aparência..."/>}
         {!draftLoaded && !draftLoading && <Button variant="secondary"
           onClick={() => setDraftAttempt(attempt => attempt + 1)}>Tentar carregar rascunho</Button>}
-        {editorOpen && <fieldset className="premium-design-controls" aria-label="Opções de aparência"
+        {editorOpen && draftLoaded && <fieldset className="premium-design-controls" aria-label="Opções de aparência"
           disabled={!draftLoaded || draftLoading || savingDraft}>
           <div className="premium-design-options">
             <div className="premium-design-group">

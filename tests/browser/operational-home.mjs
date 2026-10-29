@@ -654,8 +654,8 @@ try{
   const draftRetry=design.getByRole("button",{name:"Tentar carregar rascunho",exact:true});
   await draftRetry.waitFor();
   assert.equal(draftReads,1);
-  assert.equal(await designSave.isDisabled(),true,"Unknown saved design must not be overwritten by defaults");
-  assert.equal(await design.getByRole("button",{name:/^Concert/}).isDisabled(),true);
+  assert.equal(await designSave.count(),0,"Unknown saved design must not expose a save action");
+  assert.equal(await design.getByRole("button",{name:/^Concert/}).count(),0,"Do not display unconfirmed default options");
   const publishPro=advanced.getByRole("button",{name:/Ativar recursos Pro/});
   await publishPro.waitFor();assert.equal(await publishPro.isDisabled(),true);
   assert.doesNotMatch(await design.innerText(),/private_backend_detail|migration|Supabase/);
@@ -663,7 +663,7 @@ try{
   let releaseDraftRead;draftReadMode="missing";draftReadGate=new Promise(resolve=>releaseDraftRead=resolve);
   await activate(draftRetry);
   await design.getByText("Carregando seu rascunho de aparência...",{exact:true}).waitFor();
-  assert.equal(await draftRetry.count(),0);assert.equal(await designSave.isDisabled(),true);
+  assert.equal(await draftRetry.count(),0);assert.equal(await designSave.count(),0);
   releaseDraftRead();draftReadGate=undefined;await draftRetry.waitFor();
   assert.equal(draftReads,2);assert.equal(designWrites.length,0,"Missing draft is not permission to overwrite");
   draftReadMode="ok";

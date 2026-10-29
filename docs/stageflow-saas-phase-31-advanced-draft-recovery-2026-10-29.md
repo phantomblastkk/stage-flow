@@ -6,7 +6,7 @@ Base: ae01d2afb9aba0506eb589af57df67621c671757, diretamente na main.
 
 | Problema | Impacto | Implementação |
 |---|---|---|
-| Falha na leitura do design deixava os valores padrão editáveis e salváveis | Risco de sobrescrever um design existente que não foi carregado | Estado de leitura explícito; fieldset e ação de salvar bloqueados até obter um objeto de rascunho válido |
+| Falha na leitura do design deixava os valores padrão editáveis e salváveis | Risco de sobrescrever um design existente que não foi carregado | Estado de leitura explícito; opções e ação de salvar só aparecem após obter um objeto de rascunho válido; handler também bloqueia gravações prematuras |
 | Ausência de tentativa de recuperar a prévia ou o design | Usuário precisa recarregar toda a página | Tentativa da identidade quando a prévia não abre; tentativa independente de stage_my_premium_site_draft |
 | Erros exibem nomes de SQL, códigos e mensagens do backend | Orientação confusa para o artista | Textos claros nas leituras de identidade/design/agenda e na gravação do design |
 | Possibilidade de alterar controles durante uma gravação pendente | Diferença entre o que está sendo salvo e a prévia visível | Fieldset bloqueado durante o save e liberação em finally |
@@ -34,7 +34,9 @@ O backend continua validando o mesmo payload e as mesmas permissões.
 
 ## Validação
 
-266 testes Node e TypeScript aprovados localmente; build e CI em validação.
+266 testes Node, TypeScript e build aprovados localmente; CI em validação.
+A primeira rodada de navegador passou; a revisão visual levou a ocultar opções
+padrão durante a falha, para destacar o aviso e a tentativa de recuperação.
 
 Novos cenários em 360/768/1280 px: falha de identidade sem consulta de design;
 recuperação da identidade; design com erro HTTP e depois ausente sem edição/save;
