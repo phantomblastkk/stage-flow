@@ -41,6 +41,7 @@ try{
   let mediaReadMode="failed",mediaReads=0,mediaReadGate,mediaActionGate,mediaWriteMode="saved",signFail=true,deleteFileFail=false;
   let mediaRows=[{id:photoId,media_kind:"photo",title:"Foto privada inicial",storage_path:actor+"/"+photoId+".jpg",youtube_id:null,featured:false,display_order:0},
    {id:videoId,media_kind:"youtube",title:"Vídeo inicial",storage_path:null,youtube_id:"dQw4w9WgXcQ",featured:false,display_order:1}];
+  let publicGalleryRows=[];
   await context.route(api+"/**",async route=>{
    const req=route.request(),url=new URL(req.url()),rpc=url.pathname.split("/").at(-1);let data=[],status=200;
    if(req.method()==="OPTIONS"){await route.fulfill({status:204,headers:{"access-control-allow-origin":"*","access-control-allow-headers":"*"}});return;}
@@ -82,6 +83,9 @@ try{
    const body=req.postDataJSON();
    if(url.pathname.endsWith("/user"))data=user;
    else if(rpc==="profiles"){assert.equal(url.searchParams.get("id"),"eq."+actor);data={...profile,is_producer:producer,...(singerMode?{display_name:"Artista de teste",is_singer:true,is_musician:false,artist_kind:"lead",username:singerUsername}:{})};}
+   else if(rpc==="stage_public_pro_artist_site")data={artist:{name:"Artista de teste",username:"cantor-teste",bio:"Biografia pública",city:"São Paulo",headline:"No palco",instagram_url:null,youtube_url:null,spotify_url:null,avatar_path:null,cover_path:null,bookings_enabled:false},design:{theme:"midnight",accent:"violet",section_order:["about","photos","videos","agenda","contact"],visible_sections:["about","photos","contact"]},media:publicGalleryRows,events:[]};
+   else if(["stage_public_artistic_musician","stage_public_booking_contact"].includes(rpc))data=null;
+   else if(rpc==="stage_public_verified")data=false;
    else if(rpc==="stage_owner_admin_status")data=false;
    else if(rpc==="stage_venue_partner_access")data={status:"ok",items:[]};
    else if(rpc==="stage_my_musician_portfolio")data={name:"Henrique",bio:"Músico de teste",city:"São Paulo",slug:"henrique",avatar_url:null,instagram_url:null,is_published:false};
@@ -1222,6 +1226,85 @@ try{
   assert.deepEqual({artistReads,draftReads,mediaReads,agendaReads,flyerReads},publicationUiIndependent);
   assert.equal(proPublishWrites.length,publicationUiWrites);assert.equal(privateDeletes.length,1);
   console.log(`PASS publication controls ${width}px: shared notices/buttons, 44px links/actions, keyboard focus, canceled activation/republish/deactivation, canonical clipboard success/failure and no extra writes`);
+  // Part 38: the same gallery runs inside the editor preview and the real public route.
+  const photoDialog=page.getByRole("dialog",{name:/^Foto ampliada:/});
+  const photoWritesBefore={media:mediaWrites.length,publish:proPublishWrites.length,storage:storageWrites.length,deletes:privateDeletes.length};
+  const photoReadsBefore={artistReads,draftReads,publicationReads,agendaReads,flyerReads};
+  const originalPhoto={...mediaRows.find(row=>row.media_kind==="photo"),display_order:0,featured:false};
+  const firstPhotoOpener=advanced.getByRole("button",{name:"Abrir foto 1 de 1: "+originalPhoto.title,exact:true});
+  const previousBodyOverflow=await page.evaluate(()=>document.body.style.overflow);
+  await activate(firstPhotoOpener);await photoDialog.waitFor();
+  const closePhoto=photoDialog.getByRole("button",{name:"Fechar galeria",exact:true});
+  assert.equal(await photoDialog.evaluate(el=>el instanceof HTMLDialogElement&&el.open&&el.matches(":modal")),true);
+  assert.equal(await closePhoto.evaluate(el=>el===document.activeElement),true);
+  assert.equal(await page.evaluate(()=>document.body.style.overflow),"hidden");
+  await closePhoto.press("Tab");assert.equal(await closePhoto.evaluate(el=>el===document.activeElement),true);
+  await closePhoto.press("Shift+Tab");assert.equal(await closePhoto.evaluate(el=>el===document.activeElement),true);
+  await page.keyboard.press("ArrowRight");await page.keyboard.press("ArrowLeft");
+  assert.equal(await photoDialog.getByRole("status").innerText(),"1 / 1 · "+originalPhoto.title);
+  await page.keyboard.press("Escape");await photoDialog.waitFor({state:"detached"});
+  assert.equal(await firstPhotoOpener.evaluate(el=>el===document.activeElement),true);
+  assert.equal(await page.evaluate(()=>document.body.style.overflow),previousBodyOverflow);
+  const secondPhoto={...originalPhoto,id:"61616161-6161-4161-8161-616161616161",title:"Segunda foto disponível",display_order:2,storage_path:actor+"/61616161-6161-4161-8161-616161616161.png",featured:false};
+  const missingPhoto={...secondPhoto,id:"62626262-6262-4262-8262-626262626262",title:"Foto sem prévia",display_order:1,storage_path:null};
+  mediaRows=[originalPhoto,missingPhoto,secondPhoto,...mediaRows.filter(row=>row.media_kind!=="photo")];
+  await activate(mediaRefresh);await mediaReady();
+  const multiPhotoOpener=advanced.getByRole("button",{name:"Abrir foto 1 de 3: "+originalPhoto.title,exact:true});
+  assert.equal(await advanced.getByRole("button",{name:"Abrir foto 2 de 3: Foto sem prévia",exact:true}).isDisabled(),true);
+  await activate(multiPhotoOpener);await photoDialog.waitFor();
+  const nextPhoto=photoDialog.getByRole("button",{name:"Próxima foto",exact:true});
+  const previousPhoto=photoDialog.getByRole("button",{name:"Foto anterior",exact:true});
+  await closePhoto.press("Shift+Tab");assert.equal(await nextPhoto.evaluate(el=>el===document.activeElement),true);
+  await nextPhoto.press("Tab");assert.equal(await closePhoto.evaluate(el=>el===document.activeElement),true);
+  await closePhoto.press("Tab");assert.equal(await previousPhoto.evaluate(el=>el===document.activeElement),true);
+  await page.keyboard.press("ArrowRight");
+  await photoDialog.getByRole("img",{name:secondPhoto.title,exact:true}).waitFor();
+  assert.equal(await previousPhoto.evaluate(el=>el===document.activeElement),true,"Photo navigation must not reset focus");
+  assert.equal(await photoDialog.getByRole("status").innerText(),"2 / 2 · "+secondPhoto.title);
+  await page.keyboard.press("ArrowRight");await photoDialog.getByRole("img",{name:originalPhoto.title,exact:true}).waitFor();
+  await page.keyboard.press("ArrowLeft");await photoDialog.getByRole("img",{name:secondPhoto.title,exact:true}).waitFor();
+  const photoControlSizes=await photoDialog.getByRole("button").evaluateAll(nodes=>nodes.map(el=>{const r=el.getBoundingClientRect();return {width:r.width,height:r.height,shared:el.classList.contains("sf-ui-button")};}));
+  assert.ok(photoControlSizes.every(el=>el.shared&&el.width>=43.5&&el.height>=43.5));
+  assert.ok(await previousPhoto.evaluate(el=>el.matches(":focus-visible")&&parseFloat(getComputedStyle(el).outlineWidth)>=2));
+  await page.screenshot({path:`test-results/operational-photo-dialog-preview-${width}.png`});
+  await activate(closePhoto);await photoDialog.waitFor({state:"detached"});
+  assert.equal(await multiPhotoOpener.evaluate(el=>el===document.activeElement),true);
+  await activate(multiPhotoOpener);await photoDialog.waitFor();
+  await page.mouse.click(2,2);await photoDialog.waitFor({state:"detached"});
+  assert.equal(await multiPhotoOpener.evaluate(el=>el===document.activeElement),true);
+  // A read finishing while the modal is open must retain photo identity across reordering.
+  let releasePhotoRead;mediaReadGate=new Promise(resolve=>releasePhotoRead=resolve);
+  await activate(mediaRefresh);await media.getByRole("button",{name:"Atualizando galeria...",exact:true}).waitFor();
+  await activate(multiPhotoOpener);await photoDialog.waitFor();
+  mediaRows=[secondPhoto,missingPhoto,originalPhoto,...mediaRows.filter(row=>row.media_kind!=="photo")];
+  releasePhotoRead();mediaReadGate=undefined;await mediaReady();
+  await photoDialog.getByRole("status").filter({hasText:"2 / 2 · "+originalPhoto.title}).waitFor();
+  await page.keyboard.press("Escape");await photoDialog.waitFor({state:"detached"});
+  assert.equal(await advanced.getByRole("button",{name:"Abrir foto 3 de 3: "+originalPhoto.title,exact:true}).evaluate(el=>el===document.activeElement),true);
+  mediaReadGate=new Promise(resolve=>releasePhotoRead=resolve);
+  await activate(mediaRefresh);await media.getByRole("button",{name:"Atualizando galeria...",exact:true}).waitFor();
+  await activate(advanced.getByRole("button",{name:"Abrir foto 3 de 3: "+originalPhoto.title,exact:true}));await photoDialog.waitFor();
+  mediaRows=mediaRows.filter(row=>row.id!==originalPhoto.id);
+  releasePhotoRead();mediaReadGate=undefined;await mediaReady();await photoDialog.waitFor({state:"detached"});
+  assert.equal(await page.evaluate(()=>document.body.style.overflow),previousBodyOverflow,"Removing the active photo must close and unlock the viewer");
+  mediaRows=[originalPhoto,missingPhoto,secondPhoto,...mediaRows.filter(row=>row.media_kind!=="photo")];
+  await activate(mediaRefresh);await mediaReady();assert.equal(await photoDialog.count(),0,"A returning photo must not reopen a dismissed selection");
+  publicGalleryRows=[originalPhoto,missingPhoto,secondPhoto];
+  const modalReadsBeforePublic={artistReads,draftReads,mediaReads,publicationReads,agendaReads,flyerReads};
+  await page.goto(origin+"/cantor-teste");
+  const publicPhotoOpener=page.getByRole("button",{name:"Abrir foto 1 de 3: "+originalPhoto.title,exact:true});
+  await publicPhotoOpener.waitFor();await activate(publicPhotoOpener);await photoDialog.waitFor();
+  assert.equal(await photoDialog.evaluate(el=>el.matches(":modal")),true);
+  await page.keyboard.press("ArrowRight");await photoDialog.getByRole("img",{name:secondPhoto.title,exact:true}).waitFor();
+  await page.screenshot({path:`test-results/operational-photo-dialog-public-${width}.png`});
+  assert.ok(await photoDialog.evaluate(el=>{const r=el.getBoundingClientRect();return r.left>=0&&r.right<=innerWidth&&r.top>=0&&r.bottom<=innerHeight;}),"Native photo dialog must fit the viewport");
+  await page.keyboard.press("Escape");await photoDialog.waitFor({state:"detached"});
+  assert.equal(await publicPhotoOpener.evaluate(el=>el===document.activeElement),true);
+  assert.equal(await page.evaluate(()=>document.body.style.overflow),previousBodyOverflow);
+  assert.deepEqual({artistReads,draftReads,mediaReads,publicationReads,agendaReads,flyerReads},modalReadsBeforePublic,"Public viewer must not request editor data");
+  assert.deepEqual({artistReads,draftReads,publicationReads,agendaReads,flyerReads},photoReadsBefore);
+  assert.deepEqual({media:mediaWrites.length,publish:proPublishWrites.length,storage:storageWrites.length,deletes:privateDeletes.length},photoWritesBefore);
+  console.log(`PASS photo dialog ${width}px: native modal, single/multiple photos, focus loop/return, arrows/wrap, missing preview skip, backdrop/Escape/close, identity during refresh, public route and no mutations`);
   assert.deepEqual(errors,[],"Browser exceptions at "+width);await context.close();
  }
  console.log("PASS: dashboard at 360/768/1280, navigation, receipt failure, legacy profile, group creation, availability and invitation.");

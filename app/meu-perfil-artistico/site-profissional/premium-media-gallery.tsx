@@ -1,6 +1,6 @@
 "use client";
 
-import { ChangeEvent, FormEvent, useCallback, useEffect, useRef, useState } from "react";
+import { ChangeEvent, FormEvent, useCallback, useEffect, useId, useRef, useState } from "react";
 import {
   ArrowDown, ArrowUp, Check, Edit3, ExternalLink,
   ChevronLeft, ChevronRight, Images, ImagePlus, LoaderCircle, PlayCircle, Star, Trash2, X, Youtube
@@ -459,11 +459,20 @@ export function PremiumGalleryShowcase({
   const orderedVideos = (featuredVideo
     ? [featuredVideo, ...videos.filter(item => item.id !== featuredVideo.id)]
     : videos).slice(0, MAX_PER_TYPE);
-  const [activePhoto, setActivePhoto] = useState<number | null>(null);
+  const [activePhotoId, setActivePhotoId] = useState<string | null>(null);
+  const galleryId = useId();
+  const photoTitleId = galleryId + "-photo-title";
+  const videoTitleId = galleryId + "-video-title";
+  const photoHelpId = galleryId + "-photo-help";
+  const lightboxPhotos = orderedPhotos.filter(item => Boolean(item.preview_url));
+  const activePhotoIndex = lightboxPhotos.findIndex(item => item.id === activePhotoId);
+  const selected = lightboxPhotos[activePhotoIndex] ?? null;
+  const photoOpen = Boolean(selected);
   const [selectedVideoId, setSelectedVideoId] = useState<string | null>(null);
   const [videoPlaying, setVideoPlaying] = useState(false);
   const playerRef = useRef<HTMLDivElement | null>(null);
-  const closeRef = useRef<HTMLButtonElement | null>(null);
+  const photoDialogRef = useRef<HTMLDialogElement | null>(null);
+  const photoOpenerRef = useRef<HTMLButtonElement | null>(null);
   const currentVideo = orderedVideos.find(item => item.id === selectedVideoId)
     ?? orderedVideos[0] ?? null;
 
@@ -477,35 +486,43 @@ export function PremiumGalleryShowcase({
     }
   }
 
+  // Keep the modal lifecycle independent of the selected photo: navigation must not
+  // reset focus, unlock scrolling, or change the thumbnail that opened the dialog.
   useEffect(() => {
-    if (activePhoto === null) return;
-    closeRef.current?.focus();
-    function onKeyDown(event: KeyboardEvent) {
-      if (event.key === "Escape") setActivePhoto(null);
-      if (event.key === "ArrowRight") {
-        setActivePhoto(i => i === null ? null : (i + 1) % orderedPhotos.length);
-      }
-      if (event.key === "ArrowLeft") {
-        setActivePhoto(i => i === null ? null :
-          (i - 1 + orderedPhotos.length) % orderedPhotos.length);
-      }
-    }
-    window.addEventListener("keydown", onKeyDown);
-    return () => window.removeEventListener("keydown", onKeyDown);
-  }, [activePhoto, orderedPhotos.length]);
+    const dialog = photoDialogRef.current;
+    if (!photoOpen) { setActivePhotoId(null); return; }
+    if (!dialog) return;
+    const opener = photoOpenerRef.current;
+    const previousOverflow = document.body.style.overflow;
+    dialog.showModal();
+    document.body.style.overflow = "hidden";
+    return () => {
+      if (dialog.open) dialog.close();
+      document.body.style.overflow = previousOverflow;
+      if (opener?.isConnected) opener.focus({ preventScroll: true });
+    };
+  }, [photoOpen]);
+
+  function movePhoto(direction: -1 | 1) {
+    setActivePhotoId(current => {
+      const index = lightboxPhotos.findIndex(item => item.id === current);
+      return index < 0 ? null : lightboxPhotos[
+        (index + direction + lightboxPhotos.length) % lightboxPhotos.length
+      ].id;
+    });
+  }
 
   if (!items.length && !showEmpty) return null;
 
-  const selected = activePhoto === null ? null : orderedPhotos[activePhoto] ?? null;
   return <div className={"premium-separated-media" +
     (section === "photos" ? " only-photos" : section === "videos" ? " only-videos" : "")}>
     {section !== "videos" && <section className="premium-photo-gallery"
       id={section === "both" ? "premium-fotos" : undefined}
-      aria-labelledby={showHeading ? "premium-photo-title" : undefined}>
+      aria-labelledby={showHeading ? photoTitleId : undefined}>
       {showHeading && <div className="premium-media-section-heading">
         <div>
-          <span className="premium-media-section-label"><Images size={15}/> IMAGENS E BASTIDORES</span>
-          <h3 id="premium-photo-title">Galeria de <em>fotos.</em></h3>
+          <span className="premium-media-section-label"><Images aria-hidden="true" size={15}/> IMAGENS E BASTIDORES</span>
+          <h3 id={photoTitleId}>Galeria de <em>fotos.</em></h3>
           <p>Momentos do palco, registros de shows e bastidores.</p>
         </div>
         {orderedPhotos.length > 0 && <span className="premium-media-section-count">
@@ -518,29 +535,29 @@ export function PremiumGalleryShowcase({
             <button key={item.id} type="button"
               disabled={!item.preview_url}
               className={"premium-photo-tile" + (index === 0 && orderedPhotos.length >= 3 ? " is-featured" : "")}
-              onClick={() => setActivePhoto(index)}
+              onClick={event => { photoOpenerRef.current = event.currentTarget; setActivePhotoId(item.id); }}
               aria-label={"Abrir foto " + (index + 1) + " de " + orderedPhotos.length + ": " + item.title}>
               <MediaThumbnail item={item}/>
               <span className="premium-photo-caption">
                 <span>{item.title}</span>
-                <ImagePlus size={16}/>
+                <ImagePlus aria-hidden="true" size={16}/>
               </span>
-              {item.featured && <span className="premium-photo-featured"><Star size={13} fill="currentColor"/> DESTAQUE</span>}
+              {item.featured && <span className="premium-photo-featured"><Star aria-hidden="true" size={13} fill="currentColor"/> DESTAQUE</span>}
             </button>)}
         </div>
         : <div className="premium-media-blank">
-            <Images size={24}/>
+            <Images aria-hidden="true" size={24}/>
             <p>As fotos dos shows e bastidores aparecerão aqui.</p>
           </div>}
     </section>}
 
     {section !== "photos" && <section className="premium-video-gallery"
       id={section === "both" ? "premium-videos" : undefined}
-      aria-labelledby={showHeading ? "premium-video-title" : undefined}>
+      aria-labelledby={showHeading ? videoTitleId : undefined}>
       {showHeading && <div className="premium-media-section-heading">
         <div>
-          <span className="premium-media-section-label"><Youtube size={15}/> SHOWS E APRESENTAÇÕES</span>
-          <h3 id="premium-video-title">Meus <em>vídeos.</em></h3>
+          <span className="premium-media-section-label"><Youtube aria-hidden="true" size={15}/> SHOWS E APRESENTAÇÕES</span>
+          <h3 id={videoTitleId}>Meus <em>vídeos.</em></h3>
           <p>Assista aos melhores momentos e apresentações no YouTube.</p>
         </div>
         {orderedVideos.length > 0 && <span className="premium-media-section-count">
@@ -565,7 +582,7 @@ export function PremiumGalleryShowcase({
                   <img
                     src={"https://i.ytimg.com/vi/" + currentVideo.youtube_id + "/hqdefault.jpg"}
                     alt={"Miniatura de " + currentVideo.title} loading="lazy"/>
-                  <span className="premium-video-stage-play"><PlayCircle size={43}/></span>
+                  <span className="premium-video-stage-play"><PlayCircle aria-hidden="true" size={43}/></span>
                   <span className="premium-video-stage-start">Reproduzir neste site</span>
                 </button>}
             </div>
@@ -577,12 +594,12 @@ export function PremiumGalleryShowcase({
               <div className="premium-video-stage-actions">
                 {videoPlaying && <button type="button"
                   onClick={() => setVideoPlaying(false)}>
-                  <X size={15}/> Fechar player
+                  <X aria-hidden="true" size={15}/> Fechar player
                 </button>}
                 <a href={"https://www.youtube.com/watch?v=" + currentVideo.youtube_id}
                   target="_blank" rel="noopener noreferrer"
                   aria-label={"Abrir " + currentVideo.title + " no YouTube"}>
-                  <ExternalLink size={15}/> Abrir no YouTube
+                  <ExternalLink aria-hidden="true" size={15}/> Abrir no YouTube
                 </a>
               </div>
             </div>
@@ -601,15 +618,15 @@ export function PremiumGalleryShowcase({
                 aria-label={"Assistir na página: " + item.title}>
                 <div className="premium-video-thumbnail">
                   <MediaThumbnail item={item}/>
-                  <span className="premium-video-play"><PlayCircle size={33}/></span>
+                  <span className="premium-video-play"><PlayCircle aria-hidden="true" size={33}/></span>
                 </div>
                 <div className="premium-video-copy">
                   <div>
-                    {item.featured && <small><Star size={12} fill="currentColor"/> EM DESTAQUE</small>}
+                    {item.featured && <small><Star aria-hidden="true" size={12} fill="currentColor"/> EM DESTAQUE</small>}
                     <h4>{item.title}</h4>
                     <span>{active && videoPlaying ? "Reproduzindo aqui" : "Assistir neste site"}</span>
                   </div>
-                  <PlayCircle size={18}/>
+                  <PlayCircle aria-hidden="true" size={18}/>
                 </div>
               </button>;
             })}
@@ -620,45 +637,56 @@ export function PremiumGalleryShowcase({
           </p>
         </div>
         : <div className="premium-media-blank">
-            <PlayCircle size={24}/>
+            <PlayCircle aria-hidden="true" size={24}/>
             <p>Os vídeos e apresentações aparecerão aqui.</p>
             {youtubeUrl && <a href={youtubeUrl} target="_blank" rel="noopener noreferrer">
-              Ver canal no YouTube <ExternalLink size={14}/>
+              Ver canal no YouTube <ExternalLink aria-hidden="true" size={14}/>
             </a>}
           </div>}
       {spotifyUrl && <a className="premium-video-music-link" href={spotifyUrl}
         target="_blank" rel="noopener noreferrer">
-        Ouvir minhas músicas no Spotify <ExternalLink size={14}/>
+        Ouvir minhas músicas no Spotify <ExternalLink aria-hidden="true" size={14}/>
       </a>}
     </section>}
 
-    {selected?.preview_url && <div className="premium-photo-lightbox"
-      role="presentation" onClick={() => setActivePhoto(null)}>
-      <div className="premium-photo-lightbox-panel" role="dialog"
-        aria-modal="true" aria-label={"Foto ampliada: " + selected.title}
-        onClick={event => event.stopPropagation()}>
+    {selected && <dialog ref={photoDialogRef} className="premium-photo-lightbox"
+      aria-label={"Foto ampliada: " + selected.title} aria-describedby={photoHelpId}
+      onCancel={event => { event.preventDefault(); setActivePhotoId(null); }}
+      onClick={event => { if (event.target === event.currentTarget) setActivePhotoId(null); }}
+      onKeyDown={event => {
+        if (event.key === "ArrowLeft" || event.key === "ArrowRight") {
+          event.preventDefault(); event.stopPropagation();
+          movePhoto(event.key === "ArrowLeft" ? -1 : 1);
+        }
+        if (event.key === "Tab") {
+          const buttons = Array.from(event.currentTarget.querySelectorAll<HTMLButtonElement>("button:not(:disabled)"));
+          const first = buttons[0], last = buttons[buttons.length - 1];
+          if (event.shiftKey && document.activeElement === first) {
+            event.preventDefault(); last?.focus();
+          } else if (!event.shiftKey && document.activeElement === last) {
+            event.preventDefault(); first?.focus();
+          }
+        }
+      }}>
+      <div className="premium-photo-lightbox-panel">
         <div className="premium-photo-lightbox-toolbar">
-          <span>{(activePhoto ?? 0) + 1} / {orderedPhotos.length}</span>
-          <button ref={closeRef} type="button" onClick={() => setActivePhoto(null)}
-            aria-label="Fechar galeria"><X size={21}/></button>
+          <span role="status">{activePhotoIndex + 1} / {lightboxPhotos.length} · {selected.title}</span>
+          <Button autoFocus variant="secondary" onClick={() => setActivePhotoId(null)}
+            aria-label="Fechar galeria"><X aria-hidden="true" size={21}/></Button>
         </div>
         <img src={selected.preview_url} alt={selected.title}/>
         <div className="premium-photo-lightbox-bottom">
-          <strong>{selected.title}</strong>
-          {orderedPhotos.length > 1 && <div>
-            <button type="button" aria-label="Foto anterior"
-              onClick={() => setActivePhoto(i => i === null ? null :
-                (i - 1 + orderedPhotos.length) % orderedPhotos.length)}>
-              <ChevronLeft size={21}/>
-            </button>
-            <button type="button" aria-label="Próxima foto"
-              onClick={() => setActivePhoto(i => i === null ? null :
-                (i + 1) % orderedPhotos.length)}>
-              <ChevronRight size={21}/>
-            </button>
+          <p id={photoHelpId}>Use as setas para navegar e Esc para fechar.</p>
+          {lightboxPhotos.length > 1 && <div>
+            <Button variant="secondary" aria-label="Foto anterior" onClick={() => movePhoto(-1)}>
+              <ChevronLeft aria-hidden="true" size={21}/>
+            </Button>
+            <Button variant="secondary" aria-label="Próxima foto" onClick={() => movePhoto(1)}>
+              <ChevronRight aria-hidden="true" size={21}/>
+            </Button>
           </div>}
         </div>
       </div>
-    </div>}
+    </dialog>}
   </div>;
 }
