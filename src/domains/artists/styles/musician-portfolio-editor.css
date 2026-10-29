@@ -1,4 +1,13 @@
 /* Edição do portfólio gratuito de músico: progresso e campos profissionais */
+.mp-editor-loading{min-height:75vh;display:grid;place-items:center}
+.mp-editor-panel>.sf-ui-field{margin-bottom:var(--sf-ui-space-4)}
+.mp-editor-panel>.sf-ui-field:last-child{margin-bottom:0}
+.mp-editor-panel .sf-ui-field small{overflow-wrap:anywhere}
+.mp-editor-panel textarea.sf-ui-input{font-family:inherit;line-height:1.75;resize:vertical}
+@media(max-width:850px){
+ .mp-editor-panel .sf-ui-field label{font-size:var(--sf-ui-text-md)}
+ .mp-editor-panel .sf-ui-field small{font-size:var(--sf-ui-text-sm)}
+}
 .mp-editor-progress{
   display:flex;flex-direction:column;gap:9px;
   max-width:445px;margin-top:23px;padding:15px 17px;

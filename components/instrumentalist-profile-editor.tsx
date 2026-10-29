@@ -4,9 +4,9 @@ import { ChangeEvent, FormEvent, useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import {
-  ArrowLeft, Check, CheckCircle2, Copy, ExternalLink, Eye, EyeOff, X,
-  ImagePlus, LoaderCircle, Palette, Save, Share2, SlidersHorizontal, Sparkles, Upload,
-  BriefcaseBusiness, Clock3, Instagram, Youtube, Headphones, ListChecks, ChartNoAxesCombined, ArrowRight
+  ArrowLeft, Check, Copy, ExternalLink, Eye, EyeOff, X,
+  ImagePlus, Palette, Save, Share2, SlidersHorizontal, Sparkles, Upload,
+  BriefcaseBusiness, Youtube, ListChecks, ChartNoAxesCombined, ArrowRight
 } from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
 import {prepareProfilePortrait} from "@/lib/profile-photo";
@@ -15,6 +15,7 @@ import MusicianPortfolioView, {
   musicianThemes, musicianAccents
 } from "@/components/musician-portfolio-view";
 import "@/src/domains/artists/styles/musician-portfolio-editor.css";
+import {Button,Input,Textarea,InlineNotice,LoadingState} from "@/src/components/ui";
 import MarketplaceMusicianSettings from "@/components/marketplace-musician-settings";
 import BookingContactSettings from "@/components/booking-contact-settings";
 import MobileEditorWizard from "@/components/mobile-editor-wizard";
@@ -47,15 +48,6 @@ const blank: EditorPortfolio = {
   instagram_url: null,
   youtube_url: null,
   spotify_url: null
-};
-
-const fieldStyle = {
-  width: "100%",
-  border: "1px solid var(--line)",
-  background: "var(--panel)",
-  color: "var(--text)",
-  borderRadius: 11,
-  padding: "13px 14px"
 };
 
 function slugify(value: string) {
@@ -350,14 +342,14 @@ export default function MeuPortfolioDeMusico({unifiedSinger=false,username=null}
     catch { setError(true); setStatus("Não foi possível copiar o link automaticamente."); }
   }
 
-  if (loading) return <main className="container" style={{ minHeight: "75vh", display: "grid", placeItems: "center" }}>
-    <p style={{ color: "var(--muted)" }}><LoaderCircle size={17} style={{ display: "inline", verticalAlign: "middle" }}/> Carregando personalização...</p>
+  if (loading) return <main className="container mp-editor-loading">
+    <LoadingState label="Carregando personalização..."/>
   </main>;
 
   return <main className="mp-editor-workspace" data-editor-active={mobileStep} onFocusCapture={event=>revealMobileEditorField(event.target)}><div className="container" style={{ paddingBottom: 60 }}>
     <nav className="nav">
       <Link className="brand" href="/"><span className="brand-mark">S</span> stage flow</Link>
-      <Link className="btn btn-quiet" href="/painel"><ArrowLeft size={15}/> Voltar</Link>
+      <Link className="sf-ui-button sf-ui-button-secondary" href="/painel"><ArrowLeft size={15}/> Voltar</Link>
     </nav>
     <section style={{ padding: "38px 0 24px" }}>
       <div className="eyebrow"><span className="dot"/> SEU ESPAÇO NA MÚSICA</div>
@@ -370,10 +362,7 @@ export default function MeuPortfolioDeMusico({unifiedSinger=false,username=null}
       </div>
     </section>
 
-    {status && <div className="coming" role={error ? "alert" : "status"} style={error ? { borderColor: "#754343", background: "#281919", color: "#ffb5b5" } : {}}>
-      {!error && <CheckCircle2 size={17} style={{ display: "inline", verticalAlign: "middle", marginRight: 6 }}/>}
-      {status}
-    </div>}
+    {status && <InlineNotice tone={error?"danger":"success"}>{status}</InlineNotice>}
 
     <section className="mp-reach-link" data-editor-step="4" aria-label="Painel de desempenho do músico">
       <div>
@@ -469,7 +458,7 @@ export default function MeuPortfolioDeMusico({unifiedSinger=false,username=null}
               </label>
               {portfolio.avatar_url && <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
                 <img src={portfolio.avatar_url} alt="Foto selecionada" style={{ width: 66, height: 66, borderRadius: 17, objectFit: "cover" }}/>
-                <button className="btn btn-quiet" type="button" onClick={()=>update("avatar_url", null)}>Remover da página</button>
+                <Button variant="secondary" onClick={()=>update("avatar_url", null)}>Remover da página</Button>
               </div>}
             </div>
             <div className="field">
@@ -482,7 +471,7 @@ export default function MeuPortfolioDeMusico({unifiedSinger=false,username=null}
               </label>
               {portfolio.cover_url && <>
                 <div className="mp-mini-preview" style={{ backgroundImage: "url(" + JSON.stringify(portfolio.cover_url) + ")" }}/>
-                <button className="btn btn-quiet" type="button" onClick={()=>update("cover_url", null)}>Remover capa da página</button>
+                <Button variant="secondary" onClick={()=>update("cover_url", null)}>Remover capa da página</Button>
               </>}
               <span className="field-help">Fotos enviadas são arquivos destinados à divulgação pública. Não envie documentos ou imagens privadas.</span>
             </div>
@@ -491,120 +480,62 @@ export default function MeuPortfolioDeMusico({unifiedSinger=false,username=null}
           <section id="mp-instrumentos" data-editor-step="1" className="mp-editor-panel">
             <h2><SlidersHorizontal size={18} style={{ verticalAlign: "middle", marginRight: 7 }}/> Informações profissionais</h2>
             <p>Seu nome exibido é <strong style={{ color: "var(--text)" }}>{portfolio.name}</strong>, definido na sua conta.</p>
-            <div className="field">
-              <label htmlFor="portfolio-slug">Endereço da página *</label>
-              <input id="portfolio-slug" value={portfolio.slug}
+            <Input label="Endereço da página *" id="portfolio-slug" value={portfolio.slug}
                 onChange={e => update("slug", e.target.value.toLowerCase().replace(/[^a-z0-9-]/g,""))}
-                minLength={3} maxLength={30} pattern="[a-z0-9-]{3,30}" placeholder="joao-cavaquinho" required={!unifiedSinger}/>
-              <span className="field-help">Seu endereço público será <strong>/musico/{portfolio.slug || "seu-nome"}</strong> no domínio do StageFlow.</span>
-            </div>
-            <div className="field">
-              <label htmlFor="portfolio-headline">Frase de destaque</label>
-              <input id="portfolio-headline" value={portfolio.headline}
+                minLength={3} maxLength={30} pattern="[a-z0-9-]{3,30}" placeholder="joao-cavaquinho" required={!unifiedSinger} hint={`Seu endereço público será /musico/${portfolio.slug || "seu-nome"} no domínio do StageFlow.`}/>
+            <Input label="Frase de destaque" id="portfolio-headline" value={portfolio.headline}
                 onChange={e => update("headline", e.target.value)} maxLength={110}
                 placeholder="Ex.: Percussionista especializado em samba e pagode"/>
-            </div>
-            <div className="field">
-              <label htmlFor="portfolio-bio">Sua apresentação</label>
-              <textarea id="portfolio-bio" value={portfolio.bio}
+            <Textarea label="Sua apresentação" id="portfolio-bio" value={portfolio.bio}
                 onChange={e => update("bio", e.target.value)} rows={4} maxLength={700}
-                placeholder="Conte sua trajetória, experiências e o que você toca..."
-                style={{ ...fieldStyle, resize: "vertical" }}/>
-              <span className="field-help">{portfolio.bio.length}/700 caracteres</span>
-            </div>
-            <div className="field">
-              <label htmlFor="portfolio-city">Cidade de atuação</label>
-              <input id="portfolio-city" value={portfolio.city}
+                placeholder="Conte sua trajetória, experiências e o que você toca..." hint={`${portfolio.bio.length}/700 caracteres`}/>
+            <Input label="Cidade de atuação" id="portfolio-city" value={portfolio.city}
                 onChange={e => update("city", e.target.value)} maxLength={120}
                 placeholder="São Paulo - SP"/>
-            </div>
-            <div className="field">
-              <label htmlFor="portfolio-instruments">Instrumentos *</label>
-              <input id="portfolio-instruments" value={instrumentsText}
+            <Input label="Instrumentos *" id="portfolio-instruments" value={instrumentsText}
                 onChange={e => setInstrumentsText(e.target.value)}
-                placeholder="Cavaquinho, Violão, Pandeiro"/>
-              <span className="field-help">Separe por vírgulas. Até 10 instrumentos.</span>
-            </div>
-            <div className="field">
-              <label htmlFor="portfolio-genres">Estilos musicais</label>
-              <input id="portfolio-genres" value={genresText}
+                placeholder="Cavaquinho, Violão, Pandeiro" hint="Separe por vírgulas. Até 10 instrumentos."/>
+            <Input label="Estilos musicais" id="portfolio-genres" value={genresText}
                 onChange={e => setGenresText(e.target.value)}
                 placeholder="Samba, Pagode, MPB"/>
-            </div>
-            <div className="field" style={{ marginBottom: 0 }}>
-              <label htmlFor="portfolio-media">Link da apresentação principal</label>
-              <input id="portfolio-media" type="url" value={portfolio.media_url || ""}
+            <Input label="Link da apresentação principal" id="portfolio-media" type="url" value={portfolio.media_url || ""}
                 onChange={e => update("media_url", e.target.value || null)}
-                placeholder="https://www.youtube.com/watch?v=..."/>
-              <span className="field-help">Seu vídeo principal aparece em destaque na seção de trabalhos.</span>
-            </div>
+                placeholder="https://www.youtube.com/watch?v=..." hint="Seu vídeo principal aparece em destaque na seção de trabalhos."/>
           </section>
 
           <section id="mp-trajetoria" data-editor-step="2" className="mp-editor-panel">
             <h2><BriefcaseBusiness size={18} style={{ verticalAlign: "middle", marginRight: 7 }}/> Experiência e trajetória</h2>
             <p>Mostre ao contratante onde você atua e as experiências que fazem parte da sua carreira.</p>
-            <div className="field">
-              <label htmlFor="mp-years"><Clock3 size={14} style={{ verticalAlign: "middle" }}/> Anos de experiência (opcional)</label>
-              <input id="mp-years" type="number" min={0} max={60} step={1}
+            <Input label="Anos de experiência (opcional)" id="mp-years" type="number" min={0} max={60} step={1}
                 placeholder="Ex.: 5" value={portfolio.experience_years ?? ""}
                 onChange={e => update("experience_years", e.target.value === ""
-                  ? null : Number(e.target.value))}/>
-              <span className="field-help">Use 0 se está começando na música. Não invente tempo de carreira.</span>
-            </div>
-            <div className="field">
-              <label htmlFor="mp-formats">Formatos de apresentação</label>
-              <input id="mp-formats" value={performancesText}
+                  ? null : Number(e.target.value))} hint="Use 0 se está começando na música. Não invente tempo de carreira."/>
+            <Input label="Formatos de apresentação" id="mp-formats" value={performancesText}
                 onChange={e => setPerformancesText(e.target.value)}
-                placeholder="Banda completa, Roda de samba, Eventos corporativos"/>
-              <span className="field-help">Separe por vírgulas. Até 8 formatos, com 45 caracteres cada.</span>
-            </div>
-            <div className="field">
-              <label htmlFor="mp-highlights">Projetos, apresentações ou experiências marcantes</label>
-              <textarea id="mp-highlights" rows={6} maxLength={760}
+                placeholder="Banda completa, Roda de samba, Eventos corporativos" hint="Separe por vírgulas. Até 8 formatos, com 45 caracteres cada."/>
+            <Textarea label="Projetos, apresentações ou experiências marcantes" id="mp-highlights" rows={6} maxLength={760}
                 value={highlightsText} onChange={e => setHighlightsText(e.target.value)}
-                placeholder={"Participação no grupo X\nShow na casa de samba Y\nGravação do projeto Z"}
-                style={{ ...fieldStyle, resize: "vertical" }}/>
-              <span className="field-help">Um destaque por linha, até 6, com 120 caracteres cada. Informe somente experiências reais.</span>
-            </div>
-            <div className="field" style={{ marginBottom: 0 }}>
-              <label htmlFor="mp-availability">Regiões e disponibilidade para shows</label>
-              <input id="mp-availability" value={portfolio.availability_note}
+                placeholder={"Participação no grupo X\nShow na casa de samba Y\nGravação do projeto Z"} hint="Um destaque por linha, até 6, com 120 caracteres cada. Informe somente experiências reais."/>
+            <Input label="Regiões e disponibilidade para shows" id="mp-availability" value={portfolio.availability_note}
                 onChange={e => update("availability_note", e.target.value)}
-                maxLength={140} placeholder="Ex.: Atendo São Paulo e região, inclusive finais de semana"/>
-              <span className="field-help">Esse texto é informativo; não reserva horários nem confirma disponibilidade.</span>
-            </div>
+                maxLength={140} placeholder="Ex.: Atendo São Paulo e região, inclusive finais de semana" hint="Esse texto é informativo; não reserva horários nem confirma disponibilidade."/>
           </section>
 
           <section id="mp-midias" data-editor-step="3" className="mp-editor-panel">
             <h2><Youtube size={18} style={{ verticalAlign: "middle", marginRight: 7 }}/> Vídeos e redes sociais</h2>
             <p>Seu portfólio gratuito pode mostrar até 5 vídeos e apresentações, com reprodução incorporada ao clicar no vídeo do YouTube. Não precisa fazer upload.</p>
-            <div className="field">
-              <label htmlFor="mp-extra-media">Mais vídeos ou apresentações (opcional)</label>
-              <textarea id="mp-extra-media" rows={5} maxLength={2100}
+            <Textarea label="Mais vídeos ou apresentações (opcional)" id="mp-extra-media" rows={5} maxLength={2100}
                 value={additionalMediaText} onChange={e => setAdditionalMediaText(e.target.value)}
-                placeholder={"https://youtu.be/....\nhttps://www.youtube.com/watch?v=...."}
-                style={{ ...fieldStyle, resize: "vertical" }}/>
-              <span className="field-help">Um endereço HTTPS por linha. Até 4 links extras além da apresentação principal, chegando a 5 trabalhos.</span>
-            </div>
-            <div className="field">
-              <label htmlFor="mp-instagram"><Instagram size={14} style={{ verticalAlign: "middle" }}/> Instagram</label>
-              <input id="mp-instagram" type="url" value={portfolio.instagram_url || ""}
+                placeholder={"https://youtu.be/....\nhttps://www.youtube.com/watch?v=...."} hint="Um endereço HTTPS por linha. Até 4 links extras além da apresentação principal, chegando a 5 trabalhos."/>
+            <Input label="Instagram" id="mp-instagram" type="url" value={portfolio.instagram_url || ""}
                 onChange={e => update("instagram_url", e.target.value || null)}
                 placeholder="https://www.instagram.com/seuperfil"/>
-            </div>
-            <div className="field">
-              <label htmlFor="mp-youtube"><Youtube size={14} style={{ verticalAlign: "middle" }}/> Canal no YouTube</label>
-              <input id="mp-youtube" type="url" value={portfolio.youtube_url || ""}
+            <Input label="Canal no YouTube" id="mp-youtube" type="url" value={portfolio.youtube_url || ""}
                 onChange={e => update("youtube_url", e.target.value || null)}
                 placeholder="https://www.youtube.com/@seucanal"/>
-            </div>
-            <div className="field" style={{ marginBottom: 0 }}>
-              <label htmlFor="mp-spotify"><Headphones size={14} style={{ verticalAlign: "middle" }}/> Spotify</label>
-              <input id="mp-spotify" type="url" value={portfolio.spotify_url || ""}
+            <Input label="Spotify" id="mp-spotify" type="url" value={portfolio.spotify_url || ""}
                 onChange={e => update("spotify_url", e.target.value || null)}
-                placeholder="https://open.spotify.com/artist/..."/>
-              <span className="field-help">Esses links e os vídeos ficarão públicos apenas quando você publicar o portfólio.</span>
-            </div>
+                placeholder="https://open.spotify.com/artist/..." hint="Esses links e os vídeos ficarão públicos apenas quando você publicar o portfólio."/>
           </section>
 
           <div data-editor-step="4"><BookingContactSettings kind="musician"
@@ -623,12 +554,9 @@ export default function MeuPortfolioDeMusico({unifiedSinger=false,username=null}
                 <strong>A partir de R$</strong><small>Divulgue um valor inicial.</small>
               </button>
             </div>
-            {portfolio.price_mode === "from" && <div className="field">
-              <label htmlFor="portfolio-fee">Valor de referência em reais *</label>
-              <input id="portfolio-fee" type="number" min="0.01" max="999999.99" step="0.01"
+            {portfolio.price_mode === "from" && <Input label="Valor de referência em reais *" id="portfolio-fee" type="number" min="0.01" max="999999.99" step="0.01"
                 inputMode="decimal" required value={referenceFeeText}
-                onChange={e=>setReferenceFeeText(e.target.value)} placeholder="Ex.: 350"/>
-            </div>}
+                onChange={e=>setReferenceFeeText(e.target.value)} placeholder="Ex.: 350"/>}
           </section>
 
           <section id="mp-publicacao" data-editor-step="4" className="mp-editor-panel">
@@ -650,10 +578,10 @@ export default function MeuPortfolioDeMusico({unifiedSinger=false,username=null}
                 {portfolio.is_published ? <Eye size={15}/> : <EyeOff size={15}/>}
                 {portfolio.is_published ? "Publicar alterações" : "Salvar como rascunho"}
               </span>
-              <button type="submit" className="btn btn-primary" disabled={saving || Boolean(uploading)}>
-                {saving ? <LoaderCircle size={16}/> : <Save size={16}/>}
+              <Button type="submit" loading={saving} disabled={Boolean(uploading)}>
+                {!saving&&<Save size={16}/>}
                 {saving ? "Salvando..." : "Salvar alterações"}
-              </button>
+              </Button>
             </div>
           </section>
         </form>
@@ -662,11 +590,11 @@ export default function MeuPortfolioDeMusico({unifiedSinger=false,username=null}
           <h2>{savedPublished ? "Sua página está publicada" : "Seu rascunho foi salvo"}</h2>
           <p>{savedPublished ? "Compartilhe o link do seu portfólio com contratantes." : "Ative a publicação e salve para liberar seu link."}</p>
           {savedPublished && <div style={{ display: "flex", flexWrap: "wrap", gap: 9, marginTop: 15 }}>
-            <Link href={publicPath} target="_blank" className="btn btn-quiet"><ExternalLink size={15}/> Abrir página</Link>
-            <button type="button" className="btn btn-primary" onClick={() => void sharePortfolio()}>
+            <Link href={publicPath} target="_blank" className="sf-ui-button sf-ui-button-secondary"><ExternalLink size={15}/> Abrir página</Link>
+            <Button onClick={() => void sharePortfolio()}>
               {copied ? <Copy size={16}/> : <Share2 size={16}/>}
               {copied ? "Link copiado" : "Compartilhar"}
-            </button>
+            </Button>
           </div>}
         </section>}
       </div>
@@ -674,7 +602,7 @@ export default function MeuPortfolioDeMusico({unifiedSinger=false,username=null}
       <aside className="mp-editor-preview" data-editor-step="4">
         <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 10, marginBottom: 12 }}>
           <div className="mp-editor-title" style={{ margin: 0 }}><Sparkles size={17} color="#C0A7FF"/> Prévia das informações</div>
-          <button type="button" ref={openPreviewRef} className="btn btn-quiet" disabled={unifiedSinger} style={{ padding: "8px 11px", fontSize: 12 }}
+          <button type="button" ref={openPreviewRef} className="sf-ui-button sf-ui-button-secondary" disabled={unifiedSinger}
             aria-haspopup="dialog" aria-expanded={previewTab}
             onClick={() => setPreviewTab(true)}>
             {previewTab ? "Prévia aberta" : "Abrir tela cheia"}
@@ -682,7 +610,7 @@ export default function MeuPortfolioDeMusico({unifiedSinger=false,username=null}
         </div>
         {!unifiedSinger&&<MusicianPortfolioView portfolio={effectivePreview} preview instanceId="editor-compact"/>}
         {unifiedSinger&&<p style={{color:"var(--muted)",lineHeight:1.7}}>Os dados salvos aparecem na seção <strong>Atuação musical</strong> do seu perfil público principal. A identidade visual é a mesma do cantor e não existe um segundo portfólio.</p>}
-        {unifiedSinger&&savedPublished&&<Link href={publicPath} target="_blank" className="btn btn-quiet">Ver meu perfil artístico</Link>}
+        {unifiedSinger&&savedPublished&&<Link href={publicPath} target="_blank" className="sf-ui-button sf-ui-button-secondary">Ver meu perfil artístico</Link>}
         <p style={{ color: "var(--muted)", fontSize: 12, marginTop: 12, lineHeight: 1.6 }}>
           {unifiedSinger?"As informações adicionais só aparecem após você salvar e publicar.":"Esta é uma prévia local. Outras pessoas só verão suas alterações depois de salvar e publicar."}
         </p>

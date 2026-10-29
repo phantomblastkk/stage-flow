@@ -25,7 +25,7 @@ try{
  for(const width of [360,768,1280]){
   const context=await browser.newContext({viewport:{width,height:900},timezoneId:"America/Sao_Paulo"});
   await context.addCookies([{name:"sb-example-auth-token",value:"base64-"+encode(session),url:origin,sameSite:"Lax"}]);
-  const writes=[],errors=[],unhandled=[];let savedProfiles=[],failFinance=false,producer=width!==360;
+  const writes=[],portfolioWrites=[],errors=[],unhandled=[];let savedProfiles=[],failFinance=false,producer=width!==360,portfolioResult="invalid_price";
   await context.route(api+"/**",async route=>{
    const req=route.request(),url=new URL(req.url()),rpc=url.pathname.split("/").at(-1),body=req.postDataJSON();let data=[],status=200;
    if(req.method()==="OPTIONS"){await route.fulfill({status:204,headers:{"access-control-allow-origin":"*","access-control-allow-headers":"*"}});return;}
@@ -34,6 +34,7 @@ try{
    else if(rpc==="stage_owner_admin_status")data=false;
    else if(rpc==="stage_venue_partner_access")data={status:"ok",items:[]};
    else if(rpc==="stage_my_musician_portfolio")data={name:"Henrique",bio:"Músico de teste",city:"São Paulo",slug:"henrique",avatar_url:null,instagram_url:null,is_published:false};
+   else if(rpc==="stage_save_musician_portfolio_v4"){portfolioWrites.push(body);data=portfolioResult;}
    else if(rpc==="stage_workspace_overview")data={status:"ok",metrics:{shows_week:2,pending_invites:3,unread_conversations:1,pending_contacts:0,received_month:1000},upcoming:[event],activity:[],updated_at:new Date().toISOString()};
    else if(rpc==="stage_finance_organizer_overview"){if(failFinance){data={message:"Fixture failure"};status=503;}else data=[owned];}
    else if(rpc==="stage_my_show_history")data=[];
@@ -143,7 +144,55 @@ try{
   await previewDialog.waitFor({state:"hidden"});
   assert.equal(await openPreview.evaluate(el=>el===document.activeElement),true,"Closing preview restores focus");
   assert.equal(writes.length,0,"Preview changes must not save or publish profiles");
+  assert.equal(portfolioWrites.length,0,"Theme previews must not persist the portfolio");
   console.log(`PASS portfolio ${width}px: three themes, two layouts, expanded preview and no publication`);
+  const step=async name=>{if(mobile)await activate(editorSteps.getByRole("button",{name}));};
+  await step(/Instrumentos/);
+  await page.getByLabel("Endereço da página *",{exact:true}).fill("Perfil-Teste");
+  await page.getByLabel("Frase de destaque",{exact:true}).fill("Música ao vivo");
+  await page.getByLabel("Sua apresentação",{exact:true}).fill("Apresentação profissional de teste");
+  const bio=page.getByLabel("Sua apresentação",{exact:true});
+  assert.equal(await bio.getAttribute("aria-describedby"),"portfolio-bio-help");
+  assert.match(await page.locator("#portfolio-bio-help").innerText(),/\/700 caracteres/);
+  assert.ok(await bio.evaluate(el=>el.getBoundingClientRect().height)>=44);
+  await page.getByLabel("Cidade de atuação",{exact:true}).fill("São Paulo");
+  await page.getByLabel("Instrumentos *",{exact:true}).fill("Cavaquinho, Pandeiro");
+  await page.getByLabel("Estilos musicais",{exact:true}).fill("Samba, Pagode");
+  await page.getByLabel("Link da apresentação principal",{exact:true}).fill("https://example.test/principal");
+  await step(/Experiência/);
+  await page.getByLabel("Anos de experiência (opcional)",{exact:true}).fill("5");
+  await page.getByLabel("Formatos de apresentação",{exact:true}).fill("Banda completa, Eventos");
+  await page.getByLabel("Projetos, apresentações ou experiências marcantes",{exact:true}).fill("Show de teste\nGravação de teste");
+  await page.getByLabel("Regiões e disponibilidade para shows",{exact:true}).fill("São Paulo e região");
+  await step(/Mídias/);
+  await page.getByLabel("Mais vídeos ou apresentações (opcional)",{exact:true}).fill("https://example.test/extra");
+  const instagram=page.getByLabel("Instagram",{exact:true});
+  await instagram.fill("not-a-url");
+  assert.equal(await instagram.evaluate(el=>el.checkValidity()),false,"Keep native URL validation");
+  await instagram.fill("https://www.instagram.com/fixture");
+  await page.getByLabel("Canal no YouTube",{exact:true}).fill("https://www.youtube.com/@fixture");
+  await page.getByLabel("Spotify",{exact:true}).fill("https://open.spotify.com/artist/fixture");
+  await step(/Contratação e publicação/);
+  await activate(page.locator("#mp-cache").getByRole("button",{name:/^A partir de R/}));
+  await page.getByLabel("Valor de referência em reais *",{exact:true}).fill("350.50");
+  const savePortfolio=page.locator("#musician-portfolio-form .mp-editor-stickybar").getByRole("button",{name:"Salvar alterações",exact:true});
+  await activate(savePortfolio);
+  await page.locator(".mp-editor-workspace").getByRole("alert").filter({hasText:"Informe um valor maior que zero"}).waitFor();
+  assert.equal(portfolioWrites.length,1);
+  portfolioResult="saved";
+  await activate(savePortfolio);
+  await page.locator(".mp-editor-workspace").getByRole("status").filter({hasText:"Rascunho salvo."}).waitFor();
+  assert.equal(portfolioWrites.length,2);
+  const expected={p_slug:"perfil-teste",p_headline:"Música ao vivo",p_bio:"Apresentação profissional de teste",p_city:"São Paulo",
+   p_instruments:["Cavaquinho","Pandeiro"],p_genres:["Samba","Pagode"],p_media_url:"https://example.test/principal",
+   p_experience_years:5,p_performance_types:["Banda completa","Eventos"],p_career_highlights:["Show de teste","Gravação de teste"],
+   p_availability_note:"São Paulo e região",p_additional_media_urls:["https://example.test/extra"],
+   p_instagram_url:"https://www.instagram.com/fixture",p_youtube_url:"https://www.youtube.com/@fixture",p_spotify_url:"https://open.spotify.com/artist/fixture",
+   p_price_mode:"from",p_reference_fee:350.5,p_is_published:false,p_theme:"stage",p_layout_style:"minimal"};
+  for(const [key,value] of Object.entries(expected))assert.deepEqual(portfolioWrites[1][key],value,key+" must survive the shared controls");
+  assert.ok(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth+2),"Saved editor overflows at "+width);
+  await page.screenshot({path:`test-results/operational-portfolio-saved-${width}.png`,fullPage:true});
+  console.log(`PASS portfolio form ${width}px: labeled fields, native validation, rejected save/retry and private draft payload`);
   if(width===360){
    const wizard=page.getByLabel("Etapas de edição do perfil");
    await page.locator('.sf-editor-wizard[data-wizard-ready="true"]').waitFor();
