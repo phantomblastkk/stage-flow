@@ -12,6 +12,7 @@ a extração anterior não é apresentada como novidade desta etapa.
 |---|---|---|
 | Componente de editor importava CSS de uma rota legada | Dependência entre componente reutilizável e página | Folha movida para src/domains/artists/styles |
 | Apresentação do portfólio permanecia fora do domínio | Estilos do mesmo recurso em três estruturas | Folha de apresentação no domínio artists ao lado da base existente |
+| Seletor nativo de disponibilidade tinha opções longas sem limite de largura | Overflow na etapa de publicação em celular | Coluna do formulário com minmax(0,1fr) e select limitado à largura disponível |
 | Contratos só conferiam presença das classes de temas | Ausência de prova visual da cascata após extrações | Combinações reais de três temas e dois layouts em três larguras pelo editor |
 | Prévia ampliada não exercitada nesta jornada operacional | Risco de regressão de layout, teclado ou publicação acidental | Prévia ampliada, avatar circular, overflow, Escape/retorno de foco e ausência de gravação verificados |
 
@@ -23,6 +24,8 @@ a extração anterior não é apresentada como novidade desta etapa.
   src/domains/artists/styles/musician-portfolio-editor.css: arquivo idêntico, 9.621 bytes.
 - components/musician-portfolio-view.tsx e instrumentalist-profile-editor.tsx:
   somente caminhos de imports CSS; JSX, hooks, formulários, handlers e RPCs intactos.
+- components/marketplace-musician-settings.css: formulário limita o tamanho intrínseco
+  da coluna e do select de disponibilidade. Sem ocultar overflow nem alterar opções.
 - Quatro arquivos de testes atualizam somente os caminhos das folhas movidas,
   mantendo todas as asserções anteriores.
 - tests/browser/operational-home.mjs: seleção por teclado dos três temas × dois
@@ -32,14 +35,15 @@ Reproduzir diff: `git diff 8883fcd -- components app/meu-portfolio src/domains/a
 
 ## Cascata e limites
 
-Nenhuma regra CSS foi alterada ou removida nesta etapa. As duas folhas foram
+As duas folhas movidas não tiveram conteúdo alterado. Foram
 comparadas byte a byte com a main atual. Ordem de imports do layout e oito segmentos
 extraídos nas Partes 21–23 permanecem intactos; teste de recomposição integral
 continua exigindo hash `eee026ce` e comprimento 48.480 caracteres.
 
 As folhas da apresentação e do editor continuam importadas pelos mesmos componentes,
 com caminhos estáticos. Não houve novo carregamento global nem nova dependência.
-39.269 bytes de fonte foram reorganizados; redução líquida de CSS nesta etapa: zero.
+39.269 bytes de fonte foram reorganizados. A correção responsiva acrescenta regras;
+não houve remoção de CSS nesta etapa.
 Não há alegação de melhoria de bundle, gzip, latência ou capacidade de usuários.
 
 As cinco classes candidatas da revisão inicial (mp-location, mp-hero-type,
@@ -50,7 +54,10 @@ Classes dinâmicas mp-theme-ivory/mp-theme-stage/mp-layout-minimal foram preserv
 
 ## Validação
 
-- Testes Node, TypeScript, build e CI: em validação; evidência final será atualizada.
+- 265 testes Node, TypeScript e build passaram localmente após integrar a main atual.
+- O primeiro novo cenário detectou overflow no editor a 360 px; a correção responsiva
+  mantém a mesma asserção e passa a registrar os elementos excedentes e screenshot
+  se houver falha. CI da correção em validação; evidência final será atualizada.
 - Suíte operacional ampliada: Midnight, Ivory, Stage × Destaque, Minimalista;
   variáveis de tema e composição flex, classes dinâmicas e overflow por combinação.
 - Prévia ampliada do último tema/layout, avatar circular, Escape e retorno de foco;

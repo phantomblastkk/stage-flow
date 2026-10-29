@@ -22,7 +22,7 @@
  background:#392c4c;color:#dccbf5;border-radius:99px;
  font-size:10px;letter-spacing:.1em;font-weight:900;padding:10px 13px
 }
-.mp-market-form{display:grid;gap:17px}
+.mp-market-form{display:grid;grid-template-columns:minmax(0,1fr);gap:17px}
 .mp-market-join{
  display:flex;align-items:flex-start;gap:12px;padding:17px;
  background:#1b2835;border:1px solid #46566d;border-radius:13px;cursor:pointer
@@ -45,6 +45,7 @@
  padding:12px 13px;color:#e8ecf6;font:500 12px "DM Sans",sans-serif
 }
 .mp-market-availability-control select:focus,.mp-market-add-date input:focus{border-color:#B697F2}
+.mp-market-availability-control select{width:100%;min-width:0}
 .mp-market-availability-control small,.mp-market-date-section p{
  font-size:10px;line-height:1.75;color:#a2b6ca;margin:0
 }

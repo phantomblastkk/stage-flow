@@ -120,7 +120,13 @@ try{
     assert.equal(style.bg,bg,"Theme variables must survive CSS extraction");
     assert.equal(style.display,"flex");
     assert.ok(style.overflow<=2,"Portfolio preview overflows: "+JSON.stringify(style));
-    assert.ok(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth+2),"Editor overflows at "+width);
+    const overflow=await page.evaluate(()=>({amount:document.documentElement.scrollWidth-innerWidth,
+     offenders:[...document.querySelectorAll(".mp-editor-workspace *")].map(el=>({
+      tag:el.tagName,className:typeof el.className==="string"?el.className:"",
+      right:Math.round(el.getBoundingClientRect().right),width:Math.round(el.getBoundingClientRect().width)
+     })).filter(el=>el.right>innerWidth+2).slice(-10)}));
+    if(overflow.amount>2)await page.screenshot({path:`test-results/operational-editor-overflow-${width}.png`,fullPage:true});
+    assert.ok(overflow.amount<=2,"Editor overflows at "+width+": "+JSON.stringify(overflow));
     await preview.screenshot({path:`test-results/operational-portfolio-${theme}-${layout}-${width}.png`});
    }
   }
