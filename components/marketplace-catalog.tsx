@@ -6,9 +6,10 @@ import {
   ArrowLeft, ArrowRight, ArrowUpRight, CalendarDays, Check,
   ChevronLeft, ChevronRight, CircleHelp, Clock3, ExternalLink,
   Filter, Guitar, Heart, LoaderCircle, MapPin, MessageCircle,
-  Music2, Search, Send, ShieldCheck, SlidersHorizontal, Sparkles,
+  Music2, Send, ShieldCheck, SlidersHorizontal, Sparkles,
   Star, Trophy, Users, Flag, UserRound, X
 } from "lucide-react";
+import { Button, Input, Select } from "@/src/components/ui";
 import { createClient } from "@/lib/supabase/client";
 import { trackMarketplaceExposure } from "@/lib/musician-metrics";
 import "./marketplace-catalog.css";
@@ -181,6 +182,8 @@ export default function MarketplaceCatalog({preview=false}:Props) {
   const [featuredLoading,setFeaturedLoading] = useState(true);
   const [featuredError,setFeaturedError] = useState("");
   const featuredRail=useRef<HTMLDivElement|null>(null);
+  const filterPanelRef=useRef<HTMLElement|null>(null);
+  const sortControlsRef=useRef<HTMLDivElement|null>(null);
   const [loading,setLoading] = useState(true);
   const [gate,setGate] = useState<"loading"|"allowed"|"denied">("loading");
   const [notice,setNotice] = useState("");
@@ -369,6 +372,13 @@ export default function MarketplaceCatalog({preview=false}:Props) {
     void loadDetails();
     return()=>{active=false;};
   },[selected?.musician_id,gate,authUser]);
+
+  useEffect(()=>{
+    if(!mobileFilters)return;
+    filterPanelRef.current?.querySelector<HTMLInputElement>("#market-city")?.focus();
+    const toggle=sortControlsRef.current?.querySelector<HTMLButtonElement>(".market-filters-open");
+    return()=>{if(toggle?.isConnected&&toggle.getClientRects().length)toggle.focus();};
+  },[mobileFilters]);
 
   const pages = Math.max(1,Math.ceil(total/limit));
   useEffect(()=>{
@@ -622,44 +632,37 @@ export default function MarketplaceCatalog({preview=false}:Props) {
       </section>
 
       <div className="market-content">
-        <aside className={"market-sidebar"+(mobileFilters?" is-open":"")}>
+        <aside ref={filterPanelRef} id="market-filters-panel" aria-label="Filtros de músicos" className={"market-sidebar"+(mobileFilters?" is-open":"")}>
           <div className="market-sidebar-head">
-            <strong><SlidersHorizontal size={17}/> Filtrar músicos</strong>
-            <button type="button" onClick={()=>setMobileFilters(false)}
-              className="market-mobile-close" aria-label="Fechar filtros"><X size={19}/></button>
+            <strong><SlidersHorizontal aria-hidden="true" size={17}/> Filtrar músicos</strong>
+            <Button variant="secondary" onClick={()=>setMobileFilters(false)}
+              className="market-mobile-close" aria-label="Fechar filtros"><X aria-hidden="true" size={19}/></Button>
           </div>
           <form onSubmit={apply} className="market-filter-form">
-            <label htmlFor="market-city">Cidade ou região</label>
-            <div className="market-input-icon"><MapPin size={15}/>
-              <input id="market-city" value={filters.city} maxLength={90}
+            <Input label="Cidade ou região" id="market-city" value={filters.city} maxLength={90}
                 onChange={e=>setFilters(f=>({...f,city:e.target.value}))}
-                placeholder="Ex.: São Paulo"/></div>
+                placeholder="Ex.: São Paulo"/>
 
-            <label htmlFor="market-instrument">Instrumento</label>
-            <select id="market-instrument" value={filters.instrument}
+            <Select label="Instrumento" id="market-instrument" value={filters.instrument}
               onChange={e=>setFilters(f=>({...f,instrument:e.target.value}))}>
               <option value="">Todos os instrumentos</option>
               {instruments.map(i=><option key={i} value={i}>{i}</option>)}
-            </select>
+            </Select>
 
-            <label htmlFor="market-genre">Estilo musical</label>
-            <select id="market-genre" value={filters.genre}
+            <Select label="Estilo musical" id="market-genre" value={filters.genre}
               onChange={e=>setFilters(f=>({...f,genre:e.target.value}))}>
               <option value="">Todos os estilos</option>
               {genres.map(g=><option key={g} value={g}>{g}</option>)}
-            </select>
+            </Select>
 
-            <label htmlFor="market-fee">Cachê máximo divulgado (R$)</label>
-            <input id="market-fee" type="text" inputMode="decimal" maxLength={10}
+            <Input label="Cachê máximo divulgado (R$)" id="market-fee"
+              hint="Mostra apenas músicos que informaram um valor ‘a partir de’. Não é orçamento garantido." type="text" inputMode="decimal" maxLength={10}
               value={filters.maxFee} placeholder="Ex.: 800"
               onChange={e=>setFilters(f=>({...f,maxFee:e.target.value}))}/>
-            <small>Mostra apenas músicos que informaram um valor “a partir de”. Não é orçamento garantido.</small>
 
-            <label htmlFor="market-date">Data desejada (opcional)</label>
-            <div className="market-input-icon"><CalendarDays size={15}/>
-              <input id="market-date" type="date" value={filters.date}
+            <Input label="Data desejada (opcional)" id="market-date" type="date" value={filters.date}
                 min={localDateISO()} max={lastSelectableDate()}
-                onChange={e=>setFilters(f=>({...f,date:e.target.value}))}/></div>
+                onChange={e=>setFilters(f=>({...f,date:e.target.value}))}/>
             <label className="market-check">
               <input type="checkbox" checked={filters.available}
                 onChange={e=>setFilters(f=>({...f,available:e.target.checked}))}/>
@@ -668,11 +671,11 @@ export default function MarketplaceCatalog({preview=false}:Props) {
             <label className="market-check">
               <input type="checkbox" checked={filters.favorites}
                 onChange={e=>setFilters(f=>({...f,favorites:e.target.checked}))}/>
-              <span><Heart size={14}/> Somente meus favoritos</span>
+              <span><Heart aria-hidden="true" size={14}/> Somente meus favoritos</span>
             </label>
 
-            <button type="submit" className="market-apply"><Filter size={16}/> Aplicar filtros</button>
-            <button type="button" className="market-clear" onClick={clear}>Limpar filtros</button>
+            <Button type="submit"><Filter aria-hidden="true" size={16}/> Aplicar filtros</Button>
+            <Button variant="secondary" onClick={clear}>Limpar filtros</Button>
           </form>
           <p className="market-filter-note"><CircleHelp size={15}/>
             Disponibilidade declarada pelo músico, sujeita à confirmação.
@@ -681,24 +684,23 @@ export default function MarketplaceCatalog({preview=false}:Props) {
 
         <section className="market-results" id="market-results">
           <form className="market-search-bar" onSubmit={apply}>
-            <Search size={19}/>
-            <input aria-label="Buscar músicos" placeholder="Busque por nome, instrumento ou especialidade..."
+            <Input label="Buscar músicos" placeholder="Busque por nome, instrumento ou especialidade..."
               value={filters.query} maxLength={90}
               onChange={e=>setFilters(f=>({...f,query:e.target.value}))}/>
-            <button type="submit" aria-label="Pesquisar músicos">Pesquisar <ArrowRight size={15}/></button>
+            <Button type="submit" aria-label="Pesquisar músicos">Pesquisar <ArrowRight aria-hidden="true" size={15}/></Button>
           </form>
           <div className="market-results-toolbar">
             <div>
               <strong>{loading?"Procurando músicos...":total+" músico(s) encontrado(s)"}</strong>
               <span>Portfólios publicados e autorizados pelo próprio músico</span>
             </div>
-            <div className="market-sort-controls">
-              <button type="button" className="market-filters-open"
+            <div className="market-sort-controls" ref={sortControlsRef}>
+              <Button variant="secondary" className="market-filters-open"
+                aria-controls="market-filters-panel" aria-expanded={mobileFilters}
                 onClick={()=>setMobileFilters(v=>!v)}>
-                <SlidersHorizontal size={16}/> Filtros
-              </button>
-              <label htmlFor="market-sort">Ordenar por</label>
-              <select id="market-sort" value={filters.sort}
+                <SlidersHorizontal aria-hidden="true" size={16}/> Filtros
+              </Button>
+              <Select label="Ordenar por" id="market-sort" value={filters.sort}
                 onChange={e=>{
                   const sort=e.target.value as Sort;
                   setFilters(f=>({...f,sort}));
@@ -709,7 +711,7 @@ export default function MarketplaceCatalog({preview=false}:Props) {
                 <option value="rating">Melhor avaliação</option>
                 <option value="experience">Experiência</option>
                 <option value="name">Nome (A–Z)</option>
-              </select>
+              </Select>
             </div>
           </div>
 
@@ -720,7 +722,7 @@ export default function MarketplaceCatalog({preview=false}:Props) {
             items.length===0?<div className="market-empty">
               <Music2 size={36}/><h3>Nenhum músico encontrado</h3>
               <p>Altere os filtros ou aguarde novos músicos publicarem e autorizarem a exibição dos seus portfólios.</p>
-              <button type="button" className="market-apply" onClick={clear}>Ver todos os músicos</button>
+              <Button onClick={clear}>Ver todos os músicos</Button>
             </div>:
             <div className="market-card-grid">
               {items.map(m=><MarketplaceMusicianCard key={m.musician_id}
@@ -732,11 +734,11 @@ export default function MarketplaceCatalog({preview=false}:Props) {
             </div>}
 
           {!loading&&total>limit&&<nav className="market-pagination" aria-label="Páginas do marketplace">
-            <button type="button" disabled={page===0}
-              onClick={()=>setPage(v=>v-1)}><ChevronLeft size={17}/> Anterior</button>
+            <Button variant="secondary" disabled={page===0}
+              onClick={()=>setPage(v=>v-1)}><ChevronLeft aria-hidden="true" size={17}/> Anterior</Button>
             <span>Página {page+1} de {pages}</span>
-            <button type="button" disabled={page+1>=pages}
-              onClick={()=>setPage(v=>v+1)}>Próxima <ChevronRight size={17}/></button>
+            <Button variant="secondary" disabled={page+1>=pages}
+              onClick={()=>setPage(v=>v+1)}>Próxima <ChevronRight aria-hidden="true" size={17}/></Button>
           </nav>}
           <div className="market-results-footer"><ShieldCheck size={16}/>
             Avaliações são permitidas apenas após apresentações concluídas,

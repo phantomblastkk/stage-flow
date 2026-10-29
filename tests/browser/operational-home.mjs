@@ -41,6 +41,9 @@ try{
   let mediaReadMode="failed",mediaReads=0,mediaReadGate,mediaActionGate,mediaWriteMode="saved",signFail=true,deleteFileFail=false;
   let mediaRows=[{id:photoId,media_kind:"photo",title:"Foto privada inicial",storage_path:actor+"/"+photoId+".jpg",youtube_id:null,featured:false,display_order:0},
    {id:videoId,media_kind:"youtube",title:"Vídeo inicial",storage_path:null,youtube_id:"dQw4w9WgXcQ",featured:false,display_order:1}];
+  let catalogMode=false,catalogSearchMode="ok",catalogFeaturedReads=0;
+  const catalogCalls=[];
+  const catalogRows=Array.from({length:25},(_,index)=>({musician_id:"50505050-5050-4050-8050-"+String(index+1).padStart(12,"0"),name:"Músico sintético "+(index+1),slug:"musico-sintetico-"+(index+1),headline:"Apresentações ao vivo",city:"São Paulo",instruments:["Cavaquinho"],genres:["Pagode"],avatar_url:null,cover_url:null,price_mode:"from",reference_fee:800,experience_years:5,performance_types:[],availability_note:"Sob consulta",availability_mode:"accepting",date_blocked:false,rating_avg:0,rating_count:0,is_favorite:false}));
   const videoEmbeds=[];
   await context.route("https://www.youtube-nocookie.com/embed/**",async route=>{
    videoEmbeds.push(route.request().url());
@@ -182,6 +185,14 @@ try{
    else if(rpc==="stage_fee_details")data={status:"pending",is_owner:true,has_offer:true,last_amount:1500,last_by_me:true,agreed_amount:null,history:[]};
    else if(rpc==="stage_my_invitations")data=[];
    else if(rpc==="stage_musician_whatsapp_preferences")data=null;
+   else if(rpc==="stage_marketplace_search"){
+    if(catalogMode)catalogCalls.push(body);
+    data=catalogMode&&catalogSearchMode==="failed"?{status:"not_released"}:{status:"ok",items:!catalogMode||catalogSearchMode==="empty"?[]:catalogRows.slice(body.p_offset,body.p_offset+body.p_limit),total:!catalogMode||catalogSearchMode==="empty"?0:25,limit:body.p_limit,offset:body.p_offset};
+   }
+   else if(rpc==="stage_marketplace_featured"){if(catalogMode)catalogFeaturedReads++;data={status:"ok",items:[]};}
+   else if(rpc==="stage_marketplace_my_events")data=[];
+   else if(rpc==="stage_public_marketplace_identity")data={};
+   else if(rpc==="stage_track_marketplace_metrics")data={status:"recorded"};
    else if(rpc==="stage_marketplace_preview_status")data={allowed:false};
    else {unhandled.push(rpc);data=[];}
    await route.fulfill({status,contentType:"application/json",headers:{"access-control-allow-origin":"*","access-control-allow-headers":"*"},body:JSON.stringify(data)});
@@ -1395,6 +1406,87 @@ try{
   assert.deepEqual({artistReads,draftReads,mediaReads,publicationReads,agendaReads,flyerReads},videoPublicReads,"Playback controls must not query editor data");
   assert.deepEqual({media:mediaWrites.length,publish:proPublishWrites.length,storage:storageWrites.length,deletes:privateDeletes.length},videoUiWrites);
   console.log(`PASS video controls ${width}px: opt-in embeds, synthetic iframe, shared 44px actions, keyboard focus/return, thumbnail selection, reduced motion, safe external link, removed-video guard, public route and no mutations`);
+  // Part 40: catalog presentation preserves explicit search payloads and pagination.
+  catalogMode=true;await page.emulateMedia({reducedMotion:"reduce"});
+  await page.goto(origin+"/marketplace");
+  const catalog=page.locator(".market-shell");
+  const catalogSearch=page.getByLabel("Buscar músicos",{exact:true});
+  const catalogSort=page.getByLabel("Ordenar por",{exact:true});
+  const catalogFilters=page.getByRole("complementary",{name:"Filtros de músicos",exact:true});
+  const filterToggle=page.getByRole("button",{name:"Filtros",exact:true});
+  const catalogReady=()=>page.waitForFunction(()=>{const label=document.querySelector(".market-results-toolbar strong");return label&&!label.textContent.includes("Procurando");});
+  await page.getByText("25 músico(s) encontrado(s)",{exact:true}).waitFor();await catalogReady();
+  const catalogResponse=async action=>{
+   const response=page.waitForResponse(r=>r.url().endsWith("/stage_marketplace_search"));
+   await action();await response;await catalogReady();
+  };
+  const openCatalogFilters=async()=>{if(width<=840){await activate(filterToggle);await catalogFilters.waitFor();}};
+  await openCatalogFilters();
+  const catalogCity=page.getByLabel("Cidade ou região",{exact:true});
+  if(width<=840){
+   assert.equal(await filterToggle.getAttribute("aria-expanded"),"true");
+   assert.equal(await catalogCity.evaluate(el=>el===document.activeElement),true);
+   const beforeClose=catalogCalls.length;
+   await catalogCity.fill("São Paulo");
+   await activate(catalogFilters.getByRole("button",{name:"Fechar filtros",exact:true}));
+   await catalogFilters.waitFor({state:"hidden"});
+   assert.equal(await filterToggle.getAttribute("aria-expanded"),"false");
+   assert.equal(await filterToggle.evaluate(el=>el===document.activeElement),true);
+   assert.equal(catalogCalls.length,beforeClose,"Closing filters must not search");
+   await openCatalogFilters();assert.equal(await catalogCity.inputValue(),"São Paulo");
+  }
+  await catalogSearch.fill("  Sintético  ");await catalogCity.fill("  São Paulo  ");
+  await page.getByLabel("Instrumento",{exact:true}).selectOption("Cavaquinho");
+  await page.getByLabel("Estilo musical",{exact:true}).selectOption("Pagode");
+  await page.getByLabel("Cachê máximo divulgado (R$)",{exact:true}).fill("850,50");
+  const catalogDate=page.getByLabel("Data desejada (opcional)",{exact:true});
+  const validCatalogDay=await catalogDate.getAttribute("min");await catalogDate.fill(validCatalogDay);
+  await catalogFilters.getByRole("checkbox",{name:"Apenas recebendo propostas",exact:true}).check();
+  await catalogFilters.getByRole("checkbox",{name:"Somente meus favoritos",exact:true}).check();
+  const catalogBeforeApply=catalogCalls.length;
+  assert.ok(await catalogFilters.locator('input:not([type="checkbox"]),select').evaluateAll(nodes=>nodes.every(el=>el.classList.contains("sf-ui-input")&&getComputedStyle(el).fontSize==="16px")));
+  assert.ok(await catalogFilters.locator(".market-check").evaluateAll(nodes=>nodes.every(el=>el.getBoundingClientRect().height>=44)));
+  const catalogControlSizes=await catalogFilters.getByRole("button").evaluateAll(nodes=>nodes.filter(el=>el.getClientRects().length).map(el=>{const r=el.getBoundingClientRect();return {shared:el.classList.contains("sf-ui-button"),w:r.width,h:r.height};}));
+  assert.ok(catalogControlSizes.every(el=>el.shared&&el.w>=43.5&&el.h>=43.5));
+  assert.ok(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth+2),"Open marketplace filters overflow at "+width);
+  await catalogFilters.screenshot({path:`test-results/operational-marketplace-filter-controls-${width}.png`});
+  assert.equal(catalogCalls.length,catalogBeforeApply,"Editing controls must not search until submitted");
+  await catalogResponse(()=>activate(catalogFilters.getByRole("button",{name:"Aplicar filtros",exact:true})));
+  assert.deepEqual(catalogCalls.at(-1),{p_query:"Sintético",p_city:"São Paulo",p_instrument:"Cavaquinho",p_genre:"Pagode",p_max_fee:850.5,p_date:validCatalogDay,p_only_available:true,p_only_favorites:true,p_sort:"recent",p_limit:12,p_offset:0});
+  if(width<=840){assert.equal(await filterToggle.evaluate(el=>el===document.activeElement),true);assert.equal(await filterToggle.getAttribute("aria-expanded"),"false");}
+  const catalogPagination=page.getByRole("navigation",{name:"Páginas do marketplace",exact:true});
+  assert.equal(await catalogPagination.getByRole("button",{name:"Anterior",exact:true}).isDisabled(),true);
+  await catalogResponse(()=>activate(catalogPagination.getByRole("button",{name:"Próxima",exact:true})));
+  await catalogPagination.getByText("Página 2 de 3",{exact:true}).waitFor();assert.equal(catalogCalls.at(-1).p_offset,12);
+  await catalogResponse(()=>catalogSort.selectOption("name"));
+  await catalogPagination.getByText("Página 1 de 3",{exact:true}).waitFor();assert.equal(catalogCalls.at(-1).p_offset,0);assert.equal(catalogCalls.at(-1).p_sort,"name");
+  await openCatalogFilters();await page.getByLabel("Cachê máximo divulgado (R$)",{exact:true}).fill("-1");
+  const catalogBeforeInvalid=catalogCalls.length;
+  await activate(catalogFilters.getByRole("button",{name:"Aplicar filtros",exact:true}));
+  await catalog.getByRole("alert").filter({hasText:"Informe um cachê máximo válido."}).waitFor();assert.equal(catalogCalls.length,catalogBeforeInvalid);
+  await openCatalogFilters();await page.getByLabel("Cachê máximo divulgado (R$)",{exact:true}).fill("850,50");
+  catalogSearchMode="failed";await catalogResponse(()=>activate(catalogFilters.getByRole("button",{name:"Aplicar filtros",exact:true})));
+  await catalog.getByRole("alert").filter({hasText:"O catálogo ainda está sendo habilitado."}).waitFor();
+  assert.equal(await catalogSearch.inputValue(),"  Sintético  ");
+  catalogSearchMode="ok";await catalogResponse(()=>catalogSearch.press("Enter"));
+  assert.equal(await catalog.getByRole("alert").count(),0);
+  catalogSearchMode="empty";await catalogResponse(()=>catalogSearch.press("Enter"));
+  await page.getByRole("heading",{name:"Nenhum músico encontrado",exact:true}).waitFor();
+  catalogSearchMode="ok";await catalogResponse(()=>activate(page.getByRole("button",{name:"Ver todos os músicos",exact:true})));
+  assert.deepEqual(catalogCalls.at(-1),{p_query:"",p_city:"",p_instrument:"",p_genre:"",p_max_fee:null,p_date:null,p_only_available:false,p_only_favorites:false,p_sort:"recent",p_limit:12,p_offset:0});
+  await openCatalogFilters();await catalogCity.fill("Santos");await catalogResponse(()=>activate(catalogFilters.getByRole("button",{name:"Limpar filtros",exact:true})));
+  assert.equal(await catalogSearch.inputValue(),"");assert.equal(catalogCalls.at(-1).p_city,"");
+  await catalogSearch.focus();assert.ok(await catalogSearch.evaluate(el=>el.matches(":focus-visible")&&parseFloat(getComputedStyle(el).outlineWidth)>=2));
+  assert.equal(await catalogSearch.evaluate(el=>getComputedStyle(el).fontSize),"16px");
+  assert.ok((await catalogSort.getAttribute("class")).includes("sf-ui-input"));
+  const catalogSearchButton=page.getByRole("button",{name:"Pesquisar músicos",exact:true});
+  const catalogSearchSize=await catalogSearchButton.boundingBox();assert.ok(catalogSearchSize.width>=44&&catalogSearchSize.height>=44);
+  assert.notEqual(await catalogSearchButton.evaluate(el=>getComputedStyle(el).fontSize),"0px","Search text remains visible on mobile");
+  assert.equal(catalogFeaturedReads,1,"Search/filter/sort/page must not reload global highlights");
+  assert.ok(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth+2),"Marketplace search/ordering overflows at "+width);
+  await page.locator(".market-results-toolbar").screenshot({path:`test-results/operational-marketplace-sort-controls-${width}.png`});
+  assert.equal(proPublishWrites.length,6);assert.equal(privateDeletes.length,1);
+  console.log(`PASS marketplace controls ${width}px: shared fields/actions, labeled visible search/sort, 44px targets, mobile focus/retained drafts, explicit filter payload, pagination/reset, invalid fee guard, retry and empty recovery`);
   assert.deepEqual(errors,[],"Browser exceptions at "+width);await context.close();
  }
  console.log("PASS: dashboard at 360/768/1280, navigation, receipt failure, legacy profile, group creation, availability and invitation.");
