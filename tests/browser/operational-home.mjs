@@ -994,14 +994,14 @@ try{
   assert.equal(flyerSigns,2,"Failed image also offers an explicit signed-preview retry");
   flyerImageFail=false;await activate(retryCartaz);
   const waitForFlyer=async card=>{
-   const img=card.getByRole("img");await img.scrollIntoViewIfNeeded();
+   const img=card.getByRole("img",{name:/^Cartaz do show /});await img.scrollIntoViewIfNeeded();
    for(let i=0;i<100&&!await img.evaluate(el=>el.complete&&el.naturalWidth>0);i++)await delay(25);
    assert.ok(await img.evaluate(el=>el.complete&&el.naturalWidth>0));
   };
   await waitForFlyer(chosenCard);
   flyerMode="failed";await activate(refreshFlyers);
   await previewAgenda.getByRole("status").filter({hasText:"Não foi possível atualizar os cartazes."}).waitFor();
-  assert.equal(await chosenCard.getByRole("img").count(),1,"Metadata failure keeps the last known cartaz and its show");
+  assert.equal(await chosenCard.getByRole("img",{name:/^Cartaz do show /}).count(),1,"Metadata failure keeps the last known cartaz and its show");
   assert.equal(await chosenDay.getAttribute("aria-pressed"),"true");
   await previewAgenda.screenshot({path:`test-results/operational-preview-flyer-failure-${width}.png`});
   flyerMode="ok";await activate(refreshFlyers);await waitEnabled(refreshFlyers);await waitForFlyer(chosenCard);

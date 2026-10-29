@@ -101,7 +101,7 @@ function ShowFlyerThumb({path,title}:{path:string;title:string}){
     return()=>{active=false;};
   },[path,attempt]);
   if(!url)return <div className="pro-show-card-flyer is-loading">
-    <ImageIcon size={23}/>
+    <ImageIcon aria-hidden="true" size={23}/>
     {loading?<small role="status">Carregando cartaz...</small>:<>
       <small>Cartaz indisponível</small>
       <Button variant="secondary" aria-label={"Recarregar cartaz de "+title}
@@ -221,39 +221,39 @@ export default function ProShowCards({ shows, artistName, preview = false }: Pro
         </div>
         {show.flyer_path && <ShowFlyerThumb key={show.flyer_path} path={show.flyer_path} title={show.title}/>}
         <div className="pro-show-card-content">
-          <span className="pro-show-card-eyebrow"><Ticket size={12}/> SHOW PUBLICADO NA AGENDA</span>
+          <span className="pro-show-card-eyebrow"><Ticket aria-hidden="true" size={12}/> SHOW PUBLICADO NA AGENDA</span>
           <h4>{show.title}</h4>
           <div className="pro-show-card-facts">
-            <span><Clock3 size={15}/>
+            <span><Clock3 aria-hidden="true" size={15}/>
               {validDate ? weekday + ", " + hour : "Horário não disponível"}
             </span>
-            <span><MapPin size={15}/>{location || "Local a confirmar"}</span>
+            <span><MapPin aria-hidden="true" size={15}/>{location || "Local a confirmar"}</span>
           </div>
           <div className="pro-show-card-actions">
             {show.flyer_path&&<>
               <button type="button" disabled={Boolean(downloading)}
                 onClick={()=>void exportFlyer(show,"feed")}
                 title="Baixar arte em 1080 × 1350 px">
-                <Download size={15}/> {downloading===show.id+"feed"?"Gerando...":"Baixar Feed"}
+                <Download aria-hidden="true" size={15}/> {downloading===show.id+"feed"?"Gerando...":"Baixar Feed"}
               </button>
               <button type="button" disabled={Boolean(downloading)}
                 onClick={()=>void exportFlyer(show,"story")}
                 title="Baixar arte em 1080 × 1920 px">
-                <Download size={15}/> {downloading===show.id+"story"?"Gerando...":"Baixar Story"}
+                <Download aria-hidden="true" size={15}/> {downloading===show.id+"story"?"Gerando...":"Baixar Story"}
               </button>
             </>}
             <button type="button" onClick={() => saveCalendar(show)}
               disabled={!validDate} title="Baixar evento .ics (horário de término não informado)">
-              <CalendarPlus size={15}/> Adicionar ao calendário
+              <CalendarPlus aria-hidden="true" size={15}/> Adicionar ao calendário
             </button>
             {!preview && <button type="button"
               onClick={() => void shareShow(show)}>
-              {copiedId === show.id ? <Check size={15}/> : <Share2 size={15}/>}
+              {copiedId === show.id ? <Check aria-hidden="true" size={15}/> : <Share2 aria-hidden="true" size={15}/>}
               {copiedId === show.id ? "Link copiado" : "Compartilhar show"}
             </button>}
             {!preview && <a href={"#show-" + show.id}
               aria-label={"Link direto para o show " + show.title}>
-              <ExternalLink size={15}/> Ver link
+              <ExternalLink aria-hidden="true" size={15}/> Ver link
             </a>}
           </div>
         </div>
@@ -262,14 +262,14 @@ export default function ProShowCards({ shows, artistName, preview = false }: Pro
     {shows.length > 6 && <button type="button" className="pro-show-cards-more"
       onClick={() => setExpanded(value => !value)}
       aria-expanded={expanded}>
-      {expanded ? <ChevronUp size={16}/> : <ChevronDown size={16}/>}
+      {expanded ? <ChevronUp aria-hidden="true" size={16}/> : <ChevronDown aria-hidden="true" size={16}/>}
       {expanded ? "Mostrar menos shows" : "Ver todos os " + shows.length + " shows"}
     </button>}
     {preview && shows.length > 0 && <p className="pro-show-cards-hint">
       Na página pública, cada show também terá um link próprio para compartilhar.
     </p>}
     {message && <p className="pro-show-cards-message" role="alert">
-      <Copy size={14}/>{message}
+      <Copy aria-hidden="true" size={14}/>{message}
     </p>}
   </div>;
 }
