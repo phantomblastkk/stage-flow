@@ -340,23 +340,7 @@
   margin:0;
 }
 .premium-video-stage-actions{display:flex;flex-wrap:wrap;gap:8px;align-items:center}
-.premium-video-stage-actions>a,
-.premium-video-stage-actions>button{
-  display:inline-flex;
-  align-items:center;
-  justify-content:center;
-  gap:7px;
-  border:1px solid #596583;
-  border-radius:9px;
-  padding:10px 11px;
-  color:#e6e3f6;
-  background:#293349;
-  font:800 10px "Manrope",sans-serif;
-  text-decoration:none;
-  cursor:pointer;
-}
-.premium-video-stage-actions>a:hover,
-.premium-video-stage-actions>button:hover{border-color:#d8c2f7}
+.premium-video-stage-actions .sf-ui-button{min-width:44px;max-width:100%;text-decoration:none;overflow-wrap:anywhere}
 .premium-video-choices-heading{
   display:flex;
   justify-content:space-between;

@@ -470,22 +470,51 @@ export function PremiumGalleryShowcase({
   const selected = lightboxPhotos[activePhotoIndex] ?? null;
   const photoOpen = Boolean(selected);
   const [selectedVideoId, setSelectedVideoId] = useState<string | null>(null);
-  const [videoPlaying, setVideoPlaying] = useState(false);
+  const [playingVideo, setPlayingVideo] = useState<{id:string; youtubeId:string} | null>(null);
   const playerRef = useRef<HTMLDivElement | null>(null);
+  const videoActionsRef = useRef<HTMLDivElement | null>(null);
+  const videoPosterRef = useRef<HTMLButtonElement | null>(null);
+  const videoOpenerRef = useRef<HTMLButtonElement | null>(null);
+  const restoreVideoFocus = useRef(false);
+  const videoPlayerId = galleryId + "-video-player";
+  const videoNowTitleId = galleryId + "-video-now-title";
   const photoDialogRef = useRef<HTMLDialogElement | null>(null);
   const photoOpenerRef = useRef<HTMLButtonElement | null>(null);
   const currentVideo = orderedVideos.find(item => item.id === selectedVideoId)
     ?? orderedVideos[0] ?? null;
 
-  function playVideo(id: string) {
+  const videoPlaying = Boolean(currentVideo && playingVideo?.id === currentVideo.id &&
+    playingVideo?.youtubeId === currentVideo.youtube_id);
+
+  function playVideo(id: string, opener: HTMLButtonElement) {
+    const video = orderedVideos.find(item => item.id === id);
+    if (!video?.youtube_id) return;
+    videoOpenerRef.current = opener;
     setSelectedVideoId(id);
-    setVideoPlaying(true);
-    // No celular, traz o player à vista após o clique na miniatura.
-    // Não há redirecionamento externo.
-    if (typeof window !== "undefined" && window.innerWidth <= 760) {
-      playerRef.current?.scrollIntoView({ behavior: "smooth", block: "center" });
-    }
+    setPlayingVideo({ id, youtubeId: video.youtube_id });
   }
+
+  function closeVideo() {
+    restoreVideoFocus.current = true;
+    setPlayingVideo(null);
+  }
+
+  useEffect(() => {
+    const behavior = window.matchMedia("(prefers-reduced-motion: reduce)").matches ? "instant" : "smooth";
+    if (videoPlaying) {
+      videoActionsRef.current?.querySelector<HTMLButtonElement>("button")?.focus({ preventScroll: true });
+      playerRef.current?.scrollIntoView({ behavior, block: "nearest" });
+    } else {
+      // A removed video or changed YouTube source must not start the fallback video.
+      setPlayingVideo(null);
+      if (restoreVideoFocus.current) {
+        const opener = videoOpenerRef.current?.isConnected ? videoOpenerRef.current : videoPosterRef.current;
+        opener?.focus({ preventScroll: true });
+        opener?.scrollIntoView({ behavior, block: "nearest" });
+        restoreVideoFocus.current = false;
+      }
+    }
+  }, [videoPlaying, currentVideo?.id, currentVideo?.youtube_id]);
 
   // Keep the modal lifecycle independent of the selected photo: navigation must not
   // reset focus, unlock scrolling, or change the thumbnail that opened the dialog.
@@ -570,18 +599,19 @@ export function PremiumGalleryShowcase({
       </div>}
       {orderedVideos.length > 0 ?
         <div className="premium-video-player-layout">
-          {currentVideo && <div className="premium-video-theater" ref={playerRef}>
-            <div className="premium-video-screen">
+          {currentVideo && <div className="premium-video-theater" ref={playerRef} role="region" aria-labelledby={videoNowTitleId}>
+            <div className="premium-video-screen" id={videoPlayerId}>
               {videoPlaying ? <iframe key={currentVideo.youtube_id}
                 src={"https://www.youtube-nocookie.com/embed/" + currentVideo.youtube_id +
                   "?autoplay=1&playsinline=1&rel=0"}
                 title={"Reproduzindo: " + currentVideo.title}
-                loading="lazy"
+                loading="eager"
                 referrerPolicy="strict-origin-when-cross-origin"
                 allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
                 allowFullScreen/> :
-                <button type="button" className="premium-video-stage-poster"
-                  onClick={() => playVideo(currentVideo.id)}
+                <button ref={videoPosterRef} type="button" className="premium-video-stage-poster"
+                  aria-controls={videoPlayerId}
+                  onClick={event => playVideo(currentVideo.id, event.currentTarget)}
                   aria-label={"Reproduzir na página: " + currentVideo.title}>
                   <img
                     src={"https://i.ytimg.com/vi/" + currentVideo.youtube_id + "/hqdefault.jpg"}
@@ -592,15 +622,15 @@ export function PremiumGalleryShowcase({
             </div>
             <div className="premium-video-stage-details">
               <div>
-                <span>APRESENTAÇÃO SELECIONADA</span>
-                <h4>{currentVideo.title}</h4>
+                <span role="status">{videoPlaying ? "REPRODUZINDO AGORA" : "APRESENTAÇÃO SELECIONADA"}</span>
+                <h4 id={videoNowTitleId}>{currentVideo.title}</h4>
               </div>
-              <div className="premium-video-stage-actions">
-                {videoPlaying && <button type="button"
-                  onClick={() => setVideoPlaying(false)}>
+              <div className="premium-video-stage-actions" ref={videoActionsRef}>
+                {videoPlaying && <Button variant="secondary"
+                  onClick={closeVideo}>
                   <X aria-hidden="true" size={15}/> Fechar player
-                </button>}
-                <a href={"https://www.youtube.com/watch?v=" + currentVideo.youtube_id}
+                </Button>}
+                <a className="sf-ui-button sf-ui-button-secondary" href={"https://www.youtube.com/watch?v=" + currentVideo.youtube_id}
                   target="_blank" rel="noopener noreferrer"
                   aria-label={"Abrir " + currentVideo.title + " no YouTube"}>
                   <ExternalLink aria-hidden="true" size={15}/> Abrir no YouTube
@@ -612,12 +642,13 @@ export function PremiumGalleryShowcase({
             <strong>Outras apresentações</strong>
             <span>Selecione uma miniatura para assistir aqui mesmo</span>
           </div>}
-          <div className="premium-video-grid" aria-label="Escolha um vídeo para assistir">
+          <div className="premium-video-grid" role="group" aria-label="Escolha um vídeo para assistir">
             {orderedVideos.map(item => {
               const active = item.id === currentVideo?.id;
               return <button type="button" key={item.id}
                 className={"premium-video-tile" + (active ? " is-selected" : "")}
-                onClick={() => playVideo(item.id)}
+                onClick={event => playVideo(item.id, event.currentTarget)}
+                aria-controls={videoPlayerId}
                 aria-pressed={active}
                 aria-label={"Assistir na página: " + item.title}>
                 <div className="premium-video-thumbnail">

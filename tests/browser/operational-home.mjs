@@ -41,6 +41,11 @@ try{
   let mediaReadMode="failed",mediaReads=0,mediaReadGate,mediaActionGate,mediaWriteMode="saved",signFail=true,deleteFileFail=false;
   let mediaRows=[{id:photoId,media_kind:"photo",title:"Foto privada inicial",storage_path:actor+"/"+photoId+".jpg",youtube_id:null,featured:false,display_order:0},
    {id:videoId,media_kind:"youtube",title:"Vídeo inicial",storage_path:null,youtube_id:"dQw4w9WgXcQ",featured:false,display_order:1}];
+  const videoEmbeds=[];
+  await context.route("https://www.youtube-nocookie.com/embed/**",async route=>{
+   videoEmbeds.push(route.request().url());
+   await route.fulfill({contentType:"text/html",body:'<!doctype html><html lang="pt-BR"><body style="margin:0;background:#101827;color:white;font-family:Arial;display:grid;place-items:center;height:100vh"><p>Player sintético para teste de navegação</p></body></html>'});
+  });
   let publicGalleryRows=[];
   await context.route(api+"/**",async route=>{
    const req=route.request(),url=new URL(req.url()),rpc=url.pathname.split("/").at(-1);let data=[],status=200;
@@ -83,7 +88,7 @@ try{
    const body=req.postDataJSON();
    if(url.pathname.endsWith("/user"))data=user;
    else if(rpc==="profiles"){assert.equal(url.searchParams.get("id"),"eq."+actor);data={...profile,is_producer:producer,...(singerMode?{display_name:"Artista de teste",is_singer:true,is_musician:false,artist_kind:"lead",username:singerUsername}:{})};}
-   else if(rpc==="stage_public_pro_artist_site")data={artist:{name:"Artista de teste",username:"cantor-teste",bio:"Biografia pública",city:"São Paulo",headline:"No palco",instagram_url:null,youtube_url:null,spotify_url:null,avatar_path:null,cover_path:null,bookings_enabled:false},design:{theme:"midnight",accent:"violet",section_order:["about","photos","videos","agenda","contact"],visible_sections:["about","photos","contact"]},media:publicGalleryRows,events:[]};
+   else if(rpc==="stage_public_pro_artist_site")data={artist:{name:"Artista de teste",username:"cantor-teste",bio:"Biografia pública",city:"São Paulo",headline:"No palco",instagram_url:null,youtube_url:null,spotify_url:null,avatar_path:null,cover_path:null,bookings_enabled:false},design:{theme:"midnight",accent:"violet",section_order:["about","photos","videos","agenda","contact"],visible_sections:["about","photos","videos","contact"]},media:publicGalleryRows,events:[]};
    else if(["stage_public_artistic_musician","stage_public_booking_contact"].includes(rpc))data=null;
    else if(rpc==="stage_public_verified")data=false;
    else if(rpc==="stage_owner_admin_status")data=false;
@@ -1295,7 +1300,81 @@ try{
   assert.equal(await page.evaluate(()=>document.body.style.overflow),previousBodyOverflow,"Removing the active photo must close and unlock the viewer");
   mediaRows=[originalPhoto,missingPhoto,secondPhoto,...mediaRows.filter(row=>row.media_kind!=="photo")];
   await activate(mediaRefresh);await mediaReady();assert.equal(await photoDialog.count(),0,"A returning photo must not reopen a dismissed selection");
-  publicGalleryRows=[originalPhoto,missingPhoto,secondPhoto];
+  // Part 39: keep embeds opt-in and preserve keyboard focus in the shared video gallery.
+  const videoUiWrites={media:mediaWrites.length,publish:proPublishWrites.length,storage:storageWrites.length,deletes:privateDeletes.length};
+  const videoFixtureRows=mediaRows.filter(row=>row.media_kind==="youtube").map((row,index)=>({...row,youtube_id:index===0?"dQw4w9WgXcQ":"M7lc1UVf-VE"}));
+  mediaRows=[...mediaRows.filter(row=>row.media_kind!=="youtube"),...videoFixtureRows];
+  await activate(mediaRefresh);await mediaReady();
+  const exerciseVideoGallery=async(scope,label)=>{
+   await page.emulateMedia({reducedMotion:"reduce"});
+   const videoGallery=scope.locator(".premium-video-gallery");
+   const videoFrame=videoGallery.locator("iframe"),closePlayer=videoGallery.getByRole("button",{name:"Fechar player",exact:true});
+   const choices=videoGallery.getByRole("group",{name:"Escolha um vídeo para assistir",exact:true});
+   const secondChoice=choices.getByRole("button",{name:"Assistir na página: "+videoFixtureRows[1].title,exact:true});
+   const embedStart=videoEmbeds.length;
+   assert.equal(await videoFrame.count(),0,"An unplayed gallery must not mount an iframe");
+   const poster=videoGallery.getByRole("button",{name:/^Reproduzir na página:/});
+   const firstPosterLabel=await poster.getAttribute("aria-label");
+   await activate(poster);await closePlayer.waitFor();
+   assert.equal(await closePlayer.evaluate(el=>el===document.activeElement),true,"Starting a video must move focus to the close control");
+   assert.equal(await videoFrame.getAttribute("loading"),"eager","An explicit play action must start its mounted iframe promptly");
+   const firstSource=await videoFrame.getAttribute("src");
+   assert.match(firstSource,/^https:\/\/www\.youtube-nocookie\.com\/embed\/[A-Za-z0-9_-]{11}\?autoplay=1/);
+   for(let i=0;i<100&&videoEmbeds.length<embedStart+1;i++)await delay(25);
+   assert.equal(videoEmbeds.length,embedStart+1);
+   await activate(closePlayer);await videoFrame.waitFor({state:"detached"});
+   assert.equal(await videoGallery.getByRole("button",{name:firstPosterLabel,exact:true}).evaluate(el=>el===document.activeElement),true,"A removed poster opener falls back to the recreated poster");
+   await secondChoice.focus();await secondChoice.press("Space");await closePlayer.waitFor();
+   assert.equal(await videoFrame.getAttribute("title"),"Reproduzindo: "+videoFixtureRows[1].title);
+   assert.match(await videoFrame.getAttribute("src"),/embed\/M7lc1UVf-VE\?/);
+   assert.equal(await secondChoice.getAttribute("aria-pressed"),"true");
+   assert.equal(await choices.locator('button[aria-pressed="true"]').count(),1);
+   assert.equal(await closePlayer.evaluate(el=>el===document.activeElement),true);
+   const externalVideo=videoGallery.getByRole("link",{name:"Abrir "+videoFixtureRows[1].title+" no YouTube",exact:true});
+   assert.equal(await externalVideo.getAttribute("href"),"https://www.youtube.com/watch?v=M7lc1UVf-VE");
+   assert.equal(await externalVideo.getAttribute("target"),"_blank");assert.match(await externalVideo.getAttribute("rel"),/noopener/);
+   for(const action of [closePlayer,externalVideo]){
+    const size=await action.boundingBox();assert.ok(size.width>=43.5&&size.height>=43.5);
+    assert.ok((await action.getAttribute("class")).includes("sf-ui-button"));
+    await action.focus();assert.ok(await action.evaluate(el=>el.matches(":focus-visible")&&parseFloat(getComputedStyle(el).outlineWidth)>=2));
+   }
+   for(let i=0;i<100&&videoEmbeds.length<embedStart+2;i++)await delay(25);
+   assert.equal(videoEmbeds.length,embedStart+2);
+   await videoGallery.scrollIntoViewIfNeeded();
+   await videoGallery.screenshot({path:`test-results/operational-video-controls-${label}-${width}.png`});
+   assert.ok(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth+2),"Video controls overflow at "+width);
+   await activate(closePlayer);await videoFrame.waitFor({state:"detached"});
+   assert.equal(await secondChoice.evaluate(el=>el===document.activeElement),true,"Closing must return to the originating thumbnail");
+   assert.equal(videoEmbeds.length,embedStart+2,"Closing must not start another embed");
+   await page.emulateMedia({reducedMotion:"no-preference"});
+  };
+  await exerciseVideoGallery(advanced,"preview");
+  await page.emulateMedia({reducedMotion:"reduce"});
+  const previewVideos=advanced.locator(".premium-video-gallery");
+  const embedBeforeRemovalPlay=videoEmbeds.length;
+  await activate(previewVideos.getByRole("button",{name:"Assistir na página: "+videoFixtureRows[0].title,exact:true}));
+  await previewVideos.getByRole("button",{name:"Fechar player",exact:true}).waitFor();
+  for(let i=0;i<100&&videoEmbeds.length<embedBeforeRemovalPlay+1;i++)await delay(25);
+  assert.equal(videoEmbeds.length,embedBeforeRemovalPlay+1);
+  const embedCountBeforeRemoval=videoEmbeds.length;
+  mediaReadGate=new Promise(resolve=>releasePhotoRead=resolve);
+  await activate(mediaRefresh);await media.getByRole("button",{name:"Atualizando galeria...",exact:true}).waitFor();
+  mediaRows=mediaRows.filter(row=>row.id!==videoFixtureRows[0].id);
+  releasePhotoRead();mediaReadGate=undefined;await mediaReady();
+  await previewVideos.locator("iframe").waitFor({state:"detached"});
+  assert.equal(await previewVideos.getByRole("button",{name:"Reproduzir na página: "+videoFixtureRows[1].title,exact:true}).count(),1);
+  assert.equal(videoEmbeds.length,embedCountBeforeRemoval,"Removing the active video must not autoplay its fallback");
+  mediaRows=[...mediaRows.filter(row=>row.media_kind!=="youtube"),...videoFixtureRows];
+  await activate(mediaRefresh);await mediaReady();assert.equal(await previewVideos.locator("iframe").count(),0,"A returning video must remain stopped");
+  await activate(previewVideos.getByRole("button",{name:/^Reproduzir na página:/}));
+  await previewVideos.getByRole("button",{name:"Fechar player",exact:true}).waitFor();
+  mediaRows=mediaRows.map(row=>row.id===videoFixtureRows[0].id?{...row,youtube_id:"aqz-KE-bpKQ"}:row);
+  await activate(mediaRefresh);await mediaReady();await previewVideos.locator("iframe").waitFor({state:"detached"});
+  assert.equal(await previewVideos.getByRole("button",{name:/^Reproduzir na página:/}).count(),1,"A changed source must require another explicit play action");
+  mediaRows=[...mediaRows.filter(row=>row.media_kind!=="youtube"),...videoFixtureRows];
+  await activate(mediaRefresh);await mediaReady();assert.equal(await previewVideos.locator("iframe").count(),0);
+  await page.emulateMedia({reducedMotion:"no-preference"});
+  publicGalleryRows=[originalPhoto,missingPhoto,secondPhoto,...videoFixtureRows];
   const modalReadsBeforePublic={artistReads,draftReads,mediaReads,publicationReads,agendaReads,flyerReads};
   await page.goto(origin+"/cantor-teste");
   const publicPhotoOpener=page.getByRole("button",{name:"Abrir foto 1 de 3: "+originalPhoto.title,exact:true});
@@ -1311,6 +1390,11 @@ try{
   assert.deepEqual({artistReads,draftReads,publicationReads,agendaReads,flyerReads},photoReadsBefore);
   assert.deepEqual({media:mediaWrites.length,publish:proPublishWrites.length,storage:storageWrites.length,deletes:privateDeletes.length},photoWritesBefore);
   console.log(`PASS photo dialog ${width}px: native modal, single/multiple photos, focus loop/return, arrows/wrap, missing preview skip, backdrop/Escape/close, identity during refresh, public route and no mutations`);
+  const videoPublicReads={artistReads,draftReads,mediaReads,publicationReads,agendaReads,flyerReads};
+  await exerciseVideoGallery(page,"public");
+  assert.deepEqual({artistReads,draftReads,mediaReads,publicationReads,agendaReads,flyerReads},videoPublicReads,"Playback controls must not query editor data");
+  assert.deepEqual({media:mediaWrites.length,publish:proPublishWrites.length,storage:storageWrites.length,deletes:privateDeletes.length},videoUiWrites);
+  console.log(`PASS video controls ${width}px: opt-in embeds, synthetic iframe, shared 44px actions, keyboard focus/return, thumbnail selection, reduced motion, safe external link, removed-video guard, public route and no mutations`);
   assert.deepEqual(errors,[],"Browser exceptions at "+width);await context.close();
  }
  console.log("PASS: dashboard at 360/768/1280, navigation, receipt failure, legacy profile, group creation, availability and invitation.");
