@@ -44,6 +44,8 @@ try{
   let catalogMode=false,catalogSearchMode="ok",catalogFeaturedReads=0,catalogSearchGate,catalogFeaturedGate,catalogFeaturedMode="ok";
   const catalogCalls=[];
   const catalogRows=Array.from({length:25},(_,index)=>({musician_id:"50505050-5050-4050-8050-"+String(index+1).padStart(12,"0"),name:"Músico sintético "+(index+1),slug:"musico-sintetico-"+(index+1),headline:"Apresentações ao vivo",city:"São Paulo",instruments:["Cavaquinho"],genres:["Pagode"],avatar_url:null,cover_url:null,price_mode:"from",reference_fee:800,experience_years:5,performance_types:[],availability_note:"Sob consulta",availability_mode:"accepting",date_blocked:false,rating_avg:0,rating_count:0,is_favorite:false}));
+  let invitationFixture=false,invitationEventsMode="transport",invitationEventsReads=0,invitationEventsGate,invitationResult="sent",invitationGate;
+  const invitationWrites=[],createdMarketplaceInvitations=new Map();
   const videoEmbeds=[];
   await context.route("https://www.youtube-nocookie.com/embed/**",async route=>{
    videoEmbeds.push(route.request().url());
@@ -202,7 +204,27 @@ try{
     else if(mode==="malformed")data={status:"ok",items:null};
     else data={status:"ok",items:mode==="populated"?catalogRows.slice(0,6):[]};
    }
-   else if(rpc==="stage_marketplace_my_events")data=[];
+   else if(rpc==="stage_marketplace_my_events"){
+    if(!invitationFixture)data=[];
+    else{
+     invitationEventsReads++;const mode=invitationEventsMode;if(invitationEventsGate)await invitationEventsGate;
+     if(mode==="transport"){status=503;data={message:"private_backend_detail.sql"};}
+     else if(mode==="missing")data=null;
+     else if(mode==="malformed")data=[{id:eventId,title:"Inválido",starts_at:"invalid"}];
+     else data=mode==="empty"?[]:[{id:eventId,title:event.title,starts_at:event.starts_at,city:event.city},{id:secondShowId,title:"Segundo show para convite",starts_at:nextShowStart,city:"São Paulo"}];
+    }
+   }
+   else if(["stage_marketplace_reviews_for_musician","stage_marketplace_my_reviewable"].includes(rpc))data=[];
+   else if(rpc==="stage_marketplace_invite_musician"){
+    invitationWrites.push(body);const mode=invitationResult;if(invitationGate)await invitationGate;
+    if(mode==="transport"){status=503;data={message:"private_backend_detail.sql"};}
+    else if(mode==="sent"||mode==="commit_then_fail"){
+     const key=body.p_event_id+":"+body.p_musician_id,exists=createdMarketplaceInvitations.has(key);
+     if(!exists)createdMarketplaceInvitations.set(key,{...body});
+     data={status:exists?"already_exists":"sent",invitation_id:"51515151-5151-4151-8151-515151515151"};
+     if(mode==="commit_then_fail"){status=503;data={message:"private_backend_detail.sql"};}
+    }else data={status:mode};
+   }
    else if(rpc==="stage_public_marketplace_identity")data={};
    else if(rpc==="stage_track_marketplace_metrics")data={status:"recorded"};
    else if(rpc==="stage_marketplace_preview_status")data={allowed:false};
@@ -1566,6 +1588,99 @@ try{
   await searchResults.screenshot({path:`test-results/operational-marketplace-search-recovery-${width}.png`});
   await page.locator(".market-featured").screenshot({path:`test-results/operational-marketplace-featured-recovered-${width}.png`});
   console.log(`PASS marketplace recovery ${width}px: sanitized transport/malformed failures, no false empty state, independent serialized retries, retained applied filters/draft, focus recovery, stale-response isolation and valid empty results`);
+  // Part 42: native invitation dialog and serialized, explicitly confirmed sends.
+  invitationFixture=true;catalogSearchMode="ok";catalogFeaturedMode="ok";await page.reload();
+  await page.getByText("25 músico(s) encontrado(s)",{exact:true}).waitFor();
+  const inviteOrigin=page.locator(".market-card-grid .market-artist-card").first().getByRole("button",{name:"Convidar",exact:true});
+  const invitePanel=page.getByRole("dialog",{name:"Convidar e avaliar Músico sintético 1",exact:true});
+  const closeInvite=invitePanel.getByRole("button",{name:"Fechar painel",exact:true});
+  const invitationOverflow=await page.evaluate(()=>document.body.style.overflow);
+  await activate(inviteOrigin);await invitePanel.waitFor();
+  assert.equal(await invitePanel.evaluate(el=>el.matches(":modal")),true);
+  assert.equal(await closeInvite.evaluate(el=>el===document.activeElement),true);
+  assert.equal(await page.evaluate(()=>document.body.style.overflow),"hidden");
+  await invitePanel.getByRole("alert").filter({hasText:"Não foi possível carregar seus shows."}).waitFor();
+  assert.equal(await invitePanel.getByText("Você precisa ter um show futuro cadastrado na agenda.",{exact:true}).count(),0);
+  const retryInviteEvents=invitePanel.getByRole("button",{name:"Tentar novamente os shows",exact:true});
+  await closeInvite.press("Shift+Tab");assert.equal(await retryInviteEvents.evaluate(el=>el===document.activeElement),true);
+  await retryInviteEvents.press("Tab");assert.equal(await closeInvite.evaluate(el=>el===document.activeElement),true);
+  await page.keyboard.press("Escape");await invitePanel.waitFor({state:"detached"});
+  assert.equal(await inviteOrigin.evaluate(el=>el===document.activeElement),true);
+  assert.equal(await page.evaluate(()=>document.body.style.overflow),invitationOverflow);
+  await activate(inviteOrigin);await invitePanel.waitFor();await page.mouse.click(2,2);await invitePanel.waitFor({state:"detached"});
+  assert.equal(await inviteOrigin.evaluate(el=>el===document.activeElement),true);
+  await activate(inviteOrigin);await invitePanel.waitFor();
+  for(const mode of ["missing","malformed"]){
+   invitationEventsMode=mode;const response=page.waitForResponse(r=>r.url().endsWith("/stage_marketplace_my_events"));
+   await activate(retryInviteEvents);await response;await retryInviteEvents.waitFor();
+   assert.equal(await invitePanel.getByText("Você precisa ter um show futuro cadastrado na agenda.",{exact:true}).count(),0);
+  }
+  const inviteSearchesBefore=catalogCalls.length,inviteFeaturedBefore=catalogFeaturedReads;
+  invitationEventsMode="ok";let releaseInviteEvents;invitationEventsGate=new Promise(resolve=>releaseInviteEvents=resolve);
+  const pendingInviteEvents=page.waitForResponse(r=>r.url().endsWith("/stage_marketplace_my_events"));
+  await activate(retryInviteEvents);await invitePanel.getByRole("status").filter({hasText:"Carregando seus shows..."}).waitFor();
+  assert.equal(await invitePanel.locator(".market-invite-form").count(),0);
+  releaseInviteEvents();invitationEventsGate=undefined;await pendingInviteEvents;
+  const inviteEvent=invitePanel.getByLabel("Escolha o show *",{exact:true});
+  const inviteText=invitePanel.getByLabel("Mensagem ao músico (opcional)",{exact:true});
+  const sendMarketplaceInvite=invitePanel.getByRole("button",{name:"Confirmar convite individual",exact:true});
+  await inviteEvent.waitFor();assert.equal(await sendMarketplaceInvite.isDisabled(),true);
+  await inviteEvent.selectOption(eventId);await inviteText.fill("Mensagem preservada após falha");
+  const confirmMarketplaceInvite=async(button,accept)=>{
+   const dialogPromise=page.waitForEvent("dialog"),action=activate(button);const confirmation=await dialogPromise;
+   assert.equal(confirmation.type(),"confirm");assert.match(confirmation.message(),/Registrar convite individual para Músico sintético 1/);
+   if(accept)await confirmation.accept();else await confirmation.dismiss();await action;
+  };
+  await confirmMarketplaceInvite(sendMarketplaceInvite,false);assert.equal(invitationWrites.length,0);
+  assert.equal(await inviteText.inputValue(),"Mensagem preservada após falha");
+  invitationResult="date_unavailable";let releaseInvitation;invitationGate=new Promise(resolve=>releaseInvitation=resolve);
+  await confirmMarketplaceInvite(sendMarketplaceInvite,true);
+  await invitePanel.getByRole("button",{name:"Registrando convite...",exact:true}).waitFor();
+  const unexpectedInviteDialogs=[];const rejectUnexpectedInvite=dialog=>{unexpectedInviteDialogs.push(dialog.message());void dialog.dismiss();};
+  page.on("dialog",rejectUnexpectedInvite);
+  await invitePanel.locator(".market-invite-form").evaluate(form=>{form.requestSubmit();form.requestSubmit();});
+  assert.equal(invitationWrites.length,1);assert.equal(await inviteEvent.isDisabled(),true);assert.equal(await inviteText.isDisabled(),true);assert.equal(await closeInvite.isDisabled(),true);
+  await page.keyboard.press("Escape");assert.equal(await invitePanel.count(),1);await page.mouse.click(2,2);assert.equal(await invitePanel.count(),1);
+  assert.equal(await invitePanel.getByRole("link",{name:/Iniciar chat privado/}).getAttribute("aria-disabled"),"true");
+  releaseInvitation();invitationGate=undefined;
+  await invitePanel.getByRole("alert").filter({hasText:"O músico marcou a data do show como indisponível"}).waitFor();
+  page.off("dialog",rejectUnexpectedInvite);assert.deepEqual(unexpectedInviteDialogs,[]);
+  assert.equal(await inviteEvent.inputValue(),eventId);assert.equal(await inviteText.inputValue(),"Mensagem preservada após falha");assert.equal(await inviteEvent.isEnabled(),true);
+  invitationResult="sent";await confirmMarketplaceInvite(sendMarketplaceInvite,true);
+  await invitePanel.getByRole("status").filter({hasText:"Convite registrado!"}).waitFor();
+  assert.equal(invitationWrites.length,2);assert.equal(createdMarketplaceInvitations.size,1);assert.equal(await inviteText.inputValue(),"");assert.equal(await sendMarketplaceInvite.isDisabled(),true);
+  await inviteEvent.selectOption(secondShowId);await inviteText.fill("Resposta incerta preservada");
+  invitationResult="commit_then_fail";await confirmMarketplaceInvite(sendMarketplaceInvite,true);
+  await invitePanel.getByRole("alert").filter({hasText:"Ele pode ter sido registrado."}).waitFor();
+  const retrySameInvite=invitePanel.getByRole("button",{name:"Confirmar novamente o mesmo convite",exact:true});
+  assert.equal(invitationWrites.length,3);assert.equal(createdMarketplaceInvitations.size,2);
+  assert.equal(await inviteEvent.isDisabled(),true);assert.equal(await inviteText.isDisabled(),true);assert.equal(await inviteText.inputValue(),"Resposta incerta preservada");
+  assert.equal(await invitePanel.getByRole("status").filter({hasText:"Convite registrado!"}).count(),0);
+  invitationResult="sent";await confirmMarketplaceInvite(retrySameInvite,false);assert.equal(invitationWrites.length,3);
+  await retrySameInvite.focus();assert.ok(await retrySameInvite.evaluate(el=>el.matches(":focus-visible")&&parseFloat(getComputedStyle(el).outlineWidth)>=2));
+  await invitePanel.screenshot({path:`test-results/operational-marketplace-invite-uncertain-${width}.png`});
+  await confirmMarketplaceInvite(retrySameInvite,true);
+  await invitePanel.getByRole("status").filter({hasText:"Esse convite já existe."}).waitFor();
+  assert.equal(invitationWrites.length,4);assert.deepEqual(invitationWrites[2],invitationWrites[3]);assert.equal(createdMarketplaceInvitations.size,2);
+  assert.equal(await inviteText.inputValue(),"Resposta incerta preservada","Already-existing invitations must not silently discard unsent text");
+  assert.equal(await sendMarketplaceInvite.isDisabled(),true);
+  await invitePanel.locator(".market-invite-form").evaluate(form=>form.requestSubmit());assert.equal(invitationWrites.length,4);
+  assert.doesNotMatch(await invitePanel.innerText(),/private_backend_detail|Supabase|\.sql/);
+  const inviteControlSizes=await invitePanel.locator(".market-invite-form .sf-ui-button").evaluateAll(nodes=>nodes.map(el=>{const r=el.getBoundingClientRect();return {w:r.width,h:r.height};}));assert.ok(inviteControlSizes.every(size=>size.w>=44&&size.h>=44));
+  assert.equal(await inviteText.evaluate(el=>getComputedStyle(el).fontSize),"16px");
+  assert.ok(await invitePanel.evaluate(el=>{const r=el.getBoundingClientRect();return r.left>=0&&r.top>=0&&r.right<=innerWidth&&r.bottom<=innerHeight;}));
+  await invitePanel.screenshot({path:`test-results/operational-marketplace-invite-confirmed-${width}.png`});
+  await inviteEvent.selectOption(eventId);assert.equal(await sendMarketplaceInvite.isDisabled(),true,"Earlier confirmed pairs stay blocked in the same panel");
+  invitationEventsMode="empty";await activate(invitePanel.getByRole("button",{name:"Atualizar meus shows",exact:true}));
+  await invitePanel.getByText("Você precisa ter um show futuro cadastrado na agenda.",{exact:true}).waitFor();
+  assert.equal(await invitePanel.getByRole("link",{name:"Criar show",exact:true}).getAttribute("href"),"/eventos");
+  assert.equal(catalogCalls.length,inviteSearchesBefore);assert.equal(catalogFeaturedReads,inviteFeaturedBefore);
+  await activate(closeInvite);await invitePanel.waitFor({state:"detached"});assert.equal(await inviteOrigin.evaluate(el=>el===document.activeElement),true);
+  await activate(inviteOrigin);await invitePanel.waitFor();await activate(invitePanel.getByRole("button",{name:"Denunciar este perfil",exact:true}));
+  await page.locator(".market-report-dialog").waitFor();assert.equal(await invitePanel.count(),0,"Reporting must not open an inert dialog behind a native modal");
+  await activate(page.getByRole("button",{name:"Fechar denúncia",exact:true}));
+  assert.equal(await page.evaluate(()=>document.body.style.overflow),invitationOverflow);
+  console.log(`PASS marketplace invitation ${width}px: native modal/focus loop/return, events read recovery, explicit/cancelled confirmation, pending close and duplicate guard, retained fields, uncertain same-payload reconciliation, existing invite guard and report handoff`);
   assert.deepEqual(errors,[],"Browser exceptions at "+width);await context.close();
  }
  console.log("PASS: dashboard at 360/768/1280, navigation, receipt failure, legacy profile, group creation, availability and invitation.");

@@ -186,16 +186,9 @@
 .market-empty>svg{color:#BDA5F2}
 .market-empty h3{font:800 21px Manrope,sans-serif;color:#dce5ee;margin:0}
 .market-empty p{max-width:440px;font-size:12px;line-height:1.8;margin:0}
-.market-modal-backdrop{
-  position:fixed;inset:0;z-index:80;display:flex;align-items:center;
-  justify-content:center;padding:20px;background:#030910c9;
-  backdrop-filter:blur(8px)
-}
-.market-modal{
-  max-height:min(90vh,850px);overflow:auto;width:min(620px,100%);
-  border-radius:19px;background:#161e2e;border:1px solid #4e5a74;
-  box-shadow:0 35px 120px #000a;color:#eef2f9;
-}
+.market-modal{position:fixed;top:50%;left:50%;right:auto;bottom:auto;transform:translate(-50%,-50%);margin:0;width:min(720px,calc(100vw - 24px));max-width:none;max-height:calc(100dvh - 24px);padding:0;border:1px solid #536279;border-radius:17px;background:#182336;color:#eaf0f7;overflow:auto}
+.market-modal::backdrop{background:#070b14da;backdrop-filter:blur(8px)}
+.market-modal-panel{min-width:0}
 .market-modal-head{
   display:flex;align-items:flex-start;justify-content:space-between;gap:14px;
   padding:23px;border-bottom:1px solid #334155;
@@ -211,10 +204,7 @@
 .market-modal-person small{font-size:9px;color:#C0A7FF;font-weight:900;letter-spacing:.1em}
 .market-modal-person h2{font:800 19px Manrope,sans-serif;margin:6px 0}
 .market-modal-person p{display:flex;align-items:center;gap:5px;color:#adbdd0;font-size:11px}
-.market-modal-close{
-  display:grid;place-items:center;padding:8px;border:1px solid #4e586b;
-  background:#2b3547;color:#d9e4ef;border-radius:9px;cursor:pointer
-}
+.market-modal-head>.sf-ui-button{min-width:44px;flex:none}
 .market-modal-content{padding:24px;display:grid;gap:20px}
 .market-modal-tabs{display:flex;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap}
 .market-modal-tabs a{
@@ -229,15 +219,14 @@
 .market-modal-block>h3 svg{color:#BDA5F2}
 .market-modal-block>p{font-size:11px;color:#b4c2d4;line-height:1.8;margin:0 0 15px}
 .market-invite-form,.market-review-form{display:flex;flex-direction:column;gap:10px;margin-top:12px}
-.market-invite-form>label,.market-review-form>label{font-size:11px;font-weight:800;color:#d6e3f0}
-.market-invite-form select,.market-invite-form textarea,
+.market-review-form>label{font-size:11px;font-weight:800;color:#d6e3f0}
 .market-review-form select,.market-review-form textarea{
   width:100%;min-width:0;background:#101b29;border:1px solid #49576c;
   border-radius:10px;padding:12px;color:#e8f0f8;
   font:500 12px "DM Sans",sans-serif;resize:vertical;
 }
 .market-invite-form>small{font-size:10px;color:#9cb1c4;line-height:1.7}
-.market-invite-form>.market-apply,.market-review-form>.market-apply{margin-top:9px}
+.market-review-form>.market-apply{margin-top:9px}
 .market-login-note{border:1px dashed #506b61;padding:16px;border-radius:12px;display:grid;gap:12px}
 .market-login-note p{font-size:12px;line-height:1.7;color:#b6c6d5;margin:0}
 .market-modal-warning{color:#d9bcb1!important}
@@ -287,8 +276,7 @@
   .market-results-toolbar{gap:11px}
   .market-results-toolbar>div:first-child{width:100%}
   .market-sort-controls{width:100%;justify-content:space-between}
-  .market-modal-backdrop{padding:8px}
-  .market-modal{max-height:94vh;border-radius:13px}
+  .market-modal{border-radius:13px}
   .market-modal-head{padding:15px}
   .market-modal-content{padding:14px}
   .market-modal-block{padding:14px}
@@ -712,3 +700,6 @@
 @media(max-width:480px){
  .market-shell:not(.has-mobile-workspace-nav) .market-nav-link{display:inline-flex;align-items:center;min-height:44px}
 }
+
+.market-invite-form .sf-ui-input{font-size:16px}
+.market-modal a[aria-disabled="true"]{opacity:.53;cursor:not-allowed}

@@ -2,6 +2,7 @@
 
 import { FormEvent, useEffect, useMemo, useRef, useState } from "react";
 import Link from "next/link";
+import { createPortal } from "react-dom";
 import {
   ArrowLeft, ArrowRight, ArrowUpRight, CalendarDays, Check,
   ChevronLeft, ChevronRight, CircleHelp, Clock3, ExternalLink,
@@ -9,7 +10,7 @@ import {
   Music2, Send, ShieldCheck, SlidersHorizontal, Sparkles,
   Star, Trophy, Users, Flag, UserRound, X
 } from "lucide-react";
-import { Button, InlineNotice, Input, LoadingState, Select } from "@/src/components/ui";
+import { Button, InlineNotice, Input, LoadingState, Select, Textarea } from "@/src/components/ui";
 import { createClient } from "@/lib/supabase/client";
 import { trackMarketplaceExposure } from "@/lib/musician-metrics";
 import "./marketplace-catalog.css";
@@ -205,7 +206,20 @@ export default function MarketplaceCatalog({preview=false}:Props) {
   const [reportTarget,setReportTarget] = useState<ReportTarget|null>(null);
   const [selected,setSelected] = useState<MarketMusician|null>(null);
   const [events,setEvents] = useState<EventOption[]>([]);
-  const [loadingEvents,setLoadingEvents] = useState(false);
+  const [loadingEvents,setLoadingEvents] = useState(true);
+  const [eventsError,setEventsError] = useState("");
+  const [eventsReady,setEventsReady] = useState(false);
+  const [eventsRetry,setEventsRetry] = useState(0);
+  const eventsReading=useRef(false);
+  const [inviteUncertain,setInviteUncertain] = useState(false);
+  const [confirmedInvites,setConfirmedInvites] = useState<string[]>([]);
+  const confirmedInviteKeys=useRef(new Set<string>());
+  const inviteWriting=useRef(false);
+  const lastInviteAttempt=useRef<{p_event_id:string;p_musician_id:string;p_message:string|null}|null>(null);
+  const panelVersion=useRef(0);
+  const mounted=useRef(false);
+  const invitationDialogRef=useRef<HTMLDialogElement|null>(null);
+  const invitationOpenerRef=useRef<HTMLElement|null>(null);
   const [inviting,setInviting] = useState(false);
   const [selectedEvent,setSelectedEvent] = useState("");
   const [inviteMessage,setInviteMessage] = useState("");
@@ -336,19 +350,43 @@ export default function MarketplaceCatalog({preview=false}:Props) {
   useEffect(()=>{if(!loading&&searchRetryFocus.current){searchRetryFocus.current=false;resultsSummaryRef.current?.focus({preventScroll:true});}},[loading]);
   useEffect(()=>{if(!featuredLoading&&featuredRetryFocus.current){featuredRetryFocus.current=false;featuredTitleRef.current?.focus({preventScroll:true});}},[featuredLoading]);
 
+  useEffect(()=>{mounted.current=true;return()=>{mounted.current=false;panelVersion.current++;};},[]);
   useEffect(()=>{
-    if(gate!=="allowed" || !authUser)return;
+    if(gate!=="allowed"||!authUser)return;
     let active=true;
     async function getEvents(){
-      setLoadingEvents(true);
-      const {data,error:eventError}=await createClient().rpc("stage_marketplace_my_events");
-      if(!active)return;
-      if(!eventError && Array.isArray(data)) setEvents(data as EventOption[]);
-      setLoadingEvents(false);
+      eventsReading.current=true;setLoadingEvents(true);setEventsReady(false);setEventsError("");
+      try{
+        const {data,error:rpcError}=await createClient().rpc("stage_marketplace_my_events");
+        if(!active)return;
+        if(rpcError||!Array.isArray(data)||!data.every(row=>row&&typeof row.id==="string"&&typeof row.title==="string"&&Number.isFinite(Date.parse(row.starts_at))))throw new Error("events_unavailable");
+        setEvents(data);setEventsReady(true);
+      }catch{if(active)setEventsError("Não foi possível carregar seus shows. Tente novamente antes de convidar.");}
+      finally{if(active){eventsReading.current=false;setLoadingEvents(false);}}
     }
-    void getEvents();
-    return()=>{active=false;};
-  },[gate,authUser]);
+    void getEvents();return()=>{active=false;};
+  },[gate,authUser,eventsRetry]);
+
+  function retryEvents(){
+    if(eventsReading.current||inviteWriting.current||inviteUncertain)return;
+    eventsReading.current=true;setLoadingEvents(true);setEventsRetry(v=>v+1);
+  }
+  function closeMusician(){
+    if(inviteWriting.current||savingReview)return;
+    panelVersion.current++;setSelected(null);setError("");setNotice("");
+  }
+  function reportFromPanel(target:ReportTarget){
+    if(inviteWriting.current||savingReview)return;
+    closeMusician();setReportTarget(target);
+  }
+  useEffect(()=>{
+    const dialog=invitationDialogRef.current;
+    if(!selected?.musician_id||!dialog)return;
+    const opener=invitationOpenerRef.current,overflow=document.body.style.overflow;
+    window.scrollTo({top:window.scrollY,left:window.scrollX,behavior:"instant"});
+    dialog.showModal();document.body.style.overflow="hidden";
+    return()=>{if(dialog.open)dialog.close();document.body.style.overflow=overflow;if(opener?.isConnected)opener.focus({preventScroll:true});};
+  },[selected?.musician_id]);
 
   useEffect(()=>{
     if(!selected || gate!=="allowed")return;
@@ -449,40 +487,51 @@ export default function MarketplaceCatalog({preview=false}:Props) {
     rail.scrollBy({left:direction*offset,behavior:"smooth"});
   }
   function openMusician(m:MarketMusician){
+    if(inviteWriting.current)return;
+    invitationOpenerRef.current=document.activeElement instanceof HTMLElement?document.activeElement:null;
+    panelVersion.current++;lastInviteAttempt.current=null;setInviteUncertain(false);confirmedInviteKeys.current.clear();setConfirmedInvites([]);
     setSelected(m);setSelectedEvent("");setInviteMessage("");setError("");setNotice("");
   }
   async function sendInvite(e:FormEvent<HTMLFormElement>) {
     e.preventDefault();
-    if(!selected || !selectedEvent || inviting)return;
+    if(!selected||!authUser||inviteWriting.current||savingReview)return;
+    const payload=inviteUncertain?lastInviteAttempt.current:{p_event_id:selectedEvent,p_musician_id:selected.musician_id,p_message:inviteMessage.trim()||null};
+    if(!payload||!payload.p_event_id||!eventsReady||loadingEvents||!events.some(ev=>ev.id===payload.p_event_id)||selected.availability_mode==="unavailable")return;
+    const key=payload.p_event_id+":"+payload.p_musician_id;
+    if(confirmedInviteKeys.current.has(key))return;
+    inviteWriting.current=true;
     if(!window.confirm("Registrar convite individual para "+selected.name+
-      "? O músico poderá aceitar ou recusar no Stage Flow. Nenhuma mensagem externa será enviada automaticamente."))return;
-    setInviting(true);setError("");setNotice("");
-    const {data,error:rpcError}=await createClient().rpc("stage_marketplace_invite_musician",{
-      p_event_id:selectedEvent,p_musician_id:selected.musician_id,
-      p_message:inviteMessage.trim()||null
-    });
-    const res=data as {status?:string}|null;
-    if(rpcError || !["sent","already_exists"].includes(res?.status||"")){
+      "? O músico poderá aceitar ou recusar no Stage Flow. Nenhuma mensagem externa será enviada automaticamente.")){inviteWriting.current=false;return;}
+    const version=panelVersion.current;
+    const current=()=>mounted.current&&version===panelVersion.current;
+    lastInviteAttempt.current=payload;setInviting(true);setError("");setNotice("");
+    const uncertain=()=>{setInviteUncertain(true);setError("Não foi possível confirmar o convite. Ele pode ter sido registrado. Confirme novamente o mesmo convite antes de criar outro.");};
+    try{
+      const {data,error:rpcError}=await createClient().rpc("stage_marketplace_invite_musician",payload);
+      if(!current())return;
+      const res=data as {status?:string}|null;
       const reasons:Record<string,string>={
+        login_required:"Entre novamente na sua conta para convidar.",
         event_not_found:"O show não está disponível na sua conta ou já terminou.",
         not_listed:"O músico não está recebendo propostas no marketplace.",
         date_unavailable:"O músico marcou a data do show como indisponível no marketplace.",
         invalid_message:"A mensagem deve ter até 500 caracteres.",
+        invalid:"Não foi possível identificar o show ou músico escolhido.",
         not_released:"Marketplace não liberado para a sua conta."
       };
-      setError((!rpcError&&reasons[res?.status||""]) ||
-        "Não foi possível registrar o convite.");
-    }else{
-      setNotice(res?.status==="already_exists"
-        ? "Você já convidou esse músico para esse show. Acompanhe o convite existente."
-        : "Convite registrado! O músico verá a proposta em Meus convites. A contratação ainda depende da resposta dele.");
-      setInviteMessage("");
-    }
-    setInviting(false);
+      if(rpcError){uncertain();return;}
+      if(res?.status==="sent"||res?.status==="already_exists"){
+        setInviteUncertain(false);confirmedInviteKeys.current.add(key);setConfirmedInvites(current=>current.includes(key)?current:[...current,key]);
+        setNotice(res.status==="already_exists"?"Esse convite já existe. Acompanhe a resposta em Meus convites; nenhuma nova mensagem foi enviada.":"Convite registrado! O músico verá a proposta em Meus convites. A contratação ainda depende da resposta dele.");
+        if(res.status==="sent")setInviteMessage("");
+      }else if(reasons[res?.status||""]){setInviteUncertain(false);setError(reasons[res?.status||""]);}
+      else uncertain();
+    }catch{if(current())uncertain();}
+    finally{inviteWriting.current=false;if(current())setInviting(false);}
   }
   async function submitReview(e:FormEvent<HTMLFormElement>){
     e.preventDefault();
-    if(!selected || !reviewEvent || savingReview)return;
+    if(!selected || !reviewEvent || savingReview||inviteWriting.current)return;
     setSavingReview(true);setError("");setNotice("");
     const {data,error:rpcError}=await createClient().rpc("stage_marketplace_submit_review",{
       p_event_id:reviewEvent,p_musician_id:selected.musician_id,
@@ -709,8 +758,8 @@ export default function MarketplaceCatalog({preview=false}:Props) {
             </div>
           </div>
 
-          {notice&&<InlineNotice tone="success">{notice}</InlineNotice>}
-          {error&&<InlineNotice tone="danger">{error}</InlineNotice>}
+          {!selected&&notice&&<InlineNotice tone="success">{notice}</InlineNotice>}
+          {!selected&&error&&<InlineNotice tone="danger">{error}</InlineNotice>}
 
           {loading?<LoadingState label="Buscando talentos..."/>:
             catalogError?<div className="market-read-feedback">
@@ -747,9 +796,17 @@ export default function MarketplaceCatalog({preview=false}:Props) {
       </div>
     </div>
 
-    {selected&&<div className="market-modal-backdrop" onClick={()=>setSelected(null)}>
-      <section className="market-modal" role="dialog" aria-modal="true"
-        aria-label={"Convidar e avaliar "+selected.name} onClick={e=>e.stopPropagation()}>
+    {selected&&createPortal(<dialog ref={invitationDialogRef} className="market-modal" aria-label={"Convidar e avaliar "+selected.name}
+      onCancel={event=>{event.preventDefault();closeMusician();}}
+      onClick={event=>{if(event.target===event.currentTarget)closeMusician();}}
+      onKeyDown={event=>{
+        if(event.key!=="Tab")return;
+        const controls=Array.from(event.currentTarget.querySelectorAll<HTMLElement>('button,a[href],input,select,textarea,[tabindex="0"]')).filter(el=>!el.matches(":disabled")&&el.tabIndex>=0&&el.getClientRects().length);
+        const first=controls[0],last=controls[controls.length-1];
+        if(event.shiftKey&&document.activeElement===first){event.preventDefault();last?.focus();}
+        else if(!event.shiftKey&&document.activeElement===last){event.preventDefault();first?.focus();}
+      }}>
+      <div className="market-modal-panel">
         <header className="market-modal-head">
           <div className="market-modal-person">
             <div className="market-modal-avatar">{selected.avatar_url?
@@ -757,20 +814,20 @@ export default function MarketplaceCatalog({preview=false}:Props) {
             <div><small>PERFIL DO MARKETPLACE</small><h2>{selected.name}</h2>
               <p><MapPin size={13}/>{selected.city||"Local não informado"}</p></div>
           </div>
-          <button type="button" className="market-modal-close"
-            onClick={()=>{setSelected(null);setError("");setNotice("");}}
-            aria-label="Fechar painel"><X size={20}/></button>
+          <Button autoFocus variant="secondary" disabled={inviting||savingReview} onClick={closeMusician}
+            aria-label="Fechar painel"><X aria-hidden="true" size={20}/></Button>
         </header>
         <div className="market-modal-content">
           <div className="market-modal-tabs">
             <Link href={"/musico/"+encodeURIComponent(selected.slug)} target="_blank"
               rel="noopener noreferrer"
-              onClick={()=>void trackMarketplaceExposure([selected.musician_id],"profile_open")}>
+              aria-disabled={inviting||savingReview} tabIndex={inviting||savingReview?-1:undefined}
+              onClick={event=>{if(inviteWriting.current||savingReview)event.preventDefault();else void trackMarketplaceExposure([selected.musician_id],"profile_open");}}>
               Ver perfil completo <ArrowUpRight size={14}/></Link>
             <Rating musician={selected}/>
           </div>
           <Availability musician={selected} date={applied.date}/>
-          {authUser&&<Link className="market-apply" style={{display:"inline-flex",alignItems:"center",gap:8,marginTop:12}}
+          {authUser&&<Link aria-disabled={inviting||savingReview} tabIndex={inviting||savingReview?-1:undefined} onClick={event=>{if(inviteWriting.current||savingReview)event.preventDefault();}} className="market-apply" style={{display:"inline-flex",alignItems:"center",gap:8,marginTop:12}}
             href={"/conversas?musico="+encodeURIComponent(selected.musician_id)+
               (applied.date?"&data="+encodeURIComponent(applied.date):"")+
               (selectedEvent?"&evento="+encodeURIComponent(selectedEvent):"")}>
@@ -779,8 +836,8 @@ export default function MarketplaceCatalog({preview=false}:Props) {
           <p className="fine" style={{marginTop:10}}>
             Fale no chat antes de convidar. Seu WhatsApp pessoal permanece privado.
           </p>
-          <button type="button" className="market-report-link"
-            onClick={()=>setReportTarget({
+          <button type="button" disabled={inviting||savingReview} className="market-report-link"
+            onClick={()=>reportFromPanel({
               type:"musician",id:selected.musician_id,label:selected.name
             })}><Flag size={13}/> Denunciar este perfil</button>
           <div className="market-modal-block">
@@ -789,26 +846,28 @@ export default function MarketplaceCatalog({preview=false}:Props) {
             {!authUser?<div className="market-login-note">
               <p>Entre na conta de organizador para escolher um show e convidar este músico.</p>
               <Link href="/login" className="market-apply">Entrar na minha conta <ArrowRight size={15}/></Link>
-            </div>:events.length===0?<div className="market-login-note">
+            </div>:loadingEvents?<LoadingState label="Carregando seus shows..."/>:eventsError?<div className="market-read-feedback">
+              <InlineNotice tone="danger">{eventsError}</InlineNotice>
+              <Button variant="secondary" disabled={inviting||inviteUncertain} onClick={retryEvents}>Tentar novamente os shows</Button>
+            </div>:eventsReady&&events.length===0?<div className="market-login-note">
               <p>Você precisa ter um show futuro cadastrado na agenda.</p>
               <Link className="market-apply" href="/eventos">Criar show <ArrowRight size={15}/></Link>
             </div>:selected.availability_mode==="unavailable"?
               <p className="market-modal-warning">O músico declarou que não está recebendo propostas neste momento.</p>:
               <form className="market-invite-form" onSubmit={e=>void sendInvite(e)}>
-                <label htmlFor="market-invite-event">Escolha o show *</label>
-                <select id="market-invite-event" required value={selectedEvent}
-                  onChange={e=>setSelectedEvent(e.target.value)}>
-                  <option value="">{loadingEvents?"Carregando shows...":"Selecione um evento"}</option>
-                  {events.map(ev=><option value={ev.id} key={ev.id}>
-                    {ev.title} · {dateBR(ev.starts_at)}</option>)}
-                </select>
-                <label htmlFor="market-invite-message">Mensagem ao músico (opcional)</label>
-                <textarea id="market-invite-message" maxLength={500} rows={3}
-                  value={inviteMessage} onChange={e=>setInviteMessage(e.target.value)}
+                <Select label="Escolha o show *" id="market-invite-event" required value={selectedEvent}
+                  disabled={inviting||inviteUncertain||!eventsReady} onChange={event=>{setSelectedEvent(event.target.value);setError("");setNotice("");}}>
+                  <option value="">Selecione um evento</option>
+                  {events.map(ev=><option value={ev.id} key={ev.id}>{ev.title} · {dateBR(ev.starts_at)}</option>)}
+                </Select>
+                <Textarea label="Mensagem ao músico (opcional)" id="market-invite-message" maxLength={500} rows={3}
+                  disabled={inviting||inviteUncertain||confirmedInvites.includes(selectedEvent+":"+selected.musician_id)}
+                  value={inviteMessage} onChange={event=>setInviteMessage(event.target.value)}
                   placeholder="Ex.: gostaria de convidar você para tocar no nosso próximo show."/>
-                <button type="submit" disabled={!selectedEvent||inviting}
-                  className="market-apply"><Send size={15}/>
-                  {inviting?"Registrando convite...":"Confirmar convite individual"}</button>
+                <Button type="submit" loading={inviting} disabled={!selectedEvent||!eventsReady||loadingEvents||!events.some(ev=>ev.id===selectedEvent)||confirmedInvites.includes(selectedEvent+":"+selected.musician_id)}>
+                  <Send aria-hidden="true" size={15}/>{inviting?"Registrando convite...":inviteUncertain?"Confirmar novamente o mesmo convite":"Confirmar convite individual"}
+                </Button>
+                <Button variant="secondary" disabled={inviting||inviteUncertain} onClick={retryEvents}>Atualizar meus shows</Button>
                 <small>Nenhum WhatsApp, e-mail ou pagamento é enviado automaticamente.</small>
               </form>}
           </div>
@@ -821,8 +880,8 @@ export default function MarketplaceCatalog({preview=false}:Props) {
                 {r.comment&&<p>{r.comment}</p>}
                 <small>{dateBR(r.created_at)} · Show concluído no Stage Flow</small>
                 <div className="market-modal-review-report">
-                  <button type="button" className="market-report-link"
-                    onClick={()=>setReportTarget({
+                  <button type="button" disabled={inviting||savingReview} className="market-report-link"
+                    onClick={()=>reportFromPanel({
                       type:"review",id:r.id,label:"avaliação sobre "+selected.name
                     })}><Flag size={12}/> Denunciar avaliação</button>
                 </div>
@@ -846,7 +905,7 @@ export default function MarketplaceCatalog({preview=false}:Props) {
               <textarea id="market-review-comment" maxLength={450} rows={3}
                 value={reviewComment} onChange={e=>setReviewComment(e.target.value)}
                 placeholder="Como foi trabalhar com este músico?"/>
-              <button type="submit" disabled={savingReview||!reviewEvent}
+              <button type="submit" disabled={savingReview||inviting||!reviewEvent}
                 className="market-apply">{savingReview?"Salvando...":"Publicar avaliação verificada"}</button>
             </form>}
             <p className="market-review-note"><ShieldCheck size={14}/>
@@ -855,8 +914,8 @@ export default function MarketplaceCatalog({preview=false}:Props) {
           {error&&<InlineNotice tone="danger">{error}</InlineNotice>}
           {notice&&<InlineNotice tone="success">{notice}</InlineNotice>}
         </div>
-      </section>
-    </div>}
+      </div>
+    </dialog>,document.body)}
     {favoriteFeedback&&!selected&&!reportTarget&&
       <div className={"market-favorite-toast is-"+favoriteFeedback.kind}
         role={favoriteFeedback.kind==="error"?"alert":"status"} aria-live="polite">
