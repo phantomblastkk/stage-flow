@@ -140,3 +140,5 @@
 
 .pro-publish-controls>.sf-ui-button{margin-bottom:16px}
 .pro-publish-main-button,.pro-publish-unpublish,.pro-publish-links button{min-height:44px}
+
+.pro-publish-ready-notice>span{flex:1;min-width:0}

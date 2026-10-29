@@ -172,9 +172,9 @@ export default function ProSitePublicationControls({
 
     {verified&&!loading&&info?.entitled&&!info.published&&
       <p className="pro-publish-ready-notice"><Crown size={19}/>
-        Seu acesso Pro já está ativo! Para que o novo visual, as fotos e os vídeos apareçam ao público,
+        <span>Seu acesso Pro já está ativo! Para que o novo visual, as fotos e os vídeos apareçam ao público,
         salve seu design e clique em <strong>Ativar recursos Pro</strong> abaixo. A publicação é sua escolha,
-        e seu perfil gratuito continua no ar enquanto isso.
+        e seu perfil gratuito continua no ar enquanto isso.</span>
       </p>}
     {verified&&!loading&&!busy&&<Button variant="secondary" onClick={()=>void load()}>Atualizar publicação</Button>}
     {loading||busy?<LoadingState label={busy?"Atualizando publicação...":"Verificando disponibilidade da publicação..."}/>:!verified||!info?<div className="pro-publish-setup-error" role="alert">

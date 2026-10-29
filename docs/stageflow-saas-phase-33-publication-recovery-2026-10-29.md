@@ -39,7 +39,9 @@ o estado antes de oferecer outra alteração. O resultado de uma resposta incert
 
 ## Validação
 
-266 testes Node e TypeScript aprovados localmente. Build e CI em validação.
+266 testes Node, TypeScript e build aprovados localmente; primeira rodada dos dois CIs aprovada.
+A revisão visual detectou o aviso de acesso dividido em colunas pelo flex. O texto
+foi agrupado para manter o parágrafo legível; validação final em andamento.
 
 Cenários novos em 360/768/1280 px: status com erro, ausente ou malformado; tentativa
 pendente sem duplicação; acesso não liberado e perfil gratuito privado bloqueando
