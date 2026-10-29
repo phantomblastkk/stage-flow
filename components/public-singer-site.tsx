@@ -11,6 +11,7 @@ import {
 } from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
 import StageVerifiedBadge from "@/components/stage-verified-badge";
+import MusicianOwnerEditButton from "@/components/musician-owner-edit-button";
 import {useStageVerified} from "@/lib/use-stage-verified";
 import {distinctPublicBiography} from "@/lib/profile-presentation";
 import {publicInstagramProfile} from "@/lib/artist-social";
@@ -393,6 +394,7 @@ export default function PublicSingerSite({musicianSlug}:{musicianSlug?:string}){
               href={artist.spotify_url} aria-label="Spotify"><Music2 size={19}/></a>}
           </div>
           <div className="premium-site-actions">
+            {musician&&<MusicianOwnerEditButton slug={musician.slug}/>}
             {design.visible_sections.includes("contact")&&(contactHref||contactIsForm)&&
               <a className="premium-site-main-action"
                 href={contactHref||"#premium-contato"}
