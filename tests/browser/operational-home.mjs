@@ -988,8 +988,9 @@ try{
   const agendaReadsBeforeFlyers=agendaReads;flyerMode="ok";await activate(refreshFlyers);
   const retryCartaz=chosenCard.getByRole("button",{name:"Recarregar cartaz de Show do próximo mês",exact:true});
   await retryCartaz.waitFor();assert.equal(agendaReads,agendaReadsBeforeFlyers);
+  const brokenFlyerRequest=page.waitForEvent("requestfailed",{predicate:req=>req.url().startsWith(api+"/storage/v1/object/sign/stage-show-flyers/")});
   flyerSignMode="ok";flyerImageFail=true;await chosenCard.scrollIntoViewIfNeeded();await activate(retryCartaz);
-  for(let i=0;i<100&&flyerSigns<2;i++)await delay(25);await retryCartaz.waitFor();
+  await brokenFlyerRequest;await retryCartaz.waitFor();
   assert.equal(flyerSigns,2,"Failed image also offers an explicit signed-preview retry");
   flyerImageFail=false;await activate(retryCartaz);
   const waitForFlyer=async card=>{
