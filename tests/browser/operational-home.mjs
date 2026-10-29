@@ -28,7 +28,8 @@ try{
   const writes=[],portfolioWrites=[],storageWrites=[],contactWrites=[],marketWrites=[],artistWrites=[],claimWrites=[],bookingSettingWrites=[],errors=[],unhandled=[];let savedProfiles=[],failFinance=false,producer=width!==360,portfolioResult="invalid_price",storageImage,uploadGate,
    contactReadFail=true,marketReadFail=true,contactResult="invalid_phone",marketResult="publish_portfolio_first",contactGate,
    singerMode=false,singerUsername=null,singerBooking=false,claimResult="taken",artistResult="invalid_link",
-   artistReadMode="ok",artistReads=0,bookingReadFail=false,bookingReads=0,bookingReadGate,bookingWriteFail=false,artistWriteFail=false;
+   artistReadMode="ok",artistReads=0,bookingReadFail=false,bookingReads=0,bookingReadGate,bookingWriteFail=false,artistWriteFail=false,proMode=false,draftReadMode="failed",draftReads=0,draftReadGate,draftSaveFail=true,draftSaveGate;
+  const designWrites=[],proPublishWrites=[];
   await context.route(api+"/**",async route=>{
    const req=route.request(),url=new URL(req.url()),rpc=url.pathname.split("/").at(-1);let data=[],status=200;
    if(req.method()==="OPTIONS"){await route.fulfill({status:204,headers:{"access-control-allow-origin":"*","access-control-allow-headers":"*"}});return;}
@@ -58,6 +59,15 @@ try{
    }
    else if(rpc==="stage_my_artist_page"){artistReads++;if(artistReadMode==="failed"){status=503;data={message:"private_backend_detail.sql"};}
     else if(artistReadMode==="missing")data=null;else data={name:"Artista de teste",username:singerUsername,bio:"Biografia inicial",headline:"Assinatura inicial",city:"São Paulo",instagram_url:null,youtube_url:null,spotify_url:null,is_public:false,custom_subdomain_enabled:false,accent:"violet",avatar_path:null,cover_path:null};}
+   else if(rpc==="stage_my_premium_site_draft"){draftReads++;if(draftReadGate)await draftReadGate;
+    if(draftReadMode==="failed"){status=503;data={message:"private_backend_detail.sql"};}
+    else if(draftReadMode==="missing")data=null;
+    else data={theme:"ivory",accent:"gold",section_order:["about","photos","videos","agenda","contact"],visible_sections:["about","agenda","contact"],updated_at:"2026-10-01T00:00:00Z"};}
+   else if(rpc==="stage_save_premium_site_draft"){designWrites.push(body);if(draftSaveGate)await draftSaveGate;
+    if(draftSaveFail){status=503;data={message:"private_backend_detail.sql"};}else data="saved";}
+   else if(rpc==="stage_my_premium_site_media")data=[];
+   else if(rpc==="stage_my_pro_site_publication")data={entitled:true,published:false,username:singerUsername,profile_public:true,url_path:"/"+singerUsername};
+   else if(rpc==="stage_set_pro_site_published"){proPublishWrites.push(body);data="forbidden";}
    else if(rpc==="stage_my_artist_booking_settings"){bookingReads++;if(bookingReadGate)await bookingReadGate;
     if(bookingReadFail){status=503;data={message:"private_backend_detail.sql"};}else data=singerBooking;}
    else if(rpc==="stage_set_artist_bookings_enabled"){bookingSettingWrites.push(body);if(bookingWriteFail){status=503;data={message:"private_backend_detail.sql"};}
@@ -79,7 +89,9 @@ try{
     const id=body.p_kind==="group"?ownGroupId:body.p_kind==="producer"?"55555555-5555-4555-8555-555555555555":"66666666-6666-4666-8666-666666666666";
     savedProfiles=[...savedProfiles.filter(row=>row.id!==id),{...group,id,account_id:actor,kind:body.p_kind,musical_type:body.p_type,name:body.p_name,members:body.p_members,is_public:body.p_public}];data={status:"saved",id};
    }
-   else if(rpc==="events"){assert.equal(url.searchParams.get("producer_id"),"eq."+actor);data=[event];}
+   else if(rpc==="events"){assert.equal(url.searchParams.get("producer_id"),"eq."+actor);
+    if(proMode){assert.equal(url.searchParams.get("show_publicly"),"eq.true");assert.equal(url.searchParams.get("status"),"eq.published");assert.equal(url.searchParams.get("limit"),"40");}
+    data=[event];}
    else if(rpc==="stage_discover_performance_profiles")data={status:"ok",items:[group]};
    else if(rpc==="stage_performance_availability")data="free";
    else if(rpc==="stage_invite_performance_profile"){assert.equal(body.p_profile_id,groupId);assert.equal(body.p_event_id,eventId);assert.equal(body.p_fee,1500);writes.push(body);data={status:"sent",invitation_id:inviteId};}
@@ -628,6 +640,69 @@ try{
   await singer.screenshot({path:`test-results/operational-singer-editor-${width}.png`});
   await singerContact.screenshot({path:`test-results/operational-singer-contact-${width}.png`});
   console.log(`PASS singer editor ${width}px: username guard/claim, shared fields, private save retry and confirmed contact prerequisites`);
+  // The advanced editor is reached through its real, already-mounted parent tabs.
+  proMode=true;artistReadMode="failed";
+  const appearanceTab=singer.getByRole("navigation",{name:"Áreas do Perfil Artístico",exact:true}).getByRole("button",{name:/^Aparência e galerias/});
+  await activate(appearanceTab);
+  const advanced=singer.locator(".singer-pro-embedded");
+  await advanced.getByRole("alert").filter({hasText:"Não foi possível abrir a prévia do seu perfil."}).waitFor();
+  assert.equal(draftReads,0);assert.equal(designWrites.length,0);
+  artistReadMode="ok";
+  await activate(advanced.getByRole("button",{name:"Tentar abrir prévia",exact:true}));
+  const design=advanced.getByRole("region",{name:"Personalização Pro do perfil de cantor",exact:true});
+  const designSave=design.getByRole("button",{name:"Salvar rascunho",exact:true});
+  const draftRetry=design.getByRole("button",{name:"Tentar carregar rascunho",exact:true});
+  await draftRetry.waitFor();
+  assert.equal(draftReads,1);
+  assert.equal(await designSave.isDisabled(),true,"Unknown saved design must not be overwritten by defaults");
+  assert.equal(await design.getByRole("button",{name:/^Concert/}).isDisabled(),true);
+  const publishPro=advanced.getByRole("button",{name:/Ativar recursos Pro/});
+  await publishPro.waitFor();assert.equal(await publishPro.isDisabled(),true);
+  assert.doesNotMatch(await design.innerText(),/private_backend_detail|migration|Supabase/);
+  await design.screenshot({path:`test-results/operational-pro-draft-failure-${width}.png`});
+  let releaseDraftRead;draftReadMode="missing";draftReadGate=new Promise(resolve=>releaseDraftRead=resolve);
+  await activate(draftRetry);
+  await design.getByText("Carregando seu rascunho de aparência...",{exact:true}).waitFor();
+  assert.equal(await draftRetry.count(),0);assert.equal(await designSave.isDisabled(),true);
+  releaseDraftRead();draftReadGate=undefined;await draftRetry.waitFor();
+  assert.equal(draftReads,2);assert.equal(designWrites.length,0,"Missing draft is not permission to overwrite");
+  draftReadMode="ok";
+  await activate(draftRetry);
+  await design.getByRole("button",{name:/^Ivory/}).waitFor();
+  for(let i=0;i<100&&await design.getByRole("button",{name:/^Ivory/}).isDisabled();i++)await delay(25);
+  assert.equal(await design.getByRole("button",{name:/^Ivory/}).getAttribute("aria-pressed"),"true");
+  assert.equal(await design.getByRole("button",{name:"Cor Dourado",exact:true}).getAttribute("aria-pressed"),"true");
+  assert.equal(await design.getByRole("checkbox",{name:"Exibir seção Vídeos",exact:true}).isChecked(),false);
+  assert.equal(await designSave.isDisabled(),true,"Confirmed unchanged draft is already saved");
+  assert.equal(draftReads,3);
+  await activate(design.getByRole("button",{name:/^Concert/}));
+  await activate(design.getByRole("button",{name:"Cor Coral",exact:true}));
+  const showVideos=design.getByRole("checkbox",{name:"Exibir seção Vídeos",exact:true});
+  await showVideos.focus();await showVideos.press("Space");
+  await activate(design.getByRole("button",{name:"Subir Vídeos",exact:true}));
+  await activate(singer.getByRole("button",{name:/^Dados e publicação/}));
+  artistReadMode="failed";await activate(appearanceTab);
+  assert.equal(await design.getByRole("button",{name:/^Concert/}).getAttribute("aria-pressed"),"true");
+  assert.equal(await design.getByRole("button",{name:"Cor Coral",exact:true}).getAttribute("aria-pressed"),"true");
+  assert.equal(await showVideos.isChecked(),true);assert.equal(draftReads,3,"Revisiting must not reset the local design");
+  assert.equal(await publishPro.isDisabled(),true,"Unsaved choices cannot be published");
+  let releaseDraftSave;draftSaveGate=new Promise(resolve=>releaseDraftSave=resolve);
+  await activate(designSave);
+  await design.getByRole("button",{name:"Salvando...",exact:true}).waitFor();
+  assert.equal(await design.getByRole("button",{name:/^Ivory/}).isDisabled(),true,"Pending save freezes its draft snapshot");
+  releaseDraftSave();draftSaveGate=undefined;
+  await design.getByRole("alert").filter({hasText:"Não foi possível salvar seu rascunho."}).waitFor();
+  assert.equal(await design.getByRole("button",{name:/^Concert/}).getAttribute("aria-pressed"),"true");
+  assert.doesNotMatch(await design.innerText(),/private_backend_detail|migration|Supabase/);
+  draftSaveFail=false;await activate(designSave);
+  await design.getByRole("status").filter({hasText:"Rascunho salvo!"}).waitFor();
+  assert.equal(designWrites.length,2);assert.deepEqual(designWrites[0],designWrites[1]);
+  assert.deepEqual(designWrites[1],{p_theme:"concert",p_accent:"coral",p_section_order:["about","videos","photos","agenda","contact"],p_visible_sections:["about","agenda","contact","videos"]});
+  assert.equal(await designSave.isDisabled(),true);
+  assert.equal(proPublishWrites.length,0,"Saving appearance never publishes it");
+  assert.ok(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth+2),"Advanced editor overflows at "+width);
+  await design.screenshot({path:`test-results/operational-pro-draft-recovered-${width}.png`});
+  console.log(`PASS advanced draft ${width}px: owner retry, failed/missing draft, overwrite guard, stored choices, tab preservation, rejected save/retry and no publication`);
   assert.deepEqual(errors,[],"Browser exceptions at "+width);await context.close();
  }
  console.log("PASS: dashboard at 360/768/1280, navigation, receipt failure, legacy profile, group creation, availability and invitation.");

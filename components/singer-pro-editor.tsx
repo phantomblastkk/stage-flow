@@ -11,6 +11,7 @@ import {
   LockKeyhole, LoaderCircle, MapPin, Mic2, Music2, PlayCircle,
   Sparkles, Youtube, Palette, Save, Eye, EyeOff, RotateCcw, ArrowUp, ArrowDown
 } from "lucide-react";
+import {Button,LoadingState} from "@/src/components/ui";
 import { createClient } from "@/lib/supabase/client";
 import {publicInstagramProfile} from "@/lib/artist-social";
 import {distinctPublicBiography} from "@/lib/profile-presentation";
@@ -119,6 +120,11 @@ export default function SiteProfissionalPreview({ active = true, onEditData }: {
   const [artist, setArtist] = useState<ArtistPreview | null>(null);
   const [events, setEvents] = useState<PublicShow[]>([]);
   const [loading, setLoading] = useState(true);
+  const [ownerAttempt, setOwnerAttempt] = useState(0);
+  const [draftAttempt, setDraftAttempt] = useState(0);
+  const [draftLoading, setDraftLoading] = useState(true);
+  const [draftLoaded, setDraftLoaded] = useState(false);
+  const ownerReady = Boolean(artist);
   const [problem, setProblem] = useState("");
   const [month, setMonth] = useState(() => new Date(new Date().getFullYear(), new Date().getMonth(), 1));
   const [selectedDate, setSelectedDate] = useState<string | null>(null);
@@ -136,109 +142,143 @@ export default function SiteProfissionalPreview({ active = true, onEditData }: {
   useEffect(() => {
     let active = true;
     async function load() {
-      const supabase = createClient();
-      const { data: { user }, error: userError } = await supabase.auth.getUser();
-      if (!active) return;
-      if (userError || !user) {
-        router.replace("/login");
-        return;
-      }
-
-      // Dados do próprio artista: preview autenticada, não rota pública premium.
-      const { data: owner, error: ownerError } = await supabase.rpc("stage_my_artist_page");
-      if (!active) return;
-      if (ownerError) {
-        setProblem("Não foi possível abrir a prévia. Confira se free_artist_pages_migration.sql e free_artist_visuals_migration.sql foram executados. " + ownerError.message);
-        setLoading(false);
-        return;
-      }
-      if (!owner) {
-        setProblem("Esta prévia é destinada a contas com função de cantor ou artista.");
-        setLoading(false);
-        return;
-      }
-      setArtist(owner as ArtistPreview);
-
-      const { data: savedDesign, error: designError } = await supabase.rpc("stage_my_premium_site_draft");
-      if (!active) return;
-      if (designError) {
-        setDraftError("Para salvar seu rascunho, execute premium_site_draft_editor_migration.sql no Supabase. Você pode testar as opções enquanto isso.");
-      } else if (savedDesign) {
-        const saved = savedDesign as Partial<PremiumDraft>;
-        // Preserva rascunhos anteriores à separação do Portfólio.
-        const order = upgradeSections(saved.section_order);
-        const visible = upgradeSections(saved.visible_sections);
-        const validOrder = order.length === SECTION_IDS.length &&
-          SECTION_IDS.every(id => order.includes(id));
-        const validVisible = visible.length >= 1 &&
-          visible.every(id => SECTION_IDS.includes(id));
-        const next: PremiumDraft = {
-          theme: themeChoices.some(item => item.id === saved.theme) ? saved.theme! : "midnight",
-          accent: accentChoices.some(item => item.id === saved.accent) ? saved.accent! : "violet",
-          section_order: validOrder ? order : [...SECTION_IDS],
-          visible_sections: validVisible ? visible : [...SECTION_IDS]
-        };
-        setDraft(next);
-        setSavedDraft(next);
-        const legacySections = Array.isArray(saved.section_order) &&
-          saved.section_order.includes("portfolio" as SectionId);
-        if (legacySections) {
-          setDraftError("Para organizar Fotos e Vídeos separadamente, execute a nova migração pro_artist_independent_media_sections_migration.sql no Supabase. Seus dados continuam preservados.");
+      setLoading(true);
+      setProblem("");
+      try {
+        const supabase = createClient();
+        const { data: { user }, error: userError } = await supabase.auth.getUser();
+        if (!active) return;
+        if (userError && userError.name !== "AuthSessionMissingError") {
+          setProblem("Não foi possível verificar sua conta. Tente novamente.");
+          return;
         }
-        // Um design antigo ainda exige migracao antes da publicacao com 5 secoes.
-        setDraftReady(Boolean((savedDesign as {updated_at?:string|null}).updated_at) &&
-          !legacySections);
-      } else {
-        setDraftError("Não foi possível carregar o rascunho profissional. Confira a configuração do Supabase.");
-      }
+        if (!user) {
+          router.replace("/login");
+          return;
+        }
 
-      // Exibe APENAS eventos que o próprio artista marcou como públicos e publicados.
-      // Esta consulta usa a sessão do proprietário e as políticas já existentes.
-      const { data: ownerEvents, error: eventsError } = await supabase
-        .from("events")
-        .select("id,title,venue,city,starts_at")
-        .eq("producer_id", user.id)
-        .eq("show_publicly", true)
-        .eq("status", "published")
-        .gte("starts_at", new Date().toISOString())
-        .order("starts_at", { ascending: true })
-        .limit(40);
+        // Dados do próprio artista: preview autenticada, não rota pública premium.
+        const { data: owner, error: ownerError } = await supabase.rpc("stage_my_artist_page");
+        if (!active) return;
+        if (ownerError) {
+          setProblem("Não foi possível abrir a prévia do seu perfil. Tente novamente.");
+          setLoading(false);
+          return;
+        }
+        if (!owner) {
+          setProblem("Esta prévia é destinada a contas com função de cantor ou artista.");
+          setLoading(false);
+          return;
+        }
+        setArtist(owner as ArtistPreview);
 
-      if (!active) return;
-      if (eventsError) setProblem("A agenda não pôde ser carregada. " + eventsError.message);
-      else {
-        // Consulta opcional: o restante da prévia continua funcionando
-        // mesmo se o administrador ainda não executou o SQL dos flyers.
-        const {data:flyers,error:flyerError}=await supabase.from("events")
-          .select("id,flyer_path,flyer_settings")
-          .eq("producer_id",user.id)
-          .eq("show_publicly",true)
-          .eq("status","published")
-          .gte("starts_at",new Date().toISOString())
+        // Exibe APENAS eventos que o próprio artista marcou como públicos e publicados.
+        // Esta consulta usa a sessão do proprietário e as políticas já existentes.
+        const { data: ownerEvents, error: eventsError } = await supabase
+          .from("events")
+          .select("id,title,venue,city,starts_at")
+          .eq("producer_id", user.id)
+          .eq("show_publicly", true)
+          .eq("status", "published")
+          .gte("starts_at", new Date().toISOString())
+          .order("starts_at", { ascending: true })
           .limit(40);
-        if(!active)return;
-        const flyerMap=new Map(
-          (flyerError?[]:(flyers||[])).map(item=>[item.id,item] as const)
-        );
-        setEvents((ownerEvents||[]).map(item=>({
-          ...item,...(flyerMap.get(item.id)||{})
-        })) as PublicShow[]);
+
+        if (!active) return;
+        if (eventsError) setProblem("Não foi possível carregar a agenda da prévia. Seus dados de aparência foram preservados.");
+        else {
+          // Consulta opcional: o restante da prévia continua funcionando
+          // mesmo se o administrador ainda não executou o SQL dos flyers.
+          const {data:flyers,error:flyerError}=await supabase.from("events")
+            .select("id,flyer_path,flyer_settings")
+            .eq("producer_id",user.id)
+            .eq("show_publicly",true)
+            .eq("status","published")
+            .gte("starts_at",new Date().toISOString())
+            .limit(40);
+          if(!active)return;
+          const flyerMap=new Map(
+            (flyerError?[]:(flyers||[])).map(item=>[item.id,item] as const)
+          );
+          setEvents((ownerEvents||[]).map(item=>({
+            ...item,...(flyerMap.get(item.id)||{})
+          })) as PublicShow[]);
+        }
+      } catch {
+        if (active) setProblem("Não foi possível carregar a prévia. Tente novamente.");
+      } finally {
+        if (active) setLoading(false);
       }
-      setLoading(false);
     }
     void load();
     return () => { active = false; };
-  }, [router]);
+  }, [router, ownerAttempt]);
+
+  // A design retry is independent of identity, agenda and gallery reads.
+  useEffect(() => {
+    if (!ownerReady) return;
+    let active = true;
+    async function loadDraft() {
+      setDraftLoading(true);
+      setDraftError("");
+      try {
+        const supabase = createClient();
+        const { data: savedDesign, error: designError } = await supabase.rpc("stage_my_premium_site_draft");
+        if (!active) return;
+        if (designError) {
+          setDraftError("Não foi possível carregar seu rascunho. Tente novamente para editar com segurança.");
+        } else if (savedDesign && typeof savedDesign === "object" &&
+          typeof savedDesign.theme === "string" && typeof savedDesign.accent === "string" &&
+          Array.isArray(savedDesign.section_order) && Array.isArray(savedDesign.visible_sections)) {
+          const saved = savedDesign as Partial<PremiumDraft>;
+          // Preserva rascunhos anteriores à separação do Portfólio.
+          const order = upgradeSections(saved.section_order);
+          const visible = upgradeSections(saved.visible_sections);
+          const validOrder = order.length === SECTION_IDS.length &&
+            SECTION_IDS.every(id => order.includes(id));
+          const validVisible = visible.length >= 1 &&
+            visible.every(id => SECTION_IDS.includes(id));
+          const next: PremiumDraft = {
+            theme: themeChoices.some(item => item.id === saved.theme) ? saved.theme! : "midnight",
+            accent: accentChoices.some(item => item.id === saved.accent) ? saved.accent! : "violet",
+            section_order: validOrder ? order : [...SECTION_IDS],
+            visible_sections: validVisible ? visible : [...SECTION_IDS]
+          };
+          setDraft(next);
+          setSavedDraft(next);
+          setDraftLoaded(true);
+          const legacySections = Array.isArray(saved.section_order) &&
+            saved.section_order.includes("portfolio" as SectionId);
+          if (legacySections) {
+            setDraftError("Seu rascunho usa uma versão anterior. Confira a ordem de Fotos e Vídeos e salve para atualizar suas escolhas.");
+          }
+          // Um design antigo ainda exige migracao antes da publicacao com 5 secoes.
+          setDraftReady(Boolean((savedDesign as {updated_at?:string|null}).updated_at) &&
+            !legacySections);
+        } else {
+          setDraftError("Não foi possível carregar seu rascunho. Tente novamente para editar com segurança.");
+        }
+
+      } catch {
+        if (active) setDraftError("Não foi possível carregar seu rascunho. Tente novamente para editar com segurança.");
+      } finally {
+        if (active) setDraftLoading(false);
+      }
+    }
+    void loadDraft();
+    return () => { active = false; };
+  }, [ownerReady, draftAttempt]);
 
   // The same profile may have been edited on the free-data tab while this
   // editor stays mounted. Refresh owner-only identity when revisiting Pro,
   // without resetting the unsaved Pro theme, sections or gallery draft.
   useEffect(() => {
     if (!active || loading) return;
+    if (!artist) return;
     let current = true;
-    void createClient().rpc("stage_my_artist_page").then(({ data, error }) => {
+    void Promise.resolve(createClient().rpc("stage_my_artist_page")).then(({ data, error }) => {
       if (current && !error && data) setArtist(data as ArtistPreview);
-    });
+    }).catch(() => { /* Keep the current preview and local design on refresh failure. */ });
     return () => { current = false; };
   }, [active, loading]);
 
@@ -276,42 +316,42 @@ export default function SiteProfissionalPreview({ active = true, onEditData }: {
   }
 
   async function saveDraft() {
-    if (!artist || savingDraft) return;
+    if (!artist || savingDraft || !draftLoaded || draftLoading) return;
     setSavingDraft(true);
     setDraftMessage("");
-    const { data, error: saveError } = await createClient().rpc("stage_save_premium_site_draft", {
-      p_theme: draft.theme,
-      p_accent: draft.accent,
-      p_section_order: draft.section_order,
-      p_visible_sections: draft.visible_sections
-    });
-    if (saveError || data !== "saved") {
-      setDraftError(saveError
-        ? "Não foi possível salvar (" + saveError.code + "): " + saveError.message +
-          ". Confira a migração pro_artist_independent_media_sections_migration.sql."
-        : "Não foi possível salvar. Execute pro_artist_independent_media_sections_migration.sql no Supabase.");
-      setDraftMessage("Rascunho ainda não salvo. Suas escolhas permanecem na prévia aberta.");
-    } else {
-      setDraftError("");
-      setSavedDraft({
-        ...draft,
-        section_order: [...draft.section_order],
-        visible_sections: [...draft.visible_sections]
+    try {
+      const { data, error: saveError } = await createClient().rpc("stage_save_premium_site_draft", {
+        p_theme: draft.theme,
+        p_accent: draft.accent,
+        p_section_order: draft.section_order,
+        p_visible_sections: draft.visible_sections
       });
-      setDraftReady(true);
-      setDraftMessage("Rascunho salvo! Fotos e Vídeos têm visibilidade e posição independentes. Clique em Republicar para atualizar o site público.");
+      if (saveError || data !== "saved") {
+        setDraftError("Não foi possível salvar seu rascunho. Suas escolhas continuam aqui para tentar novamente.");
+        setDraftMessage("");
+      } else {
+        setDraftError("");
+        setSavedDraft({
+          ...draft,
+          section_order: [...draft.section_order],
+          visible_sections: [...draft.visible_sections]
+        });
+        setDraftReady(true);
+        setDraftMessage("Rascunho salvo! Fotos e Vídeos têm visibilidade e posição independentes. Clique em Republicar para atualizar o site público.");
+      }
+    } catch {
+      setDraftError("Não foi possível salvar seu rascunho. Suas escolhas continuam aqui para tentar novamente.");
+    } finally {
+      setSavingDraft(false);
     }
-    setSavingDraft(false);
   }
 
   const imageUrl = (path?: string | null) =>
     path ? createClient().storage.from("stage-artist-public").getPublicUrl(path).data.publicUrl : "";
 
   if (loading) {
-    return <div className="container" style={{ minHeight: "45vh", display: "grid", placeItems: "center" }}>
-      <p style={{ display: "flex", gap: 9, alignItems: "center", color: "var(--muted)" }}>
-        <LoaderCircle size={19}/> Preparando o editor do seu perfil...
-      </p>
+    return <div className="container premium-editor-loading">
+      <LoadingState label="Preparando o editor do seu perfil..."/>
     </div>;
   }
 
@@ -327,7 +367,8 @@ export default function SiteProfissionalPreview({ active = true, onEditData }: {
     {!artist ? <div className="premium-preview-empty">
       <Mic2 size={28}/>
       <h1>A personalização do seu perfil começa aqui.</h1>
-      <p>Configure os dados do seu perfil de cantor antes de experimentar a personalização.</p>
+      <p>Confira seus dados ou tente abrir a prévia novamente.</p>
+      <Button onClick={() => setOwnerAttempt(attempt => attempt + 1)}>Tentar abrir prévia</Button>
       <Link href="/perfil-artistico" className="btn btn-primary"
         onClick={onEditData ? event => { event.preventDefault(); onEditData(); } : undefined}>Configurar meu perfil <ArrowRight size={16}/></Link>
     </div> : <>
@@ -342,7 +383,11 @@ export default function SiteProfissionalPreview({ active = true, onEditData }: {
             onClick={() => setEditorOpen(current => !current)}
             aria-expanded={editorOpen}>{editorOpen ? "Ocultar opções" : "Personalizar"} <ArrowRight size={15}/></button>
         </div>
-        {editorOpen && <div className="premium-design-controls">
+        {draftLoading && <LoadingState label="Carregando seu rascunho de aparência..."/>}
+        {!draftLoaded && !draftLoading && <Button variant="secondary"
+          onClick={() => setDraftAttempt(attempt => attempt + 1)}>Tentar carregar rascunho</Button>}
+        {editorOpen && <fieldset className="premium-design-controls" aria-label="Opções de aparência"
+          disabled={!draftLoaded || draftLoading || savingDraft}>
           <div className="premium-design-options">
             <div className="premium-design-group">
               <h3>Tema do site</h3>
@@ -405,12 +450,12 @@ export default function SiteProfissionalPreview({ active = true, onEditData }: {
               <RotateCcw size={15}/> Restaurar padrão
             </button>
             <button type="button" className="btn btn-primary" onClick={() => void saveDraft()}
-              disabled={savingDraft || (!unsaved && draftReady)}>
+              disabled={!draftLoaded || draftLoading || savingDraft || (!unsaved && draftReady)}>
               {savingDraft ? <LoaderCircle size={16}/> : <Save size={16}/>}
               {savingDraft ? "Salvando..." : "Salvar rascunho"}
             </button>
           </div>
-        </div>}
+        </fieldset>}
         {draftError && <p className="premium-design-feedback premium-design-error" role="alert">{draftError}</p>}
         {draftMessage && <p className="premium-design-feedback" role="status">{draftMessage}</p>}
       </section>
