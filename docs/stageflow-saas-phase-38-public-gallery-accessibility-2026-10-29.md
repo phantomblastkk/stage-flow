@@ -10,6 +10,8 @@ outra imagem após atualização da lista; uma foto sem prévia podia fechar a n
 Isso prejudicava teclado, leitor de tela e uso no celular.
 
 - Dialog HTML nativo aberto por showModal: camada modal e fundo inerte.
+- Renderização em portal no body, com centralização explícita e limites do viewport,
+  isolando a janela da disposição da prévia.
 - Tab/Shift+Tab circulam pelos controles; Escape, botão de fechar e clique no
   fundo fecham a janela. O foco volta à miniatura original se ela ainda existir.
 - A rolagem de fundo é bloqueada e restaurada ao fechar ou desmontar.

@@ -1,6 +1,7 @@
 "use client";
 
 import { ChangeEvent, FormEvent, useCallback, useEffect, useId, useRef, useState } from "react";
+import { createPortal } from "react-dom";
 import {
   ArrowDown, ArrowUp, Check, Edit3, ExternalLink,
   ChevronLeft, ChevronRight, Images, ImagePlus, LoaderCircle, PlayCircle, Star, Trash2, X, Youtube
@@ -649,7 +650,7 @@ export function PremiumGalleryShowcase({
       </a>}
     </section>}
 
-    {selected && <dialog ref={photoDialogRef} className="premium-photo-lightbox"
+    {selected && createPortal(<dialog ref={photoDialogRef} className="premium-photo-lightbox"
       aria-label={"Foto ampliada: " + selected.title} aria-describedby={photoHelpId}
       onCancel={event => { event.preventDefault(); setActivePhotoId(null); }}
       onClick={event => { if (event.target === event.currentTarget) setActivePhotoId(null); }}
@@ -687,6 +688,6 @@ export function PremiumGalleryShowcase({
           </div>}
         </div>
       </div>
-    </dialog>}
+    </dialog>, document.body)}
   </div>;
 }
