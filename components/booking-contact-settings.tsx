@@ -51,7 +51,9 @@ export default function BookingContactSettings({kind,instagramConfigured=false,f
      data==="invalid_phone"?"Informe um WhatsApp brasileiro válido com DDD. Exemplo: 11987654321.":
      data==="instagram_required"?"Salve primeiro seu Instagram na seção de redes sociais do perfil.":
      data==="form_required"?"Ative primeiro o formulário de contratação do cantor.":"Não foi possível salvar o contato.");
-   }else setMessage("Contato para contratação atualizado! O botão aparece no perfil quando ele estiver publicado.");
+   }else setMessage(mode==="off"
+    ?"Contato para contratação atualizado! O botão de contratação está oculto."
+    :"Contato para contratação atualizado! O botão aparece no perfil quando ele estiver publicado.");
   }catch{setError(true);setMessage("Não foi possível salvar o contato. Tente novamente.");}
   finally{setSaving(false);}
  }

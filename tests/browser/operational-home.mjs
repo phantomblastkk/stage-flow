@@ -288,7 +288,7 @@ try{
   contactGate=null;
   const offContact=contact.getByRole("radio",{name:/^Não exibir contato/});await offContact.focus();await offContact.press("Space");
   await activate(contact.getByRole("button",{name:"Salvar contato",exact:true}));
-  await contact.getByRole("status").filter({hasText:"Contato para contratação atualizado!"}).waitFor();
+  await contact.getByRole("status").filter({hasText:"O botão de contratação está oculto."}).waitFor();
   assert.deepEqual(contactWrites[2],{p_kind:"musician",p_mode:"off",p_phone:null,p_greeting:""});
   const market=page.getByRole("region",{name:"Preferências do Marketplace",exact:true});
   await market.getByText("Não foi possível carregar suas preferências",{exact:true}).waitFor();
