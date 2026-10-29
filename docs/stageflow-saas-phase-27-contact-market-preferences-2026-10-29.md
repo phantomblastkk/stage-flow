@@ -10,6 +10,7 @@ Base: `2be6389305363355a5130782444b692959d83387`, diretamente na main.
 | Marketplace mostrava instrução SQL ou formulário bloqueado ao falhar | Usuário sem recuperação e mensagens técnicas no fluxo | Falha recuperável separada de indisponibilidade por função |
 | Componentes tinham botões/campos/feedback próprios | Duplicação de CSS, foco e dimensões inconsistentes | Button/Input/Textarea/Select/LoadingState/EmptyState/InlineNotice/Badge compartilhados |
 | Contato é renderizado dentro do formulário do perfil | Enter no telefone podia enviar o formulário pai | Enter nos inputs desse bloco não envia o perfil; botão Salvar contato continua explícito |
+| Confirmação dizia que o botão apareceria mesmo após escolher Não exibir contato | Mensagem contraditória sobre privacidade | Confirmação específica de que o botão está oculto, testada após salvar off |
 | Texto de lançamento futuro e aviso em breve no editor | Contradição com a descoberta do Marketplace | Texto de preferências e link Explorar Marketplace, sem prometer publicação automática |
 | Rejeição de requisição podia deixar carregamento ocupado | Fluxo sem recuperação | try/catch/finally em leitura e gravação, mensagens de erro seguras |
 
@@ -34,7 +35,7 @@ Diff: `git diff 2be6389 -- components/booking-contact-settings* components/marke
 
 As mesmas RPCs e parâmetros são usados: stage_my_booking_contact,
 stage_save_booking_contact (kind/mode/phone/greeting), stage_my_marketplace_settings
- e stage_save_marketplace_settings (listed/availability_mode/blocked_dates).
+e stage_save_marketplace_settings (listed/availability_mode/blocked_dates).
 Nenhum SQL, regra RLS, modo de contato, origem do telefone ou padrão de consentimento
 foi alterado. WhatsApp continua publicado apenas na opção explícita de contato;
 telefone privado da conta não é puxado por esta mudança.
@@ -59,7 +60,21 @@ dependências. As folhas globais de compatibilidade permanecem intactas.
 
 ## Verificação
 
-- Testes, TypeScript, build e navegador em validação; evidência final será registrada.
+- 265 testes Node, TypeScript e build aprovados localmente. Revisão final no commit
+  `6ba399628d42b71b38a62d91096c60842fb573a0`, com ambos os workflows aprovados:
+  [Integration and build](https://github.com/phantomblastkk/stage-flow/actions/runs/40813274057)
+  e [Operational UX](https://github.com/phantomblastkk/stage-flow/actions/runs/40813274053).
+  O operacional também aprovou os 265 testes e PostgreSQL temporário.
+- Três cenários novos de preferências passaram (360/768/1280 px), além dos anteriores
+  de uploads, formulário, temas e jornada operacional. Evidência:
+  [42 PNGs e log](https://github.com/phantomblastkk/stage-flow/actions/runs/40813274053/artifacts/12870729516).
+  Inspeção visual das opções de contato e Marketplace em 360/1280 px; confirmação
+  final específica de contato oculto conferida na nova captura. Os campos WhatsApp
+  foram exercitados por automação; capturas finais mostram a opção off salva.
+  Capturas de página inteira incluem controles fixos do workspace. Sem Safari físico.
+- Os 24 cenários PASS de agenda-finance continuam aprovados:
+  [Artefato](https://github.com/phantomblastkk/stage-flow/actions/runs/40813274057/artifacts/12871845457).
+  Retenção de sete dias para artefatos de navegador.
 - Novo cenário em 360/768/1280 px: falha de leitura impede salvar preferências
   desconhecidas, retry recupera o WhatsApp armazenado, Enter no telefone não grava
   perfil/contato, invalid_phone mostra erro e nova tentativa salva os mesmos parâmetros.
