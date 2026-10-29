@@ -50,7 +50,8 @@ try{
     await route.fulfill({status:flyerSignMode==="failed"?503:200,contentType:"application/json",headers:{"access-control-allow-origin":"*"},body:JSON.stringify(flyerSignMode==="failed"?{message:"private_backend_detail.sql"}:{signedURL:url.pathname.replace("/storage/v1","")+"?token=fixture-"+flyerSigns})});return;
    }
    if(req.method()==="GET"&&url.pathname.startsWith("/storage/v1/object/sign/stage-show-flyers/")){
-    await route.fulfill({status:flyerImageFail?404:200,contentType:"image/png",body:storageImage});return;
+    if(flyerImageFail){await route.abort("failed");return;}
+    await route.fulfill({status:200,contentType:"image/png",body:storageImage});return;
    }
    if(req.method()==="GET"&&url.pathname.startsWith("/storage/v1/object/stage-show-flyers/")){
     assert.ok(url.pathname.includes(actor+"/"));flyerDownloads.push(url.pathname);if(flyerDownloadGate)await flyerDownloadGate;
@@ -987,7 +988,7 @@ try{
   const agendaReadsBeforeFlyers=agendaReads;flyerMode="ok";await activate(refreshFlyers);
   const retryCartaz=chosenCard.getByRole("button",{name:"Recarregar cartaz de Show do próximo mês",exact:true});
   await retryCartaz.waitFor();assert.equal(agendaReads,agendaReadsBeforeFlyers);
-  flyerSignMode="ok";flyerImageFail=true;await activate(retryCartaz);
+  flyerSignMode="ok";flyerImageFail=true;await chosenCard.scrollIntoViewIfNeeded();await activate(retryCartaz);
   for(let i=0;i<100&&flyerSigns<2;i++)await delay(25);await retryCartaz.waitFor();
   assert.equal(flyerSigns,2,"Failed image also offers an explicit signed-preview retry");
   flyerImageFail=false;await activate(retryCartaz);
