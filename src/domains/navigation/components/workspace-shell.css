@@ -93,6 +93,8 @@
 @media(max-width:1250px){.sf-workspace-stat-grid{grid-template-columns:repeat(2,minmax(0,1fr))}}
 @media(max-width:1050px){.sf-workspace-columns{grid-template-columns:1fr}}
 @media(max-width:850px){
+ /* The nav is global: keep the final content and footer scrollable above it. */
+ body{padding-bottom:calc(84px + env(safe-area-inset-bottom))}
  .sf-workspace{grid-template-columns:1fr}
  .sf-workspace-sidebar{display:none}
  .sf-workspace-main{padding:20px 17px 110px}
@@ -206,7 +208,7 @@
 .sf-workspace-skip:focus{top:12px}
 @media(max-width:850px){
  .sf-workspace-route-ready{grid-template-columns:minmax(0,1fr)}
- .sf-workspace-route-ready .sf-workspace-route-main{padding-bottom:calc(92px + env(safe-area-inset-bottom))}
+ .sf-workspace-route-ready .sf-workspace-route-main{padding-bottom:0}
  .sf-workspace-route-ready .sf-workspace-route-bar{padding-left:96px}
  .sf-workspace-route-bar{padding-inline:12px}
 }
@@ -274,11 +276,3 @@
  .sf-workspace-welcome p{font-size:14px}
 }
 
-/* Abrir o teclado em um formulário privado não deve deixar a barra fixa
-   sobre o campo ou o botão de enviar. A navegação retorna ao perder foco. */
-@media(max-width:850px){
- .sf-workspace:has(input:focus,textarea:focus) .sf-workspace-bottom-nav,
- .sf-workspace-route:has(input:focus,textarea:focus) .sf-workspace-bottom-nav{
-  display:none
- }
-}
