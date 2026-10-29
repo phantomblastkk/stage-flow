@@ -813,12 +813,17 @@ try {
         const send=el.querySelector('button[type="submit"]')?.getBoundingClientRect();
         const panel=el.closest(".hiring-layout").getBoundingClientRect();
         const nav=document.querySelector(".sf-workspace-bottom-nav");
-        return {sendBottom:send?.bottom,panelBottom:panel.bottom,viewport:innerHeight,
+        const field=el.querySelector("textarea").getBoundingClientRect();
+        return {sendBottom:send?.bottom,fieldTop:field.top,fieldBottom:field.bottom,
+         navTop:nav?.getBoundingClientRect().top,panelBottom:panel.bottom,viewport:innerHeight,
          nav:nav?getComputedStyle(nav).display:null,
          textSize:parseFloat(getComputedStyle(el.querySelector("textarea")).fontSize),
          overflow:document.documentElement.scrollWidth-innerWidth};
        });
-       assert.equal(layout.nav,"none","Bottom navigation should disappear while typing a message");
+       assert.notEqual(layout.nav,"none","Global bottom navigation remains visible while typing");
+       assert.ok(typeof layout.navTop === "number" && layout.fieldTop>=-2 &&
+        Math.max(layout.fieldBottom,layout.sendBottom)<=Math.min(layout.viewport,layout.navTop)+2,
+        "Message field and Send button must stay above global navigation: "+JSON.stringify(layout));
        assert.ok(layout.textSize>=16,"Chat text field should avoid iPhone zoom");
        assert.ok(layout.sendBottom<=layout.panelBottom+2,
         "Send button must remain inside the message panel: "+JSON.stringify(layout));
