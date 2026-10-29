@@ -9,7 +9,7 @@ import {
   Music2, Send, ShieldCheck, SlidersHorizontal, Sparkles,
   Star, Trophy, Users, Flag, UserRound, X
 } from "lucide-react";
-import { Button, Input, Select } from "@/src/components/ui";
+import { Button, InlineNotice, Input, LoadingState, Select } from "@/src/components/ui";
 import { createClient } from "@/lib/supabase/client";
 import { trackMarketplaceExposure } from "@/lib/musician-metrics";
 import "./marketplace-catalog.css";
@@ -181,6 +181,16 @@ export default function MarketplaceCatalog({preview=false}:Props) {
   const [featured,setFeatured] = useState<MarketMusician[]>([]);
   const [featuredLoading,setFeaturedLoading] = useState(true);
   const [featuredError,setFeaturedError] = useState("");
+  const [catalogError,setCatalogError] = useState("");
+  const [catalogRetryable,setCatalogRetryable] = useState(false);
+  const [searchRetry,setSearchRetry] = useState(0);
+  const [featuredRetry,setFeaturedRetry] = useState(0);
+  const searchReading=useRef(false);
+  const featuredReading=useRef(false);
+  const searchRetryFocus=useRef(false);
+  const featuredRetryFocus=useRef(false);
+  const resultsSummaryRef=useRef<HTMLDivElement|null>(null);
+  const featuredTitleRef=useRef<HTMLHeadingElement|null>(null);
   const featuredRail=useRef<HTMLDivElement|null>(null);
   const filterPanelRef=useRef<HTMLElement|null>(null);
   const sortControlsRef=useRef<HTMLDivElement|null>(null);
@@ -264,81 +274,67 @@ export default function MarketplaceCatalog({preview=false}:Props) {
     if(gate!=="allowed")return;
     let active=true;
     async function search() {
-      setLoading(true);
-      setError("");
-      const maxFee = applied.maxFee.trim() ?
-        Number(applied.maxFee.replace(",",".")) : null;
-      if(maxFee!==null && (!Number.isFinite(maxFee)||maxFee<0||maxFee>999999.99)) {
-        setError("Informe um cachê máximo válido.");
-        setLoading(false);return;
-      }
-      const {data,error:searchError}=await createClient().rpc("stage_marketplace_search",{
-        p_query:applied.query.trim(),p_city:applied.city.trim(),
-        p_instrument:applied.instrument,p_genre:applied.genre,
-        p_max_fee:maxFee,p_date:applied.date||null,
-        p_only_available:applied.available,p_only_favorites:applied.favorites,
-        p_sort:applied.sort,p_limit:limit,p_offset:page*limit
-      });
-      if(!active)return;
-      const response = data as MarketResponse|null;
-      if(searchError || !response || response.status!=="ok") {
-        setItems([]);setTotal(0);
-        setError(searchError?.message ||
-          (response?.status==="not_released"
-            ? "O catálogo ainda está sendo habilitado. Tente novamente em instantes."
-            : response?.status==="login_required"
-              ? "Entre na sua conta para consultar os favoritos."
-              : "Não foi possível consultar os músicos. Confira a migração do Supabase."));
-      } else {
-        const results=Array.isArray(response.items)?response.items:[];
-        setItems(results);
-        setTotal(response.total||0);
-        // Contabiliza cartões retornados pela busca, sem dados pessoais do visitante.
-        if(results.length>0)void trackMarketplaceExposure(
-          results.map(m=>m.musician_id),"search"
-        );
-      }
-      setLoading(false);
+      searchReading.current=true;setLoading(true);setCatalogRetryable(false);setCatalogError("");
+      try {
+        const maxFee = applied.maxFee.trim() ? Number(applied.maxFee.replace(",",".")) : null;
+        if(maxFee!==null && (!Number.isFinite(maxFee)||maxFee<0||maxFee>999999.99)) {
+          if(active){setItems([]);setTotal(0);setCatalogError("Informe um cachê máximo válido.");}return;
+        }
+        const {data,error:rpcError}=await createClient().rpc("stage_marketplace_search",{
+          p_query:applied.query.trim(),p_city:applied.city.trim(),p_instrument:applied.instrument,p_genre:applied.genre,
+          p_max_fee:maxFee,p_date:applied.date||null,p_only_available:applied.available,p_only_favorites:applied.favorites,
+          p_sort:applied.sort,p_limit:limit,p_offset:page*limit
+        });
+        if(!active)return;
+        const response=data as MarketResponse|null;
+        if(rpcError||response?.status!=="ok"||!Array.isArray(response.items)||
+          typeof response.total!=="number"||!Number.isFinite(response.total)||response.total<0){
+          setItems([]);setTotal(0);setCatalogRetryable(true);
+          setCatalogError(!rpcError&&response?.status==="not_released"
+            ?"O catálogo ainda está sendo habilitado. Tente novamente em instantes."
+            :!rpcError&&response?.status==="login_required"?"Entre na sua conta para consultar os favoritos."
+              :"Não foi possível consultar os músicos. Tente novamente.");return;
+        }
+        setItems(response.items);setTotal(response.total);
+        if(response.items.length>0)void trackMarketplaceExposure(response.items.map(m=>m.musician_id),"search");
+      } catch {
+        if(active){setItems([]);setTotal(0);setCatalogRetryable(true);setCatalogError("Não foi possível consultar os músicos. Tente novamente.");}
+      } finally {if(active){searchReading.current=false;setLoading(false);}}
     }
-    void search();
-    return()=>{active=false;};
-  },[gate,applied,page,refreshNonce]);
+    void search();return()=>{active=false;};
+  },[gate,applied,page,refreshNonce,searchRetry]);
 
-  // Destaques são globais: independem dos filtros e da paginação do catálogo.
-  // A RPC usa a mesma trava de lançamento / allowlist das outras consultas.
+  // Global highlights retry independently of search filters and pagination.
   useEffect(()=>{
     if(gate!=="allowed")return;
     let active=true;
     async function fetchFeatured(){
-      setFeaturedLoading(true);
-      setFeaturedError("");
-      const {data,error:rpcError}=await createClient().rpc("stage_marketplace_featured");
-      if(!active)return;
-      const result=data as {status?:string;items?:MarketMusician[]}|null;
-      if(rpcError || result?.status!=="ok"){
-        setFeatured([]);
-        setFeaturedError(
-          rpcError?.code==="PGRST202" || rpcError?.code==="42883"
-            ? "Os destaques estão em preparação. Execute marketplace_featured_musicians_migration.sql no Supabase."
-            : rpcError?.message
-              ? "Não foi possível carregar os destaques. Tente atualizar a página."
-              : result?.status==="not_released"
-                ? "Os destaques só estão disponíveis na prévia autorizada."
-                : "Não foi possível carregar os músicos em destaque."
-        );
-      }else{
-        const shown=Array.isArray(result?.items)?result.items.slice(0,6):[];
-        setFeatured(shown);
-        // Vitrine de destaques é contada separadamente da busca.
-        if(shown.length>0)void trackMarketplaceExposure(
-          shown.map(m=>m.musician_id),"featured"
-        );
-      }
-      setFeaturedLoading(false);
+      featuredReading.current=true;setFeaturedLoading(true);setFeaturedError("");
+      try {
+        const {data,error:rpcError}=await createClient().rpc("stage_marketplace_featured");
+        if(!active)return;
+        const result=data as {status?:string;items?:MarketMusician[]}|null;
+        if(rpcError||result?.status!=="ok"||!Array.isArray(result.items)){
+          setFeatured([]);setFeaturedError("Não foi possível carregar os músicos em destaque. Tente novamente.");return;
+        }
+        const shown=result.items.slice(0,6);setFeatured(shown);
+        if(shown.length>0)void trackMarketplaceExposure(shown.map(m=>m.musician_id),"featured");
+      } catch {if(active){setFeatured([]);setFeaturedError("Não foi possível carregar os músicos em destaque. Tente novamente.");}}
+      finally {if(active){featuredReading.current=false;setFeaturedLoading(false);}}
     }
-    void fetchFeatured();
-    return()=>{active=false;};
-  },[gate,refreshNonce]);
+    void fetchFeatured();return()=>{active=false;};
+  },[gate,refreshNonce,featuredRetry]);
+
+  function retrySearch(){
+    if(searchReading.current)return;
+    searchReading.current=true;searchRetryFocus.current=true;setLoading(true);setSearchRetry(v=>v+1);
+  }
+  function retryFeatured(){
+    if(featuredReading.current)return;
+    featuredReading.current=true;featuredRetryFocus.current=true;setFeaturedLoading(true);setFeaturedRetry(v=>v+1);
+  }
+  useEffect(()=>{if(!loading&&searchRetryFocus.current){searchRetryFocus.current=false;resultsSummaryRef.current?.focus({preventScroll:true});}},[loading]);
+  useEffect(()=>{if(!featuredLoading&&featuredRetryFocus.current){featuredRetryFocus.current=false;featuredTitleRef.current?.focus({preventScroll:true});}},[featuredLoading]);
 
   useEffect(()=>{
     if(gate!=="allowed" || !authUser)return;
@@ -474,7 +470,7 @@ export default function MarketplaceCatalog({preview=false}:Props) {
         invalid_message:"A mensagem deve ter até 500 caracteres.",
         not_released:"Marketplace não liberado para a sua conta."
       };
-      setError(rpcError?.message || reasons[res?.status||""] ||
+      setError((!rpcError&&reasons[res?.status||""]) ||
         "Não foi possível registrar o convite.");
     }else{
       setNotice(res?.status==="already_exists"
@@ -493,7 +489,7 @@ export default function MarketplaceCatalog({preview=false}:Props) {
       p_rating:reviewRating,p_comment:reviewComment.trim()
     });
     if(rpcError||data!=="saved"){
-      setError(rpcError?.message || (data==="already_reviewed"
+      setError((!rpcError&&data==="already_reviewed"
         ? "Você já avaliou esse músico nesse show."
         : "Não foi possível registrar a avaliação. É necessário ter um show concluído com convite aceito."));
     }else{
@@ -591,7 +587,7 @@ export default function MarketplaceCatalog({preview=false}:Props) {
             <div className="market-featured-eyebrow">
               <Trophy size={15}/> SELEÇÃO POR AVALIAÇÕES VERIFICADAS
             </div>
-            <h2 id="market-featured-title">Recomendados <span>para explorar.</span></h2>
+            <h2 id="market-featured-title" ref={featuredTitleRef} tabIndex={-1}>Recomendados <span>para explorar.</span></h2>
             <p>Profissionais com mais avaliações de shows realizados no Stage Flow.
               Empates são decididos pela nota média. Nenhuma posição é comprada.</p>
           </div>
@@ -602,14 +598,12 @@ export default function MarketplaceCatalog({preview=false}:Props) {
               aria-label="Avançar nos destaques"><ChevronRight size={19}/></button>
           </div>}
         </div>
-        {featuredLoading
-          ? <div className="market-featured-rail" role="status" aria-label="Carregando músicos em destaque">
-              {[0,1,2].map(index=><div key={index} className="market-featured-skeleton"/>)}
-            </div>
+        {featuredLoading?<LoadingState label="Carregando músicos em destaque..."/>
           : featuredError
-            ? <p className="market-featured-empty" role="status">
-                <CircleHelp size={16}/>{featuredError}
-              </p>
+            ? <div className="market-read-feedback">
+                <InlineNotice tone="danger">{featuredError}</InlineNotice>
+                <Button variant="secondary" onClick={retryFeatured}>Tentar novamente os destaques</Button>
+              </div>
             : featured.length===0
               ? <p className="market-featured-empty">
                   <Star size={17}/> Os primeiros destaques aparecerão aqui quando os músicos
@@ -682,7 +676,7 @@ export default function MarketplaceCatalog({preview=false}:Props) {
             Nenhum compromisso privado é exibido.</p>
         </aside>
 
-        <section className="market-results" id="market-results">
+        <section className="market-results" id="market-results" aria-label="Resultados do Marketplace">
           <form className="market-search-bar" onSubmit={apply}>
             <Input label="Buscar músicos" placeholder="Busque por nome, instrumento ou especialidade..."
               value={filters.query} maxLength={90}
@@ -690,8 +684,8 @@ export default function MarketplaceCatalog({preview=false}:Props) {
             <Button type="submit" aria-label="Pesquisar músicos">Pesquisar <ArrowRight aria-hidden="true" size={15}/></Button>
           </form>
           <div className="market-results-toolbar">
-            <div>
-              <strong>{loading?"Procurando músicos...":total+" músico(s) encontrado(s)"}</strong>
+            <div ref={resultsSummaryRef} tabIndex={-1} role="status">
+              <strong>{loading?"Procurando músicos...":catalogError?"Busca não concluída":total+" músico(s) encontrado(s)"}</strong>
               <span>Portfólios publicados e autorizados pelo próprio músico</span>
             </div>
             <div className="market-sort-controls" ref={sortControlsRef}>
@@ -715,12 +709,16 @@ export default function MarketplaceCatalog({preview=false}:Props) {
             </div>
           </div>
 
-          {notice&&<div className="market-notice" role="status"><Check size={17}/>{notice}</div>}
-          {error&&<div className="market-error" role="alert"><CircleHelp size={17}/>{error}</div>}
+          {notice&&<InlineNotice tone="success">{notice}</InlineNotice>}
+          {error&&<InlineNotice tone="danger">{error}</InlineNotice>}
 
-          {loading?<div className="market-empty"><LoaderCircle size={28}/><h3>Buscando talentos...</h3></div>:
+          {loading?<LoadingState label="Buscando talentos..."/>:
+            catalogError?<div className="market-read-feedback">
+              <InlineNotice tone="danger">{catalogError}</InlineNotice>
+              {catalogRetryable&&<Button variant="secondary" onClick={retrySearch}>Tentar novamente a busca</Button>}
+            </div>:
             items.length===0?<div className="market-empty">
-              <Music2 size={36}/><h3>Nenhum músico encontrado</h3>
+              <Music2 aria-hidden="true" size={36}/><h3>Nenhum músico encontrado</h3>
               <p>Altere os filtros ou aguarde novos músicos publicarem e autorizarem a exibição dos seus portfólios.</p>
               <Button onClick={clear}>Ver todos os músicos</Button>
             </div>:
@@ -733,7 +731,7 @@ export default function MarketplaceCatalog({preview=false}:Props) {
                 onReport={()=>setReportTarget({type:"musician",id:m.musician_id,label:m.name})}/>)}
             </div>}
 
-          {!loading&&total>limit&&<nav className="market-pagination" aria-label="Páginas do marketplace">
+          {!loading&&!catalogError&&total>limit&&<nav className="market-pagination" aria-label="Páginas do marketplace">
             <Button variant="secondary" disabled={page===0}
               onClick={()=>setPage(v=>v-1)}><ChevronLeft aria-hidden="true" size={17}/> Anterior</Button>
             <span>Página {page+1} de {pages}</span>
@@ -854,8 +852,8 @@ export default function MarketplaceCatalog({preview=false}:Props) {
             <p className="market-review-note"><ShieldCheck size={14}/>
               Não aceitamos avaliações sem participação confirmada em um show concluído.</p>
           </div>
-          {error&&<p className="market-error" role="alert">{error}</p>}
-          {notice&&<p className="market-notice" role="status">{notice}</p>}
+          {error&&<InlineNotice tone="danger">{error}</InlineNotice>}
+          {notice&&<InlineNotice tone="success">{notice}</InlineNotice>}
         </div>
       </section>
     </div>}

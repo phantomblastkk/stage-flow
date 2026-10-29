@@ -41,7 +41,7 @@ try{
   let mediaReadMode="failed",mediaReads=0,mediaReadGate,mediaActionGate,mediaWriteMode="saved",signFail=true,deleteFileFail=false;
   let mediaRows=[{id:photoId,media_kind:"photo",title:"Foto privada inicial",storage_path:actor+"/"+photoId+".jpg",youtube_id:null,featured:false,display_order:0},
    {id:videoId,media_kind:"youtube",title:"Vídeo inicial",storage_path:null,youtube_id:"dQw4w9WgXcQ",featured:false,display_order:1}];
-  let catalogMode=false,catalogSearchMode="ok",catalogFeaturedReads=0;
+  let catalogMode=false,catalogSearchMode="ok",catalogFeaturedReads=0,catalogSearchGate,catalogFeaturedGate,catalogFeaturedMode="ok";
   const catalogCalls=[];
   const catalogRows=Array.from({length:25},(_,index)=>({musician_id:"50505050-5050-4050-8050-"+String(index+1).padStart(12,"0"),name:"Músico sintético "+(index+1),slug:"musico-sintetico-"+(index+1),headline:"Apresentações ao vivo",city:"São Paulo",instruments:["Cavaquinho"],genres:["Pagode"],avatar_url:null,cover_url:null,price_mode:"from",reference_fee:800,experience_years:5,performance_types:[],availability_note:"Sob consulta",availability_mode:"accepting",date_blocked:false,rating_avg:0,rating_count:0,is_favorite:false}));
   const videoEmbeds=[];
@@ -187,9 +187,21 @@ try{
    else if(rpc==="stage_musician_whatsapp_preferences")data=null;
    else if(rpc==="stage_marketplace_search"){
     if(catalogMode)catalogCalls.push(body);
-    data=catalogMode&&catalogSearchMode==="failed"?{status:"not_released"}:{status:"ok",items:!catalogMode||catalogSearchMode==="empty"?[]:catalogRows.slice(body.p_offset,body.p_offset+body.p_limit),total:!catalogMode||catalogSearchMode==="empty"?0:25,limit:body.p_limit,offset:body.p_offset};
+    const mode=catalogSearchMode,rows=catalogRows.slice(body.p_offset,body.p_offset+body.p_limit);
+    if(catalogSearchGate)await catalogSearchGate;
+    if(mode==="transport"){status=503;data={message:"private_backend_detail.sql",code:"PGRST202"};}
+    else if(mode==="missing")data=null;
+    else if(mode==="malformed")data={status:"ok",items:null,total:0};
+    else if(mode==="invalid_total")data={status:"ok",items:[],total:-1};
+    else data=catalogMode&&mode==="failed"?{status:"not_released"}:{status:"ok",items:!catalogMode||mode==="empty"?[]:rows,total:!catalogMode||mode==="empty"?0:25,limit:body.p_limit,offset:body.p_offset};
    }
-   else if(rpc==="stage_marketplace_featured"){if(catalogMode)catalogFeaturedReads++;data={status:"ok",items:[]};}
+   else if(rpc==="stage_marketplace_featured"){
+    if(catalogMode)catalogFeaturedReads++;const mode=catalogFeaturedMode;
+    if(catalogFeaturedGate)await catalogFeaturedGate;
+    if(mode==="transport"){status=503;data={message:"private_backend_detail.sql",code:"PGRST202"};}
+    else if(mode==="malformed")data={status:"ok",items:null};
+    else data={status:"ok",items:mode==="populated"?catalogRows.slice(0,6):[]};
+   }
    else if(rpc==="stage_marketplace_my_events")data=[];
    else if(rpc==="stage_public_marketplace_identity")data={};
    else if(rpc==="stage_track_marketplace_metrics")data={status:"recorded"};
@@ -1487,6 +1499,73 @@ try{
   await page.locator(".market-results-toolbar").screenshot({path:`test-results/operational-marketplace-sort-controls-${width}.png`});
   assert.equal(proPublishWrites.length,6);assert.equal(privateDeletes.length,1);
   console.log(`PASS marketplace controls ${width}px: shared fields/actions, labeled visible search/sort, 44px targets, mobile focus/retained drafts, explicit filter payload, pagination/reset, invalid fee guard, retry and empty recovery`);
+  // Part 41: failure is distinct from empty, and each read has its own explicit retry.
+  const searchResults=page.getByRole("region",{name:"Resultados do Marketplace",exact:true});
+  const retryCatalog=searchResults.getByRole("button",{name:"Tentar novamente a busca",exact:true});
+  const retryHighlights=page.getByRole("button",{name:"Tentar novamente os destaques",exact:true});
+  catalogSearchMode="transport";await catalogResponse(()=>activate(catalogPagination.getByRole("button",{name:"Próxima",exact:true})));
+  await searchResults.getByRole("alert").filter({hasText:"Não foi possível consultar os músicos."}).waitFor();
+  assert.equal(await searchResults.getByRole("heading",{name:"Nenhum músico encontrado",exact:true}).count(),0,"A failed search is not an empty result");
+  assert.equal(await page.getByText("Busca não concluída",{exact:true}).count(),1);
+  assert.doesNotMatch(await catalog.innerText(),/private_backend_detail|PGRST202|migration|Supabase|\.sql/);
+  const failedSearchPayload={...catalogCalls.at(-1)},highlightsBeforeRetry=catalogFeaturedReads;
+  assert.equal(failedSearchPayload.p_offset,12,"The recovery fixture fails on the second page");
+  await catalogSearch.fill("Texto ainda não aplicado");
+  let releaseCatalogRead;catalogSearchGate=new Promise(resolve=>releaseCatalogRead=resolve);catalogSearchMode="ok";
+  const pendingRetryResponse=page.waitForResponse(r=>r.url().endsWith("/stage_marketplace_search"));
+  const retryCount=catalogCalls.length;await activate(retryCatalog);
+  await searchResults.getByRole("status").filter({hasText:"Buscando talentos..."}).waitFor();
+  for(let i=0;i<100&&catalogCalls.length===retryCount;i++)await delay(25);
+  assert.equal(await retryCatalog.count(),0,"Pending reads must not expose a repeat retry control");
+  assert.equal(catalogCalls.length,retryCount+1);
+  releaseCatalogRead();catalogSearchGate=undefined;await pendingRetryResponse;await catalogReady();
+  await page.getByText("25 músico(s) encontrado(s)",{exact:true}).waitFor();
+  assert.deepEqual(catalogCalls.at(-1),failedSearchPayload,"Retry must use the last applied query, not unsubmitted edits");
+  assert.equal(await catalogSearch.inputValue(),"Texto ainda não aplicado");
+  assert.equal(catalogFeaturedReads,highlightsBeforeRetry);
+  await page.waitForFunction(()=>document.activeElement===document.querySelector(".market-results-toolbar [tabindex]"));
+  assert.equal(await page.locator(".market-results-toolbar [tabindex]").evaluate(el=>el===document.activeElement),true);
+  for(const mode of ["missing","malformed","invalid_total"]){
+   catalogSearchMode=mode;await catalogResponse(()=>catalogSearch.press("Enter"));
+   await retryCatalog.waitFor();assert.equal(await searchResults.getByRole("heading",{name:"Nenhum músico encontrado",exact:true}).count(),0);
+   catalogSearchMode="ok";await catalogResponse(()=>activate(retryCatalog));
+   await page.getByText("25 músico(s) encontrado(s)",{exact:true}).waitFor();
+  }
+  catalogSearchMode="transport";catalogFeaturedMode="transport";await page.reload();
+  await retryCatalog.waitFor();await retryHighlights.waitFor();
+  assert.doesNotMatch(await page.locator(".market-shell").innerText(),/private_backend_detail|PGRST202|migration|Supabase|\.sql/);
+  const featuredBeforeIndependent=catalogFeaturedReads;catalogSearchMode="ok";
+  await catalogResponse(()=>activate(retryCatalog));await page.getByText("25 músico(s) encontrado(s)",{exact:true}).waitFor();
+  assert.equal(catalogFeaturedReads,featuredBeforeIndependent,"Search retry must not reload highlights");assert.equal(await retryHighlights.count(),1);
+  const searchesBeforeHighlights=catalogCalls.length;
+  let releaseHighlights;catalogFeaturedGate=new Promise(resolve=>releaseHighlights=resolve);catalogFeaturedMode="populated";
+  const pendingHighlightsResponse=page.waitForResponse(r=>r.url().endsWith("/stage_marketplace_featured"));
+  await activate(retryHighlights);await page.getByRole("status").filter({hasText:"Carregando músicos em destaque..."}).waitFor();
+  assert.equal(await retryHighlights.count(),0);assert.equal(catalogCalls.length,searchesBeforeHighlights);
+  releaseHighlights();catalogFeaturedGate=undefined;await pendingHighlightsResponse;
+  await page.getByRole("region",{name:"Carrossel dos músicos mais avaliados",exact:true}).waitFor();
+  await page.waitForFunction(()=>document.activeElement?.id==="market-featured-title");
+  assert.equal(await page.locator("#market-featured-title").evaluate(el=>el===document.activeElement),true);
+  assert.equal(catalogCalls.length,searchesBeforeHighlights);assert.equal(catalogFeaturedReads,featuredBeforeIndependent+1);
+  const highlightsBeforeStale=catalogFeaturedReads;
+  catalogSearchMode="ok";catalogSearchGate=new Promise(resolve=>releaseCatalogRead=resolve);
+  const oldCatalogRequest=page.waitForRequest(r=>r.url().endsWith("/stage_marketplace_search"));
+  await catalogSearch.fill("Busca antiga");await catalogSearch.press("Enter");const heldCatalogRequest=await oldCatalogRequest;
+  const oldCatalogResponse=page.waitForResponse(r=>r.request()===heldCatalogRequest);
+  catalogSearchGate=undefined;catalogSearchMode="empty";await catalogSearch.fill("Busca nova");await catalogResponse(()=>catalogSearch.press("Enter"));
+  await searchResults.getByRole("heading",{name:"Nenhum músico encontrado",exact:true}).waitFor();
+  releaseCatalogRead();await oldCatalogResponse;await delay(50);
+  assert.equal(await searchResults.getByRole("heading",{name:"Nenhum músico encontrado",exact:true}).count(),1,"A late old response must not restore stale cards");
+  assert.equal(await searchResults.locator(".market-artist-card").count(),0);assert.equal(await catalogSearch.inputValue(),"Busca nova");
+  assert.equal(catalogFeaturedReads,highlightsBeforeStale);
+  catalogSearchMode="transport";await catalogResponse(()=>catalogSearch.press("Enter"));await retryCatalog.waitFor();
+  await retryCatalog.focus();
+  assert.ok(await retryCatalog.evaluate(el=>el.matches(":focus-visible")&&parseFloat(getComputedStyle(el).outlineWidth)>=2));
+  const retrySize=await retryCatalog.boundingBox();assert.ok(retrySize.width>=44&&retrySize.height>=44);
+  assert.ok(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth+2));
+  await searchResults.screenshot({path:`test-results/operational-marketplace-search-recovery-${width}.png`});
+  await page.locator(".market-featured").screenshot({path:`test-results/operational-marketplace-featured-recovered-${width}.png`});
+  console.log(`PASS marketplace recovery ${width}px: sanitized transport/malformed failures, no false empty state, independent serialized retries, retained applied filters/draft, focus recovery, stale-response isolation and valid empty results`);
   assert.deepEqual(errors,[],"Browser exceptions at "+width);await context.close();
  }
  console.log("PASS: dashboard at 360/768/1280, navigation, receipt failure, legacy profile, group creation, availability and invitation.");
