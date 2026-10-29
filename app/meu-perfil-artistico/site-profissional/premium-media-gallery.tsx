@@ -306,7 +306,7 @@ export function PremiumGalleryEditor({ gallery }: { gallery: PremiumGallery }) {
   return <section className="premium-media-editor" aria-label="Galeria do seu Perfil Artístico">
     <div className="premium-media-editor-heading">
       <div>
-        <span className="premium-design-eyebrow"><ImagePlus size={15}/> FOTOS E VÍDEOS</span>
+        <span className="premium-design-eyebrow"><ImagePlus aria-hidden="true" size={15}/> FOTOS E VÍDEOS</span>
         <h2>Fotos e vídeos, cada um no seu espaço.</h2>
         <p>O Perfil Artístico permite até 3 fotos e 3 vídeos, com espaços separados para cada tipo de mídia.</p>
       </div>
@@ -326,12 +326,11 @@ export function PremiumGalleryEditor({ gallery }: { gallery: PremiumGallery }) {
     </Button>
     <fieldset className="premium-media-inputs" aria-label="Adicionar mídias" disabled={blocked}>
       <div className="premium-media-add-box">
-        <h3><ImagePlus size={17}/> Adicionar foto de show</h3>
+        <h3><ImagePlus aria-hidden="true" size={17}/> Adicionar foto de show</h3>
         {photoFull && <p className="premium-media-cap-notice">
           Limite de 3 fotos atingido. Remova uma foto antes de enviar outra.
         </p>}
-        <label htmlFor="premium-photo-title">Nome da foto (opcional)</label>
-        <input id="premium-photo-title" value={photoTitle} maxLength={90}
+        <Input label="Nome da foto (opcional)" id="premium-photo-name" value={photoTitle} maxLength={90}
           onChange={event => setPhotoTitle(event.target.value)}
           placeholder="Ex.: Show no Rio de Janeiro"/>
         <Input label="Foto de show" id="premium-photo-file" type="file"
@@ -341,22 +340,20 @@ export function PremiumGalleryEditor({ gallery }: { gallery: PremiumGallery }) {
         <small>Foto salva em área privada. Use apenas imagens que você tem autorização para divulgar.</small>
       </div>
       <form className="premium-media-add-box" onSubmit={event => void addVideo(event)}>
-        <h3><Youtube size={17}/> Adicionar vídeo do YouTube</h3>
+        <h3><Youtube aria-hidden="true" size={17}/> Adicionar vídeo do YouTube</h3>
         {videoFull && <p className="premium-media-cap-notice">
           Limite de 3 vídeos atingido. Remova um vídeo antes de adicionar outro.
         </p>}
-        <label htmlFor="premium-video-title">Título do vídeo</label>
-        <input id="premium-video-title" required maxLength={90}
+        <Input label="Título do vídeo" id="premium-video-name" required maxLength={90}
           value={videoTitle} onChange={event => setVideoTitle(event.target.value)}
           placeholder="Ex.: Pagode ao vivo"/>
-        <label htmlFor="premium-video-link">Link do vídeo</label>
-        <input id="premium-video-link" type="url" required
+        <Input label="Link do vídeo" id="premium-video-link" type="url" required
           value={videoUrl} onChange={event => setVideoUrl(event.target.value)}
           placeholder="https://www.youtube.com/watch?v=..."/>
-        <button type="submit" className="premium-media-upload"
+        <Button type="submit"
           disabled={blocked || videoFull}>
-          <PlayCircle size={16}/> Adicionar vídeo
-        </button>
+          <PlayCircle aria-hidden="true" size={16}/> Adicionar vídeo
+        </Button>
         <small>O vídeo será reproduzido dentro do Perfil Artístico. Também haverá um link direto para o YouTube.</small>
       </form>
     </fieldset>
@@ -378,7 +375,7 @@ export function PremiumGalleryEditor({ gallery }: { gallery: PremiumGallery }) {
             return <section className="premium-media-group" key={kind}
               aria-label={kind === "photo" ? "Fotos cadastradas" : "Vídeos cadastrados"}>
               <div className="premium-media-group-heading">
-                {kind === "photo" ? <Images size={19}/> : <Youtube size={19}/>}
+                {kind === "photo" ? <Images aria-hidden="true" size={19}/> : <Youtube aria-hidden="true" size={19}/>}
                 <div><h3>{kind === "photo" ? "Galeria de fotos" : "Vídeos do YouTube"}</h3>
                   <p>{kind === "photo" ? "Escolha a ordem das imagens no álbum." : "Organize seus vídeos de apresentações."}</p>
                 </div>
@@ -391,40 +388,40 @@ export function PremiumGalleryEditor({ gallery }: { gallery: PremiumGallery }) {
               <div className="premium-media-item-info">
                 <div className="premium-media-item-flags">
                   <span>{item.media_kind === "photo" ? "FOTO" : "YOUTUBE"}</span>
-                  {item.featured && <span className="premium-media-featured"><Star size={12} fill="currentColor"/> DESTAQUE</span>}
+                  {item.featured && <span className="premium-media-featured"><Star aria-hidden="true" size={12} fill="currentColor"/> DESTAQUE</span>}
                 </div>
                 {editingId === item.id ?
                   <form className="premium-media-rename" onSubmit={event => void rename(event, item)}>
-                    <input aria-label={"Novo título de " + item.title} disabled={blocked} value={editingTitle} maxLength={90} required
+                    <Input label={"Novo título de " + item.title} disabled={blocked} value={editingTitle} maxLength={90} required
                       onChange={event => setEditingTitle(event.target.value)}/>
-                    <button type="submit" disabled={blocked} aria-label="Salvar título"><Check size={16}/></button>
-                    <button type="button" onClick={() => setEditingId(null)} aria-label="Cancelar edição"><X size={16}/></button>
+                    <Button variant="secondary" type="submit" disabled={blocked} aria-label="Salvar título"><Check aria-hidden="true" size={16}/></Button>
+                    <Button variant="secondary" type="button" disabled={blocked} onClick={() => setEditingId(null)} aria-label="Cancelar edição"><X aria-hidden="true" size={16}/></Button>
                   </form> : <strong>{item.title}</strong>}
                 <div className="premium-media-actions">
-                  <button type="button" disabled={blocked || item.featured}
+                  <Button variant="secondary" type="button" disabled={blocked || item.featured}
                     onClick={() => void gallery.feature(item.id)}>
-                    <Star size={14}/>{item.featured ? "Destaque" : "Destacar"}
-                  </button>
-                  <button type="button" disabled={blocked}
+                    <Star aria-hidden="true" size={14}/>{item.featured ? "Destaque" : "Destacar"}
+                  </Button>
+                  <Button variant="secondary" type="button" disabled={blocked}
                     onClick={() => {setEditingId(item.id);setEditingTitle(item.title);}}>
-                    <Edit3 size={14}/> Título
-                  </button>
-                  <button type="button" disabled={blocked || index === 0}
+                    <Edit3 aria-hidden="true" size={14}/> Título
+                  </Button>
+                  <Button variant="secondary" type="button" disabled={blocked || index === 0}
                     onClick={() => void gallery.reorder(item.id, -1)} aria-label={"Subir " + item.title}>
-                    <ArrowUp size={14}/> Subir
-                  </button>
-                  <button type="button" disabled={blocked || index === grouped.length - 1}
+                    <ArrowUp aria-hidden="true" size={14}/> Subir
+                  </Button>
+                  <Button variant="secondary" type="button" disabled={blocked || index === grouped.length - 1}
                     onClick={() => void gallery.reorder(item.id, 1)} aria-label={"Descer " + item.title}>
-                    <ArrowDown size={14}/> Descer
-                  </button>
+                    <ArrowDown aria-hidden="true" size={14}/> Descer
+                  </Button>
                   {deleteId === item.id ?
-                    <button type="button" className="premium-media-delete-confirm"
+                    <Button variant="danger" type="button"
                       disabled={blocked} onClick={() => void gallery.remove(item).then(ok => {if (ok) setDeleteId(null);})}>
                       Confirmar remoção
-                    </button>
-                    : <button type="button" disabled={blocked}
-                      onClick={() => setDeleteId(item.id)}><Trash2 size={14}/> Remover</button>}
-                  {deleteId === item.id && <button type="button" onClick={() => setDeleteId(null)}>Cancelar</button>}
+                    </Button>
+                    : <Button variant="secondary" type="button" disabled={blocked}
+                      onClick={() => setDeleteId(item.id)}><Trash2 aria-hidden="true" size={14}/> Remover</Button>}
+                  {deleteId === item.id && <Button variant="secondary" type="button" disabled={blocked} onClick={() => setDeleteId(null)}>Cancelar</Button>}
                 </div>
               </div>
             </article>

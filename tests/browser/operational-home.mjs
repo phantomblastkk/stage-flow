@@ -831,7 +831,7 @@ try{
   await activate(photoRow.getByRole("button",{name:"Salvar título",exact:true}));
   for(let i=0;i<100&&mediaWrites.length<3;i++)await delay(25);
   await photoRow.locator("form").evaluate(form=>form.requestSubmit());
-  assert.equal(await renamePhoto.isDisabled(),true);assert.equal(mediaWrites.length,3,"Pending operation cannot be submitted twice");
+  assert.equal(await renamePhoto.isDisabled(),true);assert.equal(await photoRow.getByRole("button",{name:"Cancelar edição",exact:true}).isDisabled(),true);assert.equal(mediaWrites.length,3,"Pending operation cannot be submitted twice");
   releaseMediaAction();mediaActionGate=undefined;
   await media.getByRole("alert").filter({hasText:"O título deve ter de 1 a 90 caracteres."}).waitFor();
   assert.equal(await renamePhoto.inputValue(),"Foto renomeada");
@@ -1142,6 +1142,41 @@ try{
   assert.ok(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth+2),"Appearance controls overflow at "+width);
   await design.screenshot({path:`test-results/operational-appearance-controls-${width}.png`});
   console.log(`PASS appearance controls ${width}px: shared 44px buttons, three themes/five colors, keyboard focus/reorder, last-section guard, collapse preservation, explicit reset/save and no publication`);
+  // Part 36: native forms retain their validation and gallery actions share accessible touch targets.
+  const galleryUiWrites=mediaWrites.length,galleryUiReads=mediaReads;
+  await videoTitle.fill("");await videoLink.fill("https://youtu.be/dQw4w9WgXcQ");
+  await activate(addMediaVideo);
+  assert.equal(await videoTitle.evaluate(el=>el.validity.valueMissing),true);
+  assert.equal(mediaWrites.length,galleryUiWrites,"Native required validation must prevent an empty insertion");
+  const galleryPhoto=media.getByRole("article",{name:"Nova foto preservada",exact:true});
+  await activate(galleryPhoto.getByRole("button",{name:"Título",exact:true}));
+  const galleryRename=galleryPhoto.getByLabel("Novo título de Nova foto preservada",{exact:true});
+  await galleryRename.fill("Rascunho cancelado");await galleryRename.focus();
+  assert.ok(await galleryRename.evaluate(el=>el===document.activeElement&&parseFloat(getComputedStyle(el).outlineWidth)>=2));
+  assert.equal(await galleryRename.evaluate(el=>getComputedStyle(el).fontSize),"16px");
+  const gallerySizes=await media.locator("button").evaluateAll(buttons=>buttons.map(el=>{
+   const r=el.getBoundingClientRect();return {name:el.getAttribute("aria-label")||el.textContent,shared:el.classList.contains("sf-ui-button"),width:r.width,height:r.height};
+  }));
+  assert.ok(gallerySizes.every(el=>el.shared&&el.width>=43.5&&el.height>=43.5),JSON.stringify(gallerySizes));
+  assert.ok(await media.locator("input").evaluateAll(inputs=>inputs.every(el=>el.classList.contains("sf-ui-input"))));
+  assert.ok(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth+2),"Gallery rename overflows at "+width);
+  await galleryPhoto.screenshot({path:`test-results/operational-gallery-rename-controls-${width}.png`});
+  await activate(galleryPhoto.getByRole("button",{name:"Cancelar edição",exact:true}));
+  assert.equal(await galleryPhoto.getByText("Nova foto preservada",{exact:true}).count(),1);
+  await activate(galleryPhoto.getByRole("button",{name:"Remover",exact:true}));
+  const confirmGalleryRemoval=galleryPhoto.getByRole("button",{name:"Confirmar remoção",exact:true});
+  assert.ok((await confirmGalleryRemoval.getAttribute("class")).includes("sf-ui-button-danger"));
+  await confirmGalleryRemoval.focus();
+  assert.ok(await confirmGalleryRemoval.evaluate(el=>el.matches(":focus-visible")&&parseFloat(getComputedStyle(el).outlineWidth)>=2));
+  assert.ok(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth+2),"Gallery confirmation overflows at "+width);
+  await galleryPhoto.screenshot({path:`test-results/operational-gallery-removal-controls-${width}.png`});
+  await activate(galleryPhoto.getByRole("button",{name:"Cancelar",exact:true}));
+  assert.equal(await confirmGalleryRemoval.count(),0);assert.equal(mediaWrites.length,galleryUiWrites);
+  assert.equal(mediaReads,galleryUiReads);assert.equal(privateDeletes.length,1);assert.equal(proPublishWrites.length,6);
+  assert.equal(await photoName.inputValue(),"Nova foto preservada","Local title must survive presentation-only interactions");
+  assert.equal(await page.locator('[id="premium-photo-name"]').count(),1,"Photo field must have its own ID");
+  assert.equal(await page.locator('[id="premium-video-name"]').count(),1);
+  console.log(`PASS gallery controls ${width}px: shared fields/buttons, 44px touch targets, native validation, visible rename/focus, canceled rename/removal, unique labels and no extra reads/writes/publication`);
   assert.deepEqual(errors,[],"Browser exceptions at "+width);await context.close();
  }
  console.log("PASS: dashboard at 360/768/1280, navigation, receipt failure, legacy profile, group creation, availability and invitation.");
