@@ -1,7 +1,7 @@
 // All responses are synthetic fixtures. No live account, payment or Supabase access.
 import assert from "node:assert/strict";
 import {spawn} from "node:child_process";
-import {mkdir,writeFile} from "node:fs/promises";
+import {mkdir,readFile,writeFile} from "node:fs/promises";
 import {setTimeout as delay} from "node:timers/promises";
 import {chromium} from "playwright";
 const api="https://example.supabase.co",origin="http://127.0.0.1:3104";
@@ -31,6 +31,12 @@ try{
    artistReadMode="ok",artistReads=0,bookingReadFail=false,bookingReads=0,bookingReadGate,bookingWriteFail=false,artistWriteFail=false,proMode=false,draftReadMode="failed",draftReads=0,draftReadGate,draftSaveFail=true,draftSaveGate;
   const designWrites=[],proPublishWrites=[],mediaWrites=[],privateDeletes=[];
   let publicationReadMode="ok",publicationReadGate,publicationReads=0,proPublished=false,proEntitled=true,proProfilePublic=true,publicationWriteMode="saved",publicationWriteGate;
+  const secondShowId="abababab-abab-4bab-8bab-abababababab";
+  const nextShowStart=new Date(Date.UTC(new Date().getFullYear(),new Date().getMonth()+1,10,15)).toISOString();
+  let agendaRows=[{...event},{...event,id:secondShowId,title:"Show do próximo mês",starts_at:nextShowStart}];
+  let flyerRows=[{id:eventId,flyer_path:null,flyer_settings:null},{id:secondShowId,flyer_path:actor+"/"+secondShowId+"/flyer.png",flyer_settings:null}];
+  let agendaMode="failed",flyerMode="failed",agendaReads=0,flyerReads=0,agendaGate,flyerGate,flyerSignMode="failed",flyerImageFail=false,flyerSigns=0,flyerDownloadFail=true,flyerDownloadGate;
+  const flyerSignPaths=[],flyerDownloads=[];
   const photoId="77777777-7777-4777-8777-777777777777",videoId="88888888-8888-4888-8888-888888888888";
   let mediaReadMode="failed",mediaReads=0,mediaReadGate,mediaActionGate,mediaWriteMode="saved",signFail=true,deleteFileFail=false;
   let mediaRows=[{id:photoId,media_kind:"photo",title:"Foto privada inicial",storage_path:actor+"/"+photoId+".jpg",youtube_id:null,featured:false,display_order:0},
@@ -38,6 +44,18 @@ try{
   await context.route(api+"/**",async route=>{
    const req=route.request(),url=new URL(req.url()),rpc=url.pathname.split("/").at(-1);let data=[],status=200;
    if(req.method()==="OPTIONS"){await route.fulfill({status:204,headers:{"access-control-allow-origin":"*","access-control-allow-headers":"*"}});return;}
+   if(req.method()==="POST"&&url.pathname.startsWith("/storage/v1/object/sign/stage-show-flyers/")){
+    assert.ok(url.pathname.includes(actor+"/"));assert.equal(req.postDataJSON().expiresIn,3600);
+    flyerSigns++;flyerSignPaths.push(url.pathname);
+    await route.fulfill({status:flyerSignMode==="failed"?503:200,contentType:"application/json",headers:{"access-control-allow-origin":"*"},body:JSON.stringify(flyerSignMode==="failed"?{message:"private_backend_detail.sql"}:{signedURL:url.pathname.replace("/storage/v1","")+"?token=fixture-"+flyerSigns})});return;
+   }
+   if(req.method()==="GET"&&url.pathname.startsWith("/storage/v1/object/sign/stage-show-flyers/")){
+    await route.fulfill({status:flyerImageFail?404:200,contentType:"image/png",body:storageImage});return;
+   }
+   if(req.method()==="GET"&&url.pathname.startsWith("/storage/v1/object/stage-show-flyers/")){
+    assert.ok(url.pathname.includes(actor+"/"));flyerDownloads.push(url.pathname);if(flyerDownloadGate)await flyerDownloadGate;
+    await route.fulfill({status:flyerDownloadFail?503:200,contentType:flyerDownloadFail?"application/json":"image/png",headers:{"access-control-allow-origin":"*"},body:flyerDownloadFail?JSON.stringify({message:"private_backend_detail.sql"}):storageImage});return;
+   }
    if(req.method()==="POST"&&url.pathname.startsWith("/storage/v1/object/sign/stage-premium-drafts/")){
     assert.ok(url.pathname.includes(actor+"/"));assert.equal(req.postDataJSON().expiresIn,3600);
     await route.fulfill({status:signFail?503:200,contentType:"application/json",headers:{"access-control-allow-origin":"*"},body:JSON.stringify(signFail?{message:"private_backend_detail.sql"}:{signedURL:url.pathname.replace("/storage/v1","")+"?token=fixture"})});return;
@@ -130,9 +148,24 @@ try{
     const id=body.p_kind==="group"?ownGroupId:body.p_kind==="producer"?"55555555-5555-4555-8555-555555555555":"66666666-6666-4666-8666-666666666666";
     savedProfiles=[...savedProfiles.filter(row=>row.id!==id),{...group,id,account_id:actor,kind:body.p_kind,musical_type:body.p_type,name:body.p_name,members:body.p_members,is_public:body.p_public}];data={status:"saved",id};
    }
-   else if(rpc==="events"){assert.equal(url.searchParams.get("producer_id"),"eq."+actor);
-    if(proMode){assert.equal(url.searchParams.get("show_publicly"),"eq.true");assert.equal(url.searchParams.get("status"),"eq.published");assert.equal(url.searchParams.get("limit"),"40");}
-    data=[event];}
+   else if(rpc==="events"){
+    assert.equal(url.searchParams.get("producer_id"),"eq."+actor);
+    if(!proMode)data=[event];
+    else{
+     assert.equal(url.searchParams.get("show_publicly"),"eq.true");assert.equal(url.searchParams.get("status"),"eq.published");assert.equal(url.searchParams.get("limit"),"40");
+     if(url.searchParams.get("select")==="id,title,venue,city,starts_at"){
+      agendaReads++;assert.equal(url.searchParams.get("order"),"starts_at.asc,id.asc");assert.match(url.searchParams.get("starts_at"),/^gte\./);
+      const mode=agendaMode,rows=agendaRows.map(row=>({...row}));if(agendaGate)await agendaGate;
+      if(mode==="failed"){status=503;data={message:"private_backend_detail.sql"};}else data=mode==="missing"?null:mode==="empty"?[]:rows;
+     }else{
+      assert.equal(url.searchParams.get("select"),"id,flyer_path,flyer_settings");
+      const ids=url.searchParams.get("id").slice(4,-1).split(",").map(id=>id.replaceAll('"',''));
+      assert.ok(ids.length<=40&&ids.length>0);assert.ok(ids.every(id=>agendaRows.some(row=>row.id===id)));
+      flyerReads++;const mode=flyerMode,rows=flyerRows.filter(row=>ids.includes(row.id)).map(row=>({...row}));if(flyerGate)await flyerGate;
+      if(mode==="failed"){status=503;data={message:"private_backend_detail.sql"};}else data=rows;
+     }
+    }
+   }
    else if(rpc==="stage_discover_performance_profiles")data={status:"ok",items:[group]};
    else if(rpc==="stage_performance_availability")data="free";
    else if(rpc==="stage_invite_performance_profile"){assert.equal(body.p_profile_id,groupId);assert.equal(body.p_event_id,eventId);assert.equal(body.p_fee,1500);writes.push(body);data={status:"sent",invitation_id:inviteId};}
@@ -929,6 +962,106 @@ try{
   assert.ok(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth+2),"Publication controls overflow at "+width);
   await proControl.screenshot({path:`test-results/operational-publication-recovered-${width}.png`});
   console.log(`PASS publication recovery ${width}px: invalid/failed status, retry, permission gates, cancelled confirmations, uncertain commit, explicit unpublish/republish, stale-read isolation and preserved drafts`);
+  const previewAgenda=advanced.getByRole("region",{name:"Agenda na prévia do perfil",exact:true});
+  const refreshAgenda=previewAgenda.getByRole("button",{name:"Atualizar agenda",exact:true});
+  const refreshFlyers=previewAgenda.getByRole("button",{name:"Atualizar cartazes",exact:true});
+  const independentReads={artistReads,draftReads,mediaReads,publicationReads};
+  const waitEnabled=async button=>{await button.waitFor();for(let i=0;i<100&&await button.isDisabled();i++)await delay(25);assert.equal(await button.isEnabled(),true);};
+  await previewAgenda.getByRole("alert").filter({hasText:"Não foi possível atualizar a agenda"}).waitFor();
+  assert.equal(flyerReads,0,"Failed agenda must not query flyer metadata");
+  assert.equal(await previewAgenda.getByText("Nenhum show público futuro.",{exact:true}).count(),0);
+  await previewAgenda.screenshot({path:`test-results/operational-preview-agenda-failure-${width}.png`});
+  agendaMode="missing";await activate(refreshAgenda);
+  await previewAgenda.getByRole("alert").filter({hasText:"Não foi possível atualizar a agenda"}).waitFor();
+  assert.equal(flyerReads,0);
+  agendaMode="ok";await activate(refreshAgenda);
+  await previewAgenda.getByRole("article",{name:"Show Show do próximo mês",exact:true}).waitFor();
+  await previewAgenda.getByRole("status").filter({hasText:"Não foi possível atualizar os cartazes."}).waitFor();
+  assert.equal(await previewAgenda.getByRole("article").count(),2);
+  await activate(previewAgenda.getByRole("button",{name:"Próximo mês",exact:true}));
+  const chosenDate=new Date(nextShowStart).toLocaleDateString("pt-BR",{timeZone:"America/Sao_Paulo"});
+  const chosenDay=previewAgenda.getByRole("button",{name:chosenDate+", show agendado",exact:true});
+  await activate(chosenDay);assert.equal(await chosenDay.getAttribute("aria-pressed"),"true");
+  const chosenCard=previewAgenda.getByRole("article",{name:"Show Show do próximo mês",exact:true});
+  assert.equal(await previewAgenda.getByRole("article").count(),1);
+  const agendaReadsBeforeFlyers=agendaReads;flyerMode="ok";await activate(refreshFlyers);
+  const retryCartaz=chosenCard.getByRole("button",{name:"Recarregar cartaz de Show do próximo mês",exact:true});
+  await retryCartaz.waitFor();assert.equal(agendaReads,agendaReadsBeforeFlyers);
+  flyerSignMode="ok";flyerImageFail=true;await activate(retryCartaz);
+  for(let i=0;i<100&&flyerSigns<2;i++)await delay(25);await retryCartaz.waitFor();
+  assert.equal(flyerSigns,2,"Failed image also offers an explicit signed-preview retry");
+  flyerImageFail=false;await activate(retryCartaz);
+  const waitForFlyer=async card=>{
+   const img=card.getByRole("img");await img.scrollIntoViewIfNeeded();
+   for(let i=0;i<100&&!await img.evaluate(el=>el.complete&&el.naturalWidth>0);i++)await delay(25);
+   assert.ok(await img.evaluate(el=>el.complete&&el.naturalWidth>0));
+  };
+  await waitForFlyer(chosenCard);
+  flyerMode="failed";await activate(refreshFlyers);
+  await previewAgenda.getByRole("status").filter({hasText:"Não foi possível atualizar os cartazes."}).waitFor();
+  assert.equal(await chosenCard.getByRole("img").count(),1,"Metadata failure keeps the last known cartaz and its show");
+  assert.equal(await chosenDay.getAttribute("aria-pressed"),"true");
+  await previewAgenda.screenshot({path:`test-results/operational-preview-flyer-failure-${width}.png`});
+  flyerMode="ok";await activate(refreshFlyers);await waitEnabled(refreshFlyers);await waitForFlyer(chosenCard);
+  const feed=chosenCard.getByRole("button",{name:"Baixar Feed",exact:true});
+  const story=chosenCard.getByRole("button",{name:"Baixar Story",exact:true});
+  let releaseFlyerDownload;flyerDownloadGate=new Promise(resolve=>releaseFlyerDownload=resolve);
+  await activate(feed);await chosenCard.getByRole("button",{name:"Gerando...",exact:true}).waitFor();
+  assert.equal(await story.isDisabled(),true);
+  releaseFlyerDownload();flyerDownloadGate=undefined;
+  await previewAgenda.getByRole("alert").filter({hasText:"Não foi possível baixar o cartaz agora."}).waitFor();
+  assert.equal(await feed.isEnabled(),true);assert.equal(await story.isEnabled(),true);
+  flyerDownloadFail=false;
+  for(const [format,button,height] of [["feed",feed,1350],["story",story,1920]]){
+   const downloadPromise=page.waitForEvent("download");await activate(button);const file=await downloadPromise;
+   assert.match(file.suggestedFilename(),new RegExp("-"+format+"-stage-flow\\.jpg$"));
+   const path=`test-results/operational-preview-flyer-${format}-${width}.jpg`;await file.saveAs(path);
+   const bytes=await readFile(path);
+   const dimensions=await page.evaluate(async bytes=>{const image=await createImageBitmap(new Blob([Uint8Array.from(bytes)],{type:"image/jpeg"}));const size=[image.width,image.height];image.close();return size;},[...bytes]);
+   assert.deepEqual(dimensions,[1080,height]);
+  }
+  // Hold old flyer metadata, then load a newer agenda and metadata snapshot.
+  let releaseOldFlyers;flyerRows[1]={...flyerRows[1],flyer_path:actor+"/"+secondShowId+"/old.png"};
+  flyerGate=new Promise(resolve=>releaseOldFlyers=resolve);
+  const oldFlyerRequestPromise=page.waitForRequest(req=>req.url().includes("/rest/v1/events?")&&new URL(req.url()).searchParams.get("select")==="id,flyer_path,flyer_settings");
+  await activate(refreshFlyers);const oldFlyerRequest=await oldFlyerRequestPromise;
+  const oldFlyerResponse=page.waitForResponse(response=>response.request()===oldFlyerRequest);
+  await previewAgenda.getByRole("status").filter({hasText:"Carregando cartazes da agenda..."}).waitFor();
+  agendaRows=agendaRows.map(row=>row.id===secondShowId?{...row,title:"Show atualizado do próximo mês"}:row);
+  flyerRows[1]={...flyerRows[1],flyer_path:actor+"/"+secondShowId+"/fresh.png"};flyerGate=undefined;
+  await activate(refreshAgenda);
+  const updatedCard=previewAgenda.getByRole("article",{name:"Show Show atualizado do próximo mês",exact:true});
+  await waitForFlyer(updatedCard);releaseOldFlyers();await oldFlyerResponse;await delay(50);
+  assert.equal(flyerSignPaths.some(path=>path.endsWith("/old.png")),false,"Old metadata must never replace the newer set of cartazes");
+  assert.ok(flyerSignPaths.at(-1).endsWith("/fresh.png"));
+  assert.equal(await chosenDay.getAttribute("aria-pressed"),"true","Agenda retry preserves selected month and day");
+  await previewAgenda.screenshot({path:`test-results/operational-preview-agenda-recovered-${width}.png`});
+  const metadataBeforeAgendaError=flyerReads;agendaMode="failed";await activate(refreshAgenda);
+  await previewAgenda.getByRole("alert").filter({hasText:"Não foi possível atualizar a agenda"}).waitFor();
+  assert.equal(await updatedCard.count(),1);assert.equal(flyerReads,metadataBeforeAgendaError);
+  let releaseAgenda;agendaMode="ok";agendaGate=new Promise(resolve=>releaseAgenda=resolve);
+  const agendaReadsBefore=agendaReads;await activate(refreshAgenda);
+  await previewAgenda.getByRole("status").filter({hasText:"Carregando agenda da prévia..."}).waitFor();
+  assert.equal(await refreshAgenda.isDisabled(),true);releaseAgenda();agendaGate=undefined;
+  await waitEnabled(refreshAgenda);await updatedCard.waitFor();assert.equal(agendaReads,agendaReadsBefore+1);
+  agendaMode="empty";await activate(refreshAgenda);
+  await previewAgenda.getByText("Nenhum show público nesse dia.",{exact:true}).waitFor();
+  const metadataBeforeEmpty=flyerReads;
+  await activate(previewAgenda.getByRole("button",{name:"Ver todos",exact:true}));
+  await previewAgenda.getByText("Nenhum show público futuro.",{exact:true}).waitFor();
+  assert.equal(flyerReads,metadataBeforeEmpty,"Empty agenda must not issue an unbounded flyer query");
+  agendaMode="ok";agendaRows=Array.from({length:40},(_,index)=>({...event,id:"15151515-1515-4515-8515-"+String(index+1).padStart(12,"0"),title:"Série pública "+(index+1),starts_at:new Date(Date.parse(nextShowStart)+index*86400000).toISOString()}));
+  flyerRows=[];await activate(refreshAgenda);
+  await previewAgenda.getByText(/Mostrando os 40 próximos shows públicos/).waitFor();
+  assert.equal(await previewAgenda.getByRole("article").count(),6);
+  const boundedReads=agendaReads;await activate(previewAgenda.getByRole("button",{name:"Ver todos os 40 shows",exact:true}));
+  assert.equal(await previewAgenda.getByRole("article").count(),40);assert.equal(agendaReads,boundedReads);
+  assert.deepEqual({artistReads,draftReads,mediaReads,publicationReads},independentReads,"Agenda/flyer recovery must not reload the identity, design, gallery or publication");
+  assert.equal(proPublishWrites.length,6);assert.equal(await photoName.inputValue(),"Nova foto preservada");
+  assert.equal(await design.getByRole("button",{name:/^Concert/}).getAttribute("aria-pressed"),"true");
+  assert.doesNotMatch(await previewAgenda.innerText(),/private_backend_detail|migration|Supabase|SQL/);
+  assert.ok(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth+2),"Preview agenda overflows at "+width);
+  console.log(`PASS preview agenda ${width}px: independent read retries, cached shows, bounded flyer IDs, thumbnail recovery, feed/story downloads, late metadata discarded, calendar selection preserved and 40-show limit`);
   assert.deepEqual(errors,[],"Browser exceptions at "+width);await context.close();
  }
  console.log("PASS: dashboard at 360/768/1280, navigation, receipt failure, legacy profile, group creation, availability and invitation.");

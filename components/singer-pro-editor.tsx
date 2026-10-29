@@ -11,7 +11,8 @@ import {
   LockKeyhole, LoaderCircle, MapPin, Mic2, Music2, PlayCircle,
   Sparkles, Youtube, Palette, Save, Eye, EyeOff, RotateCcw, ArrowUp, ArrowDown
 } from "lucide-react";
-import {Button,LoadingState} from "@/src/components/ui";
+import {Button,InlineNotice,LoadingState} from "@/src/components/ui";
+import {useArtistPreviewAgenda,PREVIEW_SHOW_LIMIT} from "@/src/domains/events/hooks/use-artist-preview-agenda";
 import { createClient } from "@/lib/supabase/client";
 import {publicInstagramProfile} from "@/lib/artist-social";
 import {distinctPublicBiography} from "@/lib/profile-presentation";
@@ -81,15 +82,6 @@ const accentChoices: { id: PreviewAccent; name: string; color: string }[] = [
   { id: "coral", name: "Coral", color: "#ff978b" }
 ];
 
-type PublicShow = {
-  id: string;
-  title: string;
-  venue: string | null;
-  city: string | null;
-  starts_at: string;
-  flyer_path?: string | null;
-  flyer_settings?: unknown;
-};
 
 const monthTitle = (month: Date) =>
   new Intl.DateTimeFormat("pt-BR", { month: "long", year: "numeric" }).format(month);
@@ -118,7 +110,9 @@ function monthCells(month: Date): (Date | null)[] {
 export default function SiteProfissionalPreview({ active = true, onEditData }: { active?: boolean; onEditData?: () => void }) {
   const router = useRouter();
   const [artist, setArtist] = useState<ArtistPreview | null>(null);
-  const [events, setEvents] = useState<PublicShow[]>([]);
+  const [ownerId,setOwnerId]=useState<string|null>(null);
+  const agenda=useArtistPreviewAgenda(ownerId);
+  const events=agenda.shows;
   const [loading, setLoading] = useState(true);
   const [ownerAttempt, setOwnerAttempt] = useState(0);
   const [draftAttempt, setDraftAttempt] = useState(0);
@@ -171,39 +165,8 @@ export default function SiteProfissionalPreview({ active = true, onEditData }: {
           return;
         }
         setArtist(owner as ArtistPreview);
+        setOwnerId(user.id);
 
-        // Exibe APENAS eventos que o próprio artista marcou como públicos e publicados.
-        // Esta consulta usa a sessão do proprietário e as políticas já existentes.
-        const { data: ownerEvents, error: eventsError } = await supabase
-          .from("events")
-          .select("id,title,venue,city,starts_at")
-          .eq("producer_id", user.id)
-          .eq("show_publicly", true)
-          .eq("status", "published")
-          .gte("starts_at", new Date().toISOString())
-          .order("starts_at", { ascending: true })
-          .limit(40);
-
-        if (!active) return;
-        if (eventsError) setProblem("Não foi possível carregar a agenda da prévia. Seus dados de aparência foram preservados.");
-        else {
-          // Consulta opcional: o restante da prévia continua funcionando
-          // mesmo se o administrador ainda não executou o SQL dos flyers.
-          const {data:flyers,error:flyerError}=await supabase.from("events")
-            .select("id,flyer_path,flyer_settings")
-            .eq("producer_id",user.id)
-            .eq("show_publicly",true)
-            .eq("status","published")
-            .gte("starts_at",new Date().toISOString())
-            .limit(40);
-          if(!active)return;
-          const flyerMap=new Map(
-            (flyerError?[]:(flyers||[])).map(item=>[item.id,item] as const)
-          );
-          setEvents((ownerEvents||[]).map(item=>({
-            ...item,...(flyerMap.get(item.id)||{})
-          })) as PublicShow[]);
-        }
       } catch {
         if (active) setProblem("Não foi possível carregar a prévia. Tente novamente.");
       } finally {
@@ -577,7 +540,7 @@ export default function SiteProfissionalPreview({ active = true, onEditData }: {
           />
         </section>}
 
-        {draft.visible_sections.includes("agenda") && <section id="premium-agenda" className="premium-site-agenda" style={{order:draft.section_order.indexOf("agenda")}}>
+        {draft.visible_sections.includes("agenda") && <section id="premium-agenda" aria-label="Agenda na prévia do perfil" className="premium-site-agenda" style={{order:draft.section_order.indexOf("agenda")}}>
           <div className="premium-site-section-head">
             <div>
               <span className="premium-site-section-overline">{String(draft.section_order.indexOf("agenda") + 1).padStart(2,"0")} / PRÓXIMAS APRESENTAÇÕES</span>
@@ -587,6 +550,16 @@ export default function SiteProfissionalPreview({ active = true, onEditData }: {
             <CalendarDays size={28}/>
           </div>
 
+          <div className="premium-preview-agenda-actions">
+            <Button variant="secondary" disabled={agenda.loading} onClick={()=>void agenda.reloadAgenda()}>Atualizar agenda</Button>
+            {events.length>0&&<Button variant="secondary" disabled={!agenda.available||agenda.loading||agenda.flyerLoading}
+              onClick={()=>void agenda.reloadFlyers()}>Atualizar cartazes</Button>}
+          </div>
+          {agenda.loading&&<LoadingState label="Carregando agenda da prévia..."/>}
+          {agenda.error&&<InlineNotice tone="danger">{agenda.error}</InlineNotice>}
+          {agenda.flyerLoading&&<LoadingState label="Carregando cartazes da agenda..."/>}
+          {agenda.flyerError&&<InlineNotice tone="warning">{agenda.flyerError}</InlineNotice>}
+          {events.length===PREVIEW_SHOW_LIMIT&&<p className="premium-preview-agenda-limit">Mostrando os 40 próximos shows públicos. <Link href="/eventos">Abra sua agenda para consultar os demais.</Link></p>}
           <div className="premium-site-schedule">
             <div className="premium-site-calendar">
               <div className="premium-site-calendar-heading">
@@ -623,11 +596,11 @@ export default function SiteProfissionalPreview({ active = true, onEditData }: {
               </div>
               {selectedShows.length > 0 ?
                 <ProShowCards shows={selectedShows} artistName={firstName} preview/> :
-                <div className="premium-site-no-shows">
+                agenda.available ? <div className="premium-site-no-shows">
                 <CalendarDays size={25}/>
                 <strong>{selectedDate ? "Nenhum show público nesse dia." : "Nenhum show público futuro."}</strong>
                 <span>Você pode cadastrar uma apresentação e marcá-la como pública.</span>
-              </div>}
+              </div> : null}
               <Link className="premium-site-agenda-link" href="/eventos">Gerenciar meus shows <ArrowRight size={16}/></Link>
             </div>
           </div>

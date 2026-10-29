@@ -1,11 +1,12 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import {
   CalendarPlus, Check, ChevronDown, ChevronUp, Clock3, Copy,
   Download, ExternalLink, Image as ImageIcon, MapPin, Share2, Ticket
 } from "lucide-react";
 import "./pro-show-cards.css";
+import {Button} from "@/src/components/ui";
 import { createClient } from "@/lib/supabase/client";
 import {
   downloadFlyer, flyerFileName, loadFlyerImage,
@@ -83,19 +84,32 @@ function eventLink(id: string): string {
 /** Signed URL is only requested for the cards currently mounted/visible. */
 function ShowFlyerThumb({path,title}:{path:string;title:string}){
   const [url,setUrl]=useState("");
+  const [loading,setLoading]=useState(true);
+  const [attempt,setAttempt]=useState(0);
   useEffect(()=>{
     let active=true;
-    void createClient().storage.from("stage-show-flyers")
-      .createSignedUrl(path,3600).then(({data,error})=>{
-        if(active && !error && data?.signedUrl)setUrl(data.signedUrl);
-      });
-    return()=>{active=false};
-  },[path]);
+    setLoading(true);setUrl("");
+    async function load(){
+      try{
+        const {data,error}=await createClient().storage.from("stage-show-flyers").createSignedUrl(path,3600);
+        if(active&&!error&&data?.signedUrl)setUrl(data.signedUrl);
+      }catch{
+        // An explicit retry is offered; the show remains available.
+      }finally{if(active)setLoading(false);}
+    }
+    void load();
+    return()=>{active=false;};
+  },[path,attempt]);
   if(!url)return <div className="pro-show-card-flyer is-loading">
-    <ImageIcon size={23}/><small>FLYER</small>
+    <ImageIcon size={23}/>
+    {loading?<small role="status">Carregando cartaz...</small>:<>
+      <small>Cartaz indisponível</small>
+      <Button variant="secondary" aria-label={"Recarregar cartaz de "+title}
+        onClick={()=>setAttempt(value=>value+1)}>Tentar novamente</Button>
+    </>}
   </div>;
   return <div className="pro-show-card-flyer">
-    <img src={url} alt={"Cartaz do show "+title} loading="lazy"/>
+    <img src={url} alt={"Cartaz do show "+title} loading="lazy" onError={()=>setUrl("")}/>
     <span>FLYER</span>
   </div>;
 }
@@ -105,6 +119,7 @@ export default function ProShowCards({ shows, artistName, preview = false }: Pro
   const [copiedId, setCopiedId] = useState<string | null>(null);
   const [message, setMessage] = useState("");
   const [downloading,setDownloading] = useState<string|null>(null);
+  const downloadBusy=useRef(false);
 
   // Links individuais continuam funcionando quando a lista foi recolhida,
   // inclusive após o carregamento assíncrono do Perfil Artístico publicado.
@@ -164,27 +179,25 @@ export default function ProShowCards({ shows, artistName, preview = false }: Pro
   }
 
   async function exportFlyer(show:ProPublicShow,format:FlyerFormat){
-    if(!show.flyer_path||downloading)return;
-    setDownloading(show.id+format);
-    setMessage("");
-    const {data:blob,error}=await createClient().storage
-      .from("stage-show-flyers").download(show.flyer_path);
-    if(error||!blob){
-      setMessage("Não foi possível baixar o flyer. Confira se o site está publicado e o arquivo ainda existe.");
-      setDownloading(null);
-      return;
-    }
-    const url=URL.createObjectURL(blob);
+    if(!show.flyer_path||downloadBusy.current)return;
+    downloadBusy.current=true;setDownloading(show.id+format);setMessage("");
+    let url:string|null=null;
     try{
+      const {data:blob,error}=await createClient().storage.from("stage-show-flyers").download(show.flyer_path);
+      if(error||!blob){
+        setMessage("Não foi possível baixar o cartaz agora. Tente novamente; o show e a imagem foram mantidos.");
+        return;
+      }
+      url=URL.createObjectURL(blob);
       const image=await loadFlyerImage(url);
       const settings=safeFlyerSettings(show.flyer_settings);
       const output=await makeFlyerBlob(image,format,settings[format]);
       downloadFlyer(output,flyerFileName(show.title,format));
     }catch{
-      setMessage("Não foi possível gerar o flyer. Confira a imagem original.");
+      setMessage("Não foi possível gerar o cartaz agora. Tente novamente com a imagem original.");
     }finally{
-      URL.revokeObjectURL(url);
-      setDownloading(null);
+      if(url)URL.revokeObjectURL(url);
+      downloadBusy.current=false;setDownloading(null);
     }
   }
 
@@ -206,7 +219,7 @@ export default function ProShowCards({ shows, artistName, preview = false }: Pro
           <strong>{day}</strong>
           <span>{month}</span>
         </div>
-        {show.flyer_path && <ShowFlyerThumb path={show.flyer_path} title={show.title}/>}
+        {show.flyer_path && <ShowFlyerThumb key={show.flyer_path} path={show.flyer_path} title={show.title}/>}
         <div className="pro-show-card-content">
           <span className="pro-show-card-eyebrow"><Ticket size={12}/> SHOW PUBLICADO NA AGENDA</span>
           <h4>{show.title}</h4>

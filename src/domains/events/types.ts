@@ -46,3 +46,8 @@ export type EventDraft = {
 export type AgendaWindow = { from: string; to: string };
 export type AgendaCursor = { startsAt: string; id: string };
 export type AgendaSource = "owned" | "accepted";
+
+export type ArtistPreviewShow = Pick<EventRow,"id"|"title"|"venue"|"city"|"starts_at"> & {
+  flyer_path?: string | null;
+  flyer_settings?: unknown;
+};

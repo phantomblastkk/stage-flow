@@ -266,3 +266,6 @@
     flex:1 1 auto;
   }
 }
+
+.pro-show-card-flyer.is-loading{height:auto;min-height:110px;padding:8px;text-align:center}
+.pro-show-card-flyer .sf-ui-button{font-size:10px;white-space:normal;min-height:44px;max-width:100%;padding:8px}
