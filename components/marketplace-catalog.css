@@ -703,3 +703,8 @@
 
 .market-invite-form .sf-ui-input{font-size:16px}
 .market-modal a[aria-disabled="true"]{opacity:.53;cursor:not-allowed}
+
+.market-modal-head{position:sticky;top:0;z-index:2}
+.market-modal{scroll-behavior:auto}
+.market-invite-feedback{margin:14px 0}
+.market-invite-feedback:focus-visible{outline:3px solid var(--sf-ui-brand);outline-offset:3px}

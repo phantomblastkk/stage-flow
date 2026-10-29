@@ -1653,6 +1653,8 @@ try{
   invitationResult="commit_then_fail";await confirmMarketplaceInvite(sendMarketplaceInvite,true);
   await invitePanel.getByRole("alert").filter({hasText:"Ele pode ter sido registrado."}).waitFor();
   const retrySameInvite=invitePanel.getByRole("button",{name:"Confirmar novamente o mesmo convite",exact:true});
+  await page.waitForFunction(()=>document.activeElement?.classList.contains("market-invite-feedback"));
+  assert.equal(await invitePanel.locator(".market-invite-feedback").evaluate(el=>{const r=el.getBoundingClientRect(),d=el.closest("dialog").getBoundingClientRect();return r.top>=d.top&&r.bottom<=d.bottom;}),true,"Invitation outcome must be visible before retrying");
   assert.equal(invitationWrites.length,3);assert.equal(createdMarketplaceInvitations.size,2);
   assert.equal(await inviteEvent.isDisabled(),true);assert.equal(await inviteText.isDisabled(),true);assert.equal(await inviteText.inputValue(),"Resposta incerta preservada");
   assert.equal(await invitePanel.getByRole("status").filter({hasText:"Convite registrado!"}).count(),0);
@@ -1670,6 +1672,8 @@ try{
   assert.equal(await inviteText.evaluate(el=>getComputedStyle(el).fontSize),"16px");
   assert.ok(await invitePanel.evaluate(el=>{const r=el.getBoundingClientRect();return r.left>=0&&r.top>=0&&r.right<=innerWidth&&r.bottom<=innerHeight;}));
   await invitePanel.screenshot({path:`test-results/operational-marketplace-invite-confirmed-${width}.png`});
+  await invitePanel.evaluate(el=>el.scrollTop=el.scrollHeight);
+  assert.ok(await closeInvite.evaluate(el=>{const r=el.getBoundingClientRect(),d=el.closest("dialog").getBoundingClientRect();return r.top>=d.top&&r.bottom<=d.bottom;}),"Close control must stay visible while scrolling the panel");
   await inviteEvent.selectOption(eventId);assert.equal(await sendMarketplaceInvite.isDisabled(),true,"Earlier confirmed pairs stay blocked in the same panel");
   invitationEventsMode="empty";await activate(invitePanel.getByRole("button",{name:"Atualizar meus shows",exact:true}));
   await invitePanel.getByText("Você precisa ter um show futuro cadastrado na agenda.",{exact:true}).waitFor();

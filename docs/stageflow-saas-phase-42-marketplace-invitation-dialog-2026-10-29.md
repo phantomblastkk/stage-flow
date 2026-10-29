@@ -8,6 +8,8 @@ O painel declarava um modal sem conter foco ou devolver foco à origem. A leitur
 falha de shows podia sugerir agenda vazia. O envio tinha apenas bloqueio por estado
 React, sem finally, e podia perder o contexto de uma resposta incerta.
 
+- Cabeçalho com fechar permanece visível durante rolagem. Feedback do convite fica
+  junto do formulário e recebe foco após a resposta, separado das avaliações.
 - Dialog HTML nativo em portal no body, com fundo inerte, Tab/Shift+Tab, Escape,
   clique no fundo, bloqueio/restauração de scroll e retorno ao botão de origem.
 - Fechamento e ações concorrentes bloqueados durante convite/avaliação pendentes.

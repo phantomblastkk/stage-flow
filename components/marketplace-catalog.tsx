@@ -212,6 +212,9 @@ export default function MarketplaceCatalog({preview=false}:Props) {
   const [eventsRetry,setEventsRetry] = useState(0);
   const eventsReading=useRef(false);
   const [inviteUncertain,setInviteUncertain] = useState(false);
+  const [inviteError,setInviteError] = useState("");
+  const [inviteNotice,setInviteNotice] = useState("");
+  const inviteFeedbackRef=useRef<HTMLDivElement|null>(null);
   const [confirmedInvites,setConfirmedInvites] = useState<string[]>([]);
   const confirmedInviteKeys=useRef(new Set<string>());
   const inviteWriting=useRef(false);
@@ -367,13 +370,19 @@ export default function MarketplaceCatalog({preview=false}:Props) {
     void getEvents();return()=>{active=false;};
   },[gate,authUser,eventsRetry]);
 
+  useEffect(()=>{
+    if(inviting||(!inviteError&&!inviteNotice))return;
+    const feedback=inviteFeedbackRef.current;
+    feedback?.focus({preventScroll:true});feedback?.scrollIntoView({block:"center",behavior:"instant"});
+  },[inviting,inviteError,inviteNotice]);
+
   function retryEvents(){
     if(eventsReading.current||inviteWriting.current||inviteUncertain)return;
     eventsReading.current=true;setLoadingEvents(true);setEventsRetry(v=>v+1);
   }
   function closeMusician(){
     if(inviteWriting.current||savingReview)return;
-    panelVersion.current++;setSelected(null);setError("");setNotice("");
+    panelVersion.current++;setSelected(null);setError("");setNotice("");setInviteError("");setInviteNotice("");
   }
   function reportFromPanel(target:ReportTarget){
     if(inviteWriting.current||savingReview)return;
@@ -490,7 +499,7 @@ export default function MarketplaceCatalog({preview=false}:Props) {
     if(inviteWriting.current)return;
     invitationOpenerRef.current=document.activeElement instanceof HTMLElement?document.activeElement:null;
     panelVersion.current++;lastInviteAttempt.current=null;setInviteUncertain(false);confirmedInviteKeys.current.clear();setConfirmedInvites([]);
-    setSelected(m);setSelectedEvent("");setInviteMessage("");setError("");setNotice("");
+    setSelected(m);setSelectedEvent("");setInviteMessage("");setError("");setNotice("");setInviteError("");setInviteNotice("");
   }
   async function sendInvite(e:FormEvent<HTMLFormElement>) {
     e.preventDefault();
@@ -504,8 +513,8 @@ export default function MarketplaceCatalog({preview=false}:Props) {
       "? O músico poderá aceitar ou recusar no Stage Flow. Nenhuma mensagem externa será enviada automaticamente.")){inviteWriting.current=false;return;}
     const version=panelVersion.current;
     const current=()=>mounted.current&&version===panelVersion.current;
-    lastInviteAttempt.current=payload;setInviting(true);setError("");setNotice("");
-    const uncertain=()=>{setInviteUncertain(true);setError("Não foi possível confirmar o convite. Ele pode ter sido registrado. Confirme novamente o mesmo convite antes de criar outro.");};
+    lastInviteAttempt.current=payload;setInviting(true);setInviteError("");setInviteNotice("");
+    const uncertain=()=>{setInviteUncertain(true);setInviteError("Não foi possível confirmar o convite. Ele pode ter sido registrado. Confirme novamente o mesmo convite antes de criar outro.");};
     try{
       const {data,error:rpcError}=await createClient().rpc("stage_marketplace_invite_musician",payload);
       if(!current())return;
@@ -522,9 +531,9 @@ export default function MarketplaceCatalog({preview=false}:Props) {
       if(rpcError){uncertain();return;}
       if(res?.status==="sent"||res?.status==="already_exists"){
         setInviteUncertain(false);confirmedInviteKeys.current.add(key);setConfirmedInvites(current=>current.includes(key)?current:[...current,key]);
-        setNotice(res.status==="already_exists"?"Esse convite já existe. Acompanhe a resposta em Meus convites; nenhuma nova mensagem foi enviada.":"Convite registrado! O músico verá a proposta em Meus convites. A contratação ainda depende da resposta dele.");
+        setInviteNotice(res.status==="already_exists"?"Esse convite já existe. Acompanhe a resposta em Meus convites; nenhuma nova mensagem foi enviada.":"Convite registrado! O músico verá a proposta em Meus convites. A contratação ainda depende da resposta dele.");
         if(res.status==="sent")setInviteMessage("");
-      }else if(reasons[res?.status||""]){setInviteUncertain(false);setError(reasons[res?.status||""]);}
+      }else if(reasons[res?.status||""]){setInviteUncertain(false);setInviteError(reasons[res?.status||""]);}
       else uncertain();
     }catch{if(current())uncertain();}
     finally{inviteWriting.current=false;if(current())setInviting(false);}
@@ -843,6 +852,10 @@ export default function MarketplaceCatalog({preview=false}:Props) {
           <div className="market-modal-block">
             <h3><Send size={17}/> Convite para show</h3>
             <p>O músico recebe um convite individual. Você acompanha a resposta e negocia o cachê em particular.</p>
+            {(inviteError||inviteNotice)&&<div ref={inviteFeedbackRef} tabIndex={-1} className="market-invite-feedback">
+              {inviteError&&<InlineNotice tone="danger">{inviteError}</InlineNotice>}
+              {inviteNotice&&<InlineNotice tone="success">{inviteNotice}</InlineNotice>}
+            </div>}
             {!authUser?<div className="market-login-note">
               <p>Entre na conta de organizador para escolher um show e convidar este músico.</p>
               <Link href="/login" className="market-apply">Entrar na minha conta <ArrowRight size={15}/></Link>
@@ -856,7 +869,7 @@ export default function MarketplaceCatalog({preview=false}:Props) {
               <p className="market-modal-warning">O músico declarou que não está recebendo propostas neste momento.</p>:
               <form className="market-invite-form" onSubmit={e=>void sendInvite(e)}>
                 <Select label="Escolha o show *" id="market-invite-event" required value={selectedEvent}
-                  disabled={inviting||inviteUncertain||!eventsReady} onChange={event=>{setSelectedEvent(event.target.value);setError("");setNotice("");}}>
+                  disabled={inviting||inviteUncertain||!eventsReady} onChange={event=>{setSelectedEvent(event.target.value);setInviteError("");setInviteNotice("");}}>
                   <option value="">Selecione um evento</option>
                   {events.map(ev=><option value={ev.id} key={ev.id}>{ev.title} · {dateBR(ev.starts_at)}</option>)}
                 </Select>
