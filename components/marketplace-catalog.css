@@ -707,7 +707,7 @@
 }
 
 @media(max-width:850px){
- .market-shell.has-mobile-workspace-nav{padding-bottom:calc(88px + env(safe-area-inset-bottom))}
+ .market-shell.has-mobile-workspace-nav{padding-bottom:0}
  .market-shell .sf-workspace-bottom-nav{position:fixed;z-index:80}
 }
 
