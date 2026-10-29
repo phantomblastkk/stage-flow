@@ -834,6 +834,7 @@ try{
   assert.equal(await renamePhoto.isDisabled(),true);assert.equal(await photoRow.getByRole("button",{name:"Cancelar edição",exact:true}).isDisabled(),true);assert.equal(mediaWrites.length,3,"Pending operation cannot be submitted twice");
   releaseMediaAction();mediaActionGate=undefined;
   await media.getByRole("alert").filter({hasText:"O título deve ter de 1 a 90 caracteres."}).waitFor();
+  assert.equal(await media.locator(".sf-ui-notice-danger").count(),1);
   assert.equal(await renamePhoto.inputValue(),"Foto renomeada");
   mediaWriteMode="saved";await activate(photoRow.getByRole("button",{name:"Salvar título",exact:true}));
   const renamedPhoto=media.getByRole("article",{name:"Foto renomeada",exact:true});await renamedPhoto.waitFor();
@@ -885,6 +886,7 @@ try{
    if(mode==="failed")await activate(refreshPublication);else await activate(checkPublication);
    await proControl.getByRole("alert").filter({hasText:"Não foi possível verificar a publicação."}).waitFor();
    assert.equal(await proControl.getByText("STATUS INDISPONÍVEL",{exact:true}).count(),1);
+   assert.equal(await proControl.locator(".sf-ui-notice-danger").count(),1,"Read failure uses the shared alert");
    assert.equal(await proControl.getByText("PRO NÃO LIBERADO",{exact:true}).count(),0,"Unknown status is not a denial of access");
    assert.equal(await proControl.getByRole("button",{name:/Ativar recursos Pro/}).count(),0);
    assert.doesNotMatch(await proControl.innerText(),/private_backend_detail|Supabase|migration|SQL/);
@@ -941,6 +943,7 @@ try{
   assert.equal(await proControl.getByText("PRO LIBERADO · PUBLICAÇÃO PENDENTE",{exact:true}).count(),1);
   await confirmPublication(publishPro,true);
   await proControl.getByRole("status").filter({hasText:"Recursos Pro ativados no seu perfil!"}).waitFor();
+  assert.equal(await proControl.locator(".sf-ui-notice-success").count(),1);
   await publicationReady();
   await confirmPublication(proControl.getByRole("button",{name:"Republicar alterações",exact:true}),true);
   await proControl.getByRole("status").filter({hasText:"Recursos Pro atualizados no seu perfil!"}).waitFor();
@@ -1177,6 +1180,48 @@ try{
   assert.equal(await page.locator('[id="premium-photo-name"]').count(),1,"Photo field must have its own ID");
   assert.equal(await page.locator('[id="premium-video-name"]').count(),1);
   console.log(`PASS gallery controls ${width}px: shared fields/buttons, 44px touch targets, native validation, visible rename/focus, canceled rename/removal, unique labels and no extra reads/writes/publication`);
+  // Part 37: publication presentation preserves explicit choices and canonical sharing.
+  const publicationUiWrites=proPublishWrites.length;
+  const publicationUiIndependent={artistReads,draftReads,mediaReads,agendaReads,flyerReads};
+  const publicationUiReadStart=publicationReads;
+  assert.equal(await proControl.getByRole("status").filter({hasText:"Seu acesso Pro já está ativo!"}).evaluate(el=>el.classList.contains("sf-ui-notice")),true);
+  await confirmPublication(publishPro,false);assert.equal(proPublishWrites.length,publicationUiWrites);
+  proPublished=true;await activate(refreshPublication);await publicationReady();
+  const republishControl=proControl.getByRole("button",{name:"Republicar alterações",exact:true});
+  const deactivateControl=proControl.getByRole("button",{name:"Desativar versão Pro",exact:true});
+  const copyProfileLink=proControl.getByRole("button",{name:"Copiar endereço",exact:true});
+  const openProfileLink=proControl.getByRole("link",{name:"Abrir meu perfil",exact:true});
+  assert.equal(await openProfileLink.getAttribute("href"),"/cantor-teste");
+  assert.equal(await openProfileLink.getAttribute("target"),"_blank");
+  assert.match(await openProfileLink.getAttribute("rel"),/noopener/);
+  const publicationUiSizes=await proControl.locator("button,a.sf-ui-button").evaluateAll(nodes=>nodes.map(el=>{
+   const r=el.getBoundingClientRect();return {name:el.textContent,shared:el.classList.contains("sf-ui-button"),width:r.width,height:r.height};
+  }));
+  assert.ok(publicationUiSizes.every(el=>el.shared&&el.width>=43.5&&el.height>=43.5),JSON.stringify(publicationUiSizes));
+  assert.ok((await deactivateControl.getAttribute("class")).includes("sf-ui-button-danger"));
+  for(const control of [openProfileLink,copyProfileLink,republishControl,deactivateControl]){
+   await control.focus();
+   assert.ok(await control.evaluate(el=>el===document.activeElement&&el.matches(":focus-visible")&&parseFloat(getComputedStyle(el).outlineWidth)>=2));
+  }
+  await confirmPublication(republishControl,false);await confirmPublication(deactivateControl,false);
+  assert.equal(proPublishWrites.length,publicationUiWrites,"Canceling shared publication controls must not write");
+  await page.evaluate(()=>Object.defineProperty(navigator,"clipboard",{configurable:true,value:{writeText:async value=>{window.__stageCopiedLink=value;}}}));
+  await activate(copyProfileLink);await proControl.getByRole("button",{name:"Link copiado!",exact:true}).waitFor();
+  assert.equal(await page.evaluate(()=>window.__stageCopiedLink),origin+"/cantor-teste");
+  await activate(refreshPublication);await publicationReady();
+  await page.evaluate(()=>Object.defineProperty(navigator,"clipboard",{configurable:true,value:{writeText:async()=>{throw new Error("synthetic clipboard failure");}}}));
+  await activate(copyProfileLink);
+  await proControl.getByRole("alert").filter({hasText:"Não foi possível copiar automaticamente."}).waitFor();
+  assert.equal(await proControl.locator(".sf-ui-notice-danger").count(),1);
+  assert.equal(await republishControl.isEnabled(),true,"Clipboard failure must not change publication eligibility");
+  assert.ok(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth+2),"Publication UI overflows at "+width);
+  await proControl.screenshot({path:`test-results/operational-publication-shared-controls-${width}.png`});
+  await activate(refreshPublication);await publicationReady();
+  assert.equal(await proControl.getByRole("alert").count(),0);
+  assert.equal(publicationReads,publicationUiReadStart+3);
+  assert.deepEqual({artistReads,draftReads,mediaReads,agendaReads,flyerReads},publicationUiIndependent);
+  assert.equal(proPublishWrites.length,publicationUiWrites);assert.equal(privateDeletes.length,1);
+  console.log(`PASS publication controls ${width}px: shared notices/buttons, 44px links/actions, keyboard focus, canceled activation/republish/deactivation, canonical clipboard success/failure and no extra writes`);
   assert.deepEqual(errors,[],"Browser exceptions at "+width);await context.close();
  }
  console.log("PASS: dashboard at 360/768/1280, navigation, receipt failure, legacy profile, group creation, availability and invitation.");

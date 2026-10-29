@@ -3,10 +3,10 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import {
-  CheckCircle2, Copy, Crown, ExternalLink, Globe2, LoaderCircle,
+  CheckCircle2, Copy, Crown, ExternalLink, Globe2,
   LockKeyhole, Rocket, ShieldCheck, Unplug, RefreshCw
 } from "lucide-react";
-import {Button,LoadingState} from "@/src/components/ui";
+import {Button,InlineNotice,LoadingState} from "@/src/components/ui";
 import { createClient } from "@/lib/supabase/client";
 import ProFeatureLock from "@/components/pro-feature-lock";
 import "./pro-publish-controls.css";
@@ -158,45 +158,45 @@ export default function ProSitePublicationControls({
   return <section className="pro-publish-controls" aria-label="Publicar recursos Pro no perfil do cantor">
     <div className="pro-publish-head">
       <div>
-        <span className="pro-publish-eyebrow"><Globe2 size={16}/> PUBLICAÇÃO DOS RECURSOS PRO</span>
+        <span className="pro-publish-eyebrow"><Globe2 aria-hidden="true" size={16}/> PUBLICAÇÃO DOS RECURSOS PRO</span>
         <h2>Um perfil, mais possibilidades.</h2>
         <p>Seu perfil gratuito já tem um endereço público. Escolha quando aplicar o visual e as galerias Pro a essa mesma página.</p>
       </div>
       <span className={"pro-publish-status"+(!verified?"":info?.published?" is-live":info?.entitled?" is-entitled":"")}>
-        {!verified?<><RefreshCw size={15}/>{busy?"ATUALIZANDO PUBLICAÇÃO":loading?"VERIFICANDO PUBLICAÇÃO":"STATUS INDISPONÍVEL"}</>:
-          info?.published?<><CheckCircle2 size={15}/> PRO PUBLICADO</>:
-          info?.entitled?<><Crown size={15}/> PRO LIBERADO · PUBLICAÇÃO PENDENTE</>:
-          <><LockKeyhole size={15}/> PRO NÃO LIBERADO</>}
+        {!verified?<><RefreshCw aria-hidden="true" size={15}/>{busy?"ATUALIZANDO PUBLICAÇÃO":loading?"VERIFICANDO PUBLICAÇÃO":"STATUS INDISPONÍVEL"}</>:
+          info?.published?<><CheckCircle2 aria-hidden="true" size={15}/> PRO PUBLICADO</>:
+          info?.entitled?<><Crown aria-hidden="true" size={15}/> PRO LIBERADO · PUBLICAÇÃO PENDENTE</>:
+          <><LockKeyhole aria-hidden="true" size={15}/> PRO NÃO LIBERADO</>}
       </span>
     </div>
 
     {verified&&!loading&&info?.entitled&&!info.published&&
-      <p className="pro-publish-ready-notice"><Crown size={19}/>
+      <div className="pro-publish-ready-notice"><InlineNotice>
         <span>Seu acesso Pro já está ativo! Para que o novo visual, as fotos e os vídeos apareçam ao público,
         salve seu design e clique em <strong>Ativar recursos Pro</strong> abaixo. A publicação é sua escolha,
         e seu perfil gratuito continua no ar enquanto isso.</span>
-      </p>}
+      </InlineNotice></div>}
     {verified&&!loading&&!busy&&<Button variant="secondary" onClick={()=>void load()}>Atualizar publicação</Button>}
-    {loading||busy?<LoadingState label={busy?"Atualizando publicação...":"Verificando disponibilidade da publicação..."}/>:!verified||!info?<div className="pro-publish-setup-error" role="alert">
-      <p className="pro-publish-warning">{error||"Consulte o estado da publicação para continuar."}</p>
-      <Button variant="secondary" onClick={()=>void load()}><RefreshCw size={15}/> Verificar novamente</Button>
+    {loading||busy?<LoadingState label={busy?"Atualizando publicação...":"Verificando disponibilidade da publicação..."}/>:!verified||!info?<div className="pro-publish-setup-error">
+      <InlineNotice tone="danger">{error||"Consulte o estado da publicação para continuar."}</InlineNotice>
+      <Button variant="secondary" onClick={()=>void load()}><RefreshCw aria-hidden="true" size={15}/> Verificar novamente</Button>
     </div>:<div className="pro-publish-grid">
       <div className="pro-publish-info">
         <div className="pro-publish-checklist">
-          <div><span>{info.entitled?<CheckCircle2 size={16}/>:<LockKeyhole size={16}/>}</span>
+          <div><span>{info.entitled?<CheckCircle2 aria-hidden="true" size={16}/>:<LockKeyhole aria-hidden="true" size={16}/>}</span>
             <div><strong>Acesso aos recursos Pro</strong>
               <small>{info.entitled?"Habilitado para sua conta.":
                 "Recurso incluído nos planos pagos de cantores. A contratação online ainda não está disponível."}</small>
             </div>
           </div>
-          <div><span>{info.profile_public&&info.username?<CheckCircle2 size={16}/>:<LockKeyhole size={16}/>}</span>
+          <div><span>{info.profile_public&&info.username?<CheckCircle2 aria-hidden="true" size={16}/>:<LockKeyhole aria-hidden="true" size={16}/>}</span>
             <div><strong>Perfil de cantor publicado</strong>
               <small>{info.profile_public&&info.username
                 ?"Seu perfil gratuito @" + info.username + " está publicado."
                 :"Publique sua página gratuita e escolha um @ para continuar."}</small>
             </div>
           </div>
-          <div><span>{draftReady&&!unsaved?<CheckCircle2 size={16}/>:<LockKeyhole size={16}/>}</span>
+          <div><span>{draftReady&&!unsaved?<CheckCircle2 aria-hidden="true" size={16}/>:<LockKeyhole aria-hidden="true" size={16}/>}</span>
             <div><strong>Visual salvo</strong>
               <small>{draftReady&&!unsaved
                 ?"Seu tema e suas seções estão salvos."
@@ -206,11 +206,11 @@ export default function ProSitePublicationControls({
         </div>
         {!info.entitled&&<ProFeatureLock title="Personalização Pro do perfil" description="Libere temas especiais e galerias no mesmo perfil público do cantor. Subdomínio é um benefício futuro, ainda não ativado.">
           <div className="pro-publish-checklist">
-            <div><span><Crown size={16}/></span><div><strong>Temas e galeria Pro</strong><small>Personalização da mesma página</small></div></div>
-            <div><span><Globe2 size={16}/></span><div><strong>Subdomínio do artista</strong><small>Incluído no plano Pro</small></div></div>
+            <div><span><Crown aria-hidden="true" size={16}/></span><div><strong>Temas e galeria Pro</strong><small>Personalização da mesma página</small></div></div>
+            <div><span><Globe2 aria-hidden="true" size={16}/></span><div><strong>Subdomínio do artista</strong><small>Incluído no plano Pro</small></div></div>
           </div>
         </ProFeatureLock>}
-        <p className="pro-publish-privacy"><ShieldCheck size={15}/>
+        <p className="pro-publish-privacy"><ShieldCheck aria-hidden="true" size={15}/>
           Só o conteúdo escolhido para a publicação fica acessível. Convites, negociações,
           contatos recebidos e dados financeiros permanecem privados.
         </p>
@@ -222,27 +222,26 @@ export default function ProSitePublicationControls({
           <strong>{typeof window!=="undefined"?window.location.origin+canonicalProfilePath:canonicalProfilePath}</strong>
         </div>}
         {info.published&&canonicalProfilePath&&<div className="pro-publish-links">
-          <Link href={canonicalProfilePath} target="_blank" rel="noopener noreferrer">
-            <ExternalLink size={15}/> Abrir meu perfil
+          <Link className="sf-ui-button sf-ui-button-secondary" href={canonicalProfilePath} target="_blank" rel="noopener noreferrer">
+            <ExternalLink aria-hidden="true" size={15}/> Abrir meu perfil
           </Link>
-          <button type="button" onClick={()=>void copyLink()}>
-            {copied?<CheckCircle2 size={15}/>:<Copy size={15}/>}
+          <Button variant="secondary" onClick={()=>void copyLink()}>
+            {copied?<CheckCircle2 aria-hidden="true" size={15}/>:<Copy aria-hidden="true" size={15}/>}
             {copied?"Link copiado!":"Copiar endereço"}
-          </button>
+          </Button>
         </div>}
-        <button type="button"
-          className={"pro-publish-main-button"+(info.published?" is-update":"")}
+        <Button
           disabled={!verified||!active||!info.entitled||!info.profile_public||!info.username||
             busy||galleryBusy||galleryLoading||!draftReady||unsaved}
           onClick={()=>void toggle(true)}>
-          {busy?<LoaderCircle size={17}/>:info.published?<RefreshCw size={17}/>:<Rocket size={17}/>}
+          {info.published?<RefreshCw aria-hidden="true" size={17}/>:<Rocket aria-hidden="true" size={17}/>}
           {busy?"Salvando publicação...":info.published
             ?"Republicar alterações":"Ativar recursos Pro"}
-        </button>
-        {info.published&&<button type="button" className="pro-publish-unpublish"
+        </Button>
+        {info.published&&<Button variant="danger"
           disabled={!verified||!active||busy} onClick={()=>void toggle(false)}>
-          <Unplug size={16}/> Desativar versão Pro
-        </button>}
+          <Unplug aria-hidden="true" size={16}/> Desativar versão Pro
+        </Button>}
         <small className="pro-publish-info-text">
           {info.published
             ?"Seu perfil único usa o último visual e a galeria Pro que você publicou. Alterações no editor só entram ao republicar."
@@ -250,9 +249,7 @@ export default function ProSitePublicationControls({
         </small>
       </div>
     </div>}
-    {error&&!loading&&!busy&&verified&&info&&<p role="alert" className="pro-publish-error">{error}</p>}
-    {message&&<p role="status" className="pro-publish-success">
-      <CheckCircle2 size={17}/>{message}
-    </p>}
+    {error&&!loading&&!busy&&verified&&info&&<div className="pro-publish-feedback"><InlineNotice tone="danger">{error}</InlineNotice></div>}
+    {message&&<div className="pro-publish-feedback"><InlineNotice tone="success">{message}</InlineNotice></div>}
   </section>;
 }

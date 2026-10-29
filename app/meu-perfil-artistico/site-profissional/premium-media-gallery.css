@@ -29,8 +29,7 @@
 }
 .premium-media-add-box h3 svg{color:#c4a2ff}
 .premium-media-add-box small{font-size:10px;line-height:1.6;color:#9aaecb}
-.premium-media-feedback{font-size:12px;line-height:1.6;color:#c2ebc7;background:#1b3029;border:1px solid #456554;padding:12px 14px;border-radius:10px;margin:15px 0 0}
-.premium-media-feedback.is-error{color:#ffc7cd;background:#361f2c;border-color:#704452}
+.premium-media-feedback{margin:15px 0 0}
 .premium-media-empty,.premium-media-loading{
   margin-top:18px;padding:23px;color:#a9b9d4;text-align:center;border:1px dashed #42516e;
   border-radius:12px;font-size:12px;line-height:1.65
@@ -434,16 +433,6 @@
   border-color:#7d6542;
   background:#3b302e;
   color:#f0ceaa;
-}
-.premium-media-cap-notice{
-  color:#e5cba8;
-  background:#3d312e;
-  border:1px solid #886846;
-  border-radius:9px;
-  padding:10px 12px;
-  font-size:11px;
-  line-height:1.75;
-  margin:0;
 }
 .premium-media-editor>.premium-media-cap-notice{
   margin-top:16px;

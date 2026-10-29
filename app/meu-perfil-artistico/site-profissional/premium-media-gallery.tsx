@@ -5,7 +5,7 @@ import {
   ArrowDown, ArrowUp, Check, Edit3, ExternalLink,
   ChevronLeft, ChevronRight, Images, ImagePlus, LoaderCircle, PlayCircle, Star, Trash2, X, Youtube
 } from "lucide-react";
-import {Button,Input,LoadingState} from "@/src/components/ui";
+import {Button,InlineNotice,Input,LoadingState} from "@/src/components/ui";
 import { createClient } from "@/lib/supabase/client";
 import "./premium-media-gallery.css";
 
@@ -316,20 +316,18 @@ export function PremiumGalleryEditor({ gallery }: { gallery: PremiumGallery }) {
       </div>
     </div>
 
-    {gallery.readError && <div className="premium-media-feedback is-error" role="alert">
-      <p>{gallery.readError}</p>
-    </div>}
-    {gallery.error && <p className="premium-media-feedback is-error" role="alert">{gallery.error}</p>}
-    {gallery.previewWarning && <p className="premium-media-feedback" role="status">Algumas miniaturas não carregaram. Seus arquivos continuam na galeria.</p>}
+    {gallery.readError && <div className="premium-media-feedback"><InlineNotice tone="danger">{gallery.readError}</InlineNotice></div>}
+    {gallery.error && <div className="premium-media-feedback"><InlineNotice tone="danger">{gallery.error}</InlineNotice></div>}
+    {gallery.previewWarning && <div className="premium-media-feedback"><InlineNotice tone="warning">Algumas miniaturas não carregaram. Seus arquivos continuam na galeria.</InlineNotice></div>}
     <Button variant="secondary" disabled={gallery.loading || gallery.busy} onClick={() => void gallery.reload()}>
       {gallery.loading ? "Atualizando galeria..." : "Atualizar galeria"}
     </Button>
     <fieldset className="premium-media-inputs" aria-label="Adicionar mídias" disabled={blocked}>
       <div className="premium-media-add-box">
         <h3><ImagePlus aria-hidden="true" size={17}/> Adicionar foto de show</h3>
-        {photoFull && <p className="premium-media-cap-notice">
+        {photoFull && <InlineNotice tone="warning">
           Limite de 3 fotos atingido. Remova uma foto antes de enviar outra.
-        </p>}
+        </InlineNotice>}
         <Input label="Nome da foto (opcional)" id="premium-photo-name" value={photoTitle} maxLength={90}
           onChange={event => setPhotoTitle(event.target.value)}
           placeholder="Ex.: Show no Rio de Janeiro"/>
@@ -341,9 +339,9 @@ export function PremiumGalleryEditor({ gallery }: { gallery: PremiumGallery }) {
       </div>
       <form className="premium-media-add-box" onSubmit={event => void addVideo(event)}>
         <h3><Youtube aria-hidden="true" size={17}/> Adicionar vídeo do YouTube</h3>
-        {videoFull && <p className="premium-media-cap-notice">
+        {videoFull && <InlineNotice tone="warning">
           Limite de 3 vídeos atingido. Remova um vídeo antes de adicionar outro.
-        </p>}
+        </InlineNotice>}
         <Input label="Título do vídeo" id="premium-video-name" required maxLength={90}
           value={videoTitle} onChange={event => setVideoTitle(event.target.value)}
           placeholder="Ex.: Pagode ao vivo"/>
@@ -357,14 +355,14 @@ export function PremiumGalleryEditor({ gallery }: { gallery: PremiumGallery }) {
         <small>O vídeo será reproduzido dentro do Perfil Artístico. Também haverá um link direto para o YouTube.</small>
       </form>
     </fieldset>
-    {gallery.message && <p className="premium-media-feedback" role="status">{gallery.message}</p>}
+    {gallery.message && <div className="premium-media-feedback"><InlineNotice tone="success">{gallery.message}</InlineNotice></div>}
     {(photoCount > MAX_PER_TYPE || videoCount > MAX_PER_TYPE) &&
-      <p className="premium-media-cap-notice" role="status">
+      <div className="premium-media-cap-notice"><InlineNotice tone="warning">
         Você possui mídias cadastradas antes do novo limite. Nenhum arquivo foi apagado;
         somente as 3 primeiras fotos e os 3 primeiros vídeos (priorizando o destaque)
         aparecerão na prévia e no Perfil Artístico. Os demais continuam no seu rascunho
         para você organizar ou remover.
-      </p>}
+      </InlineNotice></div>}
     {gallery.loading ? <LoadingState label="Carregando galeria..."/> :
       gallery.items.length === 0
         ? (gallery.available ? <div className="premium-media-empty">Sua galeria está vazia. Comece com fotos de shows ou vídeos do YouTube.</div> : null)
