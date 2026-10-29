@@ -31,7 +31,7 @@ explícitas; não há repetição automática, polling, migration ou novo endpoi
 
 ## Validação
 
-- 266 testes Node, TypeScript e build aprovados localmente; CI em validação.
+- 266 testes Node, TypeScript e build aprovados localmente e no CI.
 - O primeiro teste de navegador detectou que a classe da introdução é ocultada pelo hub.
   A recuperação recebeu uma classe própria; o teste permanece na rota real /perfil-artistico.
 - Cenários de navegador acrescentados para 360/768/1280 px: erro inicial sem formulário,
@@ -43,6 +43,19 @@ explícitas; não há repetição automática, polling, migration ou novo endpoi
 - Erro técnico de save não aparece na tela; texto local permanece e a tentativa seguinte
   envia o mesmo payload. Testes prévios de publicação, uploads e cores preservados.
 - APIs inteiramente simuladas em example.supabase.co. Sem dados ou credenciais reais.
+
+## Evidências finais
+
+- Código inicial: 3434f642923b466a5e5dfac933b1e2bb1bbdb643.
+- Correção de visibilidade no hub: 94cec84c2a0f8cb6eed88c068e0613d97a1926e5.
+- Versão final testada: c83dc7402dc32c439f046bdca019b1b9b5c7278c.
+- [Diff completo](https://github.com/phantomblastkk/stage-flow/compare/43b60143952a0731284450242a47fe9e9a126fbc...c83dc7402dc32c439f046bdca019b1b9b5c7278c).
+- [Integration and build aprovado](https://github.com/phantomblastkk/stage-flow/actions/runs/40821386909).
+- [Operational UX aprovado](https://github.com/phantomblastkk/stage-flow/actions/runs/40821386986), incluindo PostgreSQL temporário, 266 testes e jornadas de navegador.
+- Artefato operational-ux-evidence ID 12874273314: 69 PNGs, seis novas capturas de falha do perfil/preferência nos três tamanhos.
+- Revisão visual da recuperação e preferência em 360 px. Corrigido espaçamento mobile após detectar sobreposição pelo menu fixo; teste exige título abaixo do menu e ausência de overflow.
+- Mensagens de backend simuladas com detalhe técnico não aparecem no texto visível.
+- Testes anteriores de uploads, cores, publicação, agenda, negociação, conversas e financeiro permanecem aprovados.
 
 ## Limites e próxima etapa
 
