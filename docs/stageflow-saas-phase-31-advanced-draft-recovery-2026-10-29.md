@@ -34,7 +34,7 @@ O backend continua validando o mesmo payload e as mesmas permissões.
 
 ## Validação
 
-266 testes Node, TypeScript e build aprovados localmente; CI em validação.
+266 testes Node, TypeScript e build aprovados localmente e no CI.
 A primeira rodada de navegador passou; a revisão visual levou a ocultar opções
 padrão durante a falha, para destacar o aviso e a tentativa de recuperação.
 
@@ -45,6 +45,18 @@ salvos no servidor simulado; mudança para Concert/Coral e reordenação de Víd
 alternância de abas preservando o design mesmo com atualização de identidade rejeitada;
 falha no save seguida de tentativa com payload idêntico; nenhuma publicação automática.
 Consultas de eventos continuam limitadas a 40, ao proprietário, públicos e publicados.
+
+## Evidências finais
+
+- Implementação inicial: a2c0b49ba6754d5de7164771dd96b99e51b0f9d6.
+- Versão final testada: 46f28088f79132da556ef1a765ee6a1022a10cf9.
+- [Diff completo](https://github.com/phantomblastkk/stage-flow/compare/ae01d2afb9aba0506eb589af57df67621c671757...46f28088f79132da556ef1a765ee6a1022a10cf9).
+- [Integration and build aprovado](https://github.com/phantomblastkk/stage-flow/actions/runs/40825405701).
+- [Operational UX aprovado](https://github.com/phantomblastkk/stage-flow/actions/runs/40825405494): 266 testes, PostgreSQL temporário, TypeScript, build e jornadas reais de navegador com APIs sintéticas.
+- Artefato operational-ux-evidence, ID 12875399765: 75 capturas PNG; seis novas capturas do design com falha e recuperado em três larguras.
+- Logs confirmam PASS advanced draft em 360, 768 e 1280 px, incluindo bloqueio de sobrescrita, escolhas salvas, persistência entre abas, nova tentativa com payload idêntico e nenhuma publicação.
+- Revisão visual das capturas do componente em 360 px e das opções recuperadas em 1280 px; ausência de overflow também verificada no navegador. As capturas de componente incluem os elementos fixos da navegação global.
+- Revisão React: efeitos de leitura independentes com descarte na desmontagem, dependência booleana de identidade para não reinicializar o design ao atualizar o perfil, fieldset nativo e ações type=button.
 
 ## Limites e continuidade
 
