@@ -52,7 +52,20 @@ melhoria de bundle, gzip, latência ou capacidade de usuários.
 ## Verificação
 
 - 265 testes Node e TypeScript aprovados localmente.
-- Build, CI e evidência de navegador em validação; relatório será atualizado.
+- Build de produção aprovado localmente e nos dois workflows do commit
+  `b84f754bdc96775fde03efd8c253460205823a9f`:
+  [Integration and build](https://github.com/phantomblastkk/stage-flow/actions/runs/40792287428)
+  e [Operational UX](https://github.com/phantomblastkk/stage-flow/actions/runs/40792287530).
+  O workflow operacional também aprovou os 265 testes e PostgreSQL temporário.
+- Os três cenários novos de formulário passaram (360/768/1280 px), além dos três
+  cenários de matriz de temas e da jornada operacional anterior. Evidência:
+  [33 PNGs e log operacional](https://github.com/phantomblastkk/stage-flow/actions/runs/40792287530/artifacts/12862511317).
+  Inspeção visual dos campos profissionais/experiência a 1280 px e cachê, ações
+  de salvar e abertura da prévia a 360 px. Capturas de página inteira incluem
+  os controles fixos do workspace. Sem teste em Safari físico.
+- Os 24 cenários PASS da suíte agenda-finance continuam aprovados:
+  [Artefato](https://github.com/phantomblastkk/stage-flow/actions/runs/40792287428/artifacts/12862227637).
+  Artefatos do GitHub Actions têm retenção de sete dias.
 - Cenário novo preenche as quatro etapas e confere os valores do payload da mesma
   RPC de gravação. Testa ajuda associada à biografia, validação nativa de URL,
   rejeição simulada invalid_price, mensagem de erro, nova tentativa e sucesso.
