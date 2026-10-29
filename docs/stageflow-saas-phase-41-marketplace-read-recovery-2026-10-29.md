@@ -32,11 +32,24 @@ de envio de convites/avaliações ainda precisam de revisão própria de recuper
 
 ## Validação
 
-266 testes Node e TypeScript aprovados localmente. Build e CI em validação.
+266 testes Node, TypeScript e build aprovados localmente e no CI. Código validado:
+a4b5598c0babb48cc5407f09f64284ac52d03d21.
 Browser sintético em 360/768/1280 px cobre transporte, null/lista/total inválidos,
 falha na segunda página, preservação do payload e de edição não aplicada, retentativa
 pendente, independência, foco, resposta antiga, vazio válido e ausência de detalhes
 internos na tela. Cobertura anterior de filtros, perfil e galeria preservada.
+
+## Evidências finais
+
+- [Diff da etapa](https://github.com/phantomblastkk/stage-flow/compare/ef80b769ab0a22f9b08eacd33c00be66fbac9062...a4b5598c0babb48cc5407f09f64284ac52d03d21).
+- [Integration and build aprovado](https://github.com/phantomblastkk/stage-flow/actions/runs/40896497347).
+- [Operational UX aprovado](https://github.com/phantomblastkk/stage-flow/actions/runs/40896497396): 266 testes, TypeScript, build, PostgreSQL temporário e jornadas sintéticas de navegador.
+- PASS marketplace recovery em 360/768/1280 px. Retry da busca preserva p_offset=12 e payload aplicado, mesmo com texto novo ainda não enviado no campo.
+- Artefato operational-ux-evidence ID 12908051087: 135 PNGs e seis JPGs, incluindo seis capturas novas de falha da busca e destaques recuperados.
+- Revisão visual: falha da busca em 360 px e destaques recuperados em 1280 px. Botão de retentativa com foco visível; sem título de vazio junto do erro.
+- marketplace-catalog.css: 730 → 714 linhas. Removidos avisos próprios e skeleton sem uso; não há medição de ganho de bundle ou latência.
+- Revisão React: proteção active em todos os caminhos assíncronos, finally condicionado à leitura ativa, locks síncronos de retentativa e efeitos de foco após conclusão. Sem novo listener ou dependência.
+- Build aprovado com avisos já existentes de ferramentas/CSS; não há alegação de build sem avisos.
 
 ## Continuidade
 
