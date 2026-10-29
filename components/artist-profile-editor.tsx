@@ -6,7 +6,7 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import {
   ArrowLeft, ArrowUpRight, Eye, EyeOff,
-  ExternalLink, Globe2, ImagePlus, Inbox, LockKeyhole, Mic2, Music2, Palette, Save, Upload
+  ExternalLink, Globe2, Inbox, LockKeyhole, Mic2, Music2, Palette, Save
 } from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
 import {prepareProfilePortrait} from "@/lib/profile-photo";
@@ -261,10 +261,10 @@ export default function MeuPerfilArtistico() {
   </main>;
 
   return <main className="singer-unified-editor" onFocusCapture={event=>revealMobileEditorField(event.target)}>
-    <div className="container" style={{ paddingBottom: 60 }}>
+    <div className="container artist-editor-container">
       <nav className="nav">
         <Link className="brand" href="/"><span className="brand-mark">S</span> stage flow</Link>
-        <Link href="/painel" className="btn btn-quiet"><ArrowLeft size={15}/> Meu painel</Link>
+        <Link href="/painel" className="sf-ui-button sf-ui-button-secondary"><ArrowLeft size={15}/> Meu painel</Link>
       </nav>
       <section className="singer-editor-intro">
         <div className="eyebrow"><span className="dot"/> PERFIL ARTÍSTICO</div>
@@ -292,20 +292,20 @@ export default function MeuPerfilArtistico() {
         </Link>}
       </div>}
 
-      <div className="singer-editor-data-panel" style={{ display: activeTab === "dados" ? "block" : "none" }}>
+      <div className="singer-editor-data-panel" hidden={activeTab !== "dados"}>
       {message && <div className="artist-editor-feedback"><InlineNotice tone={error?"danger":"success"}>{message}</InlineNotice></div>}
 
       {config && <div className="artist-free-editor artist-wizard-mode" data-editor-active={mobileStep}>
         <section className="feature">
           <div data-editor-step="0" className="artist-wizard-identity">
-          <h2 style={{ fontSize: 21, marginBottom: 12 }}><Globe2 size={19} style={{ display: "inline", verticalAlign: "middle", marginRight: 7 }}/> Seu único endereço público</h2>
-          <p>Seu nome público: <strong style={{ color: "var(--text)" }}>{config.name}</strong></p>
+          <h2 className="artist-editor-identity-title"><Globe2 size={19} className="artist-editor-heading-icon"/> Seu único endereço público</h2>
+          <p>Seu nome público: <strong className="artist-editor-emphasis">{config.name}</strong></p>
           <div className="artist-free-address">
             <strong>/{config.username || "seu-usuario"}</strong>
             <span>{config.username ? "Este caminho é usado no domínio StageFlow" : "Você ainda não cadastrou um nome de usuário"}</span>
           </div>
           <p className="fine">Você não precisa pagar para ter esse endereço. O @ é único e pertence à sua conta.</p>
-          {!config.username && <form onSubmit={claimUsername} style={{ marginTop: 17 }}>
+          {!config.username && <form onSubmit={claimUsername} className="artist-editor-claim-form">
             <Input label="Escolher meu @ gratuito *" id="claim-artist-username" value={requestedUsername}
                 onChange={e => setRequestedUsername(e.target.value.toLowerCase().replace(/[^a-z0-9-]/g, ""))}
                 minLength={3} maxLength={30} required pattern="[a-z0-9-]{3,30}"
@@ -324,52 +324,46 @@ export default function MeuPerfilArtistico() {
             disabled={saving||Boolean(uploading)}
             saveDisabled={published&&!config.username}
           />
-          <form id="artist-main-form" onSubmit={save} style={{ display: "grid", gap: 12, marginTop: 21 }}>
+          <form id="artist-main-form" onSubmit={save} className="artist-editor-main-form">
             <div data-editor-step="0" className="artist-wizard-group">
             <Input label="Frase de assinatura" id="artist-headline" maxLength={100} value={headline}
                 onChange={e => setHeadline(e.target.value)}
                 placeholder="Ex.: Pagode, samba e muita energia em cada show" hint={"Aparece apenas uma vez, em fonte de assinatura logo abaixo do seu nome. Até 100 caracteres. A biografia é independente."}/>
-            <div className="field">
-              <label><Palette size={15} style={{ display: "inline", verticalAlign: "middle" }}/> Cor do perfil gratuito</label>
+            <fieldset className="artist-editor-colors">
+              <legend><Palette size={15}/> Cor do perfil gratuito</legend>
               <div className="artist-free-color-options">
                 {([
                   ["violet", "Roxo", "#a99bff"],
                   ["lime", "Rosa", "#e6a3c8"],
                   ["cyan", "Azul", "#72dce7"]
                 ] as const).map(([value, label, color]) =>
-                  <button type="button" key={value} aria-pressed={accent === value}
+                  <Button variant="secondary" key={value} aria-pressed={accent === value}
                     onClick={() => setAccent(value)} className="artist-free-color"
                     aria-label={"Selecionar " + label}>
                     <span style={{ background: color }}/>
                     {label}
-                  </button>
+                  </Button>
                 )}
               </div>
-              <span className="field-help">Temas e layouts adicionais farão parte do Perfil Artístico premium.</span>
-            </div>
+              <p className="artist-editor-hint">Temas e layouts adicionais farão parte do Perfil Artístico premium.</p>
+            </fieldset>
             <div id="artist-edit-photo" className="artist-free-photo-fields">
-              <div className="field">
-                <label htmlFor="artist-avatar-upload">Foto de perfil</label>
-                <label className="mp-file-upload"><Upload size={16}/>
-                  {uploading === "avatar" ? "Enviando..." : "Enviar foto"}
-                  <input id="artist-avatar-upload" type="file"
-                    accept="image/jpeg,image/png,image/webp" disabled={Boolean(uploading) || saving}
-                    onChange={e => void uploadPhoto("avatar", e)}/>
-                </label>
-                {avatarPath && <button type="button" className="btn btn-quiet" onClick={() => setAvatarPath(null)}>Remover foto</button>}
+              <div className="artist-editor-photo-control">
+                <Input label="Foto de perfil" id="artist-avatar-upload" type="file"
+                  accept="image/jpeg,image/png,image/webp" disabled={Boolean(uploading) || saving}
+                  aria-busy={uploading === "avatar"} onChange={e => void uploadPhoto("avatar", e)}
+                  hint={uploading === "avatar" ? "Enviando foto..." : "JPG, PNG ou WebP de até 5 MB. O retrato é ajustado para um formato quadrado."}/>
+                {avatarPath && <Button variant="secondary" onClick={() => setAvatarPath(null)}>Remover foto</Button>}
               </div>
-              <div className="field">
-                <label htmlFor="artist-cover-upload">Imagem de capa</label>
-                <label className="mp-file-upload"><ImagePlus size={16}/>
-                  {uploading === "cover" ? "Enviando..." : "Enviar capa"}
-                  <input id="artist-cover-upload" type="file"
-                    accept="image/jpeg,image/png,image/webp" disabled={Boolean(uploading) || saving}
-                    onChange={e => void uploadPhoto("cover", e)}/>
-                </label>
-                {coverPath && <button type="button" className="btn btn-quiet" onClick={() => setCoverPath(null)}>Remover capa</button>}
+              <div className="artist-editor-photo-control">
+                <Input label="Imagem de capa" id="artist-cover-upload" type="file"
+                  accept="image/jpeg,image/png,image/webp" disabled={Boolean(uploading) || saving}
+                  aria-busy={uploading === "cover"} onChange={e => void uploadPhoto("cover", e)}
+                  hint={uploading === "cover" ? "Enviando capa..." : "Imagem horizontal em JPG, PNG ou WebP de até 5 MB."}/>
+                {coverPath && <Button variant="secondary" onClick={() => setCoverPath(null)}>Remover capa</Button>}
               </div>
             </div>
-            <p className="field-help">Fotos são arquivos públicos de divulgação, mesmo quando o perfil ainda está em rascunho. Não envie documentos ou imagens privadas.</p>
+            <p className="artist-editor-hint">Fotos são arquivos públicos de divulgação, mesmo quando o perfil ainda está em rascunho. Não envie documentos ou imagens privadas.</p>
             </div>
             <div data-editor-step="1" className="artist-wizard-group">
             <div id="artist-edit-bio" className="artist-editor-bio-field">
@@ -388,12 +382,12 @@ export default function MeuPerfilArtistico() {
                 onChange={e => setSpotify(e.target.value)} placeholder="https://open.spotify.com/artist/..."/>
             </div>
             <div data-editor-step="3" className="artist-wizard-group">
-            <label id="artist-edit-publicacao" style={{ display: "flex", alignItems: "flex-start", gap: 10, fontSize: 13, lineHeight: 1.6, marginBottom: 8 }}>
+            <label id="artist-edit-publicacao" className="artist-editor-publication">
               <input type="checkbox" checked={published} onChange={e => setPublished(e.target.checked)}
-                style={{ marginTop: 4, accentColor: "var(--lime)" }}/>
-              <span><strong>{published ? "Publicação ativada" : "Publicar minha página gratuita"}</strong>
-                <span style={{ display: "block", color: "var(--muted)" }}>
-                  Apenas quando estiver publicado, visitantes poderão ver seu perfil. Somente eventos marcados como públicos aparecem na agenda.
+                className="artist-editor-publication-checkbox" aria-describedby="artist-publication-help"/>
+              <span><strong>Publicar meu perfil artístico</strong>
+                <span id="artist-publication-help" className="artist-editor-muted">
+                  Esta opção só é aplicada ao salvar. Visitantes poderão ver o perfil publicado e os eventos marcados como públicos.
                 </span>
               </span>
             </label>
@@ -405,7 +399,7 @@ export default function MeuPerfilArtistico() {
           </form>
           <div data-editor-step="3" className="artist-wizard-extras">
           <section id="artist-edit-booking" className="artist-booking-setting" aria-label="Recebimento de pedidos de contratação">
-            <div className="artist-free-label" style={{ marginBottom: 12 }}>CONTATO COM CONTRATANTES</div>
+            <div className="artist-free-label artist-editor-booking-label">CONTATO COM CONTRATANTES</div>
             <label className="artist-booking-setting-toggle">
               <input type="checkbox" checked={bookingEnabled}
                 disabled={!bookingAvailable || bookingBusy}
@@ -415,24 +409,23 @@ export default function MeuPerfilArtistico() {
                 <small>Se ativado, o público poderá enviar propostas pelo formulário da página gratuita. Seus dados pessoais não aparecem no site; você receberá os contatos na sua caixa privada.</small>
               </span>
             </label>
-            {!bookingAvailable && <p className="field-help">Para ativar, execute artist_booking_requests_migration.sql no Supabase.</p>}
+            {!bookingAvailable && <p className="artist-editor-hint">Não foi possível carregar esta preferência. Atualize a página para tentar novamente.</p>}
             {bookingAvailable && !savedPublished && <p className="field-help">O formulário ficará visível somente depois de publicar sua página gratuita.</p>}
             {bookingNotice && <p className="field-help" role="status">{bookingNotice}</p>}
           </section>
           <BookingContactSettings kind="singer"
             instagramConfigured={Boolean(config.instagram_url)}
             formEnabled={bookingEnabled}/>
-          {savedPublished && config.username && <Link href={"/" + config.username} target="_blank" className="btn btn-quiet" style={{ marginTop: 16 }}>
+          {savedPublished && config.username && <Link href={"/" + config.username} target="_blank" className="sf-ui-button sf-ui-button-secondary artist-editor-public-link">
             <ExternalLink size={16}/> Visualizar página pública <ArrowUpRight size={15}/>
           </Link>}
-          <Link href="/meu-perfil-artistico/solicitacoes" className="btn btn-quiet"
-            style={{ marginTop: 12, justifyContent: "center" }}>
+          <Link href="/meu-perfil-artistico/solicitacoes" className="sf-ui-button sf-ui-button-secondary artist-editor-inbox-link">
             <Inbox size={17}/> Pedidos de contratação <ArrowUpRight size={15}/>
           </Link>
           </div>
         </section>
 
-        <aside className="artist-wizard-preview" style={{ alignSelf: "start", display: "grid", gap: 17 }}>
+        <aside className="artist-wizard-preview">
           <section className="feature">
             <div className="eyebrow"><span className="dot"/> PRÉVIA EM TEMPO REAL</div>
             <div className="artist-free-editor-preview" style={{ "--artist-free-accent": accent === "lime" ? "#e6a3c8" : accent === "cyan" ? "#72dce7" : "#a99bff" } as CSSProperties}>
@@ -448,20 +441,20 @@ export default function MeuPerfilArtistico() {
                 {city && <p className="artist-free-editor-preview-city">{city}</p>}
               </div>
             </div>
-            <p className="field-help" style={{ marginTop: 12 }}>Sua capa, foto e cor são mostradas aqui antes de publicar.</p>
+            <p className="artist-editor-hint artist-editor-preview-caption">Sua capa, foto e cor são mostradas aqui antes de publicar.</p>
           </section>
           <section className="feature">
           <div className="eyebrow"><span className="dot"/> RECURSO PROFISSIONAL</div>
-          <h2 style={{ fontSize: 22, marginTop: 19 }}>Seu perfil já tem visual profissional</h2>
-          <p>Seu endereço público é <strong style={{ color: "var(--text)" }}>/{config.username || "seuusuario"}</strong>, com o mesmo visual do Perfil Artístico. Agenda, apresentação e contatos permanecem gratuitos. Galerias, temas exclusivos e destaques ficam bloqueados até a assinatura Pro ser habilitada.</p>
+          <h2 className="artist-editor-professional-title">Seu perfil já tem visual profissional</h2>
+          <p>Seu endereço público é <strong className="artist-editor-emphasis">/{config.username || "seuusuario"}</strong>, com o mesmo visual do Perfil Artístico. Agenda, apresentação e contatos permanecem gratuitos. Galerias, temas exclusivos e destaques ficam bloqueados até a assinatura Pro ser habilitada.</p>
           {config.username&&savedPublished&&<Link href={"/"+encodeURIComponent(config.username)} target="_blank" rel="noopener noreferrer"
-            className="btn btn-quiet" style={{marginTop:12,width:"100%",justifyContent:"center"}}>
+            className="sf-ui-button sf-ui-button-secondary artist-editor-full-link">
             <ExternalLink size={16}/> Ver meu perfil público <ArrowUpRight size={14}/>
           </Link>}
-          <button type="button" onClick={() => switchTab("pro")} className="btn btn-primary" style={{ marginTop: 16, width: "100%", justifyContent: "center" }}>
+          <Button onClick={() => switchTab("pro")} className="artist-editor-appearance-action">
             <Palette size={17}/> Aparência e galerias deste perfil <ArrowUpRight size={15}/>
-          </button>
-          <p style={{ color: "var(--muted)", fontSize: 12, lineHeight: 1.6, marginTop: 10 }}>
+          </Button>
+          <p className="artist-editor-pro-hint">
             Editor privado. A publicação é manual e exige acesso Pro autorizado. Não há cobrança automática.
           </p>
           <div className="artist-free-premium-note">
@@ -474,13 +467,13 @@ export default function MeuPerfilArtistico() {
             {savedPublished ? <Eye size={17}/> : <EyeOff size={17}/>}
             {savedPublished ? "Perfil gratuito publicado" : "Perfil gratuito em modo privado"}
           </div>
-          <p style={{ fontSize: 12, color: "var(--muted)" }}>O mesmo perfil público permanece disponível quando os recursos Pro estão desativados.</p>
+          <p className="artist-editor-hint">O mesmo perfil público permanece disponível quando os recursos Pro estão desativados.</p>
 
           </section>
         </aside>
       </div>}
       </div>
-      {proVisited && <div className="singer-editor-pro-panel" style={{ display: activeTab === "pro" ? "block" : "none" }}>
+      {proVisited && <div className="singer-editor-pro-panel" hidden={activeTab !== "pro"}>
         <SingerProEditor active={activeTab === "pro"} onEditData={() => switchTab("dados")}/>
       </div>}
     </div>

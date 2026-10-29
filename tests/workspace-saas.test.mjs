@@ -30,7 +30,8 @@ test("mobile navigation has real accessible group control, escape and one-handed
  assert.match(sidebar,/aria-current=\{active\?"page":undefined\}/);
  assert.match(sidebar,/<details/);
  assert.match(sidebar,/<summary>/);
- assert.match(sidebar,/<WorkspaceMobileNav\/>/);
+ assert.match(read("src/domains/navigation/components/workspace-boundary.tsx"),/<WorkspaceMobileNav\/>/);
+ assert.doesNotMatch(sidebar,/<WorkspaceMobileNav\/>/);
  assert.match(read("src/domains/navigation/components/workspace-mobile-nav.tsx"),/aria-label="Navegação principal no celular"/);
  assert.match(sidebar,/event.key==="Escape"/);
  assert.match(sidebar,/document.body.style.overflow="hidden"/);

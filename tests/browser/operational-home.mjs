@@ -33,7 +33,8 @@ try{
    if(req.method()==="OPTIONS"){await route.fulfill({status:204,headers:{"access-control-allow-origin":"*","access-control-allow-headers":"*"}});return;}
    if(url.pathname.startsWith("/storage/v1/object/")){
     if(req.method()==="POST"){
-     assert.match(url.pathname,new RegExp("^/storage/v1/object/stage-musician-media/"+actor+"/[0-9a-f-]{36}\\.(jpg|png|webp)$"));
+     const bucket=singerMode?"stage-artist-public":"stage-musician-media";
+     assert.match(url.pathname,new RegExp("^/storage/v1/object/"+bucket+"/"+actor+"/[0-9a-f-]{36}\\.(jpg|png|webp)$"));
      assert.equal(req.headers()["x-upsert"],"false");
      storageWrites.push({path:url.pathname,bytes:req.postDataBuffer()?.length||0});
      if(uploadGate)await uploadGate;
@@ -362,14 +363,15 @@ try{
     const nav=document.querySelector(".sf-workspace-bottom-nav");
     return {top:r.top,bottom:r.bottom,font:parseFloat(getComputedStyle(el).fontSize),
       guidePosition:guide?getComputedStyle(guide).position:null,
-      bottomNav:nav?getComputedStyle(nav).display:null,
+      bottomNav:nav?getComputedStyle(nav).display:null,navTop:nav?nav.getBoundingClientRect().top:null,
       viewport:innerHeight,overflow:document.documentElement.scrollWidth-innerWidth};
    });
    assert.equal(field.guidePosition,"static","Editor guide must stop sticking while a field has focus");
-   assert.equal(field.bottomNav,"none","Keyboard focus must not be covered by fixed bottom navigation");
+   assert.notEqual(field.bottomNav,"none","Global navigation stays available while a field is focused");
+   assert.equal(typeof field.navTop,"number","The global navigation must be present");
    assert.ok(field.font>=16,"Mobile inputs should not trigger iOS auto-zoom");
    assert.ok(field.overflow<=2,"Editor must not overflow at 375px and short height: "+JSON.stringify(field));
-   assert.ok(field.bottom<=field.viewport+2&&field.top>=-2,
+   assert.ok(field.bottom<=Math.min(field.viewport,field.navTop)+2&&field.top>=-2,
      "Focused editor field should be visible above keyboard-sized viewport: "+JSON.stringify(field));
    await page.screenshot({path:"test-results/mobile-editor-keyboard-375.png",fullPage:false});
    await instruments.blur();await page.setViewportSize({width:360,height:900});
@@ -436,6 +438,57 @@ try{
   const singerSteps=singer.getByLabel("Etapas de edição do perfil");
   if(mobile)await singer.locator('.sf-editor-wizard[data-wizard-ready="true"]').waitFor();
   const singerStep=async name=>{if(mobile)await activate(singerSteps.getByRole("button",{name}));};
+  const artistAvatar=singer.getByLabel("Foto de perfil",{exact:true}),artistCover=singer.getByLabel("Imagem de capa",{exact:true});
+  await artistAvatar.focus();
+  assert.equal(await artistAvatar.evaluate(el=>el===document.activeElement&&getComputedStyle(el).opacity!=="0"),true);
+  assert.ok(await artistAvatar.evaluate(el=>el.getBoundingClientRect().height)>=44);
+  const singerStorageStart=storageWrites.length;
+  await artistAvatar.setInputFiles({name:"invalid.txt",mimeType:"text/plain",buffer:Buffer.from("fixture")});
+  const singerFileError=singer.getByRole("alert").filter({hasText:"Selecione um arquivo JPG, PNG ou WebP com até 5 MB."});
+  await singerFileError.waitFor();
+  await artistAvatar.setInputFiles({name:"too-large.png",mimeType:"image/png",buffer:Buffer.alloc(5*1024*1024+1)});
+  await singerFileError.waitFor();
+  assert.equal(storageWrites.length,singerStorageStart);
+  let releaseArtistUpload;uploadGate=new Promise(resolve=>{releaseArtistUpload=resolve;});
+  await artistAvatar.setInputFiles({name:"singer-portrait.png",mimeType:"image/png",buffer:storageImage});
+  await singer.locator('#artist-avatar-upload[aria-busy="true"]').waitFor();
+  assert.equal(await artistCover.isDisabled(),true);
+  assert.equal(await singer.locator('#artist-main-form button[type="submit"]').isDisabled(),true);
+  releaseArtistUpload();
+  await singer.getByRole("button",{name:"Remover foto",exact:true}).waitFor();
+  assert.match(storageWrites[singerStorageStart].path,/\/stage-artist-public\/.+\.jpg$/);
+  uploadGate=null;
+  await artistCover.setInputFiles({name:"singer-cover.png",mimeType:"image/png",buffer:storageImage});
+  await singer.getByRole("button",{name:"Remover capa",exact:true}).waitFor();
+  assert.equal(storageWrites.length,singerStorageStart+2);
+  assert.equal(artistWrites.length,0,"Uploading singer media never publishes the profile");
+  await singer.locator("#artist-edit-photo").screenshot({path:`test-results/operational-singer-uploads-${width}.png`});
+  await singerStep(/Publicar e contratar/);
+  const singerPreview=singer.locator(".artist-free-editor-preview");
+  await singerPreview.waitFor({state:"visible"});
+  const singerPhoto=singerPreview.getByRole("img",{name:"Sua foto de perfil",exact:true});
+  await singerPhoto.waitFor();
+  assert.ok((await singerPhoto.getAttribute("src")).includes("/stage-artist-public/"+actor+"/"));
+  await singerPreview.screenshot({path:`test-results/operational-singer-photo-preview-${width}.png`});
+  await singerStep(/Identidade e fotos/);
+  await activate(singer.getByRole("button",{name:"Remover foto",exact:true}));
+  await activate(singer.getByRole("button",{name:"Remover capa",exact:true}));
+  assert.equal(storageWrites.length,singerStorageStart+2,"Removing singer images only changes the local draft");
+  const singerColors=singer.getByRole("group",{name:"Cor do perfil gratuito",exact:true});
+  for(const [label,color] of [["Rosa","#e6a3c8"],["Azul","#72dce7"],["Roxo","#a99bff"]]){
+   await singerStep(/Identidade e fotos/);
+   const colorButton=singerColors.getByRole("button",{name:"Selecionar "+label,exact:true});
+   await activate(colorButton);
+   assert.equal(await colorButton.getAttribute("aria-pressed"),"true");
+   assert.ok(await colorButton.evaluate(el=>el.getBoundingClientRect().height)>=44);
+   await singerStep(/Publicar e contratar/);
+   await singerPreview.waitFor({state:"visible"});
+   assert.equal(await singerPreview.evaluate(el=>getComputedStyle(el).getPropertyValue("--artist-free-accent").trim()),color);
+   assert.ok(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth+2),"Singer appearance overflows at "+width);
+   await singerPreview.screenshot({path:`test-results/operational-singer-color-${label}-${width}.png`});
+  }
+  assert.equal(artistWrites.length,0,"Appearance options must not implicitly submit the profile form");
+  console.log(`PASS singer appearance ${width}px: visible uploads, size/type guards, busy isolation, local removal and three color previews`);
   await singerStep(/Publicar e contratar/);
   const publishSinger=singer.locator("#artist-edit-publicacao input[type=checkbox]");
   await publishSinger.focus();await publishSinger.press("Space");
@@ -498,6 +551,17 @@ try{
   await singerContact.getByRole("status").filter({hasText:"Contato para contratação atualizado!"}).waitFor();
   assert.deepEqual(contactWrites.at(-1),{p_kind:"singer",p_mode:"instagram",p_phone:null,p_greeting:""});
   assert.equal(artistWrites.length,2,"Contact selection must not resave/publish the singer");
+  await publishSinger.focus();await publishSinger.press("Space");
+  assert.equal(artistWrites.length,2,"Selecting publication does not save it");
+  await activate(singer.locator("#artist-main-form").getByRole("button",{name:"Salvar e publicar",exact:true}));
+  await singer.getByRole("status").filter({hasText:"Sua página gratuita foi publicada."}).waitFor();
+  assert.equal(artistWrites.length,3);assert.equal(artistWrites.at(-1).p_is_public,true);
+  assert.equal(await singer.getByRole("link",{name:"Visualizar página pública",exact:true}).getAttribute("href"),"/cantor-teste");
+  await publishSinger.focus();await publishSinger.press("Space");
+  assert.equal(artistWrites.length,3,"Selecting private mode also requires explicit save");
+  await activate(singerSave);
+  await singer.getByRole("status").filter({hasText:"Perfil salvo em modo privado."}).waitFor();
+  assert.equal(artistWrites.length,4);assert.equal(artistWrites.at(-1).p_is_public,false);
   assert.ok(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth+2),"Singer editor overflows at "+width);
   await singer.screenshot({path:`test-results/operational-singer-editor-${width}.png`});
   await singerContact.screenshot({path:`test-results/operational-singer-contact-${width}.png`});

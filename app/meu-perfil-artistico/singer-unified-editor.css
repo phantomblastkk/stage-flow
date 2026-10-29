@@ -129,3 +129,35 @@
  .singer-editor-intro{padding-top:14px}
  .singer-editor-intro .lead{font-size:14px;line-height:1.55}
 }
+
+/* Shared controls and local composition for the singer's data editor. */
+.singer-editor-data-panel[hidden],.singer-editor-pro-panel[hidden]{display:none!important}
+.artist-editor-container{padding-bottom:60px}
+.artist-editor-identity-title{font-size:21px;margin-bottom:12px}
+.artist-editor-heading-icon{display:inline;vertical-align:middle;margin-right:7px}
+.artist-editor-emphasis{color:var(--sf-ui-text)}
+.artist-editor-claim-form{display:grid;gap:var(--sf-ui-space-4);margin-top:17px}
+.artist-editor-claim-form>.sf-ui-button{justify-self:start}
+.artist-editor-main-form{display:grid;gap:12px;margin-top:21px}
+.artist-editor-colors{min-width:0;padding:0;margin:0 0 var(--sf-ui-space-4);border:0}
+.artist-editor-colors>legend{padding:0;margin-bottom:var(--sf-ui-space-2);font-size:var(--sf-ui-text-md);font-weight:750}
+.artist-editor-colors>legend svg{display:inline;vertical-align:middle;margin-right:5px}
+.artist-wizard-mode .artist-free-color{min-height:44px;background:var(--sf-ui-surface-raised);border-color:var(--sf-ui-border);color:var(--sf-ui-text)}
+.artist-wizard-mode .artist-free-color[aria-pressed="true"]{outline:2px solid var(--sf-ui-brand);outline-offset:2px}
+.artist-editor-photo-control{min-width:0;display:grid;gap:var(--sf-ui-space-2);align-content:start}
+.artist-editor-photo-control>.sf-ui-button{justify-self:start}
+.artist-editor-hint{font-size:var(--sf-ui-text-sm);line-height:1.6;color:var(--sf-ui-muted)}
+.artist-editor-publication{display:flex;align-items:flex-start;gap:10px;min-height:44px;font-size:var(--sf-ui-text-sm);line-height:1.6;margin-bottom:8px;cursor:pointer}
+.artist-editor-publication-checkbox{width:20px;height:20px;flex:none;margin-top:4px;accent-color:var(--sf-ui-brand)}
+.artist-editor-muted{display:block;color:var(--sf-ui-muted)}
+.artist-editor-booking-label{margin-bottom:12px}
+.artist-editor-public-link{margin-top:16px}
+.artist-editor-inbox-link{margin-top:12px;justify-content:center}
+.singer-unified-editor .artist-wizard-preview{align-self:start;display:grid;gap:17px}
+.artist-editor-preview-caption{margin-top:12px}
+.artist-editor-professional-title{font-size:22px;margin-top:19px}
+.artist-editor-full-link{margin-top:12px;width:100%;justify-content:center}
+.artist-editor-appearance-action{margin-top:16px;width:100%;justify-content:center}
+.artist-editor-pro-hint{color:var(--sf-ui-muted);font-size:var(--sf-ui-text-xs);line-height:1.6;margin-top:10px}
+.artist-wizard-mode .artist-booking-setting-toggle{min-height:44px}
+.artist-wizard-mode .artist-booking-setting-toggle input{width:20px;height:20px}

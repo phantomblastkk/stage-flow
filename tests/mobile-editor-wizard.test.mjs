@@ -38,13 +38,14 @@ test("musician has five step groups or four for the unified singer",()=>{
  assert.ok(musician.includes('unifiedSinger?"Publicar informações de músico"'));
 });
 
-test("mobile keyboard focus releases the wizard and bottom navigation",()=>{
+test("mobile keyboard focus releases the wizard while the global navigation keeps safe-area space",()=>{
  const wizardCss=read("components/mobile-editor-wizard.css");
  const shellCss=read("src/domains/navigation/components/workspace-shell.css");
  const chatCss=read("app/conversas/conversas.css");
  assert.match(wizardCss,/mp-editor-workspace:has\(#musician-portfolio-form/);
  assert.match(wizardCss,/@media\(max-width:850px\) and \(max-height:650px\)/);
- assert.match(shellCss,/sf-workspace-route:has\(input:focus,textarea:focus\)/);
+ assert.doesNotMatch(shellCss,/sf-workspace-route:has\(input:focus,textarea:focus\)/);
+ assert.match(shellCss,/body\{padding-bottom:calc\([^}]*env\(safe-area-inset-bottom\)/);
  assert.match(chatCss,/hiring-composer:focus-within/);
 });
 
