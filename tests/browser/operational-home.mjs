@@ -480,8 +480,8 @@ try{
   await singerSocial.fill("https://www.instagram.com/cantorfixture");
   await singer.getByLabel("YouTube (opcional)",{exact:true}).fill("https://www.youtube.com/@cantorfixture");
   await singer.getByLabel("Spotify (opcional)",{exact:true}).fill("https://open.spotify.com/artist/cantorfixture");
-  assert.equal(await singerContactSave.isDisabled(),true,"Unsaved social links must not unlock contact");
   await singerStep(/Publicar e contratar/);
+  assert.equal(await singerContactSave.isDisabled(),true,"Unsaved social links must not unlock contact");
   const singerSave=singer.locator("#artist-main-form").getByRole("button",{name:"Salvar rascunho",exact:true});
   await activate(singerSave);
   await singer.getByRole("alert").filter({hasText:"Use links HTTPS completos"}).waitFor();
