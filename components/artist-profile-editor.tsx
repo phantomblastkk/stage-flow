@@ -292,8 +292,8 @@ export default function MeuPerfilArtistico() {
 
   if (!config) return <main className="singer-unified-editor">
     <div className="container artist-editor-container">
-      <section className="singer-editor-intro">
-        <h1>Perfil Artístico</h1>
+      <section className="artist-editor-recovery" aria-label="Recuperação do perfil artístico">
+        <h2>Não foi possível abrir o editor</h2>
         <InlineNotice tone="danger">{loadIssue === "role"
           ? "Esta conta não tem a função de artista habilitada. Confira suas funções na conta."
           : "Não foi possível carregar seu perfil artístico. Tente novamente."}</InlineNotice>

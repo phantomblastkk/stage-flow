@@ -31,7 +31,9 @@ explícitas; não há repetição automática, polling, migration ou novo endpoi
 
 ## Validação
 
-- 266 testes Node aprovados localmente. TypeScript aprovado; build e CI em validação.
+- 266 testes Node, TypeScript e build aprovados localmente; CI em validação.
+- O primeiro teste de navegador detectou que a classe da introdução é ocultada pelo hub.
+  A recuperação recebeu uma classe própria; o teste permanece na rota real /perfil-artistico.
 - Cenários de navegador acrescentados para 360/768/1280 px: erro inicial sem formulário,
   perfil ausente sem liberação indevida, recuperação explícita, preferência inicialmente
   indisponível, repetição pendente sem duplicação, falso carregado como falso e rascunho
