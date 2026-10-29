@@ -34,7 +34,7 @@ seção visível continua protegida, e recolher/abrir não contorna um save pend
 
 ## Validação
 
-266 testes Node e TypeScript aprovados localmente; build e CI em validação.
+266 testes Node, TypeScript e build aprovados localmente e nos dois CIs.
 
 Cenários novos em 360/768/1280 px: três temas e cinco cores por teclado com uma única
 opção selecionada em cada grupo; classe correspondente na prévia; botões compartilhados
@@ -43,6 +43,19 @@ rótulos; última seção preservada; ordem alterada por teclado; recolhimento p
 tema/cor/ordem; restauração sem save automático; recolher/abrir durante save pendente
 mantendo os controles bloqueados; payload padrão gravado somente na ação explícita;
 nenhuma publicação ou consulta extra introduzida pelos controles.
+
+## Evidências finais
+
+- Código testado: d92697a439471df834313a65d4dba89e25e1d5a3.
+- [Diff completo](https://github.com/phantomblastkk/stage-flow/compare/36af509d89237b5116ebfd99715048ae9dc93921...d92697a439471df834313a65d4dba89e25e1d5a3).
+- [Integration and build aprovado](https://github.com/phantomblastkk/stage-flow/actions/runs/40875817224).
+- [Operational UX aprovado](https://github.com/phantomblastkk/stage-flow/actions/runs/40875817214): 266 testes, TypeScript, build, PostgreSQL temporário e jornadas de navegador com API simulada.
+- Logs registram PASS appearance controls em 360/768/1280 px. Nenhuma consulta adicional ou publicação introduzida pelo uso dos controles.
+- Artefato operational-ux-evidence ID 12898576053: 102 PNGs e seis JPGs. Seis capturas novas dos controles e da navegação por teclado nos três tamanhos.
+- Revisão visual das capturas em 360 e 1280 px; alvos de botão e rótulo de pelo menos 44 px, foco, agrupamento e ausência de overflow também verificados no navegador. Capturas de componentes incluem a navegação global fixa.
+- premium-preview.css: 561 → 539 linhas, retirando estilos de base de botão e feedback substituídos pelo Design System. Isso não representa redução medida de bundle.
+- Comparação textual dos hooks e handlers anteriores ao render principal: idênticos à base.
+- Revisão React: sem novo hook, listener, consulta ou dependência; agrupamento nativo, type=button, aria-pressed, ícones decorativos e hidden com foco indisponível no conteúdo recolhido.
 
 ## Limites e continuidade
 
