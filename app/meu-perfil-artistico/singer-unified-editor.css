@@ -163,3 +163,5 @@
 .artist-wizard-mode .artist-booking-setting-toggle input{width:20px;height:20px}
 
 .singer-unified-editor .artist-editor-recovery-actions{display:flex;flex-wrap:wrap;gap:var(--sf-ui-space-3);margin-top:var(--sf-ui-space-4)}
+.singer-unified-editor .artist-editor-recovery{padding-block:var(--sf-ui-space-4)}
+@media(max-width:850px){.singer-unified-editor .artist-editor-recovery{padding-top:64px}}

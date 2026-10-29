@@ -444,6 +444,14 @@ try{
   assert.equal(await singer.getByRole("button",{name:/Aparência e galerias/}).count(),0);
   assert.doesNotMatch(await singer.innerText(),/private_backend_detail|migration|Supabase/);
   await singer.screenshot({path:`test-results/operational-singer-read-failure-${width}.png`});
+  assert.ok(await singer.evaluate(el=>el.scrollWidth<=el.clientWidth+2),"Recovery must not overflow");
+  if(mobile){
+   const recoveryLayout=await singer.locator(".artist-editor-recovery h2").evaluate(el=>{
+    const menu=document.querySelector(".sf-workspace-mobile-trigger");
+    return {titleTop:el.getBoundingClientRect().top,menuBottom:menu?.getBoundingClientRect().bottom};
+   });
+   assert.ok(typeof recoveryLayout.menuBottom==="number" && recoveryLayout.titleTop>=recoveryLayout.menuBottom,"Menu must not cover recovery title");
+  }
   artistReadMode="missing";
   await activate(singer.getByRole("button",{name:"Tentar novamente",exact:true}));
   await singer.getByRole("alert").filter({hasText:"Esta conta não tem a função de artista habilitada."}).waitFor();
