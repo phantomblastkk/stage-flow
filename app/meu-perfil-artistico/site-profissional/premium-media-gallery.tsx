@@ -495,6 +495,9 @@ export function PremiumGalleryShowcase({
     if (!dialog) return;
     const opener = photoOpenerRef.current;
     const previousOverflow = document.body.style.overflow;
+    // Cancel an in-flight smooth scroll triggered when keyboard focus reaches a
+    // thumbnail. It must not keep moving the viewport behind the open modal.
+    window.scrollTo({ top: window.scrollY, left: window.scrollX, behavior: "instant" });
     dialog.showModal();
     document.body.style.overflow = "hidden";
     return () => {

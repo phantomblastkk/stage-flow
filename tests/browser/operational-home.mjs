@@ -1266,8 +1266,12 @@ try{
   const photoControlSizes=await photoDialog.getByRole("button").evaluateAll(nodes=>nodes.map(el=>{const r=el.getBoundingClientRect();return {width:r.width,height:r.height,shared:el.classList.contains("sf-ui-button")};}));
   assert.ok(photoControlSizes.every(el=>el.shared&&el.width>=43.5&&el.height>=43.5));
   assert.ok(await previousPhoto.evaluate(el=>el.matches(":focus-visible")&&parseFloat(getComputedStyle(el).outlineWidth)>=2));
+  await page.evaluate(()=>new Promise(resolve=>requestAnimationFrame(()=>requestAnimationFrame(resolve))));
   assert.ok(await photoDialog.evaluate(el=>{const r=el.getBoundingClientRect();return r.left>=0&&r.right<=innerWidth&&r.top>=0&&r.bottom<=innerHeight;}),"Preview photo dialog must fit the viewport");
   await page.screenshot({path:`test-results/operational-photo-dialog-preview-${width}.png`});
+  const photoCapturePosition=await photoDialog.evaluate(el=>{const r=el.getBoundingClientRect();return {top:r.top,bottom:r.bottom,viewport:innerHeight,scroll:scrollY,visualOffset:visualViewport?.offsetTop};});
+  console.log("Photo preview capture "+width+"px: "+JSON.stringify(photoCapturePosition));
+  assert.ok(photoCapturePosition.top>=0&&photoCapturePosition.bottom<=photoCapturePosition.viewport,"Preview must remain inside the viewport after screenshot");
   await activate(closePhoto);await photoDialog.waitFor({state:"detached"});
   assert.equal(await multiPhotoOpener.evaluate(el=>el===document.activeElement),true);
   await activate(multiPhotoOpener);await photoDialog.waitFor();
