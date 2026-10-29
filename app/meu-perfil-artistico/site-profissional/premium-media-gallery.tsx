@@ -5,6 +5,7 @@ import {
   ArrowDown, ArrowUp, Check, Edit3, ExternalLink,
   ChevronLeft, ChevronRight, Images, ImagePlus, LoaderCircle, PlayCircle, Star, Trash2, X, Youtube
 } from "lucide-react";
+import {Button,Input,LoadingState} from "@/src/components/ui";
 import { createClient } from "@/lib/supabase/client";
 import "./premium-media-gallery.css";
 
@@ -54,109 +55,151 @@ export function usePremiumGallery(enabled: boolean) {
   const [error, setError] = useState("");
   const [message, setMessage] = useState("");
 
+  const [available, setAvailable] = useState(false);
+  const [readError, setReadError] = useState("");
+  const [previewWarning, setPreviewWarning] = useState(false);
+  const mounted = useRef(false);
+  const readVersion = useRef(0);
+  const reading = useRef(false);
+  const mutating = useRef(false);
+  const availableRef = useRef(false);
+
   const reload = useCallback(async () => {
-    const supabase = createClient();
-    const { data, error: loadError } = await supabase.rpc("stage_my_premium_site_media");
-    if (loadError) {
-      setError("Ative premium_site_media_gallery_migration.sql no Supabase para usar a galeria. " + loadError.message);
-      setLoading(false);
-      return;
+    if (!enabled || reading.current) return false;
+    reading.current = true;
+    const version = ++readVersion.current;
+    const current = () => mounted.current && version === readVersion.current;
+    setLoading(true);
+    setAvailable(false);
+    availableRef.current = false;
+    setReadError("");
+    setMessage("");
+    try {
+      const supabase = createClient();
+      const { data, error: loadError } = await supabase.rpc("stage_my_premium_site_media");
+      if (!current()) return false;
+      if (loadError || !Array.isArray(data)) throw new Error("gallery_read_failed");
+      let missingPreview = false;
+      const withUrls = await Promise.all((data as PremiumMediaItem[]).map(async item => {
+        if (item.media_kind !== "photo" || !item.storage_path) return item;
+        try {
+          const { data: signed, error: signError } = await supabase.storage
+            .from(BUCKET).createSignedUrl(item.storage_path, 3600);
+          if (signError || !signed?.signedUrl) throw new Error("preview_unavailable");
+          return { ...item, preview_url: signed.signedUrl };
+        } catch {
+          missingPreview = true;
+          return { ...item, preview_url: "" };
+        }
+      }));
+      if (!current()) return false;
+      setItems(withUrls);
+      setPreviewWarning(missingPreview);
+      setAvailable(true);
+      availableRef.current = true;
+      setError("");
+      return true;
+    } catch {
+      if (current()) setReadError("Não foi possível atualizar sua galeria. Os itens já carregados foram mantidos. Tente novamente.");
+      return false;
+    } finally {
+      if (current()) { setLoading(false); reading.current = false; }
     }
-    const rows = Array.isArray(data) ? data as PremiumMediaItem[] : [];
-    const withUrls = await Promise.all(rows.map(async item => {
-      if (item.media_kind !== "photo" || !item.storage_path) return item;
-      const { data: signed, error: signError } = await supabase.storage
-        .from(BUCKET).createSignedUrl(item.storage_path, 3600);
-      return { ...item, preview_url: signError ? "" : (signed?.signedUrl || "") };
-    }));
-    setItems(withUrls);
-    setLoading(false);
-    setError("");
-  }, []);
+  }, [enabled]);
 
   useEffect(() => {
+    mounted.current = true;
     if (enabled) void reload();
+    return () => { mounted.current = false; readVersion.current++; reading.current = false; availableRef.current = false; };
   }, [enabled, reload]);
 
-  async function call(name: string, params: Record<string, unknown>, success: string) {
-    if (busy) return false;
-    setBusy(true);
-    setError("");
-    setMessage("");
-    const { data, error: rpcError } = await createClient().rpc(name, params);
-    if (rpcError || data !== "saved") {
-      const reasons: Record<string, string> = {
-        limit_reached: "Você atingiu o limite de mídias.",
-        limit_photos: "Você atingiu o limite de 3 fotos. Remova uma foto para adicionar outra.",
-        limit_videos: "Você atingiu o limite de 3 vídeos. Remova um vídeo para adicionar outro.",
-        invalid_title: "O título deve ter de 1 a 90 caracteres.",
-        invalid_video: "Esse vídeo do YouTube não tem um identificador válido.",
-        invalid_order: "A ordem dos trabalhos mudou. Recarregue a galeria e tente novamente.",
-        not_found: "Este trabalho não foi encontrado na sua conta.",
-        duplicate: "Esta foto já está na galeria.",
-        published_media_in_use: "Esta foto está no Perfil Artístico publicado. Retire o Perfil Artístico do ar antes de excluí-la da galeria; depois publique novamente."
-      };
-      setError(rpcError?.message || reasons[String(data)] || "Não foi possível concluir a operação.");
-      setBusy(false);
+  const reasons: Record<string, string> = {
+    limit_reached: "Você atingiu o limite de mídias.",
+    limit_photos: "Você atingiu o limite de 3 fotos. Remova uma foto para adicionar outra.",
+    limit_videos: "Você atingiu o limite de 3 vídeos. Remova um vídeo para adicionar outro.",
+    invalid_title: "O título deve ter de 1 a 90 caracteres.",
+    invalid_video: "Esse vídeo do YouTube não tem um identificador válido.",
+    invalid_order: "A ordem dos trabalhos mudou. Atualize a galeria e tente novamente.",
+    not_found: "Este trabalho não foi encontrado na sua conta.",
+    duplicate: "Esta foto já está na galeria.",
+    published_media_in_use: "Esta foto está no Perfil Artístico publicado. Desative os recursos Pro antes de removê-la da galeria."
+  };
+
+  function uncertain() {
+    setAvailable(false);
+    availableRef.current = false;
+    setError("Não foi possível confirmar a operação. Seus campos foram mantidos. Atualize a galeria antes de tentar novamente.");
+  }
+
+  async function mutate(operation: () => Promise<boolean>, success: string, cleanup?: () => Promise<void>) {
+    if (!availableRef.current || loading || mutating.current || reading.current) return false;
+    mutating.current = true;
+    setBusy(true); setError(""); setMessage("");
+    try {
+      if (!await operation() || !mounted.current) return false;
+      const refreshed = await reload();
+      if (!mounted.current) return false;
+      setMessage(success + (refreshed ? "" : " Atualize a galeria para conferir a lista."));
+      if (cleanup) await cleanup();
+      return true;
+    } catch {
+      if (mounted.current) uncertain();
       return false;
+    } finally {
+      mutating.current = false;
+      if (mounted.current) setBusy(false);
     }
-    await reload();
-    setMessage(success);
-    setBusy(false);
-    return true;
+  }
+
+  async function call(name: string, params: Record<string, unknown>, success: string, cleanup?: () => Promise<void>) {
+    return mutate(async () => {
+      const { data, error: rpcError } = await createClient().rpc(name, params);
+      if (rpcError) { uncertain(); return false; }
+      if (data !== "saved") {
+        setError(reasons[String(data)] || "Não foi possível concluir a operação. Suas escolhas foram mantidas.");
+        return false;
+      }
+      return true;
+    }, success, cleanup);
   }
 
   async function addPhoto(file: File, title: string) {
-    if (busy) return;
+    if (!available || loading || busy) return false;
     const exts: Record<string, string> = {
       "image/jpeg": "jpg", "image/png": "png", "image/webp": "webp"
     };
     if (!exts[file.type] || file.size <= 0 || file.size > PHOTO_SIZE_LIMIT) {
       setError("Envie JPG, PNG ou WebP de até 5 MB.");
-      return;
+      return false;
     }
     if (items.filter(item => item.media_kind === "photo").length >= MAX_PER_TYPE) {
       setError("Limite de 3 fotos atingido. Remova uma foto antes de enviar outra.");
-      return;
+      return false;
     }
     const name = title.trim() || file.name.replace(/\.[^.]+$/, "");
     if (!name || name.length > 90) {
       setError("O título da foto deve ter até 90 caracteres.");
-      return;
+      return false;
     }
-    setBusy(true);
-    setError("");
-    setMessage("");
-    const supabase = createClient();
-    const { data: { user }, error: authError } = await supabase.auth.getUser();
-    if (authError || !user) {
-      setError("Sua sessão expirou. Entre novamente.");
-      setBusy(false);
-      return;
-    }
-    const path = user.id + "/" + crypto.randomUUID() + "." + exts[file.type];
-    const { error: uploadError } = await supabase.storage.from(BUCKET)
-      .upload(path, file, { upsert: false, contentType: file.type, cacheControl: "3600" });
-    if (uploadError) {
-      setError("Não foi possível enviar a foto: " + uploadError.message);
-      setBusy(false);
-      return;
-    }
-    const { data, error: insertError } = await supabase.rpc("stage_add_premium_site_media", {
-      p_kind: "photo", p_title: name, p_storage_path: path, p_youtube_id: null
-    });
-    if (insertError || data !== "saved") {
-      await supabase.storage.from(BUCKET).remove([path]);
-      setError(insertError?.message ||
-        (data === "limit_photos" || data === "limit_reached"
-          ? "Limite de 3 fotos atingido. Remova uma foto antes de enviar outra."
-          : "Não foi possível cadastrar a foto."));
-      setBusy(false);
-      return;
-    }
-    await reload();
-    setMessage("Foto salva no seu rascunho privado.");
-    setBusy(false);
+    return mutate(async () => {
+      const supabase = createClient();
+      const { data: { user }, error: authError } = await supabase.auth.getUser();
+      if (authError || !user) { setError("Entre novamente na sua conta para enviar a foto."); return false; }
+      const path = user.id + "/" + crypto.randomUUID() + "." + exts[file.type];
+      const { error: uploadError } = await supabase.storage.from(BUCKET)
+        .upload(path, file, { upsert: false, contentType: file.type, cacheControl: "3600" });
+      if (uploadError) { setError("Não foi possível enviar a foto. O título foi mantido para tentar novamente."); return false; }
+      const { data, error: insertError } = await supabase.rpc("stage_add_premium_site_media", {
+        p_kind: "photo", p_title: name, p_storage_path: path, p_youtube_id: null
+      });
+      // A failed response cannot prove the insert was rolled back. Keep the private file.
+      if (insertError) { uncertain(); return false; }
+      if (data !== "saved") {
+        setError(reasons[String(data)] || "Não foi possível cadastrar a foto. O título foi mantido.");
+        return false;
+      }
+      return true;
+    }, "Foto salva no seu rascunho privado.");
   }
 
   async function addVideo(title: string, url: string) {
@@ -180,13 +223,15 @@ export function usePremiumGallery(enabled: boolean) {
   }
 
   async function remove(item: PremiumMediaItem) {
-    const ok = await call("stage_remove_premium_site_media", { p_id: item.id }, "Trabalho removido da galeria.");
-    if (ok && item.media_kind === "photo" && item.storage_path) {
-      const { error: removeError } = await createClient().storage.from(BUCKET).remove([item.storage_path]);
-      if (removeError) {
-        setError("O item foi removido da galeria, mas não foi possível excluir seu arquivo privado: " + removeError.message);
+    return call("stage_remove_premium_site_media", { p_id: item.id }, "Trabalho removido da galeria.", async () => {
+      if (item.media_kind !== "photo" || !item.storage_path) return;
+      try {
+        const { error: removeError } = await createClient().storage.from(BUCKET).remove([item.storage_path]);
+        if (removeError) throw new Error("private_file_cleanup_failed");
+      } catch {
+        setError("O item foi removido da galeria, mas seu arquivo privado não pôde ser excluído agora.");
       }
-    }
+    });
   }
 
   async function reorder(id: string, delta: -1 | 1) {
@@ -206,8 +251,8 @@ export function usePremiumGallery(enabled: boolean) {
   }
 
   return {
-    items, loading, busy, error, message,
-    reload, addPhoto, addVideo, remove, reorder,
+    items, loading, busy, available, readError, previewWarning, error, message,
+    reload: () => mutating.current ? Promise.resolve(false) : reload(), addPhoto, addVideo, remove, reorder,
     feature: (id: string) => call("stage_feature_premium_site_media",
       { p_id: id }, "Trabalho definido como destaque."),
     rename: (id: string, title: string) => call("stage_rename_premium_site_media",
@@ -236,6 +281,7 @@ export function PremiumGalleryEditor({ gallery }: { gallery: PremiumGallery }) {
   const [deleteId, setDeleteId] = useState<string | null>(null);
   const photoCount = gallery.items.filter(item => item.media_kind === "photo").length;
   const videoCount = gallery.items.filter(item => item.media_kind === "youtube").length;
+  const blocked = gallery.busy || gallery.loading || !gallery.available;
   const photoFull = photoCount >= MAX_PER_TYPE;
   const videoFull = videoCount >= MAX_PER_TYPE;
 
@@ -243,8 +289,7 @@ export function PremiumGalleryEditor({ gallery }: { gallery: PremiumGallery }) {
     const file = event.target.files?.[0];
     event.target.value = "";
     if (!file) return;
-    await gallery.addPhoto(file, photoTitle);
-    setPhotoTitle("");
+    if (await gallery.addPhoto(file, photoTitle)) setPhotoTitle("");
   }
 
   async function addVideo(event: FormEvent<HTMLFormElement>) {
@@ -261,17 +306,25 @@ export function PremiumGalleryEditor({ gallery }: { gallery: PremiumGallery }) {
   return <section className="premium-media-editor" aria-label="Galeria do seu Perfil Artístico">
     <div className="premium-media-editor-heading">
       <div>
-        <span className="premium-design-eyebrow"><ImagePlus size={15}/> GALERIA DO Perfil Artístico</span>
+        <span className="premium-design-eyebrow"><ImagePlus size={15}/> FOTOS E VÍDEOS</span>
         <h2>Fotos e vídeos, cada um no seu espaço.</h2>
         <p>O Perfil Artístico permite até 3 fotos e 3 vídeos, com espaços separados para cada tipo de mídia.</p>
       </div>
-      <div className="premium-media-limit-counts" aria-label="Limites da galeria">
+      <div className="premium-media-limit-counts" aria-label="Limites da galeria" hidden={!gallery.available}>
         <span className={photoFull ? "is-full" : ""}>Fotos: {photoCount}/{MAX_PER_TYPE}</span>
         <span className={videoFull ? "is-full" : ""}>Vídeos: {videoCount}/{MAX_PER_TYPE}</span>
       </div>
     </div>
 
-    <div className="premium-media-inputs">
+    {gallery.readError && <div className="premium-media-feedback is-error" role="alert">
+      <p>{gallery.readError}</p>
+    </div>}
+    {gallery.error && <p className="premium-media-feedback is-error" role="alert">{gallery.error}</p>}
+    {gallery.previewWarning && <p className="premium-media-feedback" role="status">Algumas miniaturas não carregaram. Seus arquivos continuam na galeria.</p>}
+    <Button variant="secondary" disabled={gallery.loading || gallery.busy} onClick={() => void gallery.reload()}>
+      {gallery.loading ? "Atualizando galeria..." : "Atualizar galeria"}
+    </Button>
+    <fieldset className="premium-media-inputs" aria-label="Adicionar mídias" disabled={blocked}>
       <div className="premium-media-add-box">
         <h3><ImagePlus size={17}/> Adicionar foto de show</h3>
         {photoFull && <p className="premium-media-cap-notice">
@@ -281,14 +334,9 @@ export function PremiumGalleryEditor({ gallery }: { gallery: PremiumGallery }) {
         <input id="premium-photo-title" value={photoTitle} maxLength={90}
           onChange={event => setPhotoTitle(event.target.value)}
           placeholder="Ex.: Show no Rio de Janeiro"/>
-        <label className={"premium-media-upload" + (gallery.busy || photoFull ? " is-disabled" : "")}
-          htmlFor="premium-photo-file">
-          {gallery.busy ? <LoaderCircle size={16}/> : <ImagePlus size={16}/>}
-          {gallery.busy ? "Aguarde..." : "Escolher foto (até 5 MB)"}
-        </label>
-        <input id="premium-photo-file" className="premium-media-file" type="file"
-          accept="image/jpeg,image/png,image/webp"
-          disabled={gallery.busy || photoFull}
+        <Input label="Foto de show" id="premium-photo-file" type="file"
+          accept="image/jpeg,image/png,image/webp" disabled={blocked || photoFull}
+          hint="JPG, PNG ou WebP de até 5 MB."
           onChange={event => void upload(event)}/>
         <small>Foto salva em área privada. Use apenas imagens que você tem autorização para divulgar.</small>
       </div>
@@ -306,14 +354,12 @@ export function PremiumGalleryEditor({ gallery }: { gallery: PremiumGallery }) {
           value={videoUrl} onChange={event => setVideoUrl(event.target.value)}
           placeholder="https://www.youtube.com/watch?v=..."/>
         <button type="submit" className="premium-media-upload"
-          disabled={gallery.busy || videoFull}>
+          disabled={blocked || videoFull}>
           <PlayCircle size={16}/> Adicionar vídeo
         </button>
         <small>O vídeo será reproduzido dentro do Perfil Artístico. Também haverá um link direto para o YouTube.</small>
       </form>
-    </div>
-
-    {gallery.error && <p className="premium-media-feedback is-error" role="alert">{gallery.error}</p>}
+    </fieldset>
     {gallery.message && <p className="premium-media-feedback" role="status">{gallery.message}</p>}
     {(photoCount > MAX_PER_TYPE || videoCount > MAX_PER_TYPE) &&
       <p className="premium-media-cap-notice" role="status">
@@ -322,9 +368,9 @@ export function PremiumGalleryEditor({ gallery }: { gallery: PremiumGallery }) {
         aparecerão na prévia e no Perfil Artístico. Os demais continuam no seu rascunho
         para você organizar ou remover.
       </p>}
-    {gallery.loading ? <p className="premium-media-loading"><LoaderCircle size={16}/> Carregando trabalhos...</p> :
+    {gallery.loading ? <LoadingState label="Carregando galeria..."/> :
       gallery.items.length === 0
-        ? <div className="premium-media-empty">Sua galeria está vazia. Comece com fotos de shows ou vídeos do YouTube.</div>
+        ? (gallery.available ? <div className="premium-media-empty">Sua galeria está vazia. Comece com fotos de shows ou vídeos do YouTube.</div> : null)
         : <div className="premium-media-groups">
           {(["photo", "youtube"] as const).map(kind => {
             const grouped = gallery.items.filter(item => item.media_kind === kind);
@@ -340,7 +386,7 @@ export function PremiumGalleryEditor({ gallery }: { gallery: PremiumGallery }) {
               </div>
               <div className="premium-media-list">
               {grouped.map((item, index) =>
-            <article className="premium-media-list-item" key={item.id}>
+            <article className="premium-media-list-item" key={item.id} aria-label={item.title}>
               <div className="premium-media-list-photo"><MediaThumbnail item={item}/></div>
               <div className="premium-media-item-info">
                 <div className="premium-media-item-flags">
@@ -349,34 +395,34 @@ export function PremiumGalleryEditor({ gallery }: { gallery: PremiumGallery }) {
                 </div>
                 {editingId === item.id ?
                   <form className="premium-media-rename" onSubmit={event => void rename(event, item)}>
-                    <input value={editingTitle} maxLength={90} required
+                    <input aria-label={"Novo título de " + item.title} disabled={blocked} value={editingTitle} maxLength={90} required
                       onChange={event => setEditingTitle(event.target.value)}/>
-                    <button type="submit" disabled={gallery.busy} aria-label="Salvar título"><Check size={16}/></button>
+                    <button type="submit" disabled={blocked} aria-label="Salvar título"><Check size={16}/></button>
                     <button type="button" onClick={() => setEditingId(null)} aria-label="Cancelar edição"><X size={16}/></button>
                   </form> : <strong>{item.title}</strong>}
                 <div className="premium-media-actions">
-                  <button type="button" disabled={gallery.busy || item.featured}
+                  <button type="button" disabled={blocked || item.featured}
                     onClick={() => void gallery.feature(item.id)}>
                     <Star size={14}/>{item.featured ? "Destaque" : "Destacar"}
                   </button>
-                  <button type="button" disabled={gallery.busy}
+                  <button type="button" disabled={blocked}
                     onClick={() => {setEditingId(item.id);setEditingTitle(item.title);}}>
                     <Edit3 size={14}/> Título
                   </button>
-                  <button type="button" disabled={gallery.busy || index === 0}
+                  <button type="button" disabled={blocked || index === 0}
                     onClick={() => void gallery.reorder(item.id, -1)} aria-label={"Subir " + item.title}>
                     <ArrowUp size={14}/> Subir
                   </button>
-                  <button type="button" disabled={gallery.busy || index === grouped.length - 1}
+                  <button type="button" disabled={blocked || index === grouped.length - 1}
                     onClick={() => void gallery.reorder(item.id, 1)} aria-label={"Descer " + item.title}>
                     <ArrowDown size={14}/> Descer
                   </button>
                   {deleteId === item.id ?
                     <button type="button" className="premium-media-delete-confirm"
-                      disabled={gallery.busy} onClick={() => {setDeleteId(null);void gallery.remove(item);}}>
+                      disabled={blocked} onClick={() => void gallery.remove(item).then(ok => {if (ok) setDeleteId(null);})}>
                       Confirmar remoção
                     </button>
-                    : <button type="button" disabled={gallery.busy}
+                    : <button type="button" disabled={blocked}
                       onClick={() => setDeleteId(item.id)}><Trash2 size={14}/> Remover</button>}
                   {deleteId === item.id && <button type="button" onClick={() => setDeleteId(null)}>Cancelar</button>}
                 </div>
@@ -389,10 +435,9 @@ export function PremiumGalleryEditor({ gallery }: { gallery: PremiumGallery }) {
         </div>
     }
     <p className="premium-media-privacy">
-      <strong>Galeria do rascunho:</strong> os arquivos permanecem privados no Supabase.
-      Só as fotos que você escolher publicar com o botão <strong>Publicar Perfil Artístico</strong>
-      poderão ser baixadas por visitantes, enquanto o site estiver no ar.
-      As demais fotos e os dados dos convites continuam privados.
+      <strong>Galeria do rascunho:</strong> suas fotos ficam em uma área privada.
+      Ao ativar ou republicar os recursos Pro, as fotos selecionadas poderão ser vistas
+      no seu perfil público. As demais fotos e os dados dos convites continuam privados.
       O player do YouTube só é carregado quando alguém pede para reproduzir.
     </p>
   </section>;

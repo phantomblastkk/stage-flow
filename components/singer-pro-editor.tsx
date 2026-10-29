@@ -463,7 +463,7 @@ export default function SiteProfissionalPreview({ active = true, onEditData }: {
       <ProSitePublicationControls
         active={active}
         unsaved={unsaved} draftReady={draftReady}
-        galleryBusy={gallery.busy} galleryLoading={gallery.loading}
+        galleryBusy={gallery.busy} galleryLoading={gallery.loading || !gallery.available}
       />
       <div className={"premium-site premium-theme-" + draft.theme + " premium-site-" + draft.accent}>
         <header className="premium-site-nav">

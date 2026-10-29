@@ -29,13 +29,26 @@ try{
    contactReadFail=true,marketReadFail=true,contactResult="invalid_phone",marketResult="publish_portfolio_first",contactGate,
    singerMode=false,singerUsername=null,singerBooking=false,claimResult="taken",artistResult="invalid_link",
    artistReadMode="ok",artistReads=0,bookingReadFail=false,bookingReads=0,bookingReadGate,bookingWriteFail=false,artistWriteFail=false,proMode=false,draftReadMode="failed",draftReads=0,draftReadGate,draftSaveFail=true,draftSaveGate;
-  const designWrites=[],proPublishWrites=[];
+  const designWrites=[],proPublishWrites=[],mediaWrites=[],privateDeletes=[];
+  const photoId="77777777-7777-4777-8777-777777777777",videoId="88888888-8888-4888-8888-888888888888";
+  let mediaReadMode="failed",mediaReads=0,mediaReadGate,mediaActionGate,mediaWriteMode="saved",signFail=true,deleteFileFail=false;
+  let mediaRows=[{id:photoId,media_kind:"photo",title:"Foto privada inicial",storage_path:actor+"/"+photoId+".jpg",youtube_id:null,featured:false,display_order:0},
+   {id:videoId,media_kind:"youtube",title:"Vídeo inicial",storage_path:null,youtube_id:"dQw4w9WgXcQ",featured:false,display_order:1}];
   await context.route(api+"/**",async route=>{
    const req=route.request(),url=new URL(req.url()),rpc=url.pathname.split("/").at(-1);let data=[],status=200;
    if(req.method()==="OPTIONS"){await route.fulfill({status:204,headers:{"access-control-allow-origin":"*","access-control-allow-headers":"*"}});return;}
+   if(req.method()==="POST"&&url.pathname.startsWith("/storage/v1/object/sign/stage-premium-drafts/")){
+    assert.ok(url.pathname.includes(actor+"/"));assert.equal(req.postDataJSON().expiresIn,3600);
+    await route.fulfill({status:signFail?503:200,contentType:"application/json",headers:{"access-control-allow-origin":"*"},body:JSON.stringify(signFail?{message:"private_backend_detail.sql"}:{signedURL:url.pathname.replace("/storage/v1","")+"?token=fixture"})});return;
+   }
+   if(req.method()==="DELETE"&&url.pathname==="/storage/v1/object/stage-premium-drafts"){
+    const paths=req.postDataJSON().prefixes;assert.ok(paths.every(p=>p.startsWith(actor+"/")));
+    privateDeletes.push(paths);
+    await route.fulfill({status:deleteFileFail?503:200,contentType:"application/json",headers:{"access-control-allow-origin":"*"},body:JSON.stringify(deleteFileFail?{message:"private_backend_detail.sql"}:[])});return;
+   }
    if(url.pathname.startsWith("/storage/v1/object/")){
     if(req.method()==="POST"){
-     const bucket=singerMode?"stage-artist-public":"stage-musician-media";
+     const bucket=proMode?"stage-premium-drafts":singerMode?"stage-artist-public":"stage-musician-media";
      assert.match(url.pathname,new RegExp("^/storage/v1/object/"+bucket+"/"+actor+"/[0-9a-f-]{36}\\.(jpg|png|webp)$"));
      assert.equal(req.headers()["x-upsert"],"false");
      storageWrites.push({path:url.pathname,bytes:req.postDataBuffer()?.length||0});
@@ -65,7 +78,20 @@ try{
     else data={theme:"ivory",accent:"gold",section_order:["about","photos","videos","agenda","contact"],visible_sections:["about","agenda","contact"],updated_at:"2026-10-01T00:00:00Z"};}
    else if(rpc==="stage_save_premium_site_draft"){designWrites.push(body);if(draftSaveGate)await draftSaveGate;
     if(draftSaveFail){status=503;data={message:"private_backend_detail.sql"};}else data="saved";}
-   else if(rpc==="stage_my_premium_site_media")data=[];
+   else if(rpc==="stage_my_premium_site_media"){mediaReads++;if(mediaReadGate)await mediaReadGate;
+    if(mediaReadMode==="failed"){status=503;data={message:"private_backend_detail.sql"};}
+    else data=mediaReadMode==="missing"?null:mediaRows;}
+   else if(["stage_add_premium_site_media","stage_rename_premium_site_media","stage_remove_premium_site_media","stage_feature_premium_site_media","stage_reorder_premium_site_media"].includes(rpc)){
+    mediaWrites.push({rpc,body});if(mediaActionGate)await mediaActionGate;
+    if(mediaWriteMode==="transport"){status=503;data={message:"private_backend_detail.sql"};}
+    else if(mediaWriteMode!=="saved"&&mediaWriteMode!=="commit_then_fail")data=mediaWriteMode;
+    else{
+     if(rpc==="stage_add_premium_site_media")mediaRows.push({id:"99999999-9999-4999-8999-"+String(mediaWrites.length).padStart(12,"0"),media_kind:body.p_kind,title:body.p_title,storage_path:body.p_storage_path,youtube_id:body.p_youtube_id,featured:false,display_order:mediaRows.length});
+     if(rpc==="stage_rename_premium_site_media")mediaRows=mediaRows.map(item=>item.id===body.p_id?{...item,title:body.p_title}:item);
+     if(rpc==="stage_remove_premium_site_media")mediaRows=mediaRows.filter(item=>item.id!==body.p_id);
+     if(mediaWriteMode==="commit_then_fail"){status=503;data={message:"private_backend_detail.sql"};}else data="saved";
+    }
+   }
    else if(rpc==="stage_my_pro_site_publication")data={entitled:true,published:false,username:singerUsername,profile_public:true,url_path:"/"+singerUsername};
    else if(rpc==="stage_set_pro_site_published"){proPublishWrites.push(body);data="forbidden";}
    else if(rpc==="stage_my_artist_booking_settings"){bookingReads++;if(bookingReadGate)await bookingReadGate;
@@ -703,6 +729,99 @@ try{
   assert.ok(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth+2),"Advanced editor overflows at "+width);
   await design.screenshot({path:`test-results/operational-pro-draft-recovered-${width}.png`});
   console.log(`PASS advanced draft ${width}px: owner retry, failed/missing draft, overwrite guard, stored choices, tab preservation, rejected save/retry and no publication`);
+  const media=advanced.getByRole("region",{name:"Galeria do seu Perfil Artístico",exact:true});
+  const mediaRefresh=media.getByRole("button",{name:"Atualizar galeria",exact:true});
+  const mediaReady=()=>page.waitForFunction(()=>{const field=document.querySelector("#premium-photo-title");return field&&!field.matches(":disabled");});
+  const videoTitle=media.getByLabel("Título do vídeo",{exact:true}),videoLink=media.getByLabel("Link do vídeo",{exact:true});
+  const addMediaVideo=media.getByRole("button",{name:"Adicionar vídeo",exact:true});
+  await media.getByRole("alert").filter({hasText:"Não foi possível atualizar sua galeria."}).waitFor();
+  assert.equal(await media.getByText(/Sua galeria está vazia/).count(),0,"Failed read is not an empty gallery");
+  assert.equal(await addMediaVideo.isDisabled(),true);assert.equal(await publishPro.isDisabled(),true);
+  assert.doesNotMatch(await media.innerText(),/private_backend_detail|migration|Supabase/);
+  await media.screenshot({path:`test-results/operational-gallery-read-failure-${width}.png`});
+  mediaReadMode="missing";await activate(mediaRefresh);
+  await media.getByRole("alert").filter({hasText:"Não foi possível atualizar sua galeria."}).waitFor();
+  assert.equal(await addMediaVideo.isDisabled(),true);
+  mediaReadMode="ok";await activate(mediaRefresh);
+  const photoRow=media.getByRole("article",{name:"Foto privada inicial",exact:true});
+  await photoRow.waitFor();
+  await media.getByRole("status").filter({hasText:"Algumas miniaturas não carregaram."}).waitFor();
+  assert.equal(await photoRow.getByText("Foto indisponível",{exact:true}).count(),1);
+  signFail=false;await activate(mediaRefresh);
+  await photoRow.getByRole("img",{name:"Foto privada inicial",exact:true}).waitFor();
+  await videoTitle.fill("Meu vídeo preservado");await videoLink.fill("https://youtu.be/dQw4w9WgXcQ");
+  mediaReadMode="failed";await activate(mediaRefresh);
+  await media.getByRole("alert").filter({hasText:"Não foi possível atualizar sua galeria."}).waitFor();
+  assert.equal(await media.getByText("Foto privada inicial",{exact:true}).count(),1,"Previously loaded items survive a failed refresh");
+  assert.equal(await videoTitle.inputValue(),"Meu vídeo preservado");assert.equal(await addMediaVideo.isDisabled(),true);
+  let releaseMediaRead;mediaReadMode="ok";mediaReadGate=new Promise(resolve=>releaseMediaRead=resolve);
+  const mediaReadStart=mediaReads;await activate(mediaRefresh);
+  await media.getByRole("button",{name:"Atualizando galeria...",exact:true}).waitFor();
+  assert.equal(await media.getByRole("button",{name:"Atualizando galeria...",exact:true}).isDisabled(),true);
+  releaseMediaRead();mediaReadGate=undefined;await photoRow.waitFor();
+  assert.equal(mediaReads,mediaReadStart+1);assert.equal(await videoTitle.inputValue(),"Meu vídeo preservado");
+  await videoLink.fill("https://example.test/video");await activate(addMediaVideo);
+  await media.getByRole("alert").filter({hasText:"Cole um link HTTPS válido"}).waitFor();assert.equal(mediaWrites.length,0);
+  await videoLink.fill("https://youtu.be/dQw4w9WgXcQ");mediaWriteMode="transport";
+  await activate(addMediaVideo);await media.getByRole("alert").filter({hasText:"Não foi possível confirmar a operação."}).waitFor();
+  assert.equal(await videoTitle.inputValue(),"Meu vídeo preservado");assert.equal(await addMediaVideo.isDisabled(),true);
+  await activate(mediaRefresh);await mediaReady();await photoRow.waitFor();
+  mediaWriteMode="saved";mediaReadMode="failed";
+  await activate(addMediaVideo);
+  await media.getByRole("status").filter({hasText:"Vídeo adicionado ao rascunho."}).waitFor();
+  await media.getByRole("alert").filter({hasText:"Não foi possível atualizar sua galeria."}).waitFor();
+  assert.equal(await videoTitle.inputValue(),"","Confirmed insert clears its fields even if refresh fails, preventing duplicates");
+  assert.equal(await media.getByText("Vídeo inicial",{exact:true}).count(),1);
+  mediaReadMode="ok";await activate(mediaRefresh);
+  await media.getByText("Meu vídeo preservado",{exact:true}).waitFor();assert.equal(mediaWrites.length,2);
+  assert.deepEqual(mediaWrites[0],mediaWrites[1]);
+  await activate(photoRow.getByRole("button",{name:"Título",exact:true}));
+  const renamePhoto=photoRow.getByLabel("Novo título de Foto privada inicial",{exact:true});
+  await renamePhoto.fill("Foto renomeada");mediaWriteMode="invalid_title";
+  let releaseMediaAction;mediaActionGate=new Promise(resolve=>releaseMediaAction=resolve);
+  await activate(photoRow.getByRole("button",{name:"Salvar título",exact:true}));
+  for(let i=0;i<100&&mediaWrites.length<3;i++)await delay(25);
+  await photoRow.locator("form").evaluate(form=>form.requestSubmit());
+  assert.equal(await renamePhoto.isDisabled(),true);assert.equal(mediaWrites.length,3,"Pending operation cannot be submitted twice");
+  releaseMediaAction();mediaActionGate=undefined;
+  await media.getByRole("alert").filter({hasText:"O título deve ter de 1 a 90 caracteres."}).waitFor();
+  assert.equal(await renamePhoto.inputValue(),"Foto renomeada");
+  mediaWriteMode="saved";await activate(photoRow.getByRole("button",{name:"Salvar título",exact:true}));
+  const renamedPhoto=media.getByRole("article",{name:"Foto renomeada",exact:true});await renamedPhoto.waitFor();
+  await activate(renamedPhoto.getByRole("button",{name:"Remover",exact:true}));mediaWriteMode="published_media_in_use";
+  await activate(renamedPhoto.getByRole("button",{name:"Confirmar remoção",exact:true}));
+  await media.getByRole("alert").filter({hasText:"Esta foto está no Perfil Artístico publicado."}).waitFor();
+  assert.equal(privateDeletes.length,0,"Rejected removal must never delete the private file");
+  mediaWriteMode="saved";deleteFileFail=true;
+  await activate(renamedPhoto.getByRole("button",{name:"Confirmar remoção",exact:true}));
+  await media.getByRole("alert").filter({hasText:"seu arquivo privado não pôde ser excluído agora."}).waitFor();
+  assert.equal(await renamedPhoto.count(),0);assert.equal(privateDeletes.length,1);
+  assert.equal(await media.getByText("Vídeo inicial",{exact:true}).count(),1);
+  const photoName=media.getByLabel("Nome da foto (opcional)",{exact:true}),photoFile=media.getByLabel("Foto de show",{exact:true});
+  await photoName.fill("Nova foto preservada");const uploadsBefore=storageWrites.length;
+  await photoFile.setInputFiles({name:"invalid.txt",mimeType:"text/plain",buffer:Buffer.from("fixture")});
+  await media.getByRole("alert").filter({hasText:"Envie JPG, PNG ou WebP de até 5 MB."}).waitFor();
+  assert.equal(await photoName.inputValue(),"Nova foto preservada");assert.equal(storageWrites.length,uploadsBefore);
+  await photoFile.setInputFiles({name:"too-large.png",mimeType:"image/png",buffer:Buffer.alloc(5*1024*1024+1)});
+  assert.equal(storageWrites.length,uploadsBefore);
+  mediaWriteMode="commit_then_fail";
+  let releasePrivateUpload;uploadGate=new Promise(resolve=>releasePrivateUpload=resolve);
+  await photoFile.setInputFiles({name:"new-private.png",mimeType:"image/png",buffer:storageImage});
+  for(let i=0;i<100&&storageWrites.length===uploadsBefore;i++)await delay(25);
+  assert.equal(await photoFile.isDisabled(),true);assert.equal(await addMediaVideo.isDisabled(),true);
+  releasePrivateUpload();uploadGate=undefined;
+  await media.getByRole("alert").filter({hasText:"Não foi possível confirmar a operação."}).waitFor();
+  assert.equal(await photoName.inputValue(),"Nova foto preservada");assert.equal(privateDeletes.length,1,"An ambiguous insert must not trigger cleanup of its uploaded file");
+  const writesBeforeReconcile=mediaWrites.length;
+  await activate(mediaRefresh);await media.getByText("Nova foto preservada",{exact:true}).waitFor();
+  assert.equal(mediaWrites.length,writesBeforeReconcile);assert.equal(storageWrites.length,uploadsBefore+1);
+  assert.equal(await photoName.inputValue(),"Nova foto preservada");assert.equal(proPublishWrites.length,0);
+  assert.equal(await publishPro.isEnabled(),true,"Confirmed media reconciliation releases the existing publication guard");
+  assert.equal(draftReads,3,"Media recovery never resets the design");
+  assert.doesNotMatch(await media.innerText(),/private_backend_detail|migration|Supabase/);
+  assert.ok(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth+2),"Gallery overflows at "+width);
+  await media.screenshot({path:`test-results/operational-gallery-recovered-${width}.png`});
+  console.log(`PASS gallery recovery ${width}px: failed/missing read, retained rows/fields, signed-preview retry, uncertain writes, serialized rename, guarded removal, private upload reconciliation and no publication`);
   assert.deepEqual(errors,[],"Browser exceptions at "+width);await context.close();
  }
  console.log("PASS: dashboard at 360/768/1280, navigation, receipt failure, legacy profile, group creation, availability and invitation.");
