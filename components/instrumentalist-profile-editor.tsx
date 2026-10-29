@@ -5,7 +5,7 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import {
   ArrowLeft, Check, Copy, ExternalLink, Eye, EyeOff, X,
-  ImagePlus, Palette, Save, Share2, SlidersHorizontal, Sparkles, Upload,
+  ImagePlus, Palette, Save, Share2, SlidersHorizontal, Sparkles,
   BriefcaseBusiness, Youtube, ListChecks, ChartNoAxesCombined, ArrowRight
 } from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
@@ -346,15 +346,15 @@ export default function MeuPortfolioDeMusico({unifiedSinger=false,username=null}
     <LoadingState label="Carregando personalização..."/>
   </main>;
 
-  return <main className="mp-editor-workspace" data-editor-active={mobileStep} onFocusCapture={event=>revealMobileEditorField(event.target)}><div className="container" style={{ paddingBottom: 60 }}>
+  return <main className="mp-editor-workspace" data-editor-active={mobileStep} onFocusCapture={event=>revealMobileEditorField(event.target)}><div className="container mp-editor-container">
     <nav className="nav">
       <Link className="brand" href="/"><span className="brand-mark">S</span> stage flow</Link>
       <Link className="sf-ui-button sf-ui-button-secondary" href="/painel"><ArrowLeft size={15}/> Voltar</Link>
     </nav>
-    <section style={{ padding: "38px 0 24px" }}>
+    <section className="mp-editor-intro">
       <div className="eyebrow"><span className="dot"/> SEU ESPAÇO NA MÚSICA</div>
-      <h1 style={{ fontSize: "clamp(32px,5vw,46px)", margin: "14px 0 12px" }}>Suas habilidades. <span className="accent">Um perfil só.</span></h1>
-      <p className="lead" style={{ maxWidth: 760 }}>Instrumentos, repertório e condições de contratação complementam sua única página artística. O Marketplace utiliza o mesmo perfil público.</p>
+      <h1>Suas habilidades. <span className="accent">Um perfil só.</span></h1>
+      <p className="lead mp-editor-lead">Instrumentos, repertório e condições de contratação complementam sua única página artística. O Marketplace utiliza o mesmo perfil público.</p>
       <div className="mp-editor-progress" aria-label={"Perfil com " + completed + " de 6 informações essenciais"}>
         <div><ListChecks size={16}/><strong>{completed}/6</strong> informações essenciais preenchidas</div>
         <div className="mp-editor-progress-bar" aria-hidden="true"><span style={{ width: Math.round(completed / 6 * 100) + "%" }}/></div>
@@ -376,7 +376,7 @@ export default function MeuPortfolioDeMusico({unifiedSinger=false,username=null}
     </section>
 
     <div data-editor-step="4" className="mp-marketplace-wizard-setting"><MarketplaceMusicianSettings portfolioPublished={portfolio.is_published}/></div>
-    {unifiedSinger&&<section className="mp-editor-panel" role="note" style={{marginBottom:17}}>
+    {unifiedSinger&&<section className="mp-editor-panel mp-editor-note" role="note">
       <h2>Seu perfil público é único</h2>
       <p>Foto, apresentação, cidade e redes sociais são editadas em Dados do perfil único. Aqui você acrescenta instrumentos, formatos de apresentação, valores de referência e disponibilidade para o Marketplace.</p>
       <Link href="/perfil-artistico?aba=dados">Editar meus dados principais</Link>
@@ -392,33 +392,28 @@ export default function MeuPortfolioDeMusico({unifiedSinger=false,username=null}
     <div className={"mp-editor-columns"+(unifiedSinger?" mp-unified-singer":"")}>
 
       <div>
-        <form id="musician-portfolio-form" onSubmit={save} style={{ display: "grid", gap: 17 }}>
+        <form id="musician-portfolio-form" onSubmit={save} className="mp-editor-form">
           <section id="mp-aparencia" data-editor-step="0" className="mp-editor-panel">
-            <h2><Palette size={18} style={{ verticalAlign: "middle", marginRight: 7 }}/> Aparência da página</h2>
+            <h2><Palette size={18}/> Aparência da página</h2>
             <p>Escolha um visual que combine com sua música. Não precisa programar.</p>
 
-            <div className="field">
-              <label>Estilo do site</label>
+            <fieldset className="mp-editor-choice-group">
+              <legend>Estilo do perfil</legend>
               <div className="mp-preset-list">
-                {musicianThemes.map(theme => <button type="button" key={theme.value}
+                {musicianThemes.map(theme => <Button variant="secondary" type="button" key={theme.value}
                   className="mp-theme-option" aria-pressed={portfolio.theme === theme.value}
                   onClick={() => update("theme", theme.value)}>
-                  <span className="mp-theme-swatch" style={{
-                    color: theme.value === "ivory" ? "#1a2330" : "#f1eff8",
-                    background: theme.value === "midnight" ? "linear-gradient(135deg,#161e30,#080b13)" :
-                      theme.value === "ivory" ? "linear-gradient(135deg,#f9f4e9,#ddd5c9)" :
-                      "linear-gradient(135deg,#542b56,#120b20)"
-                  }}/>
+                  <span className="mp-theme-swatch" data-theme={theme.value}/>
                   <strong>{theme.label}</strong>
                   <small>{theme.description}</small>
-                </button>)}
+                </Button>)}
               </div>
-            </div>
-            <div className="field">
-              <label>Cor de destaque</label>
+            </fieldset>
+            <fieldset className="mp-editor-choice-group">
+              <legend>Cor de destaque</legend>
               <div className="mp-color-list">
                 {musicianAccents.map(accent =>
-                  <button key={accent.value} type="button" className="mp-color-btn"
+                  <Button variant="ghost" key={accent.value} type="button" className="mp-color-btn"
                     aria-label={"Cor " + accent.label}
                     title={accent.label}
                     aria-pressed={portfolio.accent === accent.value}
@@ -426,60 +421,49 @@ export default function MeuPortfolioDeMusico({unifiedSinger=false,username=null}
                     <span style={{ background: accent.color, color: "#10151c" }}>
                       {portfolio.accent === accent.value && <Check size={17}/>}
                     </span>
-                  </button>)}
+                  </Button>)}
               </div>
-            </div>
-            <div className="field" style={{ marginBottom: 0 }}>
-              <label>Organização da página</label>
+            </fieldset>
+            <fieldset className="mp-editor-choice-group">
+              <legend>Organização da página</legend>
               <div className="mp-layout-options">
                 {([
                   ["spotlight", "Destaque", "Capa grande e apresentação marcante"],
                   ["minimal", "Minimalista", "Visual compacto e discreto"]
                 ] as const).map(([value, name, description]) =>
-                  <button type="button" key={value} className="mp-layout-option"
+                  <Button variant="secondary" type="button" key={value} className="mp-layout-option"
                     aria-pressed={portfolio.layout_style === value}
                     onClick={() => update("layout_style", value as MusicianLayout)}>
                     <strong>{name}</strong><small>{description}</small>
-                  </button>)}
+                  </Button>)}
               </div>
-            </div>
+            </fieldset>
           </section>
 
           <section id="mp-fotos" data-editor-step="0" className="mp-editor-panel">
-            <h2><ImagePlus size={18} style={{ verticalAlign: "middle", marginRight: 7 }}/> Suas fotos</h2>
+            <h2><ImagePlus size={18}/> Suas fotos</h2>
             <p>Envie JPG, PNG ou WebP de até 5 MB, diretamente do celular ou computador.</p>
-            <div className="field">
-              <label htmlFor="avatar-upload">Foto de perfil (quadrada)</label>
-              <label className="mp-file-upload">
-                <Upload size={16}/>
-                {uploading === "avatar" ? "Enviando foto..." : "Escolher foto de perfil"}
-                <input id="avatar-upload" type="file" accept="image/jpeg,image/png,image/webp"
-                  disabled={Boolean(uploading) || saving} onChange={e => void uploadPhoto("avatar", e)}/>
-              </label>
-              {portfolio.avatar_url && <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
-                <img src={portfolio.avatar_url} alt="Foto selecionada" style={{ width: 66, height: 66, borderRadius: 17, objectFit: "cover" }}/>
-                <Button variant="secondary" onClick={()=>update("avatar_url", null)}>Remover da página</Button>
-              </div>}
-            </div>
-            <div className="field">
-              <label htmlFor="cover-upload">Imagem de capa (horizontal)</label>
-              <label className="mp-file-upload">
-                <Upload size={16}/>
-                {uploading === "cover" ? "Enviando capa..." : "Escolher imagem de capa"}
-                <input id="cover-upload" type="file" accept="image/jpeg,image/png,image/webp"
-                  disabled={Boolean(uploading) || saving} onChange={e => void uploadPhoto("cover", e)}/>
-              </label>
-              {portfolio.cover_url && <>
-                <div className="mp-mini-preview" style={{ backgroundImage: "url(" + JSON.stringify(portfolio.cover_url) + ")" }}/>
-                <Button variant="secondary" onClick={()=>update("cover_url", null)}>Remover capa da página</Button>
-              </>}
-              <span className="field-help">Fotos enviadas são arquivos destinados à divulgação pública. Não envie documentos ou imagens privadas.</span>
-            </div>
+            <Input label="Foto de perfil (quadrada)" id="avatar-upload" type="file"
+              accept="image/jpeg,image/png,image/webp" disabled={Boolean(uploading) || saving}
+              aria-busy={uploading === "avatar"} onChange={e => void uploadPhoto("avatar", e)}
+              hint={uploading === "avatar" ? "Enviando foto..." : "JPG, PNG ou WebP de até 5 MB. A foto será ajustada para um retrato quadrado."}/>
+            {portfolio.avatar_url && <div className="mp-editor-photo-row">
+              <img src={portfolio.avatar_url} alt="Foto selecionada" className="mp-editor-photo"/>
+              <Button variant="secondary" onClick={()=>update("avatar_url", null)}>Remover da página</Button>
+            </div>}
+            <Input label="Imagem de capa (horizontal)" id="cover-upload" type="file"
+              accept="image/jpeg,image/png,image/webp" disabled={Boolean(uploading) || saving}
+              aria-busy={uploading === "cover"} onChange={e => void uploadPhoto("cover", e)}
+              hint={uploading === "cover" ? "Enviando capa..." : "Arquivos destinados à divulgação pública. Não envie documentos ou imagens privadas."}/>
+            {portfolio.cover_url && <div className="mp-editor-cover-preview">
+              <div className="mp-mini-preview" style={{ backgroundImage: "url(" + JSON.stringify(portfolio.cover_url) + ")" }}/>
+              <Button variant="secondary" onClick={()=>update("cover_url", null)}>Remover capa da página</Button>
+            </div>}
           </section>
 
           <section id="mp-instrumentos" data-editor-step="1" className="mp-editor-panel">
-            <h2><SlidersHorizontal size={18} style={{ verticalAlign: "middle", marginRight: 7 }}/> Informações profissionais</h2>
-            <p>Seu nome exibido é <strong style={{ color: "var(--text)" }}>{portfolio.name}</strong>, definido na sua conta.</p>
+            <h2><SlidersHorizontal size={18}/> Informações profissionais</h2>
+            <p>Seu nome exibido é <strong className="mp-editor-identity-name">{portfolio.name}</strong>, definido na sua conta.</p>
             <Input label="Endereço da página *" id="portfolio-slug" value={portfolio.slug}
                 onChange={e => update("slug", e.target.value.toLowerCase().replace(/[^a-z0-9-]/g,""))}
                 minLength={3} maxLength={30} pattern="[a-z0-9-]{3,30}" placeholder="joao-cavaquinho" required={!unifiedSinger} hint={`Seu endereço público será /musico/${portfolio.slug || "seu-nome"} no domínio do StageFlow.`}/>
@@ -504,7 +488,7 @@ export default function MeuPortfolioDeMusico({unifiedSinger=false,username=null}
           </section>
 
           <section id="mp-trajetoria" data-editor-step="2" className="mp-editor-panel">
-            <h2><BriefcaseBusiness size={18} style={{ verticalAlign: "middle", marginRight: 7 }}/> Experiência e trajetória</h2>
+            <h2><BriefcaseBusiness size={18}/> Experiência e trajetória</h2>
             <p>Mostre ao contratante onde você atua e as experiências que fazem parte da sua carreira.</p>
             <Input label="Anos de experiência (opcional)" id="mp-years" type="number" min={0} max={60} step={1}
                 placeholder="Ex.: 5" value={portfolio.experience_years ?? ""}
@@ -522,7 +506,7 @@ export default function MeuPortfolioDeMusico({unifiedSinger=false,username=null}
           </section>
 
           <section id="mp-midias" data-editor-step="3" className="mp-editor-panel">
-            <h2><Youtube size={18} style={{ verticalAlign: "middle", marginRight: 7 }}/> Vídeos e redes sociais</h2>
+            <h2><Youtube size={18}/> Vídeos e redes sociais</h2>
             <p>Seu portfólio gratuito pode mostrar até 5 vídeos e apresentações, com reprodução incorporada ao clicar no vídeo do YouTube. Não precisa fazer upload.</p>
             <Textarea label="Mais vídeos ou apresentações (opcional)" id="mp-extra-media" rows={5} maxLength={2100}
                 value={additionalMediaText} onChange={e => setAdditionalMediaText(e.target.value)}
@@ -544,16 +528,19 @@ export default function MeuPortfolioDeMusico({unifiedSinger=false,username=null}
           <section id="mp-cache" data-editor-step="4" className="mp-editor-panel">
             <h2>Seu cachê público</h2>
             <p>O valor mostrado aqui é apenas uma referência. A negociação de cada show continua privada.</p>
-            <div className="mp-layout-options" style={{ marginTop: 13, marginBottom: 15 }}>
-              <button type="button" className="mp-layout-option"
+            <fieldset className="mp-editor-choice-group mp-editor-price-options">
+              <legend>Exibição do cachê</legend>
+              <div className="mp-layout-options">
+              <Button variant="secondary" type="button" className="mp-layout-option"
                 aria-pressed={portfolio.price_mode === "consult"} onClick={()=>update("price_mode","consult")}>
                 <strong>Sob consulta</strong><small>Nenhum valor é exibido.</small>
-              </button>
-              <button type="button" className="mp-layout-option"
+              </Button>
+              <Button variant="secondary" type="button" className="mp-layout-option"
                 aria-pressed={portfolio.price_mode === "from"} onClick={()=>update("price_mode","from")}>
                 <strong>A partir de R$</strong><small>Divulgue um valor inicial.</small>
-              </button>
-            </div>
+              </Button>
+              </div>
+            </fieldset>
             {portfolio.price_mode === "from" && <Input label="Valor de referência em reais *" id="portfolio-fee" type="number" min="0.01" max="999999.99" step="0.01"
                 inputMode="decimal" required value={referenceFeeText}
                 onChange={e=>setReferenceFeeText(e.target.value)} placeholder="Ex.: 350"/>}
@@ -562,19 +549,20 @@ export default function MeuPortfolioDeMusico({unifiedSinger=false,username=null}
           <section id="mp-publicacao" data-editor-step="4" className="mp-editor-panel">
             <h2>Publicação e privacidade</h2>
             <p>O perfil só aparece para outras pessoas depois que você escolher publicar e salvar.</p>
-            <label style={{ display: "flex", alignItems: "flex-start", gap: 12, cursor: "pointer", padding: "12px 0" }}>
+            <label className="mp-editor-publication-toggle">
               <input type="checkbox" checked={portfolio.is_published}
+                aria-describedby="mp-publication-help"
                 onChange={e=>update("is_published",e.target.checked)}
-                style={{ marginTop: 5, accentColor: "var(--accent)", flexShrink: 0 }}/>
-              <span style={{ fontSize: 13, lineHeight: 1.6 }}>
+                className="mp-editor-publication-checkbox"/>
+              <span className="mp-editor-publication-copy">
                 <strong>{unifiedSinger?"Publicar informações de músico":"Publicar meu perfil artístico"}</strong>
-                <span style={{ display: "block", color: "var(--muted)" }}>
+                <span id="mp-publication-help" className="mp-editor-muted">
                   Qualquer pessoa com o link poderá ver sua página, fotos, instrumentos e cachê de referência, quando escolhido.
                 </span>
               </span>
             </label>
             <div className="mp-editor-stickybar">
-              <span style={{ display: "flex", gap: 7, alignItems: "center", fontSize: 12, color: "var(--muted)" }}>
+              <span className="mp-editor-save-hint">
                 {portfolio.is_published ? <Eye size={15}/> : <EyeOff size={15}/>}
                 {portfolio.is_published ? "Publicar alterações" : "Salvar como rascunho"}
               </span>
@@ -586,10 +574,10 @@ export default function MeuPortfolioDeMusico({unifiedSinger=false,username=null}
           </section>
         </form>
 
-        {savedSlug && <section className="mp-editor-panel" data-editor-step="4" style={{ marginTop: 17 }}>
+        {savedSlug && <section className="mp-editor-panel mp-editor-saved" data-editor-step="4">
           <h2>{savedPublished ? "Sua página está publicada" : "Seu rascunho foi salvo"}</h2>
           <p>{savedPublished ? "Compartilhe o link do seu portfólio com contratantes." : "Ative a publicação e salve para liberar seu link."}</p>
-          {savedPublished && <div style={{ display: "flex", flexWrap: "wrap", gap: 9, marginTop: 15 }}>
+          {savedPublished && <div className="mp-editor-share-actions">
             <Link href={publicPath} target="_blank" className="sf-ui-button sf-ui-button-secondary"><ExternalLink size={15}/> Abrir página</Link>
             <Button onClick={() => void sharePortfolio()}>
               {copied ? <Copy size={16}/> : <Share2 size={16}/>}
@@ -600,8 +588,8 @@ export default function MeuPortfolioDeMusico({unifiedSinger=false,username=null}
       </div>
 
       <aside className="mp-editor-preview" data-editor-step="4">
-        <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 10, marginBottom: 12 }}>
-          <div className="mp-editor-title" style={{ margin: 0 }}><Sparkles size={17} color="#C0A7FF"/> Prévia das informações</div>
+        <div className="mp-editor-preview-heading">
+          <div className="mp-editor-title"><Sparkles size={17} color="#C0A7FF"/> Prévia das informações</div>
           <button type="button" ref={openPreviewRef} className="sf-ui-button sf-ui-button-secondary" disabled={unifiedSinger}
             aria-haspopup="dialog" aria-expanded={previewTab}
             onClick={() => setPreviewTab(true)}>
@@ -609,9 +597,9 @@ export default function MeuPortfolioDeMusico({unifiedSinger=false,username=null}
           </button>
         </div>
         {!unifiedSinger&&<MusicianPortfolioView portfolio={effectivePreview} preview instanceId="editor-compact"/>}
-        {unifiedSinger&&<p style={{color:"var(--muted)",lineHeight:1.7}}>Os dados salvos aparecem na seção <strong>Atuação musical</strong> do seu perfil público principal. A identidade visual é a mesma do cantor e não existe um segundo portfólio.</p>}
+        {unifiedSinger&&<p className="mp-editor-unified-hint">Os dados salvos aparecem na seção <strong>Atuação musical</strong> do seu perfil público principal. A identidade visual é a mesma do cantor e não existe um segundo portfólio.</p>}
         {unifiedSinger&&savedPublished&&<Link href={publicPath} target="_blank" className="sf-ui-button sf-ui-button-secondary">Ver meu perfil artístico</Link>}
-        <p style={{ color: "var(--muted)", fontSize: 12, marginTop: 12, lineHeight: 1.6 }}>
+        <p className="mp-editor-preview-hint">
           {unifiedSinger?"As informações adicionais só aparecem após você salvar e publicar.":"Esta é uma prévia local. Outras pessoas só verão suas alterações depois de salvar e publicar."}
         </p>
       </aside>
@@ -625,7 +613,7 @@ export default function MeuPortfolioDeMusico({unifiedSinger=false,username=null}
             <strong><Sparkles size={17}/> Seu portfólio em tela cheia</strong>
             <small>Prévia das alterações ainda não publicadas</small>
           </div>
-          <button type="button" ref={closePreviewRef} onClick={() => setPreviewTab(false)}>
+          <button type="button" ref={closePreviewRef} className="sf-ui-button sf-ui-button-secondary" onClick={() => setPreviewTab(false)}>
             <X size={18}/> Fechar
           </button>
         </header>

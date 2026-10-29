@@ -25,10 +25,23 @@ try{
  for(const width of [360,768,1280]){
   const context=await browser.newContext({viewport:{width,height:900},timezoneId:"America/Sao_Paulo"});
   await context.addCookies([{name:"sb-example-auth-token",value:"base64-"+encode(session),url:origin,sameSite:"Lax"}]);
-  const writes=[],portfolioWrites=[],errors=[],unhandled=[];let savedProfiles=[],failFinance=false,producer=width!==360,portfolioResult="invalid_price";
+  const writes=[],portfolioWrites=[],storageWrites=[],errors=[],unhandled=[];let savedProfiles=[],failFinance=false,producer=width!==360,portfolioResult="invalid_price",storageImage,uploadGate;
   await context.route(api+"/**",async route=>{
-   const req=route.request(),url=new URL(req.url()),rpc=url.pathname.split("/").at(-1),body=req.postDataJSON();let data=[],status=200;
+   const req=route.request(),url=new URL(req.url()),rpc=url.pathname.split("/").at(-1);let data=[],status=200;
    if(req.method()==="OPTIONS"){await route.fulfill({status:204,headers:{"access-control-allow-origin":"*","access-control-allow-headers":"*"}});return;}
+   if(url.pathname.startsWith("/storage/v1/object/")){
+    if(req.method()==="POST"){
+     assert.match(url.pathname,new RegExp("^/storage/v1/object/stage-musician-media/"+actor+"/[0-9a-f-]{36}\\.(jpg|png|webp)$"));
+     assert.equal(req.headers()["x-upsert"],"false");
+     storageWrites.push({path:url.pathname,bytes:req.postDataBuffer()?.length||0});
+     if(uploadGate)await uploadGate;
+     await route.fulfill({status:200,contentType:"application/json",headers:{"access-control-allow-origin":"*"},body:JSON.stringify({Key:url.pathname.split("/object/")[1]})});return;
+    }
+    assert.equal(req.method(),"GET","Removing an image must not delete an object");
+    assert.ok(storageImage);
+    await route.fulfill({status:200,contentType:"image/png",body:storageImage});return;
+   }
+   const body=req.postDataJSON();
    if(url.pathname.endsWith("/user"))data=user;
    else if(rpc==="profiles"){assert.equal(url.searchParams.get("id"),"eq."+actor);data={...profile,is_producer:producer};}
    else if(rpc==="stage_owner_admin_status")data=false;
@@ -103,6 +116,43 @@ try{
   const editorSteps=page.getByLabel("Etapas de edição do perfil");
   if(mobile)await page.locator('.sf-editor-wizard[data-wizard-ready="true"]').waitFor();
   const activate=async button=>{await button.focus();await button.press("Enter");};
+  if(mobile)await activate(editorSteps.getByRole("button",{name:/Visual e fotos/}));
+  const avatar=page.getByLabel("Foto de perfil (quadrada)",{exact:true}),cover=page.getByLabel("Imagem de capa (horizontal)",{exact:true});
+  await avatar.focus();
+  assert.equal(await avatar.evaluate(el=>el===document.activeElement),true,"Native file control must be keyboard focusable");
+  assert.ok(await avatar.evaluate(el=>getComputedStyle(el).opacity!=="0"&&el.getBoundingClientRect().height>=44));
+  await avatar.setInputFiles({name:"invalid.txt",mimeType:"text/plain",buffer:Buffer.from("fixture")});
+  const imageError=page.locator(".mp-editor-workspace").getByRole("alert").filter({hasText:"Escolha uma imagem JPG, PNG ou WebP de no máximo 5 MB."});
+  await imageError.waitFor();
+  await avatar.setInputFiles({name:"too-large.png",mimeType:"image/png",buffer:Buffer.alloc(5*1024*1024+1)});
+  await imageError.waitFor();
+  assert.equal(storageWrites.length,0,"Rejected files must never reach Storage");
+  const png=await page.evaluate(()=>{const c=document.createElement("canvas");c.width=40;c.height=60;const ctx=c.getContext("2d");ctx.fillStyle="#7650b0";ctx.fillRect(0,0,40,60);return c.toDataURL("image/png").split(",")[1];});
+  storageImage=Buffer.from(png,"base64");
+  let releaseUpload;uploadGate=new Promise(resolve=>{releaseUpload=resolve;});
+  await avatar.setInputFiles({name:"portrait.png",mimeType:"image/png",buffer:storageImage});
+  await page.locator('#avatar-upload[aria-busy="true"]').waitFor();
+  assert.equal(await cover.isDisabled(),true,"Block competing upload");
+  assert.equal(await page.locator("#musician-portfolio-form button[type=submit]").isDisabled(),true,"Block save during upload");
+  releaseUpload();
+  await page.getByRole("img",{name:"Foto selecionada",exact:true}).waitFor();
+  assert.match(storageWrites[0].path,/\.jpg$/,"Portrait preparation remains active");
+  assert.ok(storageWrites[0].bytes>0);
+  uploadGate=null;
+  await cover.setInputFiles({name:"cover.png",mimeType:"image/png",buffer:storageImage});
+  await page.getByRole("button",{name:"Remover capa da página",exact:true}).waitFor();
+  assert.equal(storageWrites.length,2);
+  assert.equal(portfolioWrites.length,0,"Upload must not automatically save or publish");
+  await page.locator("#mp-fotos").screenshot({path:`test-results/operational-portfolio-uploads-${width}.png`});
+  await activate(page.getByRole("button",{name:"Remover da página",exact:true}));
+  await activate(page.getByRole("button",{name:"Remover capa da página",exact:true}));
+  assert.equal(storageWrites.length,2,"Removal only updates the local draft");
+  const colors=page.getByRole("group",{name:"Cor de destaque",exact:true});
+  await activate(colors.getByRole("button",{name:"Cor Ciano",exact:true}));
+  assert.equal(await colors.getByRole("button",{name:"Cor Ciano",exact:true}).getAttribute("aria-pressed"),"true");
+  await activate(colors.getByRole("button",{name:"Cor Violeta",exact:true}));
+  assert.ok(await colors.getByRole("button",{name:"Cor Violeta",exact:true}).evaluate(el=>el.getBoundingClientRect().width)>=44);
+  console.log(`PASS portfolio uploads ${width}px: visible native control, rejected files, synthetic upload, busy guard and local removal`);
   for(const [theme,label,bg] of [["midnight","Midnight","#0a0d14"],["ivory","Ivory","#f7f4ec"],["stage","Stage","#0b0712"]]){
    for(const [layout,layoutLabel] of [["spotlight","Destaque"],["minimal","Minimalista"]]){
     if(mobile)await activate(editorSteps.getByRole("button",{name:/Visual e fotos/}));
@@ -145,6 +195,13 @@ try{
   assert.equal(await openPreview.evaluate(el=>el===document.activeElement),true,"Closing preview restores focus");
   assert.equal(writes.length,0,"Preview changes must not save or publish profiles");
   assert.equal(portfolioWrites.length,0,"Theme previews must not persist the portfolio");
+  if(mobile)await activate(editorSteps.getByRole("button",{name:/Contratação e publicação/}));
+  const publication=page.locator("#mp-publicacao").getByRole("checkbox");
+  await publication.focus();await publication.press("Space");
+  assert.equal(await publication.isChecked(),true);
+  assert.equal(portfolioWrites.length,0,"Publication selection requires an explicit save");
+  await publication.press("Space");
+  assert.equal(await publication.isChecked(),false);
   console.log(`PASS portfolio ${width}px: three themes, two layouts, expanded preview and no publication`);
   const step=async name=>{if(mobile)await activate(editorSteps.getByRole("button",{name}));};
   await step(/Instrumentos/);

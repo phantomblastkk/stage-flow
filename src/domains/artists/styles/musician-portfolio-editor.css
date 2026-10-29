@@ -1,4 +1,34 @@
 /* Edição do portfólio gratuito de músico: progresso e campos profissionais */
+.mp-editor-container{padding-bottom:60px}
+.mp-editor-intro{padding:38px 0 var(--sf-ui-space-6)}
+.mp-editor-intro h1{font-size:clamp(32px,5vw,46px);margin:14px 0 12px}
+.mp-editor-lead{max-width:760px}
+.mp-editor-note{margin-bottom:var(--sf-ui-space-4)}
+.mp-editor-form{display:grid;gap:var(--sf-ui-space-4)}
+.mp-editor-panel>h2>svg{vertical-align:middle;margin-right:7px}
+.mp-editor-choice-group{min-width:0;padding:0;margin:0 0 var(--sf-ui-space-4);border:0}
+.mp-editor-choice-group:last-child{margin-bottom:0}
+.mp-editor-choice-group>legend{padding:0;margin-bottom:var(--sf-ui-space-2);font-size:var(--sf-ui-text-md);font-weight:750;color:var(--sf-ui-text)}
+.mp-editor-photo-row{display:flex;align-items:center;flex-wrap:wrap;gap:10px;margin-bottom:var(--sf-ui-space-4)}
+.mp-editor-photo{width:66px;height:66px;border-radius:17px;object-fit:cover}
+.mp-editor-cover-preview{display:grid;gap:var(--sf-ui-space-2)}
+.mp-editor-cover-preview>.sf-ui-button{justify-self:start}
+.mp-editor-identity-name{color:var(--sf-ui-text)}
+.mp-editor-price-options{margin-top:13px;margin-bottom:15px}
+.mp-editor-publication-toggle{display:flex;align-items:flex-start;gap:var(--sf-ui-space-3);min-height:44px;cursor:pointer;padding:12px 0}
+.mp-editor-publication-checkbox{margin-top:5px;accent-color:var(--sf-ui-brand);flex:none;width:20px;height:20px}
+.mp-editor-publication-copy{font-size:var(--sf-ui-text-sm);line-height:1.6;min-width:0}
+.mp-editor-muted{display:block;color:var(--sf-ui-muted)}
+.mp-editor-save-hint{display:flex;gap:7px;align-items:center;font-size:var(--sf-ui-text-xs);color:var(--sf-ui-muted)}
+.mp-editor-saved{margin-top:var(--sf-ui-space-4)}
+.mp-editor-share-actions{display:flex;flex-wrap:wrap;gap:9px;margin-top:15px}
+.mp-editor-preview-heading{display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:10px;margin-bottom:12px}
+.mp-editor-preview-heading>.mp-editor-title{margin:0;min-width:0;flex:1 1 140px}
+.mp-editor-unified-hint{color:var(--sf-ui-muted);line-height:1.7}
+.mp-editor-preview-hint{color:var(--sf-ui-muted);font-size:var(--sf-ui-text-xs);margin-top:12px;line-height:1.6}
+.mp-theme-swatch[data-theme="midnight"]{color:#f1eff8;background:linear-gradient(135deg,#161e30,#080b13)}
+.mp-theme-swatch[data-theme="ivory"]{color:#1a2330;background:linear-gradient(135deg,#f9f4e9,#ddd5c9)}
+.mp-theme-swatch[data-theme="stage"]{color:#f1eff8;background:linear-gradient(135deg,#542b56,#120b20)}
 .mp-editor-loading{min-height:75vh;display:grid;place-items:center}
 .mp-editor-panel>.sf-ui-field{margin-bottom:var(--sf-ui-space-4)}
 .mp-editor-panel>.sf-ui-field:last-child{margin-bottom:0}
@@ -32,21 +62,6 @@
   transition:width .22s ease
 }
 .mp-editor-progress small{font-size:10px;color:#AFA4C6;line-height:1.55}
-.mp-editor-panel .field>label svg{
-  vertical-align:middle;display:inline-block;margin-right:4px;
-}
-.mp-editor-panel .field>textarea{
-  font-family:inherit;line-height:1.75;
-}
-.mp-editor-panel .field-help{
-  overflow-wrap:anywhere;line-height:1.65;
-}
-.mp-editor-panel .mp-file-upload:hover{
-  border-color:var(--accent);background:#271E43
-}
-.mp-editor-panel .mp-file-upload:has(input:disabled){
-  opacity:.55;cursor:not-allowed
-}
 .mp-editor-preview .mp-shell{
   transition:border-color .2s ease;
 }
@@ -109,7 +124,6 @@
 .mp-editor-panel input:focus-visible,.mp-editor-panel textarea:focus-visible{
   outline:2px solid #b99cf2;outline-offset:1px
 }
-.mp-editor-panel .mp-file-upload:hover{border-color:#af92e8;background:#29213d}
 .mp-editor-panel .mp-theme-option[aria-pressed="true"],
 .mp-editor-panel .mp-layout-option[aria-pressed="true"]{
   border-color:#a78adf;box-shadow:0 0 0 1px #a78adf44
@@ -207,7 +221,6 @@
  .mp-editor-mobile-toolbar>.btn{flex:none;min-height:44px;padding:9px 13px;font-size:13px}
  .mp-editor-stickybar{position:static;bottom:auto}
  .mp-editor-panel input,.mp-editor-panel select,.mp-editor-panel textarea{font-size:16px}
- .mp-editor-panel .field>label{font-size:14px}
 }
 
 /* Wizard sem desmontar campos: preserva rascunho quando o usuario troca de etapa. */
@@ -232,3 +245,20 @@
  .mp-editor-workspace .mp-reach-link p{font-size:13px}
  .mp-editor-workspace .mp-reach-button{min-height:44px;font-size:13px}
 }
+
+/* Shared buttons retain the domain's option-card layout and selection semantics. */
+.mp-editor-workspace .mp-theme-option,.mp-editor-workspace .mp-layout-option{
+ display:flex;flex-direction:column;align-items:stretch;justify-content:flex-start;
+ text-align:left;min-width:0;min-height:44px;padding:12px;gap:5px;
+ background:var(--sf-ui-surface);color:var(--sf-ui-text);border-color:var(--sf-ui-border)
+}
+.mp-editor-workspace .mp-theme-option[aria-pressed="true"],
+.mp-editor-workspace .mp-layout-option[aria-pressed="true"]{
+ border-color:var(--sf-ui-brand);box-shadow:0 0 0 1px var(--sf-ui-brand)
+}
+.mp-editor-workspace .mp-color-btn{
+ width:44px;height:44px;min-height:44px;padding:3px;border:2px solid transparent;
+ border-radius:50%;background:transparent
+}
+.mp-editor-workspace .mp-color-btn[aria-pressed="true"]{border-color:var(--sf-ui-brand);outline-color:var(--sf-ui-brand)}
+.mp-preview-dialog-header .sf-ui-button{min-height:44px}
