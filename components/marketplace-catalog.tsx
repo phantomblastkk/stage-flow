@@ -11,7 +11,6 @@ import {
 } from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
 import { trackMarketplaceExposure } from "@/lib/musician-metrics";
-import WorkspaceMobileNav from "@/src/domains/navigation/components/workspace-mobile-nav";
 import "./marketplace-catalog.css";
 import MarketplaceReportDialog, { type ReportTarget } from "./marketplace-report-dialog";
 
@@ -513,7 +512,7 @@ export default function MarketplaceCatalog({preview=false}:Props) {
     <Link href="/marketplace" className="btn btn-primary">Ir para o Marketplace</Link>
   </section>;
 
-  return <main className={"market-shell"+(authUser&&!preview?" has-mobile-workspace-nav":"")}>
+  return <main className="market-shell has-mobile-workspace-nav">
     <div className="market-container">
       <header className="market-nav">
         <Link className="brand" href="/"><span className="brand-mark">S</span> stage flow</Link>
@@ -873,6 +872,5 @@ export default function MarketplaceCatalog({preview=false}:Props) {
       key={reportTarget.type+":"+reportTarget.id}
       target={reportTarget} signedIn={authUser}
       onClose={()=>setReportTarget(null)}/>}
-    {authUser&&!preview&&!selected&&!reportTarget&&<WorkspaceMobileNav/>}
   </main>;
 }
