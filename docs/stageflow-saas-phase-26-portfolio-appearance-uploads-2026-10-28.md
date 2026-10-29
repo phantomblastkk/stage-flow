@@ -55,7 +55,20 @@ seleção, espaçamento e controles usam tokens e componentes compartilhados.
 
 ## Validação
 
-- Testes Node, TypeScript e build em validação; evidência final será registrada.
+- 265 testes Node, TypeScript e build aprovados localmente. No commit
+  `5520272c23b86619474886daaddda3cbb6bda3f8`, ambos os workflows passaram:
+  [Integration and build](https://github.com/phantomblastkk/stage-flow/actions/runs/40800540180)
+  e [Operational UX](https://github.com/phantomblastkk/stage-flow/actions/runs/40800540066),
+  incluindo os 265 testes e PostgreSQL temporário no operacional.
+- Todos os três cenários novos de upload passaram, além dos cenários anteriores
+  de formulário, temas e jornada operacional. Evidência:
+  [36 PNGs e log](https://github.com/phantomblastkk/stage-flow/actions/runs/40800540066/artifacts/12865976039).
+  Inspeção visual dos uploads em 360/1280 px: labels, inputs nativos, imagem e capa
+  anexadas, botões de retirada e textos associados. Capturas de página incluem
+  controles fixos do workspace; sem teste em Safari físico.
+- Os 24 cenários PASS de agenda-finance também passaram:
+  [Artefato](https://github.com/phantomblastkk/stage-flow/actions/runs/40800540180/artifacts/12865204011).
+  Retenção de sete dias para artefatos de navegador.
 - Três novos cenários de upload em 360/768/1280 px: input nativo visível/focável,
   tipo inválido e arquivo acima de 5 MB recusados antes de Storage; envio simulado
   com retrato JPG, busy bloqueando capa/submit, capa enviada sem publicar e retirada
