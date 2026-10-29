@@ -5,8 +5,8 @@ import type { CSSProperties } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import {
-  ArrowLeft, ArrowUpRight, CheckCircle2, Eye, EyeOff,
-  ExternalLink, Globe2, ImagePlus, Inbox, LoaderCircle, LockKeyhole, Mic2, Music2, Palette, Save, Upload
+  ArrowLeft, ArrowUpRight, Eye, EyeOff,
+  ExternalLink, Globe2, ImagePlus, Inbox, LockKeyhole, Mic2, Music2, Palette, Save, Upload
 } from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
 import {prepareProfilePortrait} from "@/lib/profile-photo";
@@ -15,6 +15,7 @@ import BookingContactSettings from "@/components/booking-contact-settings";
 import MobileEditorWizard from "@/components/mobile-editor-wizard";
 import {revealMobileEditorField,useMobileEditorKeyboardVisibility} from "@/components/mobile-editor-focus";
 import "@/app/meu-perfil-artistico/singer-unified-editor.css";
+import {Button,Input,Textarea,InlineNotice,LoadingState} from "@/src/components/ui";
 
 type ArtistConfig = {
   name: string;
@@ -246,6 +247,7 @@ export default function MeuPerfilArtistico() {
       setError(true);
       setMessage(requestError?.message || messages[String(data)] || "Não foi possível salvar.");
     } else {
+      setConfig(previous=>previous?{...previous,instagram_url:instagram||null}:previous);
       setSavedPublished(published);
       setMessage(published
         ? "Sua página gratuita foi publicada. Agora é só compartilhar o seu endereço!"
@@ -254,8 +256,8 @@ export default function MeuPerfilArtistico() {
     setSaving(false);
   }
 
-  if (loading) return <main className="container" style={{ minHeight: "75vh", display: "grid", placeItems: "center" }}>
-    <p style={{ color: "var(--muted)", display: "flex", alignItems: "center", gap: 9 }}><LoaderCircle size={18}/> Carregando perfil artístico...</p>
+  if (loading) return <main className="container artist-editor-loading">
+    <LoadingState label="Carregando perfil artístico..."/>
   </main>;
 
   return <main className="singer-unified-editor" onFocusCapture={event=>revealMobileEditorField(event.target)}>
@@ -291,11 +293,7 @@ export default function MeuPerfilArtistico() {
       </div>}
 
       <div className="singer-editor-data-panel" style={{ display: activeTab === "dados" ? "block" : "none" }}>
-      {message && <div role={error ? "alert" : "status"} className="coming"
-        style={error ? { borderColor: "#754343", background: "#281919", color: "#ffb5b5", maxWidth: 770 } : { maxWidth: 770 }}>
-        {!error && <CheckCircle2 size={15} style={{ display: "inline", verticalAlign: "middle", marginRight: 6 }}/>}
-        {message}
-      </div>}
+      {message && <div className="artist-editor-feedback"><InlineNotice tone={error?"danger":"success"}>{message}</InlineNotice></div>}
 
       {config && <div className="artist-free-editor artist-wizard-mode" data-editor-active={mobileStep}>
         <section className="feature">
@@ -308,18 +306,14 @@ export default function MeuPerfilArtistico() {
           </div>
           <p className="fine">Você não precisa pagar para ter esse endereço. O @ é único e pertence à sua conta.</p>
           {!config.username && <form onSubmit={claimUsername} style={{ marginTop: 17 }}>
-            <div className="field">
-              <label htmlFor="claim-artist-username">Escolher meu @ gratuito *</label>
-              <input id="claim-artist-username" value={requestedUsername}
+            <Input label="Escolher meu @ gratuito *" id="claim-artist-username" value={requestedUsername}
                 onChange={e => setRequestedUsername(e.target.value.toLowerCase().replace(/[^a-z0-9-]/g, ""))}
                 minLength={3} maxLength={30} required pattern="[a-z0-9-]{3,30}"
-                placeholder="ex.: cantorsousa"/>
-              <span className="field-help">Você poderá escolher o @ uma vez. Ele será a parte final do seu endereço.</span>
-            </div>
-            <button type="submit" className="btn btn-primary" disabled={claimingUsername}>
-              {claimingUsername ? <LoaderCircle size={16}/> : <Globe2 size={16}/>}
+                placeholder="ex.: cantorsousa" hint={"Você poderá escolher o @ uma vez. Ele será a parte final do seu endereço."}/>
+            <Button type="submit" loading={claimingUsername}>
+              {!claimingUsername&&<Globe2 size={16}/>}
               {claimingUsername ? "Registrando..." : "Reservar meu @"}
-            </button>
+            </Button>
           </form>}
 
           </div>
@@ -332,13 +326,9 @@ export default function MeuPerfilArtistico() {
           />
           <form id="artist-main-form" onSubmit={save} style={{ display: "grid", gap: 12, marginTop: 21 }}>
             <div data-editor-step="0" className="artist-wizard-group">
-            <div className="field">
-              <label htmlFor="artist-headline">Frase de assinatura</label>
-              <input id="artist-headline" maxLength={100} value={headline}
+            <Input label="Frase de assinatura" id="artist-headline" maxLength={100} value={headline}
                 onChange={e => setHeadline(e.target.value)}
-                placeholder="Ex.: Pagode, samba e muita energia em cada show"/>
-              <span className="field-help">Aparece apenas uma vez, em fonte de assinatura logo abaixo do seu nome. Até 100 caracteres. A biografia é independente.</span>
-            </div>
+                placeholder="Ex.: Pagode, samba e muita energia em cada show" hint={"Aparece apenas uma vez, em fonte de assinatura logo abaixo do seu nome. Até 100 caracteres. A biografia é independente."}/>
             <div className="field">
               <label><Palette size={15} style={{ display: "inline", verticalAlign: "middle" }}/> Cor do perfil gratuito</label>
               <div className="artist-free-color-options">
@@ -382,35 +372,20 @@ export default function MeuPerfilArtistico() {
             <p className="field-help">Fotos são arquivos públicos de divulgação, mesmo quando o perfil ainda está em rascunho. Não envie documentos ou imagens privadas.</p>
             </div>
             <div data-editor-step="1" className="artist-wizard-group">
-            <div className="field">
-              <label id="artist-edit-bio" htmlFor="artist-bio">Apresentação artística</label>
-              <textarea id="artist-bio" value={bio} onChange={e => setBio(e.target.value)}
+            <div id="artist-edit-bio" className="artist-editor-bio-field">
+              <Textarea label="Apresentação artística" id="artist-bio" value={bio} onChange={e => setBio(e.target.value)}
                 maxLength={1000} rows={5}
-                placeholder="Conte sua história, estilo musical e o que faz seus shows especiais..."
-                style={{ width: "100%", padding: 13, background: "var(--panel)", color: "var(--text)", border: "1px solid var(--line)", borderRadius: 11, resize: "vertical" }}/>
-              <span className="field-help">{bio.length}/1000 caracteres. Conte sua história sem repetir a frase de assinatura. Se os textos forem idênticos, o site exibirá a assinatura apenas uma vez.</span>
+                placeholder="Conte sua história, estilo musical e o que faz seus shows especiais..." hint={`${bio.length}/1000 caracteres. Conte sua história sem repetir a frase de assinatura. Se os textos forem idênticos, o site exibirá a assinatura apenas uma vez.`}/>
             </div>
-            <div className="field">
-              <label htmlFor="artist-city">Cidade de atuação</label>
-              <input id="artist-city" value={city} onChange={e => setCity(e.target.value)} maxLength={120} placeholder="Ex.: Rio de Janeiro - RJ"/>
-            </div>
+            <Input label="Cidade de atuação" id="artist-city" value={city} onChange={e => setCity(e.target.value)} maxLength={120} placeholder="Ex.: Rio de Janeiro - RJ"/>
             </div>
             <div data-editor-step="2" className="artist-wizard-group">
-            <div className="field">
-              <label htmlFor="artist-instagram">Instagram (opcional)</label>
-              <input id="artist-instagram" type="url" value={instagram}
+            <Input label="Instagram (opcional)" id="artist-instagram" type="url" value={instagram}
                 onChange={e => setInstagram(e.target.value)} placeholder="https://www.instagram.com/seuusuario"/>
-            </div>
-            <div className="field">
-              <label htmlFor="artist-youtube">YouTube (opcional)</label>
-              <input id="artist-youtube" type="url" value={youtube}
+            <Input label="YouTube (opcional)" id="artist-youtube" type="url" value={youtube}
                 onChange={e => setYoutube(e.target.value)} placeholder="https://www.youtube.com/@seuusuario"/>
-            </div>
-            <div className="field">
-              <label htmlFor="artist-spotify">Spotify (opcional)</label>
-              <input id="artist-spotify" type="url" value={spotify}
+            <Input label="Spotify (opcional)" id="artist-spotify" type="url" value={spotify}
                 onChange={e => setSpotify(e.target.value)} placeholder="https://open.spotify.com/artist/..."/>
-            </div>
             </div>
             <div data-editor-step="3" className="artist-wizard-group">
             <label id="artist-edit-publicacao" style={{ display: "flex", alignItems: "flex-start", gap: 10, fontSize: 13, lineHeight: 1.6, marginBottom: 8 }}>
@@ -422,10 +397,10 @@ export default function MeuPerfilArtistico() {
                 </span>
               </span>
             </label>
-            <button type="submit" className="btn btn-primary" disabled={saving || Boolean(uploading) || (published && !config.username)} style={{ justifyContent: "center" }}>
-              {saving ? <LoaderCircle size={16}/> : <Save size={16}/>}
+            <Button type="submit" loading={saving} disabled={Boolean(uploading) || (published && !config.username)}>
+              {!saving&&<Save size={16}/>}
               {saving ? "Salvando..." : published ? "Salvar e publicar" : "Salvar rascunho"}
-            </button>
+            </Button>
             </div>
           </form>
           <div data-editor-step="3" className="artist-wizard-extras">

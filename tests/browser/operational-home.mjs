@@ -25,8 +25,9 @@ try{
  for(const width of [360,768,1280]){
   const context=await browser.newContext({viewport:{width,height:900},timezoneId:"America/Sao_Paulo"});
   await context.addCookies([{name:"sb-example-auth-token",value:"base64-"+encode(session),url:origin,sameSite:"Lax"}]);
-  const writes=[],portfolioWrites=[],storageWrites=[],contactWrites=[],marketWrites=[],errors=[],unhandled=[];let savedProfiles=[],failFinance=false,producer=width!==360,portfolioResult="invalid_price",storageImage,uploadGate,
-   contactReadFail=true,marketReadFail=true,contactResult="invalid_phone",marketResult="publish_portfolio_first",contactGate;
+  const writes=[],portfolioWrites=[],storageWrites=[],contactWrites=[],marketWrites=[],artistWrites=[],claimWrites=[],bookingSettingWrites=[],errors=[],unhandled=[];let savedProfiles=[],failFinance=false,producer=width!==360,portfolioResult="invalid_price",storageImage,uploadGate,
+   contactReadFail=true,marketReadFail=true,contactResult="invalid_phone",marketResult="publish_portfolio_first",contactGate,
+   singerMode=false,singerUsername=null,singerBooking=false,claimResult="taken",artistResult="invalid_link";
   await context.route(api+"/**",async route=>{
    const req=route.request(),url=new URL(req.url()),rpc=url.pathname.split("/").at(-1);let data=[],status=200;
    if(req.method()==="OPTIONS"){await route.fulfill({status:204,headers:{"access-control-allow-origin":"*","access-control-allow-headers":"*"}});return;}
@@ -44,15 +45,20 @@ try{
    }
    const body=req.postDataJSON();
    if(url.pathname.endsWith("/user"))data=user;
-   else if(rpc==="profiles"){assert.equal(url.searchParams.get("id"),"eq."+actor);data={...profile,is_producer:producer};}
+   else if(rpc==="profiles"){assert.equal(url.searchParams.get("id"),"eq."+actor);data={...profile,is_producer:producer,...(singerMode?{display_name:"Artista de teste",is_singer:true,is_musician:false,artist_kind:"lead",username:singerUsername}:{})};}
    else if(rpc==="stage_owner_admin_status")data=false;
    else if(rpc==="stage_venue_partner_access")data={status:"ok",items:[]};
    else if(rpc==="stage_my_musician_portfolio")data={name:"Henrique",bio:"Músico de teste",city:"São Paulo",slug:"henrique",avatar_url:null,instagram_url:null,is_published:false};
    else if(rpc==="stage_save_musician_portfolio_v4"){portfolioWrites.push(body);data=portfolioResult;}
    else if(rpc==="stage_my_booking_contact"){
     if(contactReadFail){status=503;data={message:"Fixture read failure"};}
-    else data={status:"ok",mode:"whatsapp",phone:"11987654321",greeting:"Olá {artista}"};
+    else data=singerMode?{status:"ok",mode:"auto",phone:"",greeting:"Olá {artista}"}:{status:"ok",mode:"whatsapp",phone:"11987654321",greeting:"Olá {artista}"};
    }
+   else if(rpc==="stage_my_artist_page")data={name:"Artista de teste",username:singerUsername,bio:"Biografia inicial",headline:"Assinatura inicial",city:"São Paulo",instagram_url:null,youtube_url:null,spotify_url:null,is_public:false,custom_subdomain_enabled:false,accent:"violet",avatar_path:null,cover_path:null};
+   else if(rpc==="stage_my_artist_booking_settings")data=singerBooking;
+   else if(rpc==="stage_set_artist_bookings_enabled"){bookingSettingWrites.push(body);singerBooking=body.p_enabled;data="saved";}
+   else if(rpc==="stage_claim_artist_username"){claimWrites.push(body);if(claimResult==="claimed")singerUsername=body.p_username;data=claimResult;}
+   else if(rpc==="stage_save_artist_page_v2"){artistWrites.push(body);data=artistResult;}
    else if(rpc==="stage_save_booking_contact"){contactWrites.push(body);if(contactGate)await contactGate;data=contactResult;}
    else if(rpc==="stage_my_marketplace_settings"){
     if(marketReadFail){status=503;data={message:"Fixture read failure"};}
@@ -422,6 +428,80 @@ try{
   await page.getByRole("button",{name:"Enviar convite",exact:true}).click();await page.getByText(/Convite enviado\. Negocie/).waitFor();assert.equal(writes.at(-1).p_fee,1500);
   await page.screenshot({path:`test-results/operational-hiring-${width}.png`,fullPage:true});
   failFinance=true;await page.goto(origin+"/painel");await page.getByRole("alert").filter({hasText:"Não foi possível atualizar os recebimentos"}).waitFor();
+  // Reload the real route with a singer-only account; no component is mounted artificially.
+  singerMode=true;contactReadFail=false;contactResult="saved";
+  await page.goto(origin+"/perfil-artistico?aba=dados");
+  const singer=page.locator(".singer-unified-editor");
+  const claim=singer.getByLabel("Escolher meu @ gratuito *",{exact:true});await claim.waitFor();
+  const singerSteps=singer.getByLabel("Etapas de edição do perfil");
+  if(mobile)await singer.locator('.sf-editor-wizard[data-wizard-ready="true"]').waitFor();
+  const singerStep=async name=>{if(mobile)await activate(singerSteps.getByRole("button",{name}));};
+  await singerStep(/Publicar e contratar/);
+  const publishSinger=singer.locator("#artist-edit-publicacao input[type=checkbox]");
+  await publishSinger.focus();await publishSinger.press("Space");
+  assert.equal(await singer.locator("#artist-main-form").getByRole("button",{name:"Salvar e publicar",exact:true}).isDisabled(),true,"Username is required before publication");
+  assert.equal(artistWrites.length,0);
+  await publishSinger.press("Space");
+  await singerStep(/Identidade e fotos/);
+  await claim.fill("Cantor-Teste");
+  await activate(singer.getByRole("button",{name:"Reservar meu @",exact:true}));
+  await singer.getByRole("alert").filter({hasText:"Este @ já pertence a outro artista"}).waitFor();
+  claimResult="claimed";
+  await activate(singer.getByRole("button",{name:"Reservar meu @",exact:true}));
+  await singer.getByRole("status").filter({hasText:"Seu @ gratuito foi registrado!"}).waitFor();
+  assert.deepEqual(claimWrites,[{p_username:"cantor-teste"},{p_username:"cantor-teste"}]);
+  await singer.getByLabel("Frase de assinatura",{exact:true}).fill("Samba no palco");
+  await singerStep(/Publicar e contratar/);
+  const singerContact=singer.getByRole("region",{name:"Contato para contratar o cantor",exact:true});
+  const formRadio=singerContact.getByRole("radio",{name:/^Formulário StageFlow/});
+  await formRadio.waitFor();await formRadio.focus();await formRadio.press("Space");
+  const singerContactSave=singerContact.getByRole("button",{name:"Salvar contato",exact:true});
+  assert.equal(await singerContactSave.isDisabled(),true,"Do not offer an inactive internal form");
+  const enableBookings=singer.locator("#artist-edit-booking input[type=checkbox]");
+  await enableBookings.focus();await enableBookings.press("Space");
+  await page.waitForFunction(()=>document.querySelector("#artist-edit-booking input[type=checkbox]")?.checked===true);
+  assert.deepEqual(bookingSettingWrites,[{p_enabled:true}]);
+  for(let i=0;i<100&&!(await singerContactSave.isEnabled());i++)await delay(25);
+  assert.equal(await singerContactSave.isEnabled(),true,"Confirmed form activation must unlock the contact action");
+  await activate(singerContactSave);
+  await singerContact.getByRole("status").filter({hasText:"Contato para contratação atualizado!"}).waitFor();
+  assert.deepEqual(contactWrites.at(-1),{p_kind:"singer",p_mode:"form",p_phone:null,p_greeting:""});
+  const singerInstagram=singerContact.getByRole("radio",{name:/^Instagram/});
+  await singerInstagram.focus();await singerInstagram.press("Space");
+  assert.equal(await singerContactSave.isDisabled(),true);
+  await singerStep(/Apresentação/);
+  const singerBio=singer.getByLabel("Apresentação artística",{exact:true});
+  await singerBio.fill("História profissional de teste");
+  assert.equal(await singerBio.getAttribute("aria-describedby"),"artist-bio-help");
+  await singer.getByLabel("Cidade de atuação",{exact:true}).fill("Rio de Janeiro");
+  await singerStep(/Redes sociais/);
+  const singerSocial=singer.getByLabel("Instagram (opcional)",{exact:true});
+  await singerSocial.fill("not-a-url");assert.equal(await singerSocial.evaluate(el=>el.checkValidity()),false);
+  await singerSocial.fill("https://www.instagram.com/cantorfixture");
+  await singer.getByLabel("YouTube (opcional)",{exact:true}).fill("https://www.youtube.com/@cantorfixture");
+  await singer.getByLabel("Spotify (opcional)",{exact:true}).fill("https://open.spotify.com/artist/cantorfixture");
+  assert.equal(await singerContactSave.isDisabled(),true,"Unsaved social links must not unlock contact");
+  await singerStep(/Publicar e contratar/);
+  const singerSave=singer.locator("#artist-main-form").getByRole("button",{name:"Salvar rascunho",exact:true});
+  await activate(singerSave);
+  await singer.getByRole("alert").filter({hasText:"Use links HTTPS completos"}).waitFor();
+  assert.equal(await singerContactSave.isDisabled(),true,"Rejected profile saves must not unlock contact");
+  artistResult="saved";
+  await activate(singerSave);
+  await singer.getByRole("status").filter({hasText:"Perfil salvo em modo privado."}).waitFor();
+  assert.deepEqual(artistWrites[1],{p_bio:"História profissional de teste",p_city:"Rio de Janeiro",p_instagram_url:"https://www.instagram.com/cantorfixture",
+   p_youtube_url:"https://www.youtube.com/@cantorfixture",p_spotify_url:"https://open.spotify.com/artist/cantorfixture",p_is_public:false,p_headline:"Samba no palco",p_accent:"violet",p_avatar_path:null,p_cover_path:null});
+  assert.equal(await singerContactSave.isEnabled(),true,"A confirmed Instagram save must unlock contact without reloading");
+  const instagramContactSaved=page.waitForResponse(response=>response.url().endsWith("/stage_save_booking_contact")&&response.request().postDataJSON()?.p_kind==="singer"&&response.request().postDataJSON()?.p_mode==="instagram");
+  await activate(singerContactSave);
+  await instagramContactSaved;
+  await singerContact.getByRole("status").filter({hasText:"Contato para contratação atualizado!"}).waitFor();
+  assert.deepEqual(contactWrites.at(-1),{p_kind:"singer",p_mode:"instagram",p_phone:null,p_greeting:""});
+  assert.equal(artistWrites.length,2,"Contact selection must not resave/publish the singer");
+  assert.ok(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth+2),"Singer editor overflows at "+width);
+  await singer.screenshot({path:`test-results/operational-singer-editor-${width}.png`});
+  await singerContact.screenshot({path:`test-results/operational-singer-contact-${width}.png`});
+  console.log(`PASS singer editor ${width}px: username guard/claim, shared fields, private save retry and confirmed contact prerequisites`);
   assert.deepEqual(errors,[],"Browser exceptions at "+width);await context.close();
  }
  console.log("PASS: dashboard at 360/768/1280, navigation, receipt failure, legacy profile, group creation, availability and invitation.");

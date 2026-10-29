@@ -1,4 +1,15 @@
 /* A single editing workspace for singer data and optional Pro features. */
+.artist-editor-loading{min-height:75vh;display:grid;place-items:center}
+.artist-editor-feedback{max-width:770px}
+.artist-wizard-group>.sf-ui-field,.artist-wizard-group>.artist-editor-bio-field{margin-bottom:var(--sf-ui-space-4)}
+.artist-wizard-group>.sf-ui-field:last-child,.artist-wizard-group>.artist-editor-bio-field:last-child{margin-bottom:0}
+.artist-wizard-mode .sf-ui-field small{overflow-wrap:anywhere}
+.artist-wizard-mode textarea.sf-ui-input{font-family:inherit;line-height:1.7;resize:vertical}
+@media(max-width:850px){
+ .artist-wizard-mode .sf-ui-field label{font-size:var(--sf-ui-text-md)}
+ .artist-wizard-mode .sf-ui-field small{font-size:var(--sf-ui-text-sm)}
+ .artist-wizard-mode .sf-ui-field .sf-ui-input{font-size:16px}
+}
 .singer-unified-editor{
   min-height:100vh;
   background:radial-gradient(ellipse 75% 390px at 50% 0%,#32234d40,transparent 80%);
