@@ -4,7 +4,6 @@ import {useEffect,useRef,useState} from "react";
 import Link from "next/link";
 import {usePathname} from "next/navigation";
 import {Menu,PanelLeftClose,ChevronDown} from "lucide-react";
-import WorkspaceMobileNav from "./workspace-mobile-nav";
 import {
   homeItem,workspaceNavigation,
   type WorkspaceRole,type WorkspaceNavItem
@@ -100,6 +99,5 @@ export default function WorkspaceSidebar({role}:{role:WorkspaceRole}){
    <aside ref={drawerRef} id="sf-workspace-mobile-drawer" className="sf-workspace-drawer"
     role="dialog" aria-modal="true" aria-label="Navegação do StageFlow">{nav}</aside>
   </div>}
-  <WorkspaceMobileNav/>
  </>;
 }
