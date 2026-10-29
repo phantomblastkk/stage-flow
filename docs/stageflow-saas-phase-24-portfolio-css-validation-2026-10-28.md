@@ -57,7 +57,18 @@ Classes dinâmicas mp-theme-ivory/mp-theme-stage/mp-layout-minimal foram preserv
 - 265 testes Node, TypeScript e build passaram localmente após integrar a main atual.
 - O primeiro novo cenário detectou overflow no editor a 360 px; a correção responsiva
   mantém a mesma asserção e passa a registrar os elementos excedentes e screenshot
-  se houver falha. CI da correção em validação; evidência final será atualizada.
+  se houver falha. Correção validada no commit `ae78f15dcec8c4f91c95f8f2d8c48a42cc6374c7`:
+  [Integration and build](https://github.com/phantomblastkk/stage-flow/actions/runs/40791248111)
+  e [Operational UX](https://github.com/phantomblastkk/stage-flow/actions/runs/40791248069)
+  aprovados, incluindo PostgreSQL temporário e os 265 testes no workflow operacional.
+- 24 cenários PASS da suíte agenda-finance aprovados.
+  [Artefato de evidência](https://github.com/phantomblastkk/stage-flow/actions/runs/40791248111/artifacts/12860959213).
+- As 18 combinações de tema/layout/largura e três prévias ampliadas passaram.
+  [Artefato operacional](https://github.com/phantomblastkk/stage-flow/actions/runs/40791248069/artifacts/12861786807):
+  30 PNGs e log; 21 capturas novas do portfólio. Inspeção visual de Midnight e Ivory
+  a 360 px, Stage a 768 px e prévia ampliada em 360/1280 px. As capturas compactas
+  incluem os controles fixos do editor, enquanto a ampliada mostra o perfil isolado.
+  Artefatos do CI têm retenção de sete dias. Não substituem teste em Safari físico.
 - Suíte operacional ampliada: Midnight, Ivory, Stage × Destaque, Minimalista;
   variáveis de tema e composição flex, classes dinâmicas e overflow por combinação.
 - Prévia ampliada do último tema/layout, avatar circular, Escape e retorno de foco;
@@ -71,10 +82,9 @@ Classes dinâmicas mp-theme-ivory/mp-theme-stage/mp-layout-minimal foram preserv
 
 ## Continuidade
 
-1. Confirmar os dois workflows no commit desta etapa e revisar as novas capturas.
-2. Migrar consumidores de .btn/.field/.feature por jornada para o Design System;
+1. Migrar consumidores de .btn/.field/.feature por jornada para o Design System;
    o editor instrumental ainda possui controles legados e estilos inline.
-3. Revisar os candidatos sem uso em uma alteração própria, mantendo equivalência
+2. Revisar os candidatos sem uso em uma alteração própria, mantendo equivalência
    de todas as regras que sobreviverem e a ordem da cascata.
 
 Sem deploy. Sem SQL, alteração de credencial, autorização, pagamento ou configuração
