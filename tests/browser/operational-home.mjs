@@ -1266,6 +1266,7 @@ try{
   const photoControlSizes=await photoDialog.getByRole("button").evaluateAll(nodes=>nodes.map(el=>{const r=el.getBoundingClientRect();return {width:r.width,height:r.height,shared:el.classList.contains("sf-ui-button")};}));
   assert.ok(photoControlSizes.every(el=>el.shared&&el.width>=43.5&&el.height>=43.5));
   assert.ok(await previousPhoto.evaluate(el=>el.matches(":focus-visible")&&parseFloat(getComputedStyle(el).outlineWidth)>=2));
+  await photoDialog.getByRole("img").evaluate(image=>image.decode());
   await page.evaluate(()=>new Promise(resolve=>requestAnimationFrame(()=>requestAnimationFrame(resolve))));
   assert.ok(await photoDialog.evaluate(el=>{const r=el.getBoundingClientRect();return r.left>=0&&r.right<=innerWidth&&r.top>=0&&r.bottom<=innerHeight;}),"Preview photo dialog must fit the viewport");
   await page.screenshot({path:`test-results/operational-photo-dialog-preview-${width}.png`});
