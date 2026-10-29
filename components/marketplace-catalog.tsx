@@ -542,6 +542,7 @@ export default function MarketplaceCatalog({preview=false}:Props) {
     e.preventDefault();
     if(!selected || !reviewEvent || savingReview||inviteWriting.current)return;
     setSavingReview(true);setError("");setNotice("");
+    let reviewSaved=false;
     try {
     const {data,error:rpcError}=await createClient().rpc("stage_marketplace_submit_review",{
       p_event_id:reviewEvent,p_musician_id:selected.musician_id,
@@ -552,6 +553,7 @@ export default function MarketplaceCatalog({preview=false}:Props) {
         ? "Você já avaliou esse músico nesse show."
         : "Não foi possível registrar a avaliação. É necessário ter um show concluído com convite aceito."));
     }else{
+      reviewSaved=true;
       setNotice("Avaliação registrada com base no trabalho concluído.");
       setReviewEvent("");setReviewComment("");
       const client=createClient();
@@ -563,7 +565,7 @@ export default function MarketplaceCatalog({preview=false}:Props) {
       setReviewable(Array.isArray(reviewableData)?reviewableData as ReviewableEvent[]:[]);
       setRefreshNonce(n=>n+1);
     }
-    }catch{if(mounted.current)setError("Não foi possível confirmar a avaliação. Confira suas avaliações antes de tentar novamente.");}
+    }catch{if(mounted.current)setError(reviewSaved?"Sua avaliação foi registrada, mas não foi possível atualizar a lista.":"Não foi possível confirmar a avaliação. Confira suas avaliações antes de tentar novamente.");}
     finally{if(mounted.current)setSavingReview(false);}
   }
 
