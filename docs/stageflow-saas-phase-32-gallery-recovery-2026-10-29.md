@@ -39,7 +39,7 @@ limpos somente nesse caso confirmado, evitando que o usuário duplique o envio.
 
 ## Validação
 
-266 testes Node e TypeScript aprovados localmente. Build e CI em validação.
+266 testes Node, TypeScript e build aprovados localmente e no CI.
 
 Novos cenários em 360/768/1280 px: leitura rejeitada/ausente, recuperação da assinatura
 da miniatura, itens e campos preservados após refresh rejeitado, tentativa pendente,
@@ -49,6 +49,17 @@ concorrente impedida, remoção recusada por mídia publicada sem DELETE, remoç
 confirmada com falha na exclusão privada, tipo/tamanho de foto recusados e cadastro
 simulado concluído no banco antes de resposta 503. Reconciliar esse último caso não
 repete upload nem gravação e não apaga o arquivo. Design e publicação permanecem intactos.
+
+## Evidências finais
+
+- Versão testada: 08d87c1f4687f1018c4a9249f9ddadea835ee369.
+- [Diff completo](https://github.com/phantomblastkk/stage-flow/compare/cceb69901c07b42d4db0161bdc1e0e989e05aa9e...08d87c1f4687f1018c4a9249f9ddadea835ee369).
+- [Integration and build aprovado](https://github.com/phantomblastkk/stage-flow/actions/runs/40827069750).
+- [Operational UX aprovado](https://github.com/phantomblastkk/stage-flow/actions/runs/40827069681): 266 testes, TypeScript, build, PostgreSQL temporário e jornadas de navegador com APIs simuladas.
+- Artefato operational-ux-evidence ID 12877425631: 81 PNGs, incluindo seis capturas novas da galeria indisponível e recuperada nos três tamanhos.
+- Logs confirmam PASS gallery recovery em 360, 768 e 1280 px. Recuperação não repete upload/gravação nem reinicia o design. Nenhuma publicação disparada.
+- Revisão visual do erro em 360 px e da lista recuperada em 1280 px; ausência de overflow verificada no navegador. Capturas de componentes incluem a navegação global fixa.
+- Revisão React: respostas de leitura descartadas após desmontagem, trava síncrona de operações, disponibilidade validada também por ref, liberação em finally e fieldset nativo para os campos.
 
 ## Limites e próxima etapa
 
