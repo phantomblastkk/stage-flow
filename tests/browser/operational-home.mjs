@@ -25,7 +25,8 @@ try{
  for(const width of [360,768,1280]){
   const context=await browser.newContext({viewport:{width,height:900},timezoneId:"America/Sao_Paulo"});
   await context.addCookies([{name:"sb-example-auth-token",value:"base64-"+encode(session),url:origin,sameSite:"Lax"}]);
-  const writes=[],portfolioWrites=[],storageWrites=[],errors=[],unhandled=[];let savedProfiles=[],failFinance=false,producer=width!==360,portfolioResult="invalid_price",storageImage,uploadGate;
+  const writes=[],portfolioWrites=[],storageWrites=[],contactWrites=[],marketWrites=[],errors=[],unhandled=[];let savedProfiles=[],failFinance=false,producer=width!==360,portfolioResult="invalid_price",storageImage,uploadGate,
+   contactReadFail=true,marketReadFail=true,contactResult="invalid_phone",marketResult="publish_portfolio_first",contactGate;
   await context.route(api+"/**",async route=>{
    const req=route.request(),url=new URL(req.url()),rpc=url.pathname.split("/").at(-1);let data=[],status=200;
    if(req.method()==="OPTIONS"){await route.fulfill({status:204,headers:{"access-control-allow-origin":"*","access-control-allow-headers":"*"}});return;}
@@ -48,6 +49,16 @@ try{
    else if(rpc==="stage_venue_partner_access")data={status:"ok",items:[]};
    else if(rpc==="stage_my_musician_portfolio")data={name:"Henrique",bio:"Músico de teste",city:"São Paulo",slug:"henrique",avatar_url:null,instagram_url:null,is_published:false};
    else if(rpc==="stage_save_musician_portfolio_v4"){portfolioWrites.push(body);data=portfolioResult;}
+   else if(rpc==="stage_my_booking_contact"){
+    if(contactReadFail){status=503;data={message:"Fixture read failure"};}
+    else data={status:"ok",mode:"whatsapp",phone:"11987654321",greeting:"Olá {artista}"};
+   }
+   else if(rpc==="stage_save_booking_contact"){contactWrites.push(body);if(contactGate)await contactGate;data=contactResult;}
+   else if(rpc==="stage_my_marketplace_settings"){
+    if(marketReadFail){status=503;data={message:"Fixture read failure"};}
+    else data={listed:false,availability_mode:"ask",blocked_dates:[]};
+   }
+   else if(rpc==="stage_save_marketplace_settings"){marketWrites.push(body);data=marketResult;}
    else if(rpc==="stage_workspace_overview")data={status:"ok",metrics:{shows_week:2,pending_invites:3,unread_conversations:1,pending_contacts:0,received_month:1000},upcoming:[event],activity:[],updated_at:new Date().toISOString()};
    else if(rpc==="stage_finance_organizer_overview"){if(failFinance){data={message:"Fixture failure"};status=503;}else data=[owned];}
    else if(rpc==="stage_my_show_history")data=[];
@@ -250,6 +261,63 @@ try{
   assert.ok(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth+2),"Saved editor overflows at "+width);
   await page.screenshot({path:`test-results/operational-portfolio-saved-${width}.png`,fullPage:true});
   console.log(`PASS portfolio form ${width}px: labeled fields, native validation, rejected save/retry and private draft payload`);
+  const contact=page.getByRole("region",{name:"Contato para contratar o músico",exact:true});
+  await contact.getByText("Não foi possível carregar o contato",{exact:true}).waitFor();
+  assert.equal(await contact.getByRole("button",{name:"Salvar contato",exact:true}).count(),0,"Unknown contact preferences must not be overwritten");
+  assert.equal(contactWrites.length,0);
+  contactReadFail=false;
+  await activate(contact.getByRole("button",{name:"Tentar novamente",exact:true}));
+  const phone=contact.getByLabel("Número público para contratação (WhatsApp)",{exact:true});
+  await phone.waitFor();
+  assert.equal(await phone.inputValue(),"11987654321","Retry must restore stored preferences");
+  await phone.fill("123");await phone.press("Enter");
+  assert.equal(portfolioWrites.length,2,"Contact input Enter must not submit the parent profile form");
+  assert.equal(contactWrites.length,0,"Contact changes require explicit save");
+  await activate(contact.getByRole("button",{name:"Salvar contato",exact:true}));
+  await contact.getByRole("alert").filter({hasText:"Informe um WhatsApp brasileiro válido"}).waitFor();
+  await phone.fill("11999999999");
+  contactResult="saved";
+  let releaseContact;contactGate=new Promise(resolve=>{releaseContact=resolve;});
+  await activate(contact.getByRole("button",{name:"Salvar contato",exact:true}));
+  await contact.getByRole("button",{name:"Salvando...",exact:true}).waitFor();
+  assert.equal(await phone.isDisabled(),true);
+  assert.equal(await contact.getByRole("radio").first().isDisabled(),true);
+  releaseContact();
+  await contact.getByRole("status").filter({hasText:"Contato para contratação atualizado!"}).waitFor();
+  assert.deepEqual(contactWrites[1],{p_kind:"musician",p_mode:"whatsapp",p_phone:"11999999999",p_greeting:"Olá {artista}"});
+  contactGate=null;
+  const offContact=contact.getByRole("radio",{name:/^Não exibir contato/});await offContact.focus();await offContact.press("Space");
+  await activate(contact.getByRole("button",{name:"Salvar contato",exact:true}));
+  await contact.getByRole("status").filter({hasText:"Contato para contratação atualizado!"}).waitFor();
+  assert.deepEqual(contactWrites[2],{p_kind:"musician",p_mode:"off",p_phone:null,p_greeting:""});
+  const market=page.getByRole("region",{name:"Preferências do Marketplace",exact:true});
+  await market.getByText("Não foi possível carregar suas preferências",{exact:true}).waitFor();
+  assert.equal(await market.getByRole("button",{name:"Salvar minha preferência",exact:true}).count(),0);
+  marketReadFail=false;
+  await activate(market.getByRole("button",{name:"Tentar novamente",exact:true}));
+  const participation=market.getByRole("checkbox");
+  await participation.waitFor();assert.equal(await participation.isChecked(),false,"Do not enable participation by default");
+  const date=market.getByLabel("Datas que você não quer oferecer",{exact:true});
+  await date.fill("2020-01-01");await activate(market.getByRole("button",{name:"Bloquear data",exact:true}));
+  await market.getByRole("alert").filter({hasText:"Escolha uma data entre hoje"}).waitFor();
+  const day=await page.evaluate(()=>{const d=new Date();d.setDate(d.getDate()+2);return [d.getFullYear(),String(d.getMonth()+1).padStart(2,"0"),String(d.getDate()).padStart(2,"0")].join("-");});
+  for(let i=0;i<2;i++){await date.fill(day);await activate(market.getByRole("button",{name:"Bloquear data",exact:true}));}
+  assert.equal(await market.getByRole("button",{name:/^Desbloquear /}).count(),1,"Dates must remain unique");
+  assert.equal(marketWrites.length,0,"Editing blocked dates must not submit the form");
+  await market.getByLabel("Como está sua disponibilidade?",{exact:true}).selectOption("unavailable");
+  await participation.focus();await participation.press("Space");
+  await activate(market.getByRole("button",{name:"Salvar minha preferência",exact:true}));
+  await market.getByRole("alert").filter({hasText:"Publique e salve seu perfil"}).waitFor();
+  assert.deepEqual(marketWrites[0],{p_listed:true,p_availability_mode:"unavailable",p_blocked_dates:[day]});
+  marketResult="saved";await participation.focus();await participation.press("Space");
+  await activate(market.getByRole("button",{name:"Salvar minha preferência",exact:true}));
+  await market.getByRole("status").filter({hasText:"Participação desativada."}).waitFor();
+  assert.deepEqual(marketWrites[1],{p_listed:false,p_availability_mode:"unavailable",p_blocked_dates:[day]});
+  assert.equal(portfolioWrites.length,2,"Preference actions never publish or resave the profile");
+  assert.ok(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth+2),"Preference panels overflow at "+width);
+  await contact.screenshot({path:`test-results/operational-contact-preferences-${width}.png`});
+  await market.screenshot({path:`test-results/operational-market-preferences-${width}.png`});
+  console.log(`PASS contact/market preferences ${width}px: read recovery, explicit consent, private dates, validation and no parent submit`);
   if(width===360){
    const wizard=page.getByLabel("Etapas de edição do perfil");
    await page.locator('.sf-editor-wizard[data-wizard-ready="true"]').waitFor();

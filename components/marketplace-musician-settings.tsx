@@ -3,11 +3,11 @@
 import { FormEvent, useEffect, useState } from "react";
 import Link from "next/link";
 import {
-  CalendarDays, CheckCircle2, Clock3, Guitar, LoaderCircle,
-  LockKeyhole, Plus, Save, ShieldCheck, Trash2, Users
+  Plus, Save, ShieldCheck, Trash2, Users
 } from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
 import "./marketplace-musician-settings.css";
+import {Button,Input,Select,LoadingState,EmptyState,InlineNotice,Badge} from "@/src/components/ui";
 
 type Mode = "ask"|"accepting"|"unavailable";
 type Preference = {
@@ -43,30 +43,28 @@ export default function MarketplaceMusicianSettings({portfolioPublished}:{portfo
   const [busy,setBusy]=useState(false);
   const [error,setError]=useState("");
   const [notice,setNotice]=useState("");
+  const [readFailed,setReadFailed]=useState(false);
+  const [reload,setReload]=useState(0);
 
   useEffect(()=>{
     let active=true;
     async function load() {
-      const {data,error:loadError}=await createClient().rpc("stage_my_marketplace_settings");
-      if(!active)return;
-      if(loadError){
-        setError("Execute marketplace_private_launch_migration.sql no Supabase para configurar sua participação no futuro marketplace.");
-      }else if(data && typeof data.listed==="boolean"){
-        setValue({
-          listed:data.listed===true,
-          availability_mode:["ask","accepting","unavailable"].includes(data.availability_mode)
-            ? data.availability_mode : "ask",
-          blocked_dates:Array.isArray(data.blocked_dates)?data.blocked_dates:[]
-        });
-        setReady(true);
-      }else{
-        setError("Esta configuração é reservada a contas com função de músico.");
-      }
-      setLoading(false);
+      setLoading(true);setReady(false);setReadFailed(false);setError("");setNotice("");
+      try{
+        const {data,error:loadError}=await createClient().rpc("stage_my_marketplace_settings");
+        if(!active)return;
+        if(loadError)throw Error("read_failed");
+        if(data && typeof data.listed==="boolean"){
+          setValue({listed:data.listed===true,
+            availability_mode:["ask","accepting","unavailable"].includes(data.availability_mode)?data.availability_mode:"ask",
+            blocked_dates:Array.isArray(data.blocked_dates)?data.blocked_dates:[]});
+          setReady(true);
+        }
+      }catch{if(active)setReadFailed(true);}
+      finally{if(active)setLoading(false);}
     }
-    void load();
-    return()=>{active=false;};
-  },[]);
+    void load();return()=>{active=false;};
+  },[reload]);
 
   function addDate(){
     setError("");setNotice("");
@@ -88,95 +86,81 @@ export default function MarketplaceMusicianSettings({portfolioPublished}:{portfo
     event.preventDefault();
     if(!ready||busy)return;
     setBusy(true);setError("");setNotice("");
-    const {data,error:saveError}=await createClient().rpc("stage_save_marketplace_settings",{
-      p_listed:value.listed,
-      p_availability_mode:value.availability_mode,
-      p_blocked_dates:value.blocked_dates
-    });
-    const reasons:Record<string,string>={
-      publish_portfolio_first:"Publique e salve seu portfólio gratuito antes de autorizar o catálogo.",
-      invalid_date:"Uma data bloqueada está fora do intervalo permitido.",
-      too_many_dates:"Há datas indisponíveis demais.",
-      artist_required:"Esta configuração requer uma conta de músico."
-    };
-    if(saveError||data!=="saved"){
-      setError(saveError?.message||reasons[String(data)]||
-        "Não foi possível salvar a configuração do marketplace.");
-    }else{
-      setNotice(value.listed
-        ? "Preferência salva. Seu perfil estará elegível quando o marketplace for lançado pelo Stage Flow, mas não está publicado no catálogo geral agora."
-        : "Participação desativada. Seu portfólio gratuito continua independente do marketplace.");
-    }
-    setBusy(false);
+    try{
+      const {data,error:saveError}=await createClient().rpc("stage_save_marketplace_settings",{
+        p_listed:value.listed,p_availability_mode:value.availability_mode,p_blocked_dates:value.blocked_dates
+      });
+      const reasons:Record<string,string>={
+        publish_portfolio_first:"Publique e salve seu perfil antes de autorizar o catálogo.",
+        invalid_date:"Uma data bloqueada está fora do intervalo permitido.",
+        too_many_dates:"Há datas indisponíveis demais.",
+        artist_required:"Esta configuração requer uma conta de músico."
+      };
+      if(saveError||data!=="saved")setError(reasons[String(data)]||"Não foi possível salvar a configuração do marketplace.");
+      else setNotice(value.listed
+        ? "Preferências salvas. A exibição na busca segue a publicação do seu perfil e as condições do catálogo."
+        : "Participação desativada. Seu perfil continua independente do marketplace.");
+    }catch{setError("Não foi possível salvar a configuração do marketplace. Tente novamente.");}
+    finally{setBusy(false);}
   }
 
-  return <section className="mp-market-settings" aria-label="Participação no futuro marketplace">
+  return <section className="mp-market-settings" aria-label="Preferências do Marketplace">
     <div className="mp-market-settings-header">
       <div>
-        <span className="mp-market-eyebrow"><Users size={15}/> FUTURO MARKETPLACE</span>
+        <span className="mp-market-eyebrow"><Users size={15}/> MARKETPLACE</span>
         <h2>Encontre novos palcos.</h2>
-        <p>Configure como quer aparecer na busca de músicos, quando o catálogo for liberado.</p>
+        <p>Configure sua participação e disponibilidade na busca de músicos.</p>
       </div>
-      <span className="mp-market-coming"><LockKeyhole size={13}/> EM BREVE</span>
+      <Badge>Preferências</Badge>
     </div>
-    {loading?<p className="mp-market-loading"><LoaderCircle size={16}/> Carregando configuração...</p>:
+    {loading?<LoadingState label="Carregando configuração..."/>:!ready?
+      <EmptyState title={readFailed?"Não foi possível carregar suas preferências":"Preferências indisponíveis"}
+        description={readFailed?"Tente novamente para consultar suas escolhas antes de alterá-las.":"Esta configuração requer uma conta com a função de músico."}
+        action={<Button variant="secondary" onClick={()=>setReload(n=>n+1)}>Tentar novamente</Button>}/>:
       <form className="mp-market-form" onSubmit={e=>void save(e)}>
         <label className="mp-market-join">
-          <input type="checkbox" checked={value.listed} disabled={!ready||busy}
+          <input type="checkbox" checked={value.listed} disabled={busy}
             onChange={e=>setValue(current=>({...current,listed:e.target.checked}))}/>
           <span><strong>Quero participar do Marketplace de Músicos</strong>
-            <small>Autorizo que meu portfólio já publicado seja encontrado por organizadores quando o Stage Flow lançar o marketplace. Posso desativar essa opção quando quiser.</small></span>
+            <small>Autorizo que meu perfil publicado seja encontrado por organizadores no Marketplace. Posso desativar essa opção quando quiser.</small></span>
         </label>
-        {!portfolioPublished&&<p className="mp-market-hint">
-          Primeiro publique e salve seu portfólio gratuito. Ele continua visível no seu próprio endereço, mesmo sem entrar no catálogo.
-        </p>}
-
-        <div className="mp-market-availability-control">
-          <label htmlFor="mp-market-mode"><Clock3 size={15}/> Como está sua disponibilidade?</label>
-          <select id="mp-market-mode" value={value.availability_mode} disabled={!ready||busy}
-            onChange={e=>setValue(current=>({
-              ...current,availability_mode:e.target.value as Mode
-            }))}>
-            <option value="ask">Sob consulta — pergunte antes de convidar</option>
-            <option value="accepting">Recebendo propostas — sujeito a confirmação</option>
-            <option value="unavailable">Indisponível — não receber novas propostas do catálogo</option>
-          </select>
-          <small>Este status não é confirmado automaticamente pela sua agenda de shows.</small>
-        </div>
-
+        {!portfolioPublished&&<InlineNotice tone="warning">
+          Publique e salve seu perfil para autorizar sua participação no catálogo. Esta preferência não publica o perfil automaticamente.
+        </InlineNotice>}
+        <Select label="Como está sua disponibilidade?" id="mp-market-mode" value={value.availability_mode} disabled={busy}
+          onChange={e=>setValue(current=>({...current,availability_mode:e.target.value as Mode}))}
+          hint="Este status não é confirmado automaticamente pela sua agenda de shows.">
+          <option value="ask">Sob consulta — pergunte antes de convidar</option>
+          <option value="accepting">Recebendo propostas — sujeito a confirmação</option>
+          <option value="unavailable">Indisponível — não receber novas propostas do catálogo</option>
+        </Select>
         <div className="mp-market-date-section">
-          <label htmlFor="mp-market-block-date"><CalendarDays size={15}/> Datas que você não quer oferecer</label>
           <div className="mp-market-add-date">
-            <input id="mp-market-block-date" type="date"
-              min={todayKey()} max={latestKey()}
-              disabled={!ready||busy} value={blockedInput}
+            <Input label="Datas que você não quer oferecer" id="mp-market-block-date" type="date"
+              min={todayKey()} max={latestKey()} disabled={busy} value={blockedInput}
               onChange={e=>setBlockedInput(e.target.value)}/>
-            <button type="button" disabled={!ready||busy||!blockedInput}
-              onClick={addDate}><Plus size={15}/> Bloquear data</button>
+            <Button variant="secondary" disabled={busy||!blockedInput} onClick={addDate}><Plus size={15}/> Bloquear data</Button>
           </div>
           <p>O catálogo mostra apenas se a data consultada foi bloqueada. Não revela onde você estará tocando, com quem ou quanto receberá.</p>
           {value.blocked_dates.length>0&&<div className="mp-market-date-chips">
             {value.blocked_dates.map(day=><span key={day}>
               {dateLabel(day)}
-              <button type="button" disabled={busy} aria-label={"Desbloquear "+dateLabel(day)}
-                onClick={()=>setValue(current=>({...current,
-                  blocked_dates:current.blocked_dates.filter(d=>d!==day)
-                }))}><Trash2 size={13}/></button>
+              <Button variant="ghost" disabled={busy} aria-label={"Desbloquear "+dateLabel(day)}
+                onClick={()=>setValue(current=>({...current,blocked_dates:current.blocked_dates.filter(d=>d!==day)}))}><Trash2 size={15}/></Button>
             </span>)}
           </div>}
         </div>
         <div className="mp-market-controls">
-          <button type="submit" disabled={!ready||busy} className="mp-market-save">
-            {busy?<LoaderCircle size={16}/>:<Save size={16}/>}
-            {busy?"Salvando...":"Salvar minha preferência"}
-          </button>
-          <Link href="/marketplace" className="mp-market-link">Ver aviso de lançamento</Link>
+          <Button type="submit" loading={busy}>
+            {!busy&&<Save size={16}/>} {busy?"Salvando...":"Salvar minha preferência"}
+          </Button>
+          <Link href="/marketplace" className="sf-ui-button sf-ui-button-secondary">Explorar Marketplace</Link>
         </div>
       </form>}
-    {error&&<p role="alert" className="mp-market-error">{error}</p>}
-    {notice&&<p role="status" className="mp-market-success"><CheckCircle2 size={16}/>{notice}</p>}
+    {error&&<InlineNotice tone="danger">{error}</InlineNotice>}
+    {notice&&<InlineNotice tone="success">{notice}</InlineNotice>}
     <div className="mp-market-footer"><ShieldCheck size={17}/>
-      <span><strong>Marketplace ainda não lançado.</strong> A aprovação de um músico para aparecer no futuro catálogo não libera o catálogo público, não cria cobrança e não altera o site Premium do cantor.</span>
+      <span><strong>Você controla sua participação.</strong> Preferências de catálogo não confirmam shows, não criam cobranças e não publicam seu perfil automaticamente.</span>
     </div>
   </section>;
 }

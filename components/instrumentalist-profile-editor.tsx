@@ -368,7 +368,7 @@ export default function MeuPortfolioDeMusico({unifiedSinger=false,username=null}
       <div>
         <span className="mp-reach-eyebrow"><ChartNoAxesCombined size={16}/> SEU ALCANCE</span>
         <h2>Veja quem seu trabalho está alcançando.</h2>
-        <p>Confira visitas ao portfólio, aparições no futuro marketplace e convites recebidos. Estatísticas privadas, gratuitas e sem expor visitantes.</p>
+        <p>Confira visitas ao portfólio, aparições no Marketplace e convites recebidos. Estatísticas privadas, gratuitas e sem expor visitantes.</p>
       </div>
       <Link href="/meu-desempenho" className="mp-reach-button">
         Ver meu desempenho <ArrowRight size={16}/>
