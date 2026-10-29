@@ -1033,7 +1033,7 @@ try{
   flyerRows[1]={...flyerRows[1],flyer_path:actor+"/"+secondShowId+"/fresh.png"};flyerGate=undefined;
   await activate(refreshAgenda);
   const updatedCard=previewAgenda.getByRole("article",{name:"Show Show atualizado do próximo mês",exact:true});
-  await waitForFlyer(updatedCard);releaseOldFlyers();await oldFlyerResponse;await delay(50);
+  await waitEnabled(refreshAgenda);await waitEnabled(refreshFlyers);await waitForFlyer(updatedCard);releaseOldFlyers();await oldFlyerResponse;await delay(50);
   assert.equal(flyerSignPaths.some(path=>path.endsWith("/old.png")),false,"Old metadata must never replace the newer set of cartazes");
   assert.ok(flyerSignPaths.at(-1).endsWith("/fresh.png"));
   assert.equal(await chosenDay.getAttribute("aria-pressed"),"true","Agenda retry preserves selected month and day");
@@ -1045,7 +1045,7 @@ try{
   const agendaReadsBefore=agendaReads;await activate(refreshAgenda);
   await previewAgenda.getByRole("status").filter({hasText:"Carregando agenda da prévia..."}).waitFor();
   assert.equal(await refreshAgenda.isDisabled(),true);releaseAgenda();agendaGate=undefined;
-  await waitEnabled(refreshAgenda);await updatedCard.waitFor();assert.equal(agendaReads,agendaReadsBefore+1);
+  await waitEnabled(refreshAgenda);await waitEnabled(refreshFlyers);await updatedCard.waitFor();assert.equal(agendaReads,agendaReadsBefore+1);
   agendaMode="empty";await activate(refreshAgenda);
   await previewAgenda.getByText("Nenhum show público nesse dia.",{exact:true}).waitFor();
   const metadataBeforeEmpty=flyerReads;
