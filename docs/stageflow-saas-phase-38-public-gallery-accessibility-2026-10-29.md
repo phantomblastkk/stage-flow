@@ -33,15 +33,29 @@ Eventos de teclado ficam no diálogo, sem listener global.
 
 Hook da galeria e operações de leitura/escrita permanecem idênticos à base.
 Sem mudança de Supabase, Auth, RLS, Storage, permissões ou dependências. Não há
-novas consultas por abrir, navegar ou fechar fotos. Sem deploy.
+novas consultas de dados de domínio por abrir, navegar ou fechar fotos. Sem deploy.
 
 ## Validação
 
-266 testes Node, TypeScript e build aprovados localmente. CI e navegador em validação.
+266 testes Node, TypeScript e build aprovados localmente e no CI. Código final
+validado: 2f94b662d7573554592ecd5726e698703b5c5918.
 Jornadas sintéticas em 360/768/1280 px cobrem uma/várias fotos, falta de prévia,
 Tab/Shift+Tab, setas/ciclo, foco/restauração, fechamento por três caminhos,
 reordenação e remoção durante leitura, retorno da foto e rota pública real.
 Contadores verificam ausência de mutações e de consultas privadas no perfil público.
+
+## Evidências finais
+
+- [Diff da etapa](https://github.com/phantomblastkk/stage-flow/compare/dbc822b0908ccc4565eb3713ab95f787085ed8c5...2f94b662d7573554592ecd5726e698703b5c5918).
+- [Integration and build aprovado](https://github.com/phantomblastkk/stage-flow/actions/runs/40887043657).
+- [Operational UX aprovado](https://github.com/phantomblastkk/stage-flow/actions/runs/40887043636): 266 testes, TypeScript, build, PostgreSQL temporário e jornadas sintéticas de navegador.
+- PASS photo dialog em 360/768/1280 px, incluindo a rota pública /cantor-teste.
+- Artefato operational-ux-evidence ID 12902603983: 117 PNGs e seis JPGs; seis novas capturas do visualizador na prévia e no perfil público.
+- A revisão das primeiras capturas identificou deslocamento na prévia que o teste inicial não cobria. Adicionados portal no body, centralização explícita, interrupção da rolagem suave pendente e altura reservada para a imagem. A verificação agora espera a imagem carregar e mede os limites antes e depois da captura.
+- No código final, logs registram top=87,5 e bottom=812,5 em viewport de 900 px nos três tamanhos, após a captura da prévia; a rota pública também tem verificação dos limites.
+- Revisão visual final: prévia em 1280 px e perfil público em 360 px, com diálogo centralizado e controles inteiros. Área reservada evita salto ao carregar a imagem; a interrupção da rolagem pendente estabiliza a abertura por teclado.
+- O hook de dados e todo o editor anterior ao showcase são textualmente idênticos à base, exceto imports. Nenhuma mudança de permissão, publicação ou leitura de dados de domínio.
+- Revisão React: hooks antes dos retornos, IDs por instância, efeito de abertura separado da navegação, limpeza de scroll/foco, eventos locais e controles semânticos. Sem nova dependência.
 
 ## Continuidade
 
