@@ -780,7 +780,7 @@ try{
   console.log(`PASS advanced draft ${width}px: owner retry, failed/missing draft, overwrite guard, stored choices, tab preservation, rejected save/retry and no publication`);
   const media=advanced.getByRole("region",{name:"Galeria do seu Perfil Artístico",exact:true});
   const mediaRefresh=media.getByRole("button",{name:"Atualizar galeria",exact:true});
-  const mediaReady=()=>page.waitForFunction(()=>{const field=document.querySelector("#premium-photo-title");return field&&!field.matches(":disabled");});
+  const mediaReady=()=>page.waitForFunction(()=>{const field=document.querySelector("#premium-photo-name");return field&&!field.matches(":disabled");});
   const videoTitle=media.getByLabel("Título do vídeo",{exact:true}),videoLink=media.getByLabel("Link do vídeo",{exact:true});
   const addMediaVideo=media.getByRole("button",{name:"Adicionar vídeo",exact:true});
   await media.getByRole("alert").filter({hasText:"Não foi possível atualizar sua galeria."}).waitFor();
