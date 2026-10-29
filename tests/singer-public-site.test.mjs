@@ -166,7 +166,9 @@ test("switching singer editor tabs refreshes eligibility and preserves the Pro d
  assert.match(premium,/if \(!active \|\| loading\) return/);
  assert.match(premium,/stage_my_artist_page/);
  assert.match(premium,/onEditData\(\)/);
- assert.match(publication,/useEffect\(\(\)=>\{if\(active\)void load\(\);\},\[active\]\)/);
+ assert.match(publication,/if\(active\)void load\(\)/);
+ assert.match(publication,/\[active,load\]/);
+ assert.match(publication,/readVersion\.current\+\+/);
  assert.doesNotMatch(publication,/setInfo\(\{entitled:true/);
 });
 

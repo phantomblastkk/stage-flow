@@ -1,11 +1,12 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import {
   CheckCircle2, Copy, Crown, ExternalLink, Globe2, LoaderCircle,
   LockKeyhole, Rocket, ShieldCheck, Unplug, RefreshCw
 } from "lucide-react";
+import {Button,LoadingState} from "@/src/components/ui";
 import { createClient } from "@/lib/supabase/client";
 import ProFeatureLock from "@/components/pro-feature-lock";
 import "./pro-publish-controls.css";
@@ -17,6 +18,15 @@ type Publication = {
   profile_public:boolean;
   url_path:string|null;
 };
+
+function isPublication(value: unknown): value is Publication {
+  if (!value || typeof value !== "object") return false;
+  const row = value as Record<string, unknown>;
+  return typeof row.entitled === "boolean" && typeof row.published === "boolean" &&
+    typeof row.profile_public === "boolean" &&
+    (row.username === null || typeof row.username === "string") &&
+    (row.url_path === null || typeof row.url_path === "string");
+}
 
 type Props={
   active?:boolean;
@@ -37,38 +47,57 @@ export default function ProSitePublicationControls({
   const [copied,setCopied]=useState(false);
   const canonicalProfilePath=info?.username?"/"+encodeURIComponent(info.username):null;
 
-  async function load(){
-    setLoading(true);
-    setMessage("");
-    try {
-      const {data,error:loadError}=await createClient().rpc(
-        "stage_my_pro_site_publication"
-      );
-      if(loadError||!data){
-        setInfo(null);
-        const missing=loadError?.code==="PGRST202"||loadError?.code==="42883";
-        setError(missing
-          ? "A função de publicação Pro não foi encontrada. A versão anterior do SQL tinha um erro de sintaxe que podia interromper a instalação. Execute o arquivo pro_artist_publication_migration.sql atualizado e depois clique em Verificar novamente."
-          : loadError
-            ? "Erro do Supabase ("+loadError.code+"): "+loadError.message
-            : "A sessão atual não retornou um perfil de cantor. Entre novamente na conta de artista.");
-      }else{
-        setInfo(data as Publication);
-        setError("");
-      }
-    }catch(err){
-      setInfo(null);
-      setError("Erro ao consultar o Supabase: "+(err instanceof Error?err.message:"falha inesperada"));
-    }
-    setLoading(false);
-  }
+  const [verified,setVerified]=useState(false);
+  const verifiedRef=useRef(false);
+  const mounted=useRef(false);
+  const activeRef=useRef(active);
+  const reading=useRef(false);
+  const writing=useRef(false);
+  const readVersion=useRef(0);
 
-  // When returning from the free data tab, re-read publication eligibility.
-  // Draft choices stay mounted in the parent and are not reset here.
-  useEffect(()=>{if(active)void load();},[active]);
+  const readStatus=useCallback(async(preserveMessage=false)=>{
+    if(!mounted.current||reading.current)return false;
+    reading.current=true;
+    const version=++readVersion.current;
+    const current=()=>mounted.current&&version===readVersion.current;
+    verifiedRef.current=false;setVerified(false);setLoading(true);setError("");setCopied(false);
+    if(!preserveMessage)setMessage("");
+    try{
+      const {data,error:loadError}=await createClient().rpc("stage_my_pro_site_publication");
+      if(!current())return false;
+      if(loadError||!isPublication(data))throw new Error("publication_status_unavailable");
+      setInfo(data);setVerified(true);verifiedRef.current=true;
+      return true;
+    }catch{
+      if(current())setError("Não foi possível verificar a publicação. Consulte novamente antes de ativar ou desativar os recursos Pro.");
+      return false;
+    }finally{
+      if(current()){reading.current=false;setLoading(false);}
+    }
+  },[]);
+
+  const load=useCallback(async()=>{
+    if(writing.current||!activeRef.current)return;
+    await readStatus();
+  },[readStatus]);
+
+  useEffect(()=>{
+    mounted.current=true;
+    return()=>{mounted.current=false;readVersion.current++;reading.current=false;verifiedRef.current=false;};
+  },[]);
+
+  // Re-check eligibility on return, without resetting the parent's design or gallery.
+  useEffect(()=>{
+    activeRef.current=active;
+    if(active)void load();
+    else{setVerified(false);verifiedRef.current=false;setLoading(false);}
+    return()=>{readVersion.current++;reading.current=false;verifiedRef.current=false;};
+  },[active,load]);
 
   async function toggle(publish:boolean){
-    if(!info||busy)return;
+    if(!activeRef.current||!verifiedRef.current||!info||writing.current||reading.current)return;
+    if(publish&&(!info.entitled||!info.profile_public||!info.username))return;
+    if(!publish&&!info.published)return;
     if(publish&&(unsaved||!draftReady)){
       setError("Salve primeiro o tema, a cor e a organização das seções do seu rascunho.");
       return;
@@ -77,44 +106,52 @@ export default function ProSitePublicationControls({
       setError("Conclua primeiro as alterações da galeria de fotos e vídeos.");
       return;
     }
-    if(publish&&!window.confirm(
-      "Ativar os recursos Pro no seu perfil público? As fotos e vídeos selecionados no rascunho serão exibidos no mesmo endereço do cantor. Você pode desativá-los depois."
+    const wasPublished=info.published;
+    if(!window.confirm(publish
+      ?wasPublished?"Republicar os recursos Pro no seu perfil público? As alterações salvas do visual e da galeria substituirão a versão Pro publicada no mesmo endereço.":"Ativar os recursos Pro no seu perfil público? As fotos e vídeos selecionados no rascunho serão exibidos no mesmo endereço do cantor. Você pode desativá-los depois."
+      :"Desativar os recursos Pro publicados? Seu perfil de cantor continua no mesmo endereço com as funções pagas bloqueadas."
     ))return;
-    if(!publish&&!window.confirm(
-      "Desativar os recursos Pro publicados? Seu perfil de cantor continua no mesmo endereço com as funções pagas bloqueadas."
-    ))return;
-    setBusy(true);setError("");setMessage("");
-    const {data,error:actionError}=await createClient().rpc(
-      "stage_set_pro_site_published",{p_publish:publish}
-    );
-    const messages:Record<string,string>={
-      login_required:"Entre novamente na sua conta para publicar.",
-      artist_required:"Sua conta precisa ter a função de cantor/artista.",
-      pro_access_required:"O acesso Pro ainda não foi habilitado para sua conta.",
-      publish_free_profile_first:"Publique seu perfil gratuito de cantor e configure um @ antes.",
-      save_draft_first:"Salve as configurações de tema e seções do rascunho antes de publicar.",
-      photo_missing:"Uma foto da galeria não está mais disponível. Revise a galeria.",
-      invalid:"Não foi possível identificar o estado desejado."
-    };
-    if(actionError || data!==(publish?"published":"unpublished")){
-      setError(actionError?.message||messages[String(data)]||
-        "Não foi possível alterar a publicação. Tente novamente.");
-    }else{
-      setInfo(current=>current?{...current,published:publish}:current);
+    writing.current=true;verifiedRef.current=false;
+    setBusy(true);setVerified(false);setError("");setMessage("");
+    try{
+      const {data,error:actionError}=await createClient().rpc(
+        "stage_set_pro_site_published",{p_publish:publish}
+      );
+      if(!mounted.current)return;
+      const messages:Record<string,string>={
+        login_required:"Entre novamente na sua conta para publicar.",
+        artist_required:"Sua conta precisa ter a função de cantor/artista.",
+        pro_access_required:"O acesso Pro ainda não foi habilitado para sua conta.",
+        publish_free_profile_first:"Publique seu perfil gratuito de cantor e configure um @ antes.",
+        save_draft_first:"Salve as configurações de tema e seções do rascunho antes de publicar.",
+        photo_missing:"Uma foto da galeria não está mais disponível. Revise a galeria.",
+        invalid:"Não foi possível identificar o estado desejado."
+      };
+      if(actionError||data!==(publish?"published":"unpublished")){
+        setError((!actionError&&messages[String(data)])||
+          "Não foi possível confirmar a alteração. Consulte o estado da publicação antes de tentar novamente.");
+        return;
+      }
       setMessage(publish
-        ?"Recursos Pro ativados no seu perfil! O endereço público continua o mesmo."
+        ?wasPublished?"Recursos Pro atualizados no seu perfil! O endereço público continua o mesmo.":"Recursos Pro ativados no seu perfil! O endereço público continua o mesmo."
         :"A versão Pro foi retirada do ar. Seu perfil público continua disponível com funções Pro bloqueadas.");
+      if(activeRef.current)await readStatus(true);
+    }catch{
+      if(mounted.current)setError("Não foi possível confirmar a alteração. Consulte o estado da publicação antes de tentar novamente.");
+    }finally{
+      writing.current=false;
+      if(mounted.current)setBusy(false);
     }
-    setBusy(false);
   }
 
   async function copyLink(){
-    if(!canonicalProfilePath)return;
+    if(!verifiedRef.current||!info?.published||!canonicalProfilePath)return;
+    const version=readVersion.current;
     try{
       await navigator.clipboard.writeText(window.location.origin+canonicalProfilePath);
-      setCopied(true);
+      if(mounted.current&&version===readVersion.current)setCopied(true);
     }catch{
-      setError("Não foi possível copiar automaticamente. Abra o endereço e copie pelo navegador.");
+      if(mounted.current&&version===readVersion.current)setError("Não foi possível copiar automaticamente. Abra o endereço e copie pelo navegador.");
     }
   }
 
@@ -125,27 +162,24 @@ export default function ProSitePublicationControls({
         <h2>Um perfil, mais possibilidades.</h2>
         <p>Seu perfil gratuito já tem um endereço público. Escolha quando aplicar o visual e as galerias Pro a essa mesma página.</p>
       </div>
-      <span className={"pro-publish-status"+(info?.published?" is-live":info?.entitled?" is-entitled":"")}>
-        {info?.published?<><CheckCircle2 size={15}/> PRO PUBLICADO</>:
+      <span className={"pro-publish-status"+(!verified?"":info?.published?" is-live":info?.entitled?" is-entitled":"")}>
+        {!verified?<><RefreshCw size={15}/>{busy?"ATUALIZANDO PUBLICAÇÃO":loading?"VERIFICANDO PUBLICAÇÃO":"STATUS INDISPONÍVEL"}</>:
+          info?.published?<><CheckCircle2 size={15}/> PRO PUBLICADO</>:
           info?.entitled?<><Crown size={15}/> PRO LIBERADO · PUBLICAÇÃO PENDENTE</>:
           <><LockKeyhole size={15}/> PRO NÃO LIBERADO</>}
       </span>
     </div>
 
-    {!loading&&info?.entitled&&!info.published&&
+    {verified&&!loading&&info?.entitled&&!info.published&&
       <p className="pro-publish-ready-notice"><Crown size={19}/>
         Seu acesso Pro já está ativo! Para que o novo visual, as fotos e os vídeos apareçam ao público,
         salve seu design e clique em <strong>Ativar recursos Pro</strong> abaixo. A publicação é sua escolha,
         e seu perfil gratuito continua no ar enquanto isso.
       </p>}
-    {loading?<p className="pro-publish-loading">
-      <LoaderCircle size={16}/> Verificando disponibilidade da publicação...
-    </p>:!info?<div className="pro-publish-setup-error" role="alert">
-      <p className="pro-publish-warning">
-        {error||"A publicação ainda não foi configurada no Supabase."}
-      </p>
-      <button type="button" className="pro-publish-verify-button"
-        onClick={()=>void load()}><RefreshCw size={15}/> Verificar novamente</button>
+    {verified&&!loading&&!busy&&<Button variant="secondary" onClick={()=>void load()}>Atualizar publicação</Button>}
+    {loading||busy?<LoadingState label={busy?"Atualizando publicação...":"Verificando disponibilidade da publicação..."}/>:!verified||!info?<div className="pro-publish-setup-error" role="alert">
+      <p className="pro-publish-warning">{error||"Consulte o estado da publicação para continuar."}</p>
+      <Button variant="secondary" onClick={()=>void load()}><RefreshCw size={15}/> Verificar novamente</Button>
     </div>:<div className="pro-publish-grid">
       <div className="pro-publish-info">
         <div className="pro-publish-checklist">
@@ -198,7 +232,7 @@ export default function ProSitePublicationControls({
         </div>}
         <button type="button"
           className={"pro-publish-main-button"+(info.published?" is-update":"")}
-          disabled={!info.entitled||!info.profile_public||!info.username||
+          disabled={!verified||!active||!info.entitled||!info.profile_public||!info.username||
             busy||galleryBusy||galleryLoading||!draftReady||unsaved}
           onClick={()=>void toggle(true)}>
           {busy?<LoaderCircle size={17}/>:info.published?<RefreshCw size={17}/>:<Rocket size={17}/>}
@@ -206,7 +240,7 @@ export default function ProSitePublicationControls({
             ?"Republicar alterações":"Ativar recursos Pro"}
         </button>
         {info.published&&<button type="button" className="pro-publish-unpublish"
-          disabled={busy} onClick={()=>void toggle(false)}>
+          disabled={!verified||!active||busy} onClick={()=>void toggle(false)}>
           <Unplug size={16}/> Desativar versão Pro
         </button>}
         <small className="pro-publish-info-text">
@@ -216,7 +250,7 @@ export default function ProSitePublicationControls({
         </small>
       </div>
     </div>}
-    {error&&!loading&&info&&<p role="alert" className="pro-publish-error">{error}</p>}
+    {error&&!loading&&!busy&&verified&&info&&<p role="alert" className="pro-publish-error">{error}</p>}
     {message&&<p role="status" className="pro-publish-success">
       <CheckCircle2 size={17}/>{message}
     </p>}

@@ -30,6 +30,7 @@ try{
    singerMode=false,singerUsername=null,singerBooking=false,claimResult="taken",artistResult="invalid_link",
    artistReadMode="ok",artistReads=0,bookingReadFail=false,bookingReads=0,bookingReadGate,bookingWriteFail=false,artistWriteFail=false,proMode=false,draftReadMode="failed",draftReads=0,draftReadGate,draftSaveFail=true,draftSaveGate;
   const designWrites=[],proPublishWrites=[],mediaWrites=[],privateDeletes=[];
+  let publicationReadMode="ok",publicationReadGate,publicationReads=0,proPublished=false,proEntitled=true,proProfilePublic=true,publicationWriteMode="saved",publicationWriteGate;
   const photoId="77777777-7777-4777-8777-777777777777",videoId="88888888-8888-4888-8888-888888888888";
   let mediaReadMode="failed",mediaReads=0,mediaReadGate,mediaActionGate,mediaWriteMode="saved",signFail=true,deleteFileFail=false;
   let mediaRows=[{id:photoId,media_kind:"photo",title:"Foto privada inicial",storage_path:actor+"/"+photoId+".jpg",youtube_id:null,featured:false,display_order:0},
@@ -92,8 +93,22 @@ try{
      if(mediaWriteMode==="commit_then_fail"){status=503;data={message:"private_backend_detail.sql"};}else data="saved";
     }
    }
-   else if(rpc==="stage_my_pro_site_publication")data={entitled:true,published:false,username:singerUsername,profile_public:true,url_path:"/"+singerUsername};
-   else if(rpc==="stage_set_pro_site_published"){proPublishWrites.push(body);data="forbidden";}
+   else if(rpc==="stage_my_pro_site_publication"){
+    publicationReads++;const mode=publicationReadMode;
+    const snapshot={entitled:proEntitled,published:proPublished,username:singerUsername,profile_public:proProfilePublic,url_path:"/"+singerUsername};
+    if(publicationReadGate)await publicationReadGate;
+    if(mode==="failed"){status=503;data={message:"private_backend_detail.sql"};}
+    else data=mode==="missing"?null:mode==="malformed"?{...snapshot,entitled:"yes"}:snapshot;
+   }
+   else if(rpc==="stage_set_pro_site_published"){
+    proPublishWrites.push(body);assert.equal(typeof body.p_publish,"boolean");if(publicationWriteGate)await publicationWriteGate;
+    if(publicationWriteMode==="transport"){status=503;data={message:"private_backend_detail.sql"};}
+    else if(publicationWriteMode!=="saved"&&publicationWriteMode!=="commit_then_fail")data=publicationWriteMode;
+    else{proPublished=body.p_publish;
+     if(publicationWriteMode==="commit_then_fail"){status=503;data={message:"private_backend_detail.sql"};}
+     else data=body.p_publish?"published":"unpublished";
+    }
+   }
    else if(rpc==="stage_my_artist_booking_settings"){bookingReads++;if(bookingReadGate)await bookingReadGate;
     if(bookingReadFail){status=503;data={message:"private_backend_detail.sql"};}else data=singerBooking;}
    else if(rpc==="stage_set_artist_bookings_enabled"){bookingSettingWrites.push(body);if(bookingWriteFail){status=503;data={message:"private_backend_detail.sql"};}
@@ -822,6 +837,98 @@ try{
   assert.ok(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth+2),"Gallery overflows at "+width);
   await media.screenshot({path:`test-results/operational-gallery-recovered-${width}.png`});
   console.log(`PASS gallery recovery ${width}px: failed/missing read, retained rows/fields, signed-preview retry, uncertain writes, serialized rename, guarded removal, private upload reconciliation and no publication`);
+  const proControl=advanced.getByRole("region",{name:"Publicar recursos Pro no perfil do cantor",exact:true});
+  const checkPublication=proControl.getByRole("button",{name:"Verificar novamente",exact:true});
+  const refreshPublication=proControl.getByRole("button",{name:"Atualizar publicação",exact:true});
+  const publicationReady=()=>refreshPublication.waitFor();
+  const confirmPublication=async(button,accept)=>{
+   const dialogPromise=page.waitForEvent("dialog");const action=activate(button);
+   const dialog=await dialogPromise;assert.equal(dialog.type(),"confirm");assert.match(dialog.message(),/recursos Pro|Pro publicados/);
+   if(accept)await dialog.accept();else await dialog.dismiss();await action;
+  };
+  for(const mode of ["failed","missing","malformed"]){
+   publicationReadMode=mode;
+   if(mode==="failed")await activate(refreshPublication);else await activate(checkPublication);
+   await proControl.getByRole("alert").filter({hasText:"Não foi possível verificar a publicação."}).waitFor();
+   assert.equal(await proControl.getByText("STATUS INDISPONÍVEL",{exact:true}).count(),1);
+   assert.equal(await proControl.getByText("PRO NÃO LIBERADO",{exact:true}).count(),0,"Unknown status is not a denial of access");
+   assert.equal(await proControl.getByRole("button",{name:/Ativar recursos Pro/}).count(),0);
+   assert.doesNotMatch(await proControl.innerText(),/private_backend_detail|Supabase|migration|SQL/);
+  }
+  await proControl.screenshot({path:`test-results/operational-publication-unavailable-${width}.png`});
+  publicationReadMode="ok";proEntitled=false;
+  let releasePublicationRead;publicationReadGate=new Promise(resolve=>releasePublicationRead=resolve);
+  const readStart=publicationReads;await activate(checkPublication);
+  await proControl.getByRole("status").filter({hasText:"Verificando disponibilidade da publicação..."}).waitFor();
+  assert.equal(await checkPublication.count(),0,"No duplicate retry while the status is pending");
+  releasePublicationRead();publicationReadGate=undefined;await publicationReady();
+  assert.equal(publicationReads,readStart+1);assert.equal(await publishPro.isDisabled(),true);
+  assert.equal(await proControl.getByText("PRO NÃO LIBERADO",{exact:true}).count(),1);
+  assert.equal(proPublishWrites.length,0);
+  proEntitled=true;proProfilePublic=false;await activate(refreshPublication);await publicationReady();
+  assert.equal(await publishPro.isDisabled(),true,"Private free profile cannot activate Pro");
+  proProfilePublic=true;await activate(refreshPublication);await publicationReady();
+  assert.equal(await publishPro.isEnabled(),true);
+  await confirmPublication(publishPro,false);assert.equal(proPublishWrites.length,0,"Dismissed activation never writes");
+  proEntitled=false;publicationWriteMode="pro_access_required";
+  await confirmPublication(publishPro,true);
+  await proControl.getByRole("alert").filter({hasText:"O acesso Pro ainda não foi habilitado"}).waitFor();
+  assert.equal(proPublishWrites.length,1);assert.equal(proPublished,false);
+  await activate(checkPublication);await publicationReady();assert.equal(await publishPro.isDisabled(),true);
+  proEntitled=true;await activate(refreshPublication);await publicationReady();
+  publicationWriteMode="commit_then_fail";
+  let releasePublicationWrite;publicationWriteGate=new Promise(resolve=>releasePublicationWrite=resolve);
+  await confirmPublication(publishPro,true);
+  await proControl.getByRole("status").filter({hasText:"Atualizando publicação..."}).waitFor();
+  assert.equal(await proControl.getByRole("button").count(),0,"Pending mutation hides repeat and refresh actions");
+  releasePublicationWrite();publicationWriteGate=undefined;
+  await proControl.getByRole("alert").filter({hasText:"Não foi possível confirmar a alteração."}).waitFor();
+  assert.equal(proPublished,true);assert.equal(proPublishWrites.length,2);
+  assert.equal(await proControl.getByText("PRO PUBLICADO",{exact:true}).count(),0,"An uncertain response must not become optimistic success");
+  await activate(checkPublication);await publicationReady();
+  assert.equal(await proControl.getByText("PRO PUBLICADO",{exact:true}).count(),1);
+  assert.equal(proPublishWrites.length,2,"Reconciliation reads the committed state without republishing");
+  assert.equal(await proControl.getByRole("link",{name:"Abrir meu perfil",exact:true}).getAttribute("href"),"/cantor-teste");
+  proEntitled=false;await activate(refreshPublication);await publicationReady();
+  const unpublish=proControl.getByRole("button",{name:"Desativar versão Pro",exact:true});
+  assert.equal(await unpublish.isEnabled(),true,"Owner may deactivate a published version after access is revoked");
+  assert.equal(await proControl.getByRole("button",{name:"Republicar alterações",exact:true}).isDisabled(),true);
+  assert.ok(await unpublish.evaluate(el=>el.getBoundingClientRect().height)>=44);
+  await confirmPublication(unpublish,false);assert.equal(proPublishWrites.length,2);
+  publicationWriteMode="transport";await confirmPublication(unpublish,true);
+  await proControl.getByRole("alert").filter({hasText:"Não foi possível confirmar a alteração."}).waitFor();
+  assert.equal(proPublished,true);await activate(checkPublication);await publicationReady();
+  assert.equal(await unpublish.isEnabled(),true);assert.equal(proPublishWrites.length,3);
+  publicationWriteMode="saved";publicationReadMode="failed";await confirmPublication(unpublish,true);
+  await proControl.getByRole("status").filter({hasText:"A versão Pro foi retirada do ar."}).waitFor();
+  await proControl.getByRole("alert").filter({hasText:"Não foi possível verificar a publicação."}).waitFor();
+  assert.equal(proPublished,false);assert.equal(proProfilePublic,true);assert.equal(proPublishWrites.length,4);
+  publicationReadMode="ok";proEntitled=true;await activate(checkPublication);await publicationReady();
+  assert.equal(await proControl.getByText("PRO LIBERADO · PUBLICAÇÃO PENDENTE",{exact:true}).count(),1);
+  await confirmPublication(publishPro,true);
+  await proControl.getByRole("status").filter({hasText:"Recursos Pro ativados no seu perfil!"}).waitFor();
+  await publicationReady();
+  await confirmPublication(proControl.getByRole("button",{name:"Republicar alterações",exact:true}),true);
+  await proControl.getByRole("status").filter({hasText:"Recursos Pro atualizados no seu perfil!"}).waitFor();
+  await publicationReady();assert.deepEqual(proPublishWrites,[{p_publish:true},{p_publish:true},{p_publish:false},{p_publish:false},{p_publish:true},{p_publish:true}]);
+  // A late status response from the hidden tab must not overwrite the new read.
+  publicationReadGate=new Promise(resolve=>releasePublicationRead=resolve);
+  const heldRequestPromise=page.waitForRequest(req=>req.url().endsWith("/stage_my_pro_site_publication"));
+  await activate(refreshPublication);const heldRequest=await heldRequestPromise;
+  const heldResponse=page.waitForResponse(response=>response.request()===heldRequest);
+  await proControl.getByRole("status").filter({hasText:"Verificando disponibilidade"}).waitFor();
+  await activate(singer.getByRole("button",{name:/^Dados e publicação/}));
+  proPublished=false;publicationReadGate=undefined;await activate(appearanceTab);await publicationReady();
+  assert.equal(await proControl.getByText("PRO LIBERADO · PUBLICAÇÃO PENDENTE",{exact:true}).count(),1);
+  releasePublicationRead();await heldResponse;await delay(50);
+  assert.equal(await proControl.getByText("PRO PUBLICADO",{exact:true}).count(),0,"Late old read must not restore stale publication");
+  assert.equal(await proControl.getByText("PRO LIBERADO · PUBLICAÇÃO PENDENTE",{exact:true}).count(),1);
+  assert.equal(draftReads,3);assert.equal(await design.getByRole("button",{name:/^Concert/}).getAttribute("aria-pressed"),"true");
+  assert.equal(await photoName.inputValue(),"Nova foto preservada");assert.equal(proPublishWrites.length,6);
+  assert.doesNotMatch(await proControl.innerText(),/private_backend_detail|migration|Supabase|SQL/);
+  assert.ok(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth+2),"Publication controls overflow at "+width);
+  await proControl.screenshot({path:`test-results/operational-publication-recovered-${width}.png`});
+  console.log(`PASS publication recovery ${width}px: invalid/failed status, retry, permission gates, cancelled confirmations, uncertain commit, explicit unpublish/republish, stale-read isolation and preserved drafts`);
   assert.deepEqual(errors,[],"Browser exceptions at "+width);await context.close();
  }
  console.log("PASS: dashboard at 360/768/1280, navigation, receipt failure, legacy profile, group creation, availability and invitation.");
