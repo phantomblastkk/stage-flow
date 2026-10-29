@@ -29,11 +29,24 @@ Nenhuma mudança em Supabase, Auth, RLS, permissões ou dados de produção. Sem
 
 ## Validação
 
-266 testes Node e TypeScript aprovados localmente. Build e CI em validação.
+266 testes Node, TypeScript e build aprovados localmente e no CI. Código validado:
+081e60b2e8648ef7428baa1ff4178bb7267d8e47.
 Browser sintético em 360/768/1280 px cobre foco, fechamento/reabertura com valores
 preservados, toque, rótulos, ausência de overflow, payload exato de filtros, offset,
 reinício ao ordenar, cachê inválido, falha/reenvio e recuperação de resultado vazio.
 As verificações existentes de 320/375/430 px também continuam na jornada.
+
+## Evidências finais
+
+- [Diff da etapa](https://github.com/phantomblastkk/stage-flow/compare/a84c5b7a91273eeac9dcd1deea10e35b507a3a7b...081e60b2e8648ef7428baa1ff4178bb7267d8e47).
+- [Integration and build aprovado](https://github.com/phantomblastkk/stage-flow/actions/runs/40890999611).
+- [Operational UX aprovado](https://github.com/phantomblastkk/stage-flow/actions/runs/40890999615): 266 testes, TypeScript, build, PostgreSQL temporário e jornadas sintéticas.
+- PASS marketplace controls em 360/768/1280 px. Payload exato de filtros e limites confirmado; editar não consulta e os destaques são carregados uma única vez nessa jornada.
+- Artefato operational-ux-evidence ID 12905565813: 129 PNGs e seis JPGs. Seis capturas novas de filtros/ordenação nos três tamanhos.
+- Revisão visual: filtros em 360 px e ordenação em 360/1280 px. Capturas de componente podem incluir navegação global fixa; toque, foco e overflow também possuem verificações de navegador.
+- marketplace-catalog.css: 782 → 730 linhas. Limpeza localizada de estilos substituídos pelos componentes compartilhados; sem medição de bundle ou latência.
+- Comparação textual da consulta e dos handlers apply/clear: idênticos à base. Revisão React: efeito de foco isolado, limpeza segura no fechamento, campos nativos associados a rótulos e sem listener/dependência adicional.
+- Build aprovado com avisos já existentes de ferramentas/CSS; não há alegação de build sem avisos.
 
 ## Continuidade
 
