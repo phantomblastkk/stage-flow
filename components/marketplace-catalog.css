@@ -701,7 +701,7 @@
  .market-shell:not(.has-mobile-workspace-nav) .market-nav-link{display:inline-flex;align-items:center;min-height:44px}
 }
 
-.market-invite-form .sf-ui-input{font-size:16px}
+.market-invite-form .sf-ui-input{font-size:16px;font-family:inherit}
 .market-modal a[aria-disabled="true"]{opacity:.53;cursor:not-allowed}
 
 .market-modal-head{position:sticky;top:0;z-index:2}

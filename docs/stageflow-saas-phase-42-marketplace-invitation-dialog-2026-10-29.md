@@ -13,6 +13,8 @@ React, sem finally, e podia perder o contexto de uma resposta incerta.
 - Dialog HTML nativo em portal no body, com fundo inerte, Tab/Shift+Tab, Escape,
   clique no fundo, bloqueio/restauração de scroll e retorno ao botão de origem.
 - Fechamento e ações concorrentes bloqueados durante convite/avaliação pendentes.
+  Finally também libera o estado de avaliação se sua chamada lançar exceção; a revisão
+  completa de leitura/publicação de avaliações continua na próxima parte.
   Encaminhar uma denúncia fecha o painel nativo antes de abrir o diálogo existente.
 - Select/Textarea/Button compartilhados, rótulos e fonte de 16 px; campos de convite
   bloqueados durante envio e quando uma resposta incerta precisa ser reconciliada.

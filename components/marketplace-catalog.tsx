@@ -542,6 +542,7 @@ export default function MarketplaceCatalog({preview=false}:Props) {
     e.preventDefault();
     if(!selected || !reviewEvent || savingReview||inviteWriting.current)return;
     setSavingReview(true);setError("");setNotice("");
+    try {
     const {data,error:rpcError}=await createClient().rpc("stage_marketplace_submit_review",{
       p_event_id:reviewEvent,p_musician_id:selected.musician_id,
       p_rating:reviewRating,p_comment:reviewComment.trim()
@@ -562,7 +563,8 @@ export default function MarketplaceCatalog({preview=false}:Props) {
       setReviewable(Array.isArray(reviewableData)?reviewableData as ReviewableEvent[]:[]);
       setRefreshNonce(n=>n+1);
     }
-    setSavingReview(false);
+    }catch{if(mounted.current)setError("Não foi possível confirmar a avaliação. Confira suas avaliações antes de tentar novamente.");}
+    finally{if(mounted.current)setSavingReview(false);}
   }
 
   if(gate==="loading")return <div className="market-gate">
