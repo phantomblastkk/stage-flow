@@ -424,6 +424,8 @@ try{
   console.log(`PASS portfolio ${width}px: three themes, two layouts, expanded preview and no publication`);
   const step=async name=>{if(mobile)await activate(editorSteps.getByRole("button",{name}));};
   await step(/Instrumentos/);
+  await page.locator("#mp-instrumentos .sf-editor-extra > summary").nth(0).click();
+  await page.locator("#mp-instrumentos .sf-editor-extra > summary").nth(1).click();
   await page.getByLabel("Endereço da página *",{exact:true}).fill("Perfil-Teste");
   await page.getByLabel("Frase de destaque",{exact:true}).fill("Música ao vivo");
   await page.getByLabel("Sua apresentação",{exact:true}).fill("Apresentação profissional de teste");
