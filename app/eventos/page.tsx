@@ -7,6 +7,7 @@ import { createClient } from "@/lib/supabase/client";
 import EventTeamInvites from "@/components/event-team-invites";
 import dynamic from "next/dynamic";
 import { Button, Dialog, EmptyState, InlineNotice, Input, LoadingState, StatusChip, Textarea } from "@/src/components/ui";
+import {showSaveFeedback} from "@/src/components/ui/save-feedback";
 import { AgendaSessionRequired, agendaWindow, catalogAvailable, loadAgenda, loadAgendaTarget, loadAgendaMarkers, loadMoreAgenda, removeEvent, saveEvent, searchCities, searchVenues } from "@/src/domains/events/services/agenda-service";
 import type { AgendaCursor, AgendaSource, CitySuggestion, EventRow, GuestShow, VenueSuggestion } from "@/src/domains/events/types";
 import "./agenda.css";
@@ -207,6 +208,7 @@ export default function EventosPage() {
   setSaving(true);setMessage("");setIsError(false);
   try{
    const created=await saveEvent(createClient(),{title,description,venue,venueId:selectedVenueId,city,startsAt,endsAt,publicly});
+   showSaveFeedback("Evento salvo com sucesso na sua agenda!");
    if(new URLSearchParams(window.location.search).get("continuar")==="contratar"){router.push("/contratar?evento="+created.id);return;}
    setSpotlightEvent(created);setSpotlightEventId(created.id);setSelectedDate(null);
    const date=new Date(created.starts_at);setCalendarMonth(new Date(date.getFullYear(),date.getMonth(),1));
