@@ -1,8 +1,8 @@
 # Inventário CSS — StageFlow
 
-Base Git: `ab05d256fbb4e5742f8454570c4ae5e5163025e5`. Conteúdo lido da árvore de trabalho; execute após as edições para comparar.
+Base Git: `c5a395fe8075453be4a24731eb5f584d3b729725`. Conteúdo lido da árvore de trabalho; execute após as edições para comparar.
 
-64 arquivos rastreados; 488733 bytes de fonte CSS (sem minificação/compressão).
+64 arquivos rastreados; 486998 bytes de fonte CSS (sem minificação/compressão).
 
 Gerar novamente: `node scripts/audit-css.mjs`. Contagem de blocos é heurística; não mede CSS efetivamente usado, especificidade ou bundle.
 
@@ -24,7 +24,7 @@ Gerar novamente: `node scripts/audit-css.mjs`. Contagem de blocos é heurística
 | `app/financeiro/financeiro.css` | Rota | 81 | 7452 | 94 |
 | `app/globals.css` | Global — revisar cascata | 4 | 3929 | 43 |
 | `app/marketplace/coming-soon.css` | Rota | 90 | 4151 | 43 |
-| `app/marketplace/moderacao/moderation.css` | Rota | 64 | 6860 | 66 |
+| `app/marketplace/moderacao/moderation.css` | Rota | 50 | 5125 | 54 |
 | `app/meu-desempenho/performance.css` | Rota | 122 | 10209 | 115 |
 | `app/meu-perfil-artistico/singer-unified-editor.css` | Rota | 167 | 9189 | 89 |
 | `app/meu-perfil-artistico/site-profissional/premium-media-gallery.css` | Rota | 439 | 18994 | 181 |

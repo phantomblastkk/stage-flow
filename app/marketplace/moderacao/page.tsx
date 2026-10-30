@@ -3,10 +3,11 @@
 import { FormEvent, useCallback, useEffect, useState } from "react";
 import Link from "next/link";
 import {
-  AlertCircle, ArrowLeft, CheckCircle2, ChevronLeft, ChevronRight,
-  Eye, EyeOff, Flag, LoaderCircle, RefreshCw, ShieldCheck, X
+  ArrowLeft, CheckCircle2, ChevronLeft, ChevronRight,
+  Eye, EyeOff, Flag, RefreshCw, ShieldCheck
 } from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
+import { Badge, Button, InlineNotice, LoadingState, Select, StatusChip, Textarea } from "@/src/components/ui";
 import "./moderation.css";
 
 type Reason = "spam" | "impersonation" | "inappropriate" | "misleading" | "other";
@@ -162,13 +163,13 @@ export default function MarketplaceModeration() {
   }
 
   if(authorized==="loading")return <main className="market-mod-gate">
-    <LoaderCircle size={24}/><p>Verificando permissões de moderação...</p>
+    <LoadingState label="Verificando permissões de moderação..."/>
   </main>;
   if(authorized==="no")return <main className="market-mod-gate">
     <ShieldCheck size={39}/>
     <h1>Área restrita</h1>
     <p>A moderação é exclusiva das contas autorizadas no Supabase. Não é possível solicitar ou assumir essa permissão pelo site.</p>
-    <Link href="/marketplace" className="btn btn-primary"><ArrowLeft size={15}/> Voltar ao marketplace</Link>
+    <Link href="/marketplace" className="sf-ui-button sf-ui-button-primary"><ArrowLeft size={15}/> Voltar ao marketplace</Link>
   </main>;
 
   const totalPages=Math.max(1,Math.ceil(total/step));
@@ -176,7 +177,7 @@ export default function MarketplaceModeration() {
     <div className="market-mod-container">
       <nav className="market-mod-nav">
         <Link className="brand" href="/"><span className="brand-mark">S</span> stage flow</Link>
-        <Link href="/marketplace/preview"><ArrowLeft size={16}/> Voltar ao laboratório</Link>
+        <Link href="/marketplace"><ArrowLeft size={16}/> Voltar ao marketplace</Link>
       </nav>
       <header className="market-mod-header">
         <div>
@@ -184,57 +185,55 @@ export default function MarketplaceModeration() {
           <h1>Central de <em>moderação.</em></h1>
           <p>Analise denúncias de músicos e avaliações. Nada é ocultado sem sua decisão e todas as ações deixam um registro interno.</p>
         </div>
-        <button type="button" onClick={reload} disabled={loading||Boolean(busy)}>
+        <Button variant="secondary" onClick={reload} disabled={loading||Boolean(busy)}>
           <RefreshCw size={16}/> Atualizar fila
-        </button>
+        </Button>
       </header>
-      <div className="market-mod-warning">
-        <EyeOff size={17}/>
+      <InlineNotice tone="warning">
         A moderação afeta apenas o marketplace. O portfólio gratuito independente não é excluído e nenhum plano ou assinatura é alterado.
-      </div>
+      </InlineNotice>
       <div className="market-mod-toolbar">
         <div role="group" aria-label="Filtrar denúncias">
           {([
             ["open","Pendentes"],["all","Todas"],["resolved","Resolvidas"],
             ["dismissed","Arquivadas"]
           ] as [Filter,string][]).map(([value,label])=>
-            <button type="button" key={value} aria-pressed={filter===value}
+            <Button variant={filter===value?"primary":"secondary"} key={value} aria-pressed={filter===value}
               onClick={() => {setFilter(value);setPage(0);setError("");setSuccess("");}}>
               {label}
-            </button>)}
+            </Button>)}
         </div>
         <strong>{total} ocorrência(s)</strong>
       </div>
-      {error&&<p className="market-mod-error" role="alert"><AlertCircle size={17}/>{error}</p>}
-      {success&&<p className="market-mod-success" role="status"><CheckCircle2 size={17}/>{success}</p>}
-      {loading?<div className="market-mod-empty"><LoaderCircle size={22}/> Carregando denúncias...</div>:
+      {error&&<InlineNotice tone="danger">{error}</InlineNotice>}
+      {success&&<InlineNotice tone="success">{success}</InlineNotice>}
+      {loading?<LoadingState label="Carregando denúncias..."/>:
         items.length===0?<div className="market-mod-empty"><ShieldCheck size={28}/>
           <h2>Nenhuma denúncia nessa categoria.</h2>
-          <p>Novos relatos de usuários do laboratório aparecerão nesta fila.</p>
+          <p>Novos relatos aparecerão nesta fila após o envio.</p>
         </div>:
         <div className="market-mod-list">
           {items.map(report=>{
             const hidden=report.target_type==="review"?report.review_hidden:report.musician_hidden;
             const draft=draftFor(report);
-            return <article className="market-mod-item" key={report.id}>
+            return <article className="market-mod-item" key={report.id} aria-labelledby={"market-mod-title-"+report.id}>
               <div className="market-mod-item-top">
-                <span className="market-mod-target-type">
+                <Badge>
                   {report.target_type==="review"?"Avaliação denunciada":"Perfil denunciado"}
-                </span>
-                <span className={"market-mod-item-status is-"+report.status}>
-                  {report.status==="open"?"Pendente":report.status==="dismissed"?"Arquivada":"Resolvida"}
-                </span>
+                </Badge>
+                <StatusChip status={report.status==="open"?"warning":report.status==="resolved"?"success":"neutral"}
+                  label={report.status==="open"?"Pendente":report.status==="dismissed"?"Arquivada":"Resolvida"}/>
                 <span className="market-mod-item-date">
                   {new Date(report.created_at).toLocaleString("pt-BR",{dateStyle:"medium",timeStyle:"short"})}
                 </span>
               </div>
-              <h2>{report.musician_name}</h2>
+              <h2 id={"market-mod-title-"+report.id}>{report.musician_name}</h2>
               <div className="market-mod-item-badges">
-                <span><Flag size={13}/> {reasons[report.reason]||"Outro motivo"}</span>
-                <span className={hidden?"is-hidden":""}>
+                <Badge><Flag size={13}/> {reasons[report.reason]||"Outro motivo"}</Badge>
+                <Badge tone={hidden?"danger":"neutral"}>
                   {hidden?<><EyeOff size={13}/> Oculto do marketplace</>:
                     <><Eye size={13}/> Visível no marketplace</>}
-                </span>
+                </Badge>
               </div>
               <p className="market-mod-reporter">Enviado por {report.reporter_name}</p>
               {report.details && <blockquote>{report.details}</blockquote>}
@@ -247,39 +246,37 @@ export default function MarketplaceModeration() {
                 Última decisão: {report.last_action?labels[report.last_action]:"Revisão"} — {report.moderator_note}
               </p>}
               <form className="market-mod-form" onSubmit={e=>void applyAction(e,report)}>
-                <label htmlFor={"market-mod-action-"+report.id}>Decisão do moderador</label>
-                <select id={"market-mod-action-"+report.id} value={draft.action}
+                <Select label="Decisão do moderador" id={"market-mod-action-"+report.id} value={draft.action}
                   disabled={busy===report.id}
                   onChange={e=>setDraft(report,{action:e.target.value as Action})}>
                   <option value="hide">{labels.hide}</option>
                   <option value="restore">{labels.restore}</option>
                   <option value="dismiss">{labels.dismiss}</option>
-                </select>
-                <label htmlFor={"market-mod-note-"+report.id}>Justificativa interna obrigatória</label>
-                <textarea id={"market-mod-note-"+report.id}
+                </Select>
+                <Textarea label="Justificativa interna obrigatória" hint={draft.note.length+"/500 caracteres · mínimo de 5"} id={"market-mod-note-"+report.id}
                   value={draft.note} maxLength={500} rows={2}
                   onChange={e=>setDraft(report,{note:e.target.value})}
                   placeholder="Ex.: avaliação contém ataques pessoais; ocultada após revisão."
                   disabled={busy===report.id} required minLength={5}/>
-                <button type="submit" disabled={Boolean(busy)||draft.note.trim().length<5}>
-                  {busy===report.id?<LoaderCircle size={15}/>:<CheckCircle2 size={15}/>}
+                <Button type="submit" loading={busy===report.id} disabled={Boolean(busy)||draft.note.trim().length<5}>
+                  {busy!==report.id&&<CheckCircle2 size={15}/>}
                   {busy===report.id?"Registrando...":"Confirmar decisão"}
-                </button>
+                </Button>
               </form>
             </article>;
           })}
         </div>}
       {!loading&&totalPages>1&&<div className="market-mod-pagination">
-        <button type="button" disabled={page===0} onClick={()=>setPage(v=>v-1)}>
+        <Button variant="secondary" disabled={page===0} onClick={()=>setPage(v=>v-1)}>
           <ChevronLeft size={16}/> Anterior
-        </button>
+        </Button>
         <span>Página {page+1} de {totalPages}</span>
-        <button type="button" disabled={page>=totalPages-1} onClick={()=>setPage(v=>v+1)}>
+        <Button variant="secondary" disabled={page>=totalPages-1} onClick={()=>setPage(v=>v+1)}>
           Próxima <ChevronRight size={16}/>
-        </button>
+        </Button>
       </div>}
       <footer className="market-mod-footer">
-        <ShieldCheck size={16}/> O marketplace continua em pré-lançamento até autorização explícita.
+        <ShieldCheck size={16}/> As decisões afetam o marketplace e ficam no histórico interno de moderação.
       </footer>
     </div>
   </main>;

@@ -59,6 +59,16 @@ try{
   let publicGalleryRows=[];
   let publicBookingResult="invalid_message",reportResult="invalid";
   const publicBookingWrites=[],reportWrites=[];
+  let moderationAccess=false,moderationResult="target_not_found",moderationGate;
+  const moderationReads=[],moderationWrites=[];
+  const moderationRows=[0,1,2].map((index)=>({
+    id:"81818181-8181-4181-8181-81818181818"+index,
+    target_type:index===1?"review":"musician",musician_id:catalogRows[index].musician_id,
+    musician_name:"Artista sob análise "+(index+1),review_id:index===1?"82828282-8282-4282-8282-828282828282":null,
+    review_comment:index===1?"Comentário sintético original":null,review_rating:index===1?3:null,
+    reporter_name:"Contato sintético",reason:"misleading",details:"Relato sintético sem dados pessoais, para revisar o comportamento e a apresentação da fila.",
+    status:"open",last_action:null,moderator_note:"",created_at:"2026-10-20T12:00:00Z",reviewed_at:null,musician_hidden:false,review_hidden:index===1
+  }));
   await context.route(api+"/**",async route=>{
    const req=route.request(),url=new URL(req.url()),rpc=url.pathname.split("/").at(-1);let data=[],status=200;
    if(req.method()==="OPTIONS"){await route.fulfill({status:204,headers:{"access-control-allow-origin":"*","access-control-allow-headers":"*"}});return;}
@@ -104,6 +114,19 @@ try{
    else if(["stage_public_artistic_musician","stage_public_booking_contact"].includes(rpc))data=null;
    else if(rpc==="stage_submit_artist_booking"){publicBookingWrites.push(body);data=publicBookingResult;}
    else if(rpc==="stage_marketplace_report"){reportWrites.push(body);data=reportResult;}
+   else if(rpc==="stage_marketplace_moderator_status")data=moderationAccess;
+   else if(rpc==="stage_marketplace_moderation_reports"){
+    moderationReads.push(body);
+    if(!moderationAccess){data={status:"forbidden",items:[],total:0};}
+    else {
+     const rows=body.p_offset===30?[moderationRows[2]]:moderationRows.slice(0,2);
+     data={status:"ok",items:body.p_filter==="resolved"?[]:rows,total:body.p_filter==="resolved"?0:31};
+    }
+   }
+   else if(rpc==="stage_marketplace_moderate_report"){
+    moderationWrites.push(body);if(moderationGate)await moderationGate;
+    data=moderationAccess?moderationResult:"forbidden";
+   }
    else if(rpc==="stage_public_verified")data=false;
    else if(rpc==="stage_owner_admin_status")data=false;
    else if(rpc==="stage_venue_partner_access")data={status:"ok",items:[]};
@@ -1873,6 +1896,78 @@ try{
   await activate(otherReviewPanel.getByRole("button",{name:"Fechar painel",exact:true}));
   assert.equal(invitationWrites.length,4,"Review flows must not send invitations");
   console.log(`PASS marketplace reviews ${width}px: independent validated reads/retries, retained rating/comment, synchronous publish guard, uncertain read reconciliation, no automatic republish, confirmed save with refresh failure, existing review protection and stale-musician isolation`);
+  // Part 46: private moderation queue uses shared controls without changing RPC contracts.
+  const moderationBeforeDenied=moderationReads.length;
+  await page.goto(origin+"/marketplace/moderacao");
+  await page.getByRole("heading",{name:"Área restrita",exact:true}).waitFor();
+  assert.equal(moderationReads.length,moderationBeforeDenied,"Denied clients must not load the private queue");
+  assert.equal(moderationWrites.length,0);
+  assert.equal(await page.getByRole("link",{name:"Voltar ao marketplace",exact:true}).getAttribute("href"),"/marketplace");
+  moderationAccess=true;await page.reload();
+  const moderation=page.locator(".market-mod-page");
+  const moderationFirst=moderation.getByRole("article",{name:"Artista sob análise 1",exact:true});
+  const moderationSecond=moderation.getByRole("article",{name:"Artista sob análise 2",exact:true});
+  await moderationFirst.waitFor();await moderationSecond.waitFor();
+  assert.deepEqual(moderationReads.at(-1),{p_filter:"open",p_limit:30,p_offset:0});
+  const moderationFilters=moderation.getByRole("group",{name:"Filtrar denúncias",exact:true});
+  assert.equal(await moderationFilters.getByRole("button",{name:"Pendentes",exact:true}).getAttribute("aria-pressed"),"true");
+  const moderationFilter=async name=>{
+   const response=page.waitForResponse(r=>r.url().endsWith("/stage_marketplace_moderation_reports"));
+   await activate(moderationFilters.getByRole("button",{name,exact:true}));await response;
+   await moderation.getByRole("button",{name:"Atualizar fila",exact:true}).waitFor();
+   await page.waitForFunction(()=>!document.querySelector(".market-mod-header button")?.disabled);
+  };
+  await moderationFilter("Resolvidas");
+  await moderation.getByRole("heading",{name:"Nenhuma denúncia nessa categoria.",exact:true}).waitFor();
+  assert.deepEqual(moderationReads.at(-1),{p_filter:"resolved",p_limit:30,p_offset:0});
+  await moderationFilter("Todas");await moderationFirst.waitFor();
+  assert.deepEqual(moderationReads.at(-1),{p_filter:"all",p_limit:30,p_offset:0});
+  const moderationNext=moderation.getByRole("button",{name:"Próxima",exact:true});
+  const nextModerationResponse=page.waitForResponse(r=>r.url().endsWith("/stage_marketplace_moderation_reports"));
+  await activate(moderationNext);await nextModerationResponse;
+  await moderation.getByRole("article",{name:"Artista sob análise 3",exact:true}).waitFor();
+  assert.deepEqual(moderationReads.at(-1),{p_filter:"all",p_limit:30,p_offset:30});
+  assert.equal(await moderationNext.isDisabled(),true);
+  await moderationFilter("Pendentes");await moderationFirst.waitFor();
+  assert.deepEqual(moderationReads.at(-1),{p_filter:"open",p_limit:30,p_offset:0});
+  const moderationAction=moderationFirst.getByLabel("Decisão do moderador",{exact:true});
+  const moderationNote=moderationFirst.getByLabel("Justificativa interna obrigatória",{exact:true});
+  const moderationSubmit=moderationFirst.getByRole("button",{name:"Confirmar decisão",exact:true});
+  assert.equal(await moderationAction.inputValue(),"hide");
+  assert.equal(await moderationSecond.getByLabel("Decisão do moderador",{exact:true}).inputValue(),"restore");
+  assert.equal(await moderationSubmit.isDisabled(),true);
+  await moderationNote.fill("  Revisão sintética justificada.  ");
+  await moderationAction.selectOption("dismiss");
+  await moderationNote.focus();assert.ok(await moderationNote.evaluate(el=>el.matches(":focus-visible")&&parseFloat(getComputedStyle(el).outlineWidth)>=2));
+  assert.equal(await moderationNote.evaluate(el=>getComputedStyle(el).fontSize),"16px");
+  assert.equal(await moderationNote.getAttribute("aria-describedby"),"market-mod-note-"+moderationRows[0].id+"-help");
+  const confirmModeration=async accept=>{
+   const shown=new Promise(resolve=>page.once("dialog",async dialog=>{assert.equal(dialog.type(),"confirm");accept?await dialog.accept():await dialog.dismiss();resolve();}));
+   await activate(moderationSubmit);await shown;
+  };
+  await confirmModeration(false);assert.equal(moderationWrites.length,0);
+  await confirmModeration(true);
+  await moderation.getByRole("alert").filter({hasText:"O conteúdo já não existe"}).waitFor();
+  assert.equal(moderationWrites.length,1);
+  assert.deepEqual(moderationWrites[0],{p_report_id:moderationRows[0].id,p_action:"dismiss",p_note:"Revisão sintética justificada."});
+  assert.equal(await moderationNote.inputValue(),"  Revisão sintética justificada.  ");
+  const moderationSizes=await moderation.locator(".sf-ui-button,.sf-ui-input").evaluateAll(nodes=>nodes.map(el=>({w:el.getBoundingClientRect().width,h:el.getBoundingClientRect().height})));
+  assert.ok(moderationSizes.every(x=>x.w>=44&&x.h>=44));
+  assert.ok(await moderation.evaluate(el=>el.scrollWidth<=el.clientWidth+1));
+  await moderationFirst.screenshot({path:`test-results/operational-moderation-shared-${width}.png`});
+  let releaseModeration;moderationGate=new Promise(resolve=>releaseModeration=resolve);moderationResult="saved";
+  const moderationSent=page.waitForRequest(r=>r.url().endsWith("/stage_marketplace_moderate_report"));
+  await confirmModeration(true);await moderationSent;
+  assert.equal(await moderationAction.isDisabled(),true);assert.equal(await moderationNote.isDisabled(),true);
+  assert.equal(await moderationSecond.getByRole("button",{name:"Confirmar decisão",exact:true}).isDisabled(),true);
+  assert.equal(await moderation.getByRole("button",{name:"Atualizar fila",exact:true}).isDisabled(),true);
+  releaseModeration();moderationGate=undefined;
+  await moderation.getByRole("status").filter({hasText:"Decisão salva com histórico de auditoria"}).waitFor();
+  await page.waitForFunction(()=>!document.querySelector(".market-mod-header button")?.disabled);
+  assert.equal(moderationWrites.length,2);assert.deepEqual(moderationWrites[0],moderationWrites[1]);
+  assert.equal(await moderationNote.inputValue(),"");
+  assert.ok(moderationReads.length>moderationBeforeDenied+4);
+  console.log(`PASS moderation shared UI ${width}px: permission gate, filters/reset/pagination, scoped labels, 44px actions, 16px fields, explicit/cancelled decision, retained rejected draft, pending disabled controls, success and refresh; synthetic decisions only`);
   assert.deepEqual(errors,[],"Browser exceptions at "+width);await context.close();
  }
  console.log("PASS: dashboard at 360/768/1280, navigation, receipt failure, legacy profile, group creation, availability and invitation.");
