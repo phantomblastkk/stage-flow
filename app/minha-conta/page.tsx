@@ -11,6 +11,7 @@ import {
 import {createClient} from "@/lib/supabase/client";
 import {useAccount} from "@/src/domains/account/account-context";
 import { Button, EmptyState, InlineNotice, Input, LoadingState } from "@/src/components/ui";
+import {showSaveFeedback} from "@/src/components/ui/save-feedback";
 import "./minha-conta.css";
 
 type AccountIdentity={
@@ -154,6 +155,7 @@ export default function MinhaConta(){
    }else{
      await load();
      await refreshAccount();
+     if(data==="saved")showSaveFeedback("Dados da conta salvos com sucesso!");
      flash(data==="saved"
        ?"Alterações salvas! O prazo de 60 dias é independente para o nome e para o @."
        :"Nenhuma alteração necessária.");
@@ -203,6 +205,7 @@ export default function MinhaConta(){
      setPendingRole(null);setConfirmationText("");setConfirmationChecked(false);
      await load();
      await refreshAccount();
+     showSaveFeedback(role==="musician"?"Função de músico ativada com sucesso!":"Função de cantor ativada com sucesso!");
      flash(role==="musician"
        ?"Função de músico ativada. Agora adicione seus instrumentos ao Perfil Artístico."
        :"Função de cantor ativada. Escolha seu @ e prepare sua página artística.");
@@ -225,7 +228,8 @@ export default function MinhaConta(){
      const {error:updateError}=await createClient().auth.updateUser({email:proposed});
      if(updateError)throw updateError;
      setNewEmail("");
-     flash("Solicitação enviada. Confira as mensagens de confirmação nos endereços envolvidos. O e-mail atual só será substituído depois da verificação exigida pelo Supabase.");
+     showSaveFeedback("Solicitação de alteração de e-mail enviada. Confira sua caixa de entrada.");
+      flash("Solicitação enviada. Confira as mensagens de confirmação nos endereços envolvidos. O e-mail atual só será substituído depois da verificação exigida pelo Supabase.");
    }catch(e){flash(e instanceof Error?e.message:"Não foi possível solicitar a troca de e-mail.",true);}
    finally{setSecurityBusy(false);}
  }
@@ -240,7 +244,8 @@ export default function MinhaConta(){
      const {error:updateError}=await createClient().auth.updateUser({password});
      if(updateError)throw updateError;
      setPassword("");setPasswordAgain("");
-     flash("Senha atualizada. Proteja seu acesso e não compartilhe seus dados de entrada.");
+     showSaveFeedback("Senha atualizada com sucesso!");
+      flash("Senha atualizada. Proteja seu acesso e não compartilhe seus dados de entrada.");
    }catch(e){flash(e instanceof Error?e.message:"Não foi possível atualizar a senha.",true);}
    finally{setSecurityBusy(false);}
  }
