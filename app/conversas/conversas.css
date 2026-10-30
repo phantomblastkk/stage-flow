@@ -136,3 +136,16 @@
  .hiring-page:has(.hiring-layout.has-active) .hiring-chat-header{padding:7px 10px}
  .hiring-page:has(.hiring-layout.has-active) .hiring-composer>small{display:none}
 }
+
+/* One-tap suggested messages on mobile: never sent until the user taps Enviar. */
+.hiring-quick-replies{display:flex!important;align-items:stretch!important;flex-direction:row!important;
+ gap:8px!important;margin:0 0 10px!important;overflow-x:auto;overflow-y:hidden;
+ overscroll-behavior-x:contain;scroll-snap-type:x proximity;
+ scrollbar-width:thin;padding:3px 2px 7px}
+.hiring-quick-replies button{flex:none;min-height:42px;max-width:min(250px,76vw);
+ border:1px solid #82629c;border-radius:99px;padding:9px 14px;
+ color:#eadcff;background:#30263e;white-space:nowrap;font-size:12px;font-weight:750;cursor:pointer;
+ scroll-snap-align:start}
+.hiring-quick-replies button:disabled{opacity:.45;cursor:not-allowed}
+.hiring-quick-replies button:hover:not(:disabled){border-color:#c99af2;background:#433050}
+@media(max-width:750px){.hiring-quick-replies button{min-height:44px}}
