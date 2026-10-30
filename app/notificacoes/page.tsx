@@ -72,6 +72,7 @@ export default function NotificationsPage(){
  const [busy,setBusy]=useState(false);
  const [error,setError]=useState("");
  const [notice,setNotice]=useState("");
+ const [realtimeConnected,setRealtimeConnected]=useState(false);
 
  const refresh=useCallback(async(currentFilter:Filter)=>{
   const {data,error:rpcError}=await createClient().rpc("stage_notifications_list",{
@@ -102,7 +103,7 @@ export default function NotificationsPage(){
   void boot();
   const ticker=setInterval(()=>{
    if(alive&&document.visibilityState==="visible")void refresh(filter).catch(()=>{});
-  },20000);
+  },realtimeConnected?60000:20000);
   const onNoticesChanged=()=>{
    if(alive&&document.visibilityState==="visible")
     void refresh(filter).catch(()=>setError("Não foi possível atualizar os avisos."));
@@ -110,7 +111,14 @@ export default function NotificationsPage(){
   window.addEventListener("stageflow:notifications-updated",onNoticesChanged);
   return()=>{alive=false;clearInterval(ticker);
    window.removeEventListener("stageflow:notifications-updated",onNoticesChanged);};
- },[filter,refresh,router]);
+ },[filter,refresh,router,realtimeConnected]);
+ useEffect(()=>{
+  const update=(event:Event)=>setRealtimeConnected(
+    Boolean((event as CustomEvent<{connected:boolean}>).detail?.connected)
+  );
+  window.addEventListener("stageflow:realtime-status",update);
+  return()=>window.removeEventListener("stageflow:realtime-status",update);
+ },[]);
  const grouped=useMemo(()=>{
   const result=new Map<string,Notice[]>();
   for(const item of notifications){
@@ -230,6 +238,6 @@ export default function NotificationsPage(){
     </section>)}
    </div>}
   </section>
-  <p className="notifications-footer">Atualização automática enquanto esta página estiver aberta, aproximadamente a cada 20 segundos. Os avisos são privados e não representam envio de push ou WhatsApp. A listagem mostra até 100 registros mais recentes por filtro.</p>
+  <p className="notifications-footer">Atualização ao vivo quando a conexão privada estiver ativa, com atualização periódica de segurança enquanto a página estiver aberta. Os avisos são privados e não representam envio de push ou WhatsApp. A listagem mostra até 100 registros mais recentes por filtro.</p>
  </div></main>;
 }
