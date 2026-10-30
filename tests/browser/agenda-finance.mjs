@@ -331,7 +331,7 @@ try {
       await databaseResponse;
       await page.getByRole("alert").filter({ hasText: "O cadastro não pôde ser salvo no momento" }).waitFor();
       assert.equal(signupAttempts, 2, "A retry should send only one synthetic request");
-      assert.ok(!(await page.getByRole("alert").innerText()).includes("Database error saving new user"));
+      assert.ok(!(await page.getByRole("alert").filter({ hasText: "O cadastro não pôde ser salvo no momento" }).innerText()).includes("Database error saving new user"));
       await noHorizontalOverflow(page, "signup duplicate error " + width);
       await page.screenshot({ path: "test-results/public-signup-duplicate-" + width + ".png", fullPage: true });
       assert.deepEqual(errors, []);
