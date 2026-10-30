@@ -10,6 +10,7 @@ import { createClient } from "@/lib/supabase/client";
 import EventFinancialSummary from "./event-financial-summary";
 import EventBudgetPanel from "./event-budget-panel";
 import { Button, InlineNotice, LoadingState, Select, Textarea } from "@/src/components/ui";
+import {showSaveFeedback} from "@/src/components/ui/save-feedback";
 import "./event-team-invites.css";
 
 type SavedTeam = {
@@ -145,6 +146,7 @@ export default function EventTeamInvites({ eventId, eventTitle, eventStatus }: P
       setError(inviteError?.message || reasons[response?.status || ""] ||
         "Não foi possível registrar os convites agora.");
     } else {
+      showSaveFeedback("Convites da equipe registrados com sucesso!");
       setNotice(String(response.created ?? 0) + " novo(s) convite(s) registrado(s). " +
         String(response.existing ?? 0) + " músico(s) já tinham convite para este show. " +
         "Acompanhe as respostas e negocie cada cachê individualmente.");
