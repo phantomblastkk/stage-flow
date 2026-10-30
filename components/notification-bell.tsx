@@ -85,6 +85,7 @@ export default function NotificationBell() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
   const [openingId, setOpeningId] = useState<string | null>(null);
+  const [refreshRequest,setRefreshRequest]=useState(0);
 
   // Count without downloading the feed while the dropdown is closed.
   // Fetch five most recent notices only when the user opens it.
@@ -126,12 +127,14 @@ export default function NotificationBell() {
     const onReturn=()=>{if(document.visibilityState==="visible")void refresh();};
     document.addEventListener("visibilitychange",onReturn);
     window.addEventListener("focus",onReturn);
+    window.addEventListener("stageflow:notifications-updated",onReturn);
     return () => {
       alive=false;clearInterval(interval);
       document.removeEventListener("visibilitychange",onReturn);
       window.removeEventListener("focus",onReturn);
+      window.removeEventListener("stageflow:notifications-updated",onReturn);
     };
-  }, [open]);
+  }, [open,refreshRequest]);
 
   useEffect(() => {
     if (!open) return;
@@ -164,6 +167,7 @@ export default function NotificationBell() {
           // So os nao lidos aparecem na campainha; o historico fica em Todas.
           setItems(previous=>previous.filter(notice=>notice.id!==item.id));
           setUnread(count => count === null ? null : Math.max(0, count - 1));
+          window.dispatchEvent(new Event("stageflow:notifications-updated"));
         }
       } catch {
         // Mark-as-read failures must not block access to the original subject.
@@ -199,7 +203,7 @@ export default function NotificationBell() {
         {loading && items.length === 0
           ? <p className={styles.feedback}><LoaderCircle size={17} /> Carregando avisos...</p>
           : error
-          ? <p className={styles.feedback} role="alert"><RefreshCw size={17} /> {error}</p>
+          ? <div className={styles.feedback} role="alert"><RefreshCw size={17} /> {error} <button type="button" className={styles.retry} onClick={()=>setRefreshRequest(n=>n+1)}>Tentar novamente</button></div>
           : items.length === 0
           ? <div className={styles.empty}>
               <Bell size={22} />
