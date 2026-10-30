@@ -78,3 +78,21 @@
  .hiring-composer{padding:8px}
  .hiring-composer textarea{height:44px}
 }
+
+
+/* Conversation discovery, unread filtering and message jump for long mobile chats. */
+.hiring-thread-filters{display:grid;gap:9px;padding:11px 13px;border-bottom:1px solid var(--sf-ui-border)}
+.hiring-thread-filters>label:first-child{display:grid;gap:6px;color:var(--sf-ui-muted);font-size:12px;font-weight:750}
+.hiring-thread-filters input[type=search]{width:100%;min-height:44px;border:1px solid var(--sf-ui-border);
+ padding:10px 12px;border-radius:11px;background:var(--sf-ui-surface);color:var(--sf-ui-text);font-size:16px}
+.hiring-unread-toggle{display:flex;align-items:center;gap:9px;color:var(--sf-ui-text);font-size:12px;min-height:37px;cursor:pointer}
+.hiring-unread-toggle input{width:18px;height:18px;accent-color:var(--sf-ui-brand)}
+.hiring-jump-latest{align-self:center;min-height:40px;padding:8px 15px;margin:0 0 8px;
+ border-radius:100px;border:1px solid #9770c6;background:#42305b;color:white;
+ font-size:12px;font-weight:800;cursor:pointer;box-shadow:0 6px 16px #0005}
+.hiring-jump-latest:hover{background:#563776}
+.hiring-jump-latest:focus-visible{outline:3px solid #d6baff;outline-offset:2px}
+.hiring-messages{scroll-behavior:auto}
+@media(max-width:750px){.hiring-thread-filters{padding:10px 12px}
+ .hiring-thread-filters input[type=search]{font-size:16px}
+ .hiring-jump-latest{min-height:44px}}
