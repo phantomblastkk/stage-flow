@@ -315,7 +315,7 @@ export default function HiringConversations(){
          if(e.key==="Enter"&&(e.ctrlKey||e.metaKey)&&!e.shiftKey&&!e.nativeEvent.isComposing){
           e.preventDefault();if(!busy&&text.trim())e.currentTarget.form?.requestSubmit();
          }
-        }
+        }}
         disabled={busy||messagesLoading} required/>
         <Button type="submit"  disabled={busy||messagesLoading||!text.trim()}>
          <Send size={16}/> Enviar</Button></div>
