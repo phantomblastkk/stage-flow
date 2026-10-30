@@ -160,6 +160,7 @@ export default function NotificationBell() {
     const update=(event:Event)=>{
       setRealtimeConnected(Boolean((event as CustomEvent<{connected:boolean}>).detail?.connected));
     };
+    setRealtimeConnected(document.documentElement.dataset.stageflowRealtime==="connected");
     window.addEventListener("stageflow:realtime-status",update);
     return()=>window.removeEventListener("stageflow:realtime-status",update);
   },[]);
