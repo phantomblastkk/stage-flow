@@ -1,8 +1,8 @@
 # Inventário CSS — StageFlow
 
-Base Git: `5e55208770cc4422506e7d9c1bb12c58f6ac7575`. Conteúdo lido da árvore de trabalho; execute após as edições para comparar.
+Base Git: `64545db52d97ec6db9fec1bca1105a1cfed429c6`. Conteúdo lido da árvore de trabalho; execute após as edições para comparar.
 
-62 arquivos rastreados; 483575 bytes de fonte CSS (sem minificação/compressão).
+62 arquivos rastreados; 483630 bytes de fonte CSS (sem minificação/compressão).
 
 Gerar novamente: `node scripts/audit-css.mjs`. Contagem de blocos é heurística; não mede CSS efetivamente usado, especificidade ou bundle.
 
@@ -42,7 +42,7 @@ Gerar novamente: `node scripts/audit-css.mjs`. Contagem de blocos é heurística
 | `app/shows-recorrentes/shows-recorrentes.css` | Rota | 53 | 4802 | 60 |
 | `app/styles/legacy-after-free-singer.css` | Legado — migração gradual | 134 | 8634 | 86 |
 | `app/styles/legacy-base-responsive.css` | Legado — migração gradual | 3 | 627 | 20 |
-| `app/styles/legacy-global-tail.css` | Legado — migração gradual | 121 | 10253 | 109 |
+| `app/styles/legacy-global-tail.css` | Legado — migração gradual | 121 | 10308 | 109 |
 | `app/termos/legal.css` | Rota | 13 | 1240 | 13 |
 | `components/artist-booking-form.css` | Componente | 36 | 2347 | 26 |
 | `components/booking-contact-settings.css` | Componente | 23 | 2807 | 27 |

@@ -45,7 +45,8 @@ de um literal completo numa busca simples.
 - audit-css.mjs passa a excluir deleções da árvore de trabalho ao gerar o inventário,
   permitindo auditar a remoção antes de criar o commit. Não altera arquivos do produto.
 
-CSS rastreado: 64 → 62 folhas. Fonte CSS removida: **3423 bytes**. Inventário atualizado
+CSS rastreado: 64 → 62 folhas. Fonte CSS retirada nas folhas limpas: **3423 bytes**. O reforço do seletor de foco
+adiciona 55 bytes em outra folha: redução líquida de **3368 bytes**. Inventário atualizado
 com tamanho de fonte, não tamanho transferido, minificado, comprimido ou CSS efetivamente usado.
 
 ## Validação e limites
@@ -57,7 +58,11 @@ Comparação local por AST com o PostCSS já instalado: as 86 regras ativas rest
 cauda global e as 20 regras restantes da fundação responsiva mantêm seletores,
 declarações ordenadas e contextos @media exatamente iguais à base. A comparação
 exclui somente as famílias aposentadas e a dimensão da marca comprovadamente sobreposta.
-As demais folhas da cascata permanecem sem alterações de conteúdo.
+A fundação do foco também foi corrigida de forma intencional: a regra global
+:where(...):focus-visible perdia em especificidade para .field input{outline:none}.
+Acrescentados .field input:focus-visible e .field select:focus-visible ao mesmo bloco
+de outline, para o foco por teclado ficar visível em login e formulários legados.
+Não foram duplicadas as declarações. As demais regras da cascata permanecem intactas.
 
 Navegador: mantidas jornadas de cadastro, consentimentos, editor de cantor/músico e
 perfil público. Acrescentadas verificações de dimensões/SVG da marca, login com layout

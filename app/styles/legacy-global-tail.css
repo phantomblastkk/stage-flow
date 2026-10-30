@@ -1,5 +1,5 @@
 /* Systemwide usability refinements without changing the original identity. */
-:where(button,a,input,select,textarea):focus-visible{outline:2px solid var(--accent);outline-offset:3px}
+:where(button,a,input,select,textarea):focus-visible,.field input:focus-visible,.field select:focus-visible{outline:2px solid var(--accent);outline-offset:3px}
 .btn:disabled{opacity:.52;cursor:not-allowed;transform:none}
 .field textarea{color:var(--text)}
 
