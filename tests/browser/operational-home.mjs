@@ -1954,6 +1954,13 @@ try{
   const moderationSizes=await moderation.locator(".sf-ui-button,.sf-ui-input").evaluateAll(nodes=>nodes.map(el=>({w:el.getBoundingClientRect().width,h:el.getBoundingClientRect().height})));
   assert.ok(moderationSizes.every(x=>x.w>=44&&x.h>=44));
   assert.ok(await moderation.evaluate(el=>el.scrollWidth<=el.clientWidth+1));
+  await moderationFirst.evaluate(el=>el.scrollIntoView({block:"center",behavior:"instant"}));
+  assert.ok(await moderationSubmit.evaluate(el=>{
+   const r=el.getBoundingClientRect();
+   const nav=document.querySelector(".sf-workspace-bottom-nav");
+   const limit=nav&&getComputedStyle(nav).display!=="none"?nav.getBoundingClientRect().top:innerHeight;
+   return r.top>=0&&r.bottom<=limit;
+  }),"The moderation action must be visible above the mobile navigation after scrolling the card into view");
   await moderationFirst.screenshot({path:`test-results/operational-moderation-shared-${width}.png`});
   let releaseModeration;moderationGate=new Promise(resolve=>releaseModeration=resolve);moderationResult="saved";
   const moderationSent=page.waitForRequest(r=>r.url().endsWith("/stage_marketplace_moderate_report"));
