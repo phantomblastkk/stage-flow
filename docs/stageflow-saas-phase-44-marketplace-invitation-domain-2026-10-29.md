@@ -30,8 +30,7 @@ não há efeito que limpe o texto durante interação. A limpeza de feedback ao 
 
 ## Validação
 
-Local: 266 testes Node aprovados e TypeScript sem erros. CI de build e jornadas de
-navegador será conferido no commit desta parte. Reutilizados testes comportamentais
+Local: 266 testes Node, TypeScript e build aprovados. Reutilizados testes comportamentais
 existentes de convites e avaliações em 360/768/1280 px, sem testes que apenas espelham
 a estrutura do hook. Todos os convites de teste usam API sintética.
 
@@ -55,3 +54,17 @@ produção dependem de autorização específica conforme AGENTS.md.
 
 Próxima parte: inventário atualizado dos CSS e migração das duplicações prioritárias
 para os componentes compartilhados, com verificação mobile. Auto deploy desabilitado.
+
+## Evidências finais
+
+Commit validado: `ce51c06c9ddcb41828460d84faec65220ab04d71`.
+
+- [Diff aplicado](https://github.com/phantomblastkk/stage-flow/compare/92996a504eb54beece18a7b9f3e33bbbf0125fee...ce51c06c9ddcb41828460d84faec65220ab04d71).
+- [Integration and build aprovado](https://github.com/phantomblastkk/stage-flow/actions/runs/40981681480).
+- [Operational UX aprovado](https://github.com/phantomblastkk/stage-flow/actions/runs/40981681426), incluindo isolamento em PostgreSQL temporário.
+- Logs confirmam PASS marketplace invitation, reviews, recovery e controls em 360/768/1280 px.
+- Artefato operational-ux-evidence ID 12945536319. Nesta extração sem mudança de layout, a validação foi comportamental; não se reivindica nova revisão visual das capturas.
+- Revisão React: efeitos mantêm dependências primitivas e cleanup; locks síncronos e versão do painel preservados; sem listeners/dependências novas.
+- Inventário preliminar atual: 62 arquivos CSS versionados no projeto; quantidade não é medida de duplicação. Auditoria detalhada fica para a próxima entrega.
+- Concluída esta parte, estimativa restante: 7–11 entregas para o escopo original.
+- Auto deploy continua desabilitado; nenhuma operação no banco de produção.
