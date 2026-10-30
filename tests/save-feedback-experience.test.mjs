@@ -36,10 +36,12 @@ test("one global aria-appropriate confirmation host covers private and public ro
 });
 test("the artist and musician profile announce saves only after server response equals saved",()=>{
  for(const source of [artist,musician]){
-  assert.match(source,/data!=="saved"/);
-  assert.match(source,/showSaveFeedback\(/);
-  assert.match(source,/draft\.savedToAccount\(\)/);
-  assert.ok(source.indexOf("showSaveFeedback(")>source.indexOf("data !== \"saved\"")||source.indexOf("showSaveFeedback(")>source.indexOf("data !==\"saved\""),"profile saves should be guarded by server result");
+  const section=source.slice(source.indexOf("async function save("));
+  assert.match(section,/data\s*!==\s*"saved"/);
+  assert.match(section,/showSaveFeedback\(/);
+  assert.match(section,/draft\.savedToAccount\(\)/);
+  assert.ok(section.indexOf("showSaveFeedback(")>section.indexOf('data !== "saved"'),
+   "profile save confirmation must follow the server success branch");
  }
  assert.match(artist,/Etapa salva com sucesso/);
  assert.match(musician,/Etapa salva com sucesso/);
