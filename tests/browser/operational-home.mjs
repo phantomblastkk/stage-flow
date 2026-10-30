@@ -365,6 +365,7 @@ try{
   await activate(page.getByRole("button",{name:"Remover da página",exact:true}));
   await activate(page.getByRole("button",{name:"Remover capa da página",exact:true}));
   assert.equal(storageWrites.length,2,"Removal only updates the local draft");
+  await page.locator("#mp-aparencia .sf-editor-extra > summary").click();
   const colors=page.getByRole("group",{name:"Cor de destaque",exact:true});
   await activate(colors.getByRole("button",{name:"Cor Ciano",exact:true}));
   assert.equal(await colors.getByRole("button",{name:"Cor Ciano",exact:true}).getAttribute("aria-pressed"),"true");
@@ -659,6 +660,7 @@ try{
   const singerSteps=singer.getByLabel("Etapas de edição do perfil");
   if(mobile)await singer.locator('.sf-editor-wizard[data-wizard-ready="true"]').waitFor();
   const singerStep=async name=>{if(mobile)await activate(singerSteps.getByRole("button",{name}));};
+  await singer.locator(".artist-wizard-group[data-editor-step=\"0\"] .sf-editor-extra > summary").click();
   await singer.getByLabel("Frase de assinatura",{exact:true}).fill("Rascunho preservado após falha");
   await singerStep(/Publicar e contratar/);
   const bookingRegion=singer.getByRole("region",{name:"Recebimento de pedidos de contratação",exact:true});
