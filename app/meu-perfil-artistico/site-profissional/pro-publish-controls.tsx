@@ -7,6 +7,7 @@ import {
   LockKeyhole, Rocket, ShieldCheck, Unplug, RefreshCw
 } from "lucide-react";
 import {Button,InlineNotice,LoadingState} from "@/src/components/ui";
+import {showSaveFeedback} from "@/src/components/ui/save-feedback";
 import { createClient } from "@/lib/supabase/client";
 import ProFeatureLock from "@/components/pro-feature-lock";
 import "./pro-publish-controls.css";
@@ -132,6 +133,7 @@ export default function ProSitePublicationControls({
           "Não foi possível confirmar a alteração. Consulte o estado da publicação antes de tentar novamente.");
         return;
       }
+      showSaveFeedback(publish?"Recursos Pro publicados com sucesso!":"Publicação Pro desativada com sucesso!");
       setMessage(publish
         ?wasPublished?"Recursos Pro atualizados no seu perfil! O endereço público continua o mesmo.":"Recursos Pro ativados no seu perfil! O endereço público continua o mesmo."
         :"A versão Pro foi retirada do ar. Seu perfil público continua disponível com funções Pro bloqueadas.");
