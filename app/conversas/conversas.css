@@ -103,3 +103,36 @@
 .hiring-current-phone strong{color:var(--sf-ui-text);font-size:14px}
 .hiring-current-phone .sf-ui-button{margin-left:auto;min-height:44px}
 @media(max-width:520px){.hiring-current-phone .sf-ui-button{width:100%;margin-left:0}}
+
+/* 2026 mobile-first chat: keep the actual conversation above the 5-tab bar. */
+.hiring-live-status{display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin:0 0 13px;
+ font:700 12px/1.4 Manrope,sans-serif;color:var(--sf-ui-muted)}
+.hiring-live-status>span{width:8px;height:8px;flex:none;border-radius:100%;background:#9e91af}
+.hiring-live-status>span.is-connected{background:#7bd69a;box-shadow:0 0 0 3px #7bd69a22}
+.hiring-live-status>a{display:inline-flex;align-items:center;gap:5px;margin-left:auto;color:#d5b9fa;
+ font-weight:800;text-decoration:none;min-height:40px}
+@media(max-width:750px){
+ .hiring-page:has(.hiring-layout.has-active) .hiring-heading{padding:5px 0 8px}
+ .hiring-page:has(.hiring-layout.has-active) .hiring-heading .eyebrow,
+ .hiring-page:has(.hiring-layout.has-active) .hiring-heading>p,
+ .hiring-page:has(.hiring-layout.has-active) .hiring-heading>.sf-ui-button,
+ .hiring-page:has(.hiring-layout.has-active) .hiring-heading>button{display:none!important}
+ .hiring-page:has(.hiring-layout.has-active) .hiring-heading h1{font-size:21px;margin:4px 0}
+ .hiring-page:has(.hiring-layout.has-active) .hiring-live-status{margin-bottom:5px}
+ .hiring-page:has(.hiring-layout.has-active) .hiring-layout{
+  height:clamp(345px,calc(100dvh - 230px),760px);
+  min-height:345px
+ }
+ .hiring-page:has(.hiring-layout.has-active) .hiring-layout .hiring-composer{
+  padding:8px 11px 10px
+ }
+ .hiring-chat-header{padding:10px 12px}
+ .hiring-messages{padding:12px}
+ .hiring-composer textarea{min-height:44px;max-height:90px}
+ .hiring-composer>small{font-size:10px}
+}
+@media(max-width:750px) and (max-height:610px){
+ .hiring-page:has(.hiring-layout.has-active) .hiring-layout{height:calc(100dvh - 175px);min-height:230px}
+ .hiring-page:has(.hiring-layout.has-active) .hiring-chat-header{padding:7px 10px}
+ .hiring-page:has(.hiring-layout.has-active) .hiring-composer>small{display:none}
+}
