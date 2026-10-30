@@ -12,6 +12,7 @@ import {
 import {createClient} from "@/lib/supabase/client";
 import StageVerifiedBadge from "@/components/stage-verified-badge";
 import DeleteAccountDialog from "./delete-account-dialog";
+import {showSaveFeedback} from "@/src/components/ui/save-feedback";
 import "./central.css";
 
 type Tab="overview"|"users"|"venues"|"history";
@@ -218,6 +219,7 @@ export default function CentralAdministrativa(){
    if(error||!["saved","unchanged"].includes(String(data)))throw new Error(error?.message||
      (data==="not_approved"?"A casa precisa ser aprovada e oficial antes de receber um selo.":"Não foi possível alterar este selo."));
    setFeedbackError(false);
+   if(data==="saved")showSaveFeedback("Selo "+(!current?"concedido":"removido")+" com sucesso!");
    setFeedback(data==="unchanged"?"O estado do selo já estava atualizado.":"Selo de "+kindText[kind]+" "+(!current?"concedido.":"removido."));
    reload();
   }catch(err){
@@ -244,6 +246,7 @@ export default function CentralAdministrativa(){
         "Não foi possível alterar o acesso Pro."));
    }
    setFeedbackError(false);
+   if(data==="saved")showSaveFeedback(removing?"Cortesia Pro retirada com sucesso!":"Cortesia Pro concedida com sucesso!");
    setFeedback(data==="unchanged"?"A permissão já estava atualizada.":
      data==="subscription_active"?"A conta possui uma assinatura Pro ativa; não é possível cancelar esse acesso por cortesia.":
      removing?"Cortesia Pro retirada. A assinatura paga, se houver, continua ativa.":
@@ -265,6 +268,7 @@ export default function CentralAdministrativa(){
    });
    if(error||data!==decision)throw new Error(error?.message||
     (data==="already_reviewed"?"Esta solicitação já foi analisada.":data==="forbidden"?"Falta a permissão de administrar casas.":"A decisão não pôde ser salva."));
+   showSaveFeedback(decision==="approved"?"Casa aprovada com sucesso!":"Decisão salva: solicitação rejeitada.");
    setFeedbackError(false);setFeedback(decision==="approved"?"Casa aprovada e perfil oficial disponibilizado.":"Solicitação rejeitada.");
    reload();
   }catch(err){
