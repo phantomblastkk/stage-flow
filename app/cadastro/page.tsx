@@ -234,11 +234,11 @@ export default function CadastroPage() {
         <form onSubmit={handleSubmit} noValidate>
           {step === 1 && <section className="signup-stage" aria-labelledby="signup-stage-title">
             <h3 id="signup-stage-title">O que você quer fazer?</h3>
-            <p>Escolha a opção que combina com você. Dá para ampliar suas funções na conta depois.</p>
+            <p>Escolha a opção que combina com você. Depois do cadastro, você poderá completar seu perfil com calma.</p>
             <div className="signup-purpose" role="group" aria-label="Objetivo principal">
               <button type="button" aria-pressed={purpose === "artist"}
                 className="signup-choice" onClick={() => {
-                  setPurpose("artist"); setActivity(current => current || "musician"); setWhatsappShare(false);
+                  setPurpose("artist"); setWhatsappShare(false);
                 }}>
                 <span className="signup-choice-icon"><Mic2 size={23}/></span>
                 <span><strong>Divulgar meu trabalho</strong><small>Sou cantor, músico ou faço os dois. Quero apresentar meu trabalho e receber oportunidades.</small></span>
