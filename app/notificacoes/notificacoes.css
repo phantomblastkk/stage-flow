@@ -50,3 +50,7 @@
  .notifications-item-actions .btn,.notifications-actions .btn{font-size:13px;min-height:44px}
  .notifications-empty p,.notifications-footer{font-size:13px}
 }
+
+.notifications-feedback[role=alert]{display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:12px}
+.notifications-feedback[role=alert] button{display:inline-flex;align-items:center;gap:7px;min-height:44px}
+@media(max-width:640px){.notifications-feedback[role=alert] button{width:100%;justify-content:center}}
