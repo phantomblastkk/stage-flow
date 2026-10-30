@@ -4,6 +4,7 @@ import { usePathname, useRouter } from "next/navigation";
 import { AccountProvider, useAccount } from "@/src/domains/account/account-context";
 import { Button, LoadingState } from "@/src/components/ui";
 import WorkspaceFrame from "./workspace-frame";
+import StageRealtimeBridge from "./stage-realtime-bridge";
 
 function PrivateAccountBoundary({ children }: { children: ReactNode }) {
   const { snapshot, refresh } = useAccount();
@@ -25,6 +26,7 @@ function PrivateAccountBoundary({ children }: { children: ReactNode }) {
   </main>;
   // Auth identity changes remount private descendants, clearing forms, messages and financial state.
   return <div key={snapshot.user.id + ":" + snapshot.epoch}>
+    <StageRealtimeBridge/>
     {snapshot.error && <div className="sf-workspace-error" role="alert">{snapshot.error}
       <Button variant="ghost" disabled={snapshot.refreshing} onClick={() => void refresh()}>Tentar novamente</Button>
     </div>}
