@@ -15,6 +15,12 @@ const account=load("app/minha-conta/page.tsx");
 const proposals=load("src/domains/booking/hooks/use-hiring-proposals.ts");
 const admin=load("app/admin/central/page.tsx");
 const wizard=load("components/mobile-editor-wizard.tsx");
+const market=load("components/marketplace-musician-settings.tsx");
+const contact=load("components/booking-contact-settings.tsx");
+const proPublish=load("app/meu-perfil-artistico/site-profissional/pro-publish-controls.tsx");
+const teamInvites=load("components/event-team-invites.tsx");
+const finance=load("app/financeiro/page.tsx");
+const moderation=load("app/marketplace/moderacao/page.tsx");
 
 test("one global aria-appropriate confirmation host covers private and public routes",()=>{
  assert.match(bridge,/<SaveFeedbackHost\/>/);
@@ -61,4 +67,17 @@ test("next step is local navigation, NOT presented as server save",()=>{
  assert.match(wizard,/As alterações só são gravadas quando você toca/);
  assert.doesNotMatch(wizard,/showSaveFeedback/);
  assert.match(wizard,/form\.requestSubmit\(\)/);
+});
+
+test("secondary high-traffic saves also confirm only after successful database response",()=>{
+ for(const source of [market,contact,proPublish,teamInvites,finance,moderation]){
+  assert.match(source,/showSaveFeedback\(/);
+  assert.match(source,/\.rpc\(|saveMusicianPayment/);
+ }
+ assert.match(market,/data!=="saved"/);
+ assert.match(contact,/data!=="saved"/);
+ assert.match(proPublish,/data!==\(publish\?"published":"unpublished"\)/);
+ assert.match(teamInvites,/response\?\.status !== "sent"/);
+ assert.match(moderation,/data!=="saved"/);
+ assert.match(finance,/await saveMusicianPayment\(/);
 });
