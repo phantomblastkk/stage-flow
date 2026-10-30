@@ -52,8 +52,7 @@ compartilhados tiveram pequenas variações por causa do mapa de chunks: Painel 
 
 ## Validação e limites
 
-310 testes Node e os builds locais passaram. CI final e evidências serão registrados
-após conclusão. As jornadas existentes cobrem a abertura dos painéis e seus formulários;
+310 testes Node, TypeScript e builds locais/CI aprovados. Evidências finais abaixo. As jornadas existentes cobrem a abertura dos painéis e seus formulários;
 a verificação de rede nova é específica da Agenda. Para Financeiro/Operação, a exclusão
 do bundle inicial é verificada pelos manifests, sem afirmar que houve medição de rede
 individual nas duas rotas. APIs de testes sintéticas; nenhum convite/pagamento real.
@@ -79,3 +78,17 @@ credencial, regra de assinatura ou política de segurança foi alterado.
 - Preservadas as confirmações showSaveFeedback adicionadas nos fluxos de agenda, financeiro e equipe.
 - Corrigido um seletor de teste preexistente que encontrava simultaneamente a confirmação local de ativação de músico e o Toast global. O teste agora verifica as duas regiões separadamente, sem remover confirmações da interface.
 - Medição refeita na mesma base integrada, antes/depois apenas das importações opcionais; os números preliminares da base a5fb97f foram substituídos.
+
+## Evidências finais e checkpoint
+
+Implementação validada: `af398d34f8185ca05e1d5cccd1ec7ff9716032df`.
+
+- [Diff aplicado](https://github.com/phantomblastkk/stage-flow/compare/2f04325b2dcf5c0777c08814e9250e63e8d4d1ad...af398d34f8185ca05e1d5cccd1ec7ff9716032df).
+- [Integration and build aprovado](https://github.com/phantomblastkk/stage-flow/actions/runs/41050550786). PASS deferred panels em 360/768/1280 px, e confirmação de conta com Toast e aviso local verificados separadamente.
+- [Operational UX aprovado](https://github.com/phantomblastkk/stage-flow/actions/runs/41050550784): 310 testes, TypeScript, build, PostgreSQL temporário e jornadas completas existentes.
+- Artefato agenda-finance-browser-evidence ID 12973743995 inclui bundle-audit.json gerado no CI e capturas das jornadas. O JSON foi inspecionado: revision af398d34 e módulos assíncronos das três rotas presentes.
+- Artefato operational-ux-evidence ID 12973919621 preserva as evidências de regressão.
+- Capturas de equipe em 360/1280 px revisadas; a interface existente e o feedback de convite aparecem após a carga. A captura móvel longa evidencia espaço estreito no cabeçalho financeiro aninhado; ajustar a hierarquia desse cabeçalho em uma próxima revisão mobile, sem atribuir essa condição à alteração de imports. Não se afirma revisão visual de todos os estados.
+- Métricas locais e de CI são artefatos distintos; a tabela antes/depois é dos dois builds locais na mesma base integrada. O CI verifica separação dos assets e comportamento de rede, não uma melhoria de LCP/tempo real.
+- Sem deploy, alteração SQL, credenciais ou dados reais. Auto deploy continua false para todas as branches.
+- Continuidade: Parte 49 deve contar consultas de Dashboard/Marketplace antes de otimizar, preservando o realtime e as confirmações recentes da main. Conferir o SHA atual, AGENTS.md e este checkpoint antes de editar. O refinamento mobile do cabeçalho financeiro fica no backlog junto à revisão de jornadas.
