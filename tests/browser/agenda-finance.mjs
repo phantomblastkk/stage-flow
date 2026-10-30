@@ -919,11 +919,16 @@ try {
       assert.equal(state.scheduleCalls.at(-1).p_start,"2026-12-02T23:00:00.000Z");
       await noHorizontalOverflow(page,"formal proposal form 360");
       await page.evaluate(()=>scrollTo(0,0));await page.screenshot({path:"test-results/proposal-form-360.png",fullPage:true});
-      await page.getByRole("button",{name:"Enviar proposta",exact:true}).click();
-      await page.locator(".hiring-proposals").getByRole("alert").filter({hasText:"compromisso confirmado"}).waitFor();
+      await page.getByRole("button",{name:/Revisar proposta/}).click();
+      await page.getByRole("heading",{name:"Confira os dados da proposta",exact:true}).waitFor();
+      // Required fields are removed while reviewing; confirmation remains actionable.
+      await page.getByRole("button",{name:"Confirmar e enviar proposta",exact:true}).click();
+      await page.locator(".hiring-proposals-form").getByRole("alert").filter({hasText:"compromisso confirmado"}).waitFor();
+      await page.getByRole("button",{name:"Voltar e editar",exact:true}).click();
       assert.equal(await page.getByLabel("Nome da apresentação *",{exact:true}).inputValue(),"Meu rascunho preservado");
+      await page.getByRole("button",{name:/Revisar proposta/}).click();
       state.sendResult="ok";
-      await page.getByRole("button",{name:"Enviar proposta",exact:true}).click();
+      await page.getByRole("button",{name:"Confirmar e enviar proposta",exact:true}).click();
       await page.getByText("Proposta enviada. O show só entrará na agenda após o músico aceitar.",{exact:true}).waitFor();
       assert.equal(state.proposalWrites.length,2);assert.equal(state.proposalWrites.at(-1).p_fee,null);
       page.once("dialog",dialog=>void dialog.accept());
