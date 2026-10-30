@@ -96,3 +96,10 @@
 @media(max-width:750px){.hiring-thread-filters{padding:10px 12px}
  .hiring-thread-filters input[type=search]{font-size:16px}
  .hiring-jump-latest{min-height:44px}}
+
+.hiring-current-phone{display:flex;align-items:center;flex-wrap:wrap;gap:10px;min-height:44px;
+ border:1px solid var(--sf-ui-border);border-radius:10px;padding:10px 13px;
+ background:var(--sf-ui-surface);color:var(--sf-ui-muted);font-size:12px}
+.hiring-current-phone strong{color:var(--sf-ui-text);font-size:14px}
+.hiring-current-phone .sf-ui-button{margin-left:auto;min-height:44px}
+@media(max-width:520px){.hiring-current-phone .sf-ui-button{width:100%;margin-left:0}}
