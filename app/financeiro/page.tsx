@@ -7,6 +7,7 @@ import { createClient } from "@/lib/supabase/client";
 import EventBudgetPanel from "@/components/event-budget-panel";
 import ProFeatureLock from "@/components/pro-feature-lock";
 import { Button, EmptyState, InlineNotice, Input, LoadingState, Select, StatCard } from "@/src/components/ui";
+import {showSaveFeedback} from "@/src/components/ui/save-feedback";
 import { FinanceSessionRequired, loadFinance, loadFinanceTeam, saveMusicianPayment } from "@/src/domains/billing/services/finance-service";
 import type { Mode, Organized, Participation, TeamMember } from "@/src/domains/billing/types";
 import { buildFinanceReport } from "@/src/domains/billing/model/finance-report";
@@ -93,6 +94,7 @@ export default function Financeiro(){
   setBusy(invitationId);setTeamError("");setNotice("");
   try{
    await saveMusicianPayment(createClient(),invitationId,amount);
+   showSaveFeedback("Pagamento registrado com sucesso! Nenhuma transferência foi realizada.");
    setTeam(rows=>rows.map(r=>r.invitation_id===invitationId?{...r,paid_amount:amount}:r));
    setNotice("Pagamento registrado manualmente; nenhuma transferência foi realizada.");
    setNonce(value=>value+1);
