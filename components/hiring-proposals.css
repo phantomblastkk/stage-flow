@@ -28,3 +28,51 @@
 .hiring-schedule-status.free{color:var(--sf-ui-success)}
 .hiring-schedule-status.possible_conflict{color:var(--sf-ui-warning)}
 .hiring-schedule-status.error{color:var(--sf-ui-danger)}
+
+/* A two-step proposal: only essential inputs first; details are opt-in. */
+.hiring-proposals-mobile-form-head{display:none}
+.hiring-proposals-step{display:grid;gap:14px;min-width:0}
+.hiring-proposals-step[hidden]{display:none!important}
+.hiring-proposal-step-label{font-size:11px;font-weight:850;letter-spacing:.035em;
+ color:var(--sf-ui-brand);margin:0}
+.hiring-proposals-optional{border:1px solid var(--sf-ui-border);border-radius:12px;
+ padding:11px 13px;background:var(--sf-ui-surface)}
+.hiring-proposals-optional summary{cursor:pointer;font-size:12px;font-weight:800;
+ min-height:35px;display:list-item;align-content:center;color:var(--sf-ui-text)}
+.hiring-proposals-optional[open] summary{margin-bottom:13px}
+.hiring-proposals-optional .sf-ui-field{margin-top:12px}
+.hiring-proposals-review{display:grid;gap:12px;min-width:0}
+.hiring-proposals-review h4{font:850 18px/1.35 Manrope,sans-serif;margin:0}
+.hiring-proposals-review h4:focus-visible{outline:3px solid var(--sf-ui-focus);outline-offset:3px}
+.hiring-proposals-review dl{margin:0;display:grid;gap:8px}
+.hiring-proposals-review dl>div{display:grid;grid-template-columns:minmax(100px,30%) minmax(0,1fr);
+ gap:8px;padding:9px 12px;border:1px solid var(--sf-ui-border);border-radius:10px;background:var(--sf-ui-surface)}
+.hiring-proposals-review dt{color:var(--sf-ui-muted);font-size:12px}
+.hiring-proposals-review dd{overflow-wrap:anywhere;margin:0;font-size:12px;font-weight:800}
+.hiring-proposals-review>p:last-of-type{line-height:1.6;color:var(--sf-ui-muted);font-size:12px;margin:0}
+.hiring-proposals-review-actions{display:flex;gap:10px;flex-wrap:wrap}
+.hiring-proposals-review-actions>.sf-ui-button{min-height:48px}
+@media(max-width:750px){
+ .hiring-proposals-form{
+  position:fixed!important;inset:0 0 calc(72px + env(safe-area-inset-bottom)) 0!important;
+  z-index:75!important;border-radius:0!important;margin:0!important;
+  width:100%!important;max-height:none!important;overflow-y:auto;overscroll-behavior:contain;
+  background:var(--sf-ui-surface-raised)!important;padding:14px 14px 26px!important;
+  box-shadow:0 0 0 100vmax #08061188
+ }
+ .hiring-proposals-mobile-form-head{position:sticky;top:-14px;z-index:1;
+  display:flex;align-items:center;justify-content:space-between;gap:12px;
+  background:var(--sf-ui-surface-raised);padding:10px 0 14px;
+  border-bottom:1px solid var(--sf-ui-border)}
+ .hiring-proposals-mobile-form-head strong{font-size:16px}
+ .hiring-proposals-mobile-form-head button{min-height:44px;min-width:68px;
+  border:1px solid var(--sf-ui-border);background:var(--sf-ui-surface);border-radius:10px;
+  color:var(--sf-ui-text);font-weight:800}
+ .hiring-proposals-form .sf-booking-fieldset{display:grid;gap:15px}
+ .hiring-proposals-fields{grid-template-columns:1fr}
+ .hiring-proposals-submit{display:grid;gap:8px}
+ .hiring-proposals-submit>p{min-width:0;max-width:none}
+ .hiring-proposals-submit button,.hiring-proposals-review-actions button{width:100%;min-height:50px}
+ .hiring-proposals-review-actions{display:grid;grid-template-columns:1fr}
+ .hiring-proposals-review dl>div{grid-template-columns:1fr;gap:3px}
+}
