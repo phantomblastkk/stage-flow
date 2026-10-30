@@ -2,8 +2,9 @@
 
 import { FormEvent, useState } from "react";
 import Link from "next/link";
-import { AlertCircle, CheckCircle2, Flag, LoaderCircle, ShieldCheck, X } from "lucide-react";
+import { Flag, ShieldCheck, X } from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
+import { Button, InlineNotice, Select, Textarea } from "@/src/components/ui";
 import "./marketplace-report-dialog.css";
 
 export type ReportTarget = {
@@ -72,34 +73,31 @@ export default function MarketplaceReportDialog({target,signedIn,onClose,onSubmi
         <div><span><Flag size={16}/> CENTRAL DE CONFIANÇA</span>
           <h2>Denunciar {target.type==="review"?"avaliação":"perfil"}</h2>
           <p>{target.label}</p></div>
-        <button type="button" onClick={onClose} aria-label="Fechar denúncia"><X size={20}/></button>
+        <Button variant="ghost" onClick={onClose} aria-label="Fechar denúncia"><X size={20}/></Button>
       </header>
       <div className="market-report-body">
         {!signedIn?<div className="market-report-login">
           <p>Faça login para registrar uma denúncia. O catálogo não publica seu nome nem os detalhes da denúncia.</p>
-          <Link href="/login" className="market-report-send">Entrar na conta</Link>
-        </div>:success?<div className="market-report-success" role="status">
-          <CheckCircle2 size={22}/>
-          <p>{success}</p>
-          <button type="button" className="market-report-send" onClick={onClose}>Concluir</button>
+          <Link href="/login" className="sf-ui-button sf-ui-button-primary">Entrar na conta</Link>
+        </div>:success?<div className="market-report-success">
+          <InlineNotice tone="success">{success}</InlineNotice>
+          <Button onClick={onClose}>Concluir</Button>
         </div>:<form onSubmit={event=>void submit(event)}>
           <p>Relate apenas problemas reais. Sua denúncia será analisada por um moderador autorizado antes de qualquer ação.</p>
-          <label htmlFor="market-report-reason">Qual é o problema?</label>
-          <select id="market-report-reason" required
+          <Select label="Qual é o problema?" id="market-report-reason" required
             value={reason} onChange={e=>setReason(e.target.value)} disabled={busy}>
             {reasons.map(r=><option key={r.value} value={r.value}>{r.label}</option>)}
-          </select>
-          <label htmlFor="market-report-details">Descreva o ocorrido (opcional)</label>
-          <textarea id="market-report-details" rows={4} maxLength={900}
+          </Select>
+          <Textarea label="Descreva o ocorrido (opcional)" id="market-report-details" rows={4} maxLength={900}
+            hint={details.length+"/900 caracteres"}
             value={details} disabled={busy}
             onChange={e=>setDetails(e.target.value)}
             placeholder="Descreva o problema para ajudar na análise, sem informar telefones ou documentos pessoais."/>
-          <small>{details.length}/900 caracteres</small>
-          {error&&<p className="market-report-error" role="alert"><AlertCircle size={16}/>{error}</p>}
-          <button className="market-report-send" type="submit" disabled={busy}>
-            {busy?<LoaderCircle size={16}/>:<Flag size={16}/>}
+          {error&&<InlineNotice tone="danger">{error}</InlineNotice>}
+          <Button type="submit" loading={busy} disabled={busy}>
+            {!busy&&<Flag size={16}/>}
             {busy?"Enviando...":"Enviar denúncia"}
-          </button>
+          </Button>
         </form>}
         <div className="market-report-privacy"><ShieldCheck size={15}/>
           O relato fica privado na central de moderação e não altera automaticamente a posição do músico.

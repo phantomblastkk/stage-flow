@@ -57,6 +57,8 @@ try{
    await route.fulfill({contentType:"text/html",body:'<!doctype html><html lang="pt-BR"><body style="margin:0;background:#101827;color:white;font-family:Arial;display:grid;place-items:center;height:100vh"><p>Player sintético para teste de navegação</p></body></html>'});
   });
   let publicGalleryRows=[];
+  let publicBookingResult="invalid_message",reportResult="invalid";
+  const publicBookingWrites=[],reportWrites=[];
   await context.route(api+"/**",async route=>{
    const req=route.request(),url=new URL(req.url()),rpc=url.pathname.split("/").at(-1);let data=[],status=200;
    if(req.method()==="OPTIONS"){await route.fulfill({status:204,headers:{"access-control-allow-origin":"*","access-control-allow-headers":"*"}});return;}
@@ -98,8 +100,10 @@ try{
    const body=req.postDataJSON();
    if(url.pathname.endsWith("/user"))data=user;
    else if(rpc==="profiles"){assert.equal(url.searchParams.get("id"),"eq."+actor);data={...profile,is_producer:producer,...(singerMode?{display_name:"Artista de teste",is_singer:true,is_musician:false,artist_kind:"lead",username:singerUsername}:{})};}
-   else if(rpc==="stage_public_pro_artist_site")data={artist:{name:"Artista de teste",username:"cantor-teste",bio:"Biografia pública",city:"São Paulo",headline:"No palco",instagram_url:null,youtube_url:null,spotify_url:null,avatar_path:null,cover_path:null,bookings_enabled:false},design:{theme:"midnight",accent:"violet",section_order:["about","photos","videos","agenda","contact"],visible_sections:["about","photos","videos","contact"]},media:publicGalleryRows,events:[]};
+   else if(rpc==="stage_public_pro_artist_site")data={artist:{name:"Artista de teste",username:"cantor-teste",bio:"Biografia pública",city:"São Paulo",headline:"No palco",instagram_url:null,youtube_url:null,spotify_url:null,avatar_path:null,cover_path:null,bookings_enabled:true},design:{theme:"midnight",accent:"violet",section_order:["about","photos","videos","agenda","contact"],visible_sections:["about","photos","videos","contact"]},media:publicGalleryRows,events:[]};
    else if(["stage_public_artistic_musician","stage_public_booking_contact"].includes(rpc))data=null;
+   else if(rpc==="stage_submit_artist_booking"){publicBookingWrites.push(body);data=publicBookingResult;}
+   else if(rpc==="stage_marketplace_report"){reportWrites.push(body);data=reportResult;}
    else if(rpc==="stage_public_verified")data=false;
    else if(rpc==="stage_owner_admin_status")data=false;
    else if(rpc==="stage_venue_partner_access")data={status:"ok",items:[]};
@@ -1468,6 +1472,36 @@ try{
   assert.deepEqual({artistReads,draftReads,mediaReads,publicationReads,agendaReads,flyerReads},videoPublicReads,"Playback controls must not query editor data");
   assert.deepEqual({media:mediaWrites.length,publish:proPublishWrites.length,storage:storageWrites.length,deletes:privateDeletes.length},videoUiWrites);
   console.log(`PASS video controls ${width}px: opt-in embeds, synthetic iframe, shared 44px actions, keyboard focus/return, thumbnail selection, reduced motion, safe external link, removed-video guard, public route and no mutations`);
+  // Part 45: shared controls preserve the public booking contract and accessible mobile layout.
+  const publicBooking=page.locator(".artist-booking-form");
+  await publicBooking.waitFor();
+  const bookingSend=publicBooking.getByRole("button",{name:"Enviar solicitação",exact:true});
+  assert.equal(await bookingSend.isDisabled(),true);
+  await publicBooking.getByLabel("Seu nome *",{exact:true}).fill("Contato sintético");
+  await publicBooking.getByLabel("E-mail para retorno *",{exact:true}).fill("contato@example.test");
+  await publicBooking.getByLabel("Cidade do evento *",{exact:true}).fill("São Paulo");
+  const bookingMessage=publicBooking.getByLabel("Conte sobre o evento *",{exact:true});
+  await bookingMessage.fill("Evento de teste com informações suficientes.");
+  assert.match(await publicBooking.locator("#artist-booking-message-help").innerText(),/mínimo de 20/);
+  await publicBooking.getByRole("checkbox").check();
+  const publicBookingSizes=await publicBooking.locator(".sf-ui-input,.sf-ui-button").evaluateAll(nodes=>nodes.map(el=>({height:el.getBoundingClientRect().height,font:getComputedStyle(el).fontSize})));
+  assert.ok(publicBookingSizes.every(x=>x.height>=44));
+  assert.ok(publicBookingSizes.slice(0,6).every(x=>parseFloat(x.font)>=16));
+  await bookingMessage.focus();assert.ok(await bookingMessage.evaluate(el=>el.matches(":focus-visible")&&parseFloat(getComputedStyle(el).outlineWidth)>=2));
+  await activate(bookingSend);
+  await publicBooking.getByRole("alert").filter({hasText:"Descreva o evento"}).waitFor();
+  assert.equal(publicBookingWrites.length,1);
+  assert.equal(await bookingMessage.inputValue(),"Evento de teste com informações suficientes.");
+  assert.deepEqual(publicBookingWrites[0],{p_username:"cantor-teste",p_contact_name:"Contato sintético",p_contact_email:"contato@example.test",p_contact_phone:null,p_event_city:"São Paulo",p_event_date:null,p_message:"Evento de teste com informações suficientes.",p_consent:true,p_website:""});
+  await publicBooking.screenshot({path:`test-results/operational-public-booking-shared-${width}.png`});
+  assert.ok(await publicBooking.evaluate(el=>el.scrollWidth<=el.clientWidth+1));
+  publicBookingResult="received";await activate(bookingSend);
+  await publicBooking.getByRole("heading",{name:"Solicitação enviada!",exact:true}).waitFor();
+  assert.equal(publicBookingWrites.length,2);
+  await activate(publicBooking.getByRole("button",{name:"Enviar outra solicitação",exact:true}));
+  assert.equal(await bookingMessage.inputValue(),"");assert.equal(await bookingSend.isDisabled(),true);
+  assert.equal(await publicBooking.getByLabel("Seu nome *",{exact:true}).inputValue(),"Contato sintético");
+  console.log(`PASS public booking shared UI ${width}px: native labels/validation, consent, exact payload, retained draft after rejection, confirmed result/reset, 16px fields, 44px controls and keyboard focus`);
   // Part 40: catalog presentation preserves explicit search payloads and pagination.
   catalogMode=true;await page.emulateMedia({reducedMotion:"reduce"});
   await page.goto(origin+"/marketplace");
@@ -1711,6 +1745,27 @@ try{
   await activate(closeInvite);await invitePanel.waitFor({state:"detached"});assert.equal(await inviteOrigin.evaluate(el=>el===document.activeElement),true);
   await activate(inviteOrigin);await invitePanel.waitFor();await activate(invitePanel.getByRole("button",{name:"Denunciar este perfil",exact:true}));
   await page.locator(".market-report-dialog").waitFor();assert.equal(await invitePanel.count(),0,"Reporting must not open an inert dialog behind a native modal");
+  const reportDialog=page.locator(".market-report-dialog");
+  const reportReason=reportDialog.getByLabel("Qual é o problema?",{exact:true});
+  const reportDetails=reportDialog.getByLabel("Descreva o ocorrido (opcional)",{exact:true});
+  await reportReason.selectOption("spam");await reportDetails.fill("Relato sintético para verificar o formulário.");
+  const reportSizes=await reportDialog.locator(".sf-ui-input,.sf-ui-button").evaluateAll(nodes=>nodes.map(el=>({h:el.getBoundingClientRect().height,w:el.getBoundingClientRect().width})));
+  assert.ok(reportSizes.every(x=>x.h>=44&&x.w>=44));
+  assert.equal(await reportDetails.evaluate(el=>getComputedStyle(el).fontSize),"16px");
+  await reportDetails.focus();assert.ok(await reportDetails.evaluate(el=>el.matches(":focus-visible")&&parseFloat(getComputedStyle(el).outlineWidth)>=2));
+  assert.equal(await reportDetails.getAttribute("aria-describedby"),"market-report-details-help");
+  await activate(reportDialog.getByRole("button",{name:"Enviar denúncia",exact:true}));
+  await reportDialog.getByRole("alert").filter({hasText:"Confira o motivo"}).waitFor();
+  assert.equal(await reportDetails.inputValue(),"Relato sintético para verificar o formulário.");
+  assert.equal(reportWrites.length,1);assert.equal(reportWrites[0].p_reason,"spam");
+  assert.equal(reportWrites[0].p_type,"musician");assert.equal(reportWrites[0].p_target_id,catalogRows[0].musician_id);
+  assert.equal(reportWrites[0].p_details,"Relato sintético para verificar o formulário.");
+  await reportDialog.screenshot({path:`test-results/operational-marketplace-report-shared-${width}.png`});
+  assert.ok(await reportDialog.evaluate(el=>el.scrollWidth<=el.clientWidth+1));
+  reportResult="submitted";await activate(reportDialog.getByRole("button",{name:"Enviar denúncia",exact:true}));
+  await reportDialog.getByRole("status").filter({hasText:"Denúncia registrada para revisão humana"}).waitFor();
+  assert.equal(reportWrites.length,2);assert.deepEqual(reportWrites[0],reportWrites[1]);
+  console.log(`PASS marketplace report shared UI ${width}px: labeled shared fields, count hint, exact synthetic payload, retained rejected draft, confirmed notice, 16px fields and 44px actions`);
   await activate(page.getByRole("button",{name:"Fechar denúncia",exact:true}));
   assert.equal(await page.evaluate(()=>document.body.style.overflow),invitationOverflow);
   console.log(`PASS marketplace invitation ${width}px: native modal/focus loop/return, events read recovery, explicit/cancelled confirmation, pending close and duplicate guard, retained fields, uncertain same-payload reconciliation, existing invite guard and report handoff`);

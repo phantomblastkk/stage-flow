@@ -3,25 +3,18 @@
 .artist-booking-form>p{font-size:13px;line-height:1.75;color:var(--muted);margin:9px 0 19px}
 .artist-booking-form form{display:grid;gap:16px}
 .artist-booking-fields{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:13px}
-.artist-booking-field{display:flex;flex-direction:column;gap:7px;min-width:0}
-.artist-booking-field label{font-size:12px;font-weight:700;color:var(--text);display:flex;gap:6px;align-items:center}
-.artist-booking-field input,.artist-booking-field textarea{
-  border:1px solid var(--line);border-radius:10px;background:var(--panel2);
-  color:var(--text);font-family:inherit;font-size:13px;outline:none;
-  min-width:0;width:100%;padding:12px 13px
-}
-.artist-booking-field input:focus,.artist-booking-field textarea:focus{border-color:var(--artist-free-accent,var(--lime))}
-.artist-booking-field textarea{resize:vertical;line-height:1.6}
-.artist-booking-field input[type="date"]{color-scheme:dark}
-.artist-booking-field small{font-size:10px;color:var(--muted)}
-.artist-booking-consent{display:flex;gap:12px;align-items:flex-start;cursor:pointer}
-.artist-booking-consent input{accent-color:var(--artist-free-accent,var(--lime));margin:4px 0 0;flex:none}
+.artist-booking-form .sf-ui-field{min-width:0}
+.artist-booking-form .sf-ui-input{font:inherit;font-size:16px}
+.artist-booking-form textarea{resize:vertical;line-height:1.6}
+.artist-booking-form input[type="date"]{color-scheme:dark}
+.artist-booking-consent{display:flex;gap:12px;align-items:flex-start;min-height:44px;padding:8px 0;cursor:pointer}
+.artist-booking-consent input{accent-color:var(--artist-free-accent,var(--lime));margin:4px 0 0;flex:none;width:20px;height:20px}
+.artist-booking-consent:focus-within{outline:3px solid var(--sf-ui-brand);outline-offset:3px;border-radius:var(--sf-ui-radius-sm)}
 .artist-booking-consent span{font-size:11px;color:var(--muted);line-height:1.75}
-.artist-booking-error{color:#ffbdbd;background:#341b24;border:1px solid #72454c;padding:11px;border-radius:9px;font-size:12px}
 .artist-booking-submit{width:fit-content;justify-content:center;min-width:180px}
 .artist-booking-note{font-size:11px!important;margin:0!important;line-height:1.7!important}
 .artist-booking-honey{position:absolute!important;left:-10000px!important;top:-10000px!important;width:1px!important;height:1px!important;overflow:hidden!important}
-.artist-booking-complete{border:1px solid #4a6948;border-radius:15px;background:#18291d;padding:24px;display:grid;justify-items:start;gap:14px}
+.artist-booking-complete{border:1px solid var(--sf-ui-success-border);border-radius:var(--sf-ui-radius);background:var(--sf-ui-success-bg);padding:24px;display:grid;justify-items:start;gap:14px}
 .artist-booking-complete svg{color:var(--artist-free-accent,var(--lime))}
 .artist-booking-complete h2{font:800 23px Manrope,sans-serif;margin:0}
 .artist-booking-complete p{color:var(--muted);font-size:13px;line-height:1.75;margin:0}
