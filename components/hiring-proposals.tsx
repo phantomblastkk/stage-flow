@@ -4,6 +4,7 @@ import {Button,Input,Textarea,InlineNotice,StatusChip} from "@/src/components/ui
 import {useEffect,useRef,useState} from "react";
 import "@/src/domains/booking/components/booking-ui.css";
 import {useHiringProposals} from "@/src/domains/booking/hooks/use-hiring-proposals";
+import {parseProposalFee} from "@/src/domains/booking/model/fee-input";
 import Link from "next/link";
 import { CalendarClock, CheckCircle2, ClipboardList, FileCheck2, Handshake, LoaderCircle, RotateCcw, Send, XCircle } from "lucide-react";
 import { invitationAgendaHref } from "@/src/domains/booking/model/booking-links";
@@ -23,6 +24,7 @@ function HiringProposalsPanel({thread,onUpdate}:Props){
  const {items,loading,busy,error,notice,readError,showForm,setShowForm,title,setTitle,venue,setVenue,city,setCity,starts,setStarts,fee,setFee,details,setDetails,scheduleCheck,setScheduleCheck,load,checkSchedule,submit,decide,withdraw}=useHiringProposals(thread,onUpdate);
 
  const [reviewing,setReviewing]=useState(false);
+ const [reviewError,setReviewError]=useState("");
  const reviewRef=useRef<HTMLHeadingElement|null>(null);
  useEffect(()=>{if(reviewing)reviewRef.current?.focus();},[reviewing]);
  const pending=items.find(x=>x.status==="pending");
@@ -33,7 +35,7 @@ function HiringProposalsPanel({thread,onUpdate}:Props){
     <h3>Propostas de show</h3></div>
    {thread.acting_as==="requester"&&!readError&&!loading&&!pending&&!accepted&&
     <Button type="button" variant="ghost" disabled={busy}
-     onClick={()=>{setReviewing(false);setShowForm(v=>!v);}}><ClipboardList size={15}/>
+     onClick={()=>{setReviewing(false);setReviewError("");setShowForm(v=>!v);}}><ClipboardList size={15}/>
       {showForm?"Fechar formulário":"Montar proposta"}
     </Button>}
   </div>
@@ -43,13 +45,15 @@ function HiringProposalsPanel({thread,onUpdate}:Props){
   {error&&<InlineNotice tone="danger">{error}</InlineNotice>}
   {notice&&<InlineNotice tone="success">{notice}</InlineNotice>}
   {showForm&&thread.acting_as==="requester"&&!readError&&!loading&&!pending&&!accepted&&
-   <form className="hiring-proposals-form" onSubmit={e=>void submit(e)} aria-label="Montar proposta de contratação">
+   <form className="hiring-proposals-form" onSubmit={e=>{if(!reviewing){e.preventDefault();return;}void submit(e);}} aria-label="Montar proposta de contratação">
     <div className="hiring-proposals-mobile-form-head">
      <strong>Nova proposta de show</strong>
-     <button type="button" onClick={()=>{setReviewing(false);setShowForm(false);}} disabled={busy}>Fechar</button>
+     <button type="button" onClick={()=>{setReviewing(false);setReviewError("");setShowForm(false);}} disabled={busy}>Fechar</button>
     </div>
+    {error&&<div className="hiring-proposal-inline-error"><InlineNotice tone="danger">{error}</InlineNotice></div>}
+    {reviewError&&<div className="hiring-proposal-inline-error" role="alert">{reviewError}</div>}
     <fieldset disabled={busy} className="sf-booking-fieldset">
-    <div className="hiring-proposals-step" hidden={reviewing}>
+    {!reviewing&&<div className="hiring-proposals-step">
     <p className="hiring-proposal-step-label">1 de 2 · Informações principais</p>
     <Input label="Nome da apresentação *" required minLength={3} maxLength={140} value={title} onChange={e=>setTitle(e.target.value)}
        placeholder="Ex.: Pagode de sábado"/>
@@ -81,25 +85,33 @@ function HiringProposalsPanel({thread,onUpdate}:Props){
     </div>
     <div className="hiring-proposals-submit">
      <Button type="button" disabled={busy} onClick={event=>{
+      setReviewError("");
       const form=event.currentTarget.closest("form");
-      if(form?.reportValidity())setReviewing(true);
+      if(!form?.reportValidity())return;
+      if(title.trim().length<3){setReviewError("Informe um nome de apresentação com pelo menos 3 letras.");return;}
+      if(parseProposalFee(fee)===undefined){setReviewError("O cachê precisa ser um valor válido ou ficar vazio para combinar.");return;}
+      const date=new Date(starts+"-03:00");
+      if(!starts||Number.isNaN(date.getTime())||date.getTime()<=Date.now()){
+       setReviewError("Escolha uma data e horário futuros para a apresentação.");return;
+      }
+      setReviewing(true);
      }}>Revisar proposta <ClipboardList size={16}/></Button>
      <p>Se existir um show vinculado à conversa, a proposta usará esse evento. Caso contrário, o sistema criará um rascunho privado somente após o aceite.</p>
     </div>
-    </div>
+    </div>}
     {reviewing&&<section className="hiring-proposals-review" aria-labelledby="hiring-proposal-review-heading">
      <p className="hiring-proposal-step-label">2 de 2 · Conferir antes de enviar</p>
      <h4 id="hiring-proposal-review-heading" tabIndex={-1} ref={reviewRef}>Confira os dados da proposta</h4>
      <dl>
       <div><dt>Apresentação</dt><dd>{title.trim()}</dd></div>
-      <div><dt>Data e hora</dt><dd>{starts?new Date(starts).toLocaleString("pt-BR",{dateStyle:"short",timeStyle:"short"}):"Não definida"}</dd></div>
-      <div><dt>Cachê</dt><dd>{fee.trim()?"R$ "+fee:"A combinar"}</dd></div>
+      <div><dt>Data e hora</dt><dd>{starts?when(new Date(starts+"-03:00").toISOString()):"Não definida"}</dd></div>
+      <div><dt>Cachê</dt><dd>{formatFee(parseProposalFee(fee)??null)}</dd></div>
       {(venue||city)&&<div><dt>Local</dt><dd>{[venue,city].filter(Boolean).join(" · ")}</dd></div>}
       {details.trim()&&<div><dt>Condições</dt><dd>{details.trim()}</dd></div>}
      </dl>
      <p>Enviar a proposta não confirma a contratação. O músico poderá aceitar ou recusar os termos.</p>
      <div className="hiring-proposals-review-actions">
-      <Button type="button" variant="ghost" disabled={busy} onClick={()=>setReviewing(false)}>Voltar e editar</Button>
+      <Button type="button" variant="ghost" disabled={busy} onClick={()=>{setReviewError("");setReviewing(false);}}>Voltar e editar</Button>
       <Button type="submit" disabled={busy}>
        {busy?<LoaderCircle size={15}/>:<Send size={15}/>} Confirmar e enviar proposta
       </Button>
