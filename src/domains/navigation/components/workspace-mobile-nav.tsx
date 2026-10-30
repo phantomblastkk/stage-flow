@@ -42,7 +42,8 @@ export default function WorkspaceMobileNav(){
   const {data:{subscription}}=client.auth.onAuthStateChange(()=>{
    requestId++;
    setChatUnread(null);
-   void refresh();
+   // Avoid awaiting Auth APIs inside an onAuthStateChange callback.
+   window.setTimeout(()=>{if(active)void refresh();},0);
   });
   window.addEventListener("stageflow:chat-updated",onMessage);
   document.addEventListener("visibilitychange",onVisible);
