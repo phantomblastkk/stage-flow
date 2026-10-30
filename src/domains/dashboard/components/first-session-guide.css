@@ -1,0 +1,58 @@
+.sf-first-guide{
+ display:grid;gap:0;min-width:0;margin:16px 0 25px;padding:clamp(16px,2.4vw,24px);
+ border:1px solid #78579e;border-radius:19px;
+ background:linear-gradient(130deg,#322341 0%,#241d38 58%,#191c2c 100%);
+ box-shadow:0 13px 34px #09051144
+}
+.sf-guide-header{display:flex;align-items:center;justify-content:space-between;gap:12px;margin-bottom:11px}
+.sf-guide-eyebrow{display:inline-flex;align-items:center;gap:8px;color:#d9baf4;font:800 10px/1.4 Manrope,sans-serif;letter-spacing:.08em}
+.sf-guide-hide{display:inline-flex;align-items:center;gap:6px;min-height:40px;padding:8px 11px;
+ border:1px solid transparent;border-radius:10px;background:transparent;color:#d4c6e0;
+ font:700 12px Manrope,sans-serif;cursor:pointer}
+.sf-guide-hide:hover,.sf-guide-hide:focus-visible{border-color:#8063a0;background:#46335a}
+.sf-first-guide h2{color:#fff;font:850 clamp(19px,2.4vw,25px)/1.3 Manrope,sans-serif;letter-spacing:-.028em;margin:0 0 7px}
+.sf-guide-description{margin:0 0 19px;color:#d7c9e2;font-size:13px;line-height:1.7}
+.sf-guide-progress-label{display:flex;justify-content:space-between;align-items:center;gap:10px;margin-bottom:9px;font-size:12px;color:#d5c3e6}
+.sf-guide-progress-label strong{color:#eadfff}
+.sf-guide-progress{width:100%;height:8px;border-radius:50px;background:#58466a;overflow:hidden}
+.sf-guide-progress>span{display:block;height:100%;border-radius:50px;background:#b99aef;transition:width .24s ease}
+.sf-guide-task-list{list-style:none;display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px;margin:18px 0 21px;padding:0}
+.sf-guide-task-list li{display:flex;align-items:center;gap:9px;min-height:48px;min-width:0;
+ border:1px solid #66547c;border-radius:12px;padding:9px 11px;background:#211b32}
+.sf-guide-task-list li.is-done{background:#29243a;border-color:#514961}
+.sf-guide-task-list li>span:last-child{color:#bcb0cd;font-size:12px;line-height:1.45}
+.sf-guide-task-list li a{display:flex;align-items:center;justify-content:space-between;gap:7px;flex:1;
+ color:#eee1ff;text-decoration:none;font-weight:700;font-size:12px;line-height:1.45}
+.sf-guide-task-list li a svg{flex:none}
+.sf-guide-task-check{display:grid;place-items:center;flex:none;width:25px;height:25px;
+ border-radius:50%;border:1px solid #806994;color:#d7c3eb}
+.sf-guide-task-check>span{width:8px;height:8px;border:1px solid #846d95;border-radius:50%}
+.sf-guide-task-list li.is-done .sf-guide-task-check{background:#4d3a65;color:#fff;border-color:#8569a2}
+.sf-guide-actions{display:flex;align-items:center;gap:12px;flex-wrap:wrap}
+.sf-guide-primary,.sf-guide-secondary{display:inline-flex;align-items:center;justify-content:center;
+ gap:9px;min-height:48px;padding:12px 17px;border-radius:12px;text-decoration:none;font-size:13px;font-weight:800}
+.sf-guide-primary{background:#a77be9;color:#1d112c}
+.sf-guide-secondary{border:1px solid #806a9a;color:#eadcff;background:#352843}
+.sf-guide-primary:hover{background:#c29bff}
+.sf-guide-secondary:hover{background:#463357}
+.sf-guide-help{color:#b7a9c9;font-size:11px;line-height:1.6;margin:15px 0 0}
+.sf-guide-recovery{display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:14px;
+ color:#f3dbe1;font-size:13px;line-height:1.5;padding:11px 0}
+.sf-guide-recovery button{display:inline-flex;align-items:center;gap:7px;min-height:42px;
+ padding:9px 12px;border-radius:10px;border:1px solid #8e729f;background:#412c51;color:white;cursor:pointer}
+.sf-guide-status{color:#e1d1ed;font-size:13px;margin:4px 0}
+.sf-guide-reopen{display:inline-flex;align-items:center;gap:9px;margin:9px 0 15px;padding:9px 12px;
+ min-height:44px;border-radius:11px;border:1px solid #625078;background:#291f37;color:#dcc5fa;
+ font-size:12px;font-weight:750;cursor:pointer}
+.sf-first-guide a:focus-visible,.sf-guide-reopen:focus-visible,.sf-guide-recovery button:focus-visible,
+.sf-guide-hide:focus-visible{outline:3px solid #dfbaff;outline-offset:3px}
+@media(max-width:680px){
+ .sf-first-guide{margin:11px 0 20px;border-radius:15px}
+ .sf-guide-task-list{grid-template-columns:1fr;gap:7px}
+ .sf-guide-task-list li{min-height:45px}
+ .sf-guide-actions{display:grid;grid-template-columns:1fr}
+ .sf-guide-primary,.sf-guide-secondary{width:100%}
+ .sf-guide-hide span{display:none}
+ .sf-guide-hide{min-width:41px;justify-content:center}
+}
+@media(prefers-reduced-motion:reduce){.sf-guide-progress>span{transition:none}}
