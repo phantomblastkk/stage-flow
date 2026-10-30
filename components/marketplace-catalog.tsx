@@ -12,6 +12,7 @@ import {
 } from "lucide-react";
 import { Button, InlineNotice, Input, LoadingState, Select, Textarea } from "@/src/components/ui";
 import { createClient } from "@/lib/supabase/client";
+import { useMarketplaceInvitation } from "@/src/domains/marketplace/hooks/use-marketplace-invitation";
 import { useMarketplaceReviews } from "@/src/domains/marketplace/hooks/use-marketplace-reviews";
 import { trackMarketplaceExposure } from "@/lib/musician-metrics";
 import "./marketplace-catalog.css";
@@ -46,7 +47,6 @@ type MarketResponse = {
   limit: number;
   offset: number;
 };
-type EventOption = { id: string; title: string; starts_at: string; city: string | null };
 type Sort = "recent" | "name" | "experience" | "rating";
 type FilterState = {
   query: string; city: string; instrument: string; genre: string;
@@ -202,27 +202,11 @@ export default function MarketplaceCatalog({preview=false}:Props) {
   const [canModerate,setCanModerate] = useState(false);
   const [reportTarget,setReportTarget] = useState<ReportTarget|null>(null);
   const [selected,setSelected] = useState<MarketMusician|null>(null);
-  const [events,setEvents] = useState<EventOption[]>([]);
-  const [loadingEvents,setLoadingEvents] = useState(true);
-  const [eventsError,setEventsError] = useState("");
-  const [eventsReady,setEventsReady] = useState(false);
-  const [eventsRetry,setEventsRetry] = useState(0);
-  const eventsReading=useRef(false);
-  const [inviteUncertain,setInviteUncertain] = useState(false);
-  const [inviteError,setInviteError] = useState("");
-  const [inviteNotice,setInviteNotice] = useState("");
   const inviteFeedbackRef=useRef<HTMLDivElement|null>(null);
-  const [confirmedInvites,setConfirmedInvites] = useState<string[]>([]);
-  const confirmedInviteKeys=useRef(new Set<string>());
-  const inviteWriting=useRef(false);
-  const lastInviteAttempt=useRef<{p_event_id:string;p_musician_id:string;p_message:string|null}|null>(null);
   const panelVersion=useRef(0);
   const mounted=useRef(false);
   const invitationDialogRef=useRef<HTMLDialogElement|null>(null);
   const invitationOpenerRef=useRef<HTMLElement|null>(null);
-  const [inviting,setInviting] = useState(false);
-  const [selectedEvent,setSelectedEvent] = useState("");
-  const [inviteMessage,setInviteMessage] = useState("");
   const reviewData=useMarketplaceReviews(gate==="allowed"?selected?.musician_id||null:null,authUserId);
   const reviews=reviewData.reviews.items;
   const reviewable=reviewData.eligibility.items;
@@ -239,6 +223,12 @@ export default function MarketplaceCatalog({preview=false}:Props) {
   const [reviewRating,setReviewRating] = useState(5);
   const [reviewComment,setReviewComment] = useState("");
   const [savingReview,setSavingReview] = useState(false);
+  const { events, loadingEvents, eventsError, eventsReady, inviteUncertain,
+    inviteError, setInviteError, inviteNotice, setInviteNotice, confirmedInvites,
+    inviteWriting, inviting, selectedEvent, setSelectedEvent, inviteMessage,
+    setInviteMessage, retryEvents, sendInvite, resetInvitation } = useMarketplaceInvitation({
+      gate, authUser, selected, panelVersion, mounted, reviewWriting, savingReview
+    });
   const [favoriteBusy,setFavoriteBusy] = useState<string|null>(null);
   const [favoriteFeedback,setFavoriteFeedback] = useState<{kind:"success"|"error"|"info";message:string}|null>(null);
   const [refreshNonce,setRefreshNonce] = useState(0);
@@ -362,31 +352,11 @@ export default function MarketplaceCatalog({preview=false}:Props) {
 
   useEffect(()=>{mounted.current=true;return()=>{mounted.current=false;panelVersion.current++;};},[]);
   useEffect(()=>{
-    if(gate!=="allowed"||!authUser)return;
-    let active=true;
-    async function getEvents(){
-      eventsReading.current=true;setLoadingEvents(true);setEventsReady(false);setEventsError("");
-      try{
-        const {data,error:rpcError}=await createClient().rpc("stage_marketplace_my_events");
-        if(!active)return;
-        if(rpcError||!Array.isArray(data)||!data.every(row=>row&&typeof row.id==="string"&&typeof row.title==="string"&&Number.isFinite(Date.parse(row.starts_at))))throw new Error("events_unavailable");
-        setEvents(data);setEventsReady(true);
-      }catch{if(active)setEventsError("Não foi possível carregar seus shows. Tente novamente antes de convidar.");}
-      finally{if(active){eventsReading.current=false;setLoadingEvents(false);}}
-    }
-    void getEvents();return()=>{active=false;};
-  },[gate,authUser,eventsRetry]);
-
-  useEffect(()=>{
     if(inviting||(!inviteError&&!inviteNotice))return;
     const feedback=inviteFeedbackRef.current;
     feedback?.focus({preventScroll:true});feedback?.scrollIntoView({block:"center",behavior:"instant"});
   },[inviting,inviteError,inviteNotice]);
 
-  function retryEvents(){
-    if(eventsReading.current||inviteWriting.current||inviteUncertain)return;
-    eventsReading.current=true;setLoadingEvents(true);setEventsRetry(v=>v+1);
-  }
   function closeMusician(){
     if(inviteWriting.current||reviewWriting.current||savingReview)return;
     panelVersion.current++;setSelected(null);setError("");setNotice("");setInviteError("");setInviteNotice("");
@@ -497,45 +467,8 @@ export default function MarketplaceCatalog({preview=false}:Props) {
   function openMusician(m:MarketMusician){
     if(inviteWriting.current||reviewWriting.current)return;
     invitationOpenerRef.current=document.activeElement instanceof HTMLElement?document.activeElement:null;
-    panelVersion.current++;lastInviteAttempt.current=null;setInviteUncertain(false);confirmedInviteKeys.current.clear();setConfirmedInvites([]);
-    setSelected(m);setSelectedEvent("");setInviteMessage("");setError("");setNotice("");setInviteError("");setInviteNotice("");
-  }
-  async function sendInvite(e:FormEvent<HTMLFormElement>) {
-    e.preventDefault();
-    if(!selected||!authUser||inviteWriting.current||reviewWriting.current||savingReview)return;
-    const payload=inviteUncertain?lastInviteAttempt.current:{p_event_id:selectedEvent,p_musician_id:selected.musician_id,p_message:inviteMessage.trim()||null};
-    if(!payload||!payload.p_event_id||!eventsReady||loadingEvents||!events.some(ev=>ev.id===payload.p_event_id)||selected.availability_mode==="unavailable")return;
-    const key=payload.p_event_id+":"+payload.p_musician_id;
-    if(confirmedInviteKeys.current.has(key))return;
-    inviteWriting.current=true;
-    if(!window.confirm("Registrar convite individual para "+selected.name+
-      "? O músico poderá aceitar ou recusar no Stage Flow. Nenhuma mensagem externa será enviada automaticamente.")){inviteWriting.current=false;return;}
-    const version=panelVersion.current;
-    const current=()=>mounted.current&&version===panelVersion.current;
-    lastInviteAttempt.current=payload;setInviting(true);setInviteError("");setInviteNotice("");
-    const uncertain=()=>{setInviteUncertain(true);setInviteError("Não foi possível confirmar o convite. Ele pode ter sido registrado. Confirme novamente o mesmo convite antes de criar outro.");};
-    try{
-      const {data,error:rpcError}=await createClient().rpc("stage_marketplace_invite_musician",payload);
-      if(!current())return;
-      const res=data as {status?:string}|null;
-      const reasons:Record<string,string>={
-        login_required:"Entre novamente na sua conta para convidar.",
-        event_not_found:"O show não está disponível na sua conta ou já terminou.",
-        not_listed:"O músico não está recebendo propostas no marketplace.",
-        date_unavailable:"O músico marcou a data do show como indisponível no marketplace.",
-        invalid_message:"A mensagem deve ter até 500 caracteres.",
-        invalid:"Não foi possível identificar o show ou músico escolhido.",
-        not_released:"Marketplace não liberado para a sua conta."
-      };
-      if(rpcError){uncertain();return;}
-      if(res?.status==="sent"||res?.status==="already_exists"){
-        setInviteUncertain(false);confirmedInviteKeys.current.add(key);setConfirmedInvites(current=>current.includes(key)?current:[...current,key]);
-        setInviteNotice(res.status==="already_exists"?"Esse convite já existe. Acompanhe a resposta em Meus convites; nenhuma nova mensagem foi enviada.":"Convite registrado! O músico verá a proposta em Meus convites. A contratação ainda depende da resposta dele.");
-        if(res.status==="sent")setInviteMessage("");
-      }else if(reasons[res?.status||""]){setInviteUncertain(false);setInviteError(reasons[res?.status||""]);}
-      else uncertain();
-    }catch{if(current())uncertain();}
-    finally{inviteWriting.current=false;if(current())setInviting(false);}
+    panelVersion.current++;resetInvitation();
+    setSelected(m);setError("");setNotice("");
   }
   function markReviewed(key:string){
     reviewedKeys.current.add(key);setConfirmedReviews(old=>old.includes(key)?old:[...old,key]);
