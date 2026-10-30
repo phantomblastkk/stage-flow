@@ -1,6 +1,7 @@
 "use client";
 import {useCallback,useEffect,useRef,useState,type FormEvent} from "react";
 import {createClient} from "@/lib/supabase/client";
+import {showSaveFeedback} from "@/src/components/ui/save-feedback";
 import {parseProposalFee} from "../model/fee-input";
 import {isProposalSnapshot} from "../model/proposal-snapshot";
 import {readProposals,readProposalPrefill,checkProposalSchedule,sendProposal,decideProposal,withdrawProposal} from "../services/negotiation-service";
@@ -115,7 +116,9 @@ export function useHiringProposals(thread:HiringThread,onUpdate?:()=>void){
     };
     throw Error(reasons[data?.status]||"Não foi possível enviar a proposta.");
    }
-   setShowForm(false);setNotice(data?.availability_warning?
+   setShowForm(false);
+   showSaveFeedback("Proposta enviada com sucesso! Aguarde a resposta do músico.");
+   setNotice(data?.availability_warning?
     "Proposta enviada, mas há um compromisso ainda não confirmado nesta data. Verifique diretamente com o músico antes do aceite.":
     "Proposta enviada. O show só entrará na agenda após o músico aceitar.");
    await load();if(aliveRef.current)onUpdate?.();
@@ -147,6 +150,7 @@ export function useHiringProposals(thread:HiringThread,onUpdate?:()=>void){
     };
     throw Error(reasons[data?.status]||"Não foi possível responder à proposta.");
    }
+   showSaveFeedback(accept?"Proposta aceita e show registrado com sucesso!":"Resposta salva: proposta recusada.");
    setNotice(accept?
     "Proposta aceita! O show foi registrado na agenda privada com a participação confirmada.":
     "Proposta recusada. O histórico ficará disponível nesta conversa.");
@@ -166,6 +170,7 @@ export function useHiringProposals(thread:HiringThread,onUpdate?:()=>void){
    if(!aliveRef.current)return;
    if(rpcError||data!=="saved")throw Error("Não foi possível retirar a proposta.");
    setNotice("Proposta retirada. Você pode enviar outra com novos detalhes.");
+   showSaveFeedback("Proposta retirada com sucesso.");
    await load();if(aliveRef.current)onUpdate?.();
   }catch(e){if(aliveRef.current)setError(e instanceof Error?e.message:"Erro ao retirar.");}
   finally{locked.current=false;if(aliveRef.current)setBusy(false);}
