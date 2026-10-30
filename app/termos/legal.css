@@ -1,0 +1,13 @@
+.sf-legal{min-height:100dvh;background:radial-gradient(ellipse at 10% 0%,#312044,#10101e 62%);color:#f3eafa;padding:clamp(25px,5vw,70px) 20px 120px}
+.sf-legal-container{max-width:810px;margin:0 auto}
+.sf-legal-return{color:#d6beef;font-size:13px;display:inline-block;margin-bottom:32px}
+.sf-legal-eyebrow{color:#cfa8ff;font:800 11px Manrope,sans-serif;letter-spacing:.12em}
+.sf-legal h1{font:850 clamp(31px,5vw,50px)/1.15 Manrope,sans-serif;letter-spacing:-.045em;margin:7px 0 12px}
+.sf-legal-date{font-size:12px;color:#b8a5cc;margin-bottom:24px}
+.sf-legal p{font-size:15px;line-height:1.85;color:#dacfe5}
+.sf-legal section{border-top:1px solid #493a57;padding:22px 0 5px;margin-top:14px}
+.sf-legal section h2{font:800 18px Manrope,sans-serif;margin:0 0 12px;color:#f4eafe}
+.sf-legal a:not(.sf-legal-cta){color:#dcbcf8;text-decoration:underline;text-underline-offset:4px}
+.sf-legal .sf-legal-foot{border-top:1px solid #493a57;margin-top:25px;padding-top:22px;font-size:13px}
+.sf-legal-cta{display:inline-flex;align-items:center;justify-content:center;min-height:46px;background:#7142d8;border-radius:12px;color:white;padding:12px 20px;font-weight:800;margin-top:16px}
+.sf-legal a:focus-visible{outline:3px solid #cfafff;outline-offset:3px}
