@@ -386,6 +386,9 @@ export default function MeuPerfilArtistico() {
           </form>}
 
           </div>
+          <button type="button" className="sf-artist-preview-shortcut sf-ui-button sf-ui-button-secondary" onClick={()=>setMobileStep(3)}>
+            <Eye size={16}/> Ver prévia antes de publicar
+          </button>
           <MobileEditorWizard
             steps={[{value:0,label:"Identidade e fotos"},{value:1,label:"Apresentação"},
               {value:2,label:"Redes sociais"},{value:3,label:"Publicar e contratar"}]}
