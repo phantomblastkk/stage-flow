@@ -5,7 +5,7 @@ import {resolve} from "node:path";
 const src=(path)=>readFileSync(resolve(process.cwd(),path),"utf8");
 const migration=src("supabase/stage_private_realtime_account_signals.sql");
 const bridge=src("src/domains/navigation/components/stage-realtime-bridge.tsx");
-const root=src("src/domains/navigation/components/workspace-root.tsx");
+const boundary=src("src/domains/navigation/components/workspace-boundary.tsx");
 const messages=src("src/domains/booking/hooks/use-conversation-messages.ts");
 const chat=src("app/conversas/page.tsx");
 const bell=src("components/notification-bell.tsx");
@@ -20,8 +20,8 @@ test("broadcast authorization listens only on the authenticated owner's private 
  assert.doesNotMatch(migration,/for insert to authenticated|using \(true\)|private\s*=>\s*false/i);
  assert.match(bridge,/config:\{private:true\}/);
  assert.match(bridge,/realtime\.setAuth\(session\.access_token\)/);
- assert.match(bridge,/session\.user\.id!==accountId/);
- assert.match(bridge,/removeChannel\(channel\)/);
+ assert.match(bridge,/session\.user\.id/);
+ assert.match(bridge,/removeChannel\(current\)/);
 });
 test("database broadcasts are only change hints; chat body and phone data never leave RPCs",()=>{
  assert.match(migration,/stage_hiring_messages/);
@@ -34,10 +34,10 @@ test("database broadcasts are only change hints; chat body and phone data never 
  assert.match(migration,/revoke all on function public\.stageflow_signal_chat_message/);
  assert.match(migration,/revoke all on function public\.stageflow_signal_notification/);
 });
-test("one realtime subscriber is mounted within the authenticated account boundary",()=>{
- assert.match(root,/<StageRealtimeBridge\/>/);
- assert.ok(root.indexOf('<StageRealtimeBridge/>')>root.indexOf('key={snapshot.user.id'));
- assert.match(bridge,/stageflow:account:"\+accountId/);
+test("one realtime subscriber remains mounted across public, marketplace and private routes",()=>{
+ assert.match(boundary,/<StageRealtimeBridge\/>/);
+ assert.match(boundary,/WorkspaceMobileNav/);
+ assert.match(bridge,/stageflow:account:"\+activeId/);
  assert.match(bridge,/stageflow:notifications-updated/);
  assert.match(bridge,/stageflow:chat-updated/);
  assert.match(bridge,/status==="SUBSCRIBED"/);
