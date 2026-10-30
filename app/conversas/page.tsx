@@ -137,6 +137,9 @@ export default function HiringConversations(){
  },[refreshThreads]);
 
  const active=threads.find(t=>t.id===activeId);
+ const quickReplies=active?.acting_as==="musician"
+  ? ["Estou disponível nessa data.","Qual é o horário do show?","Podemos conversar sobre o cachê?"]
+  : ["Você tem disponibilidade nessa data?","Qual é o seu cachê?","Vamos combinar os detalhes?"];
  const threadView=historyWindow(threads,visibleThreads,"start");
  const threadRows=active&&!threadView.items.some(thread=>thread.id===active.id)?[active,...threadView.items]:threadView.items;
  const hiddenThreads=threads.length-threadRows.length;
@@ -323,6 +326,13 @@ export default function HiringConversations(){
       {showJumpToLatest&&<button type="button" className="hiring-jump-latest"
         onClick={scrollToLatest}>Ir para mensagens recentes ↓</button>}
       <form className="hiring-composer" onSubmit={e=>void send(e)}>
+       <div className="hiring-quick-replies" role="group" aria-label="Sugestões de resposta">
+        {quickReplies.map(reply=><button type="button" key={reply}
+         disabled={busy||messagesLoading||text.length+reply.length+1>1500}
+         onClick={()=>setText(text.trim()?text.trimEnd()+"\n"+reply:reply)}>
+         {reply}
+        </button>)}
+       </div>
        <div><Textarea label="Sua mensagem" id="hiring-message" placeholder="Ex.: Você está disponível para tocar neste sábado? Qual seria seu cachê?"
         value={text} onChange={e=>setText(e.target.value)} maxLength={1500} rows={3}
         onKeyDown={e=>{
