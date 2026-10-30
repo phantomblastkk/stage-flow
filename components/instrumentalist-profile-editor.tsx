@@ -108,7 +108,7 @@ export default function MeuPortfolioDeMusico({unifiedSinger=false,username=null}
            ?value.experience:previous.experience_years,
         price_mode:value.priceMode==="consult"||value.priceMode==="from"?value.priceMode:previous.price_mode,
         theme:value.theme==="midnight"||value.theme==="ivory"||value.theme==="stage"?value.theme:previous.theme,
-        accent:value.accent==="violet"||value.accent==="cyan"||value.accent==="pink"?value.accent:previous.accent,
+        accent:value.accent==="violet"||value.accent==="cyan"||value.accent==="coral"||value.accent==="gold"||value.accent==="lime"?value.accent:previous.accent,
         layout_style:value.layout==="spotlight"||value.layout==="minimal"?value.layout:previous.layout_style
       }));
       if(typeof value.instrumentsText==="string")setInstrumentsText(value.instrumentsText.slice(0,600));
