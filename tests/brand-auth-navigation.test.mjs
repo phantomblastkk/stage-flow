@@ -73,14 +73,14 @@ test("site navigation does not flash login during auth rehydration",()=>{
  assert.doesNotMatch(homeActions,/auth\.signOut\(/);
 });
 
-test("musicians can register for free without singer invitations or compulsory WhatsApp",()=>{
+test("free musician signup has a mandatory contact but separate optional sharing",()=>{
  const signup=load("app/cadastro/page.tsx");
  const premium=load("components/singer-pro-editor.tsx");
- assert.match(signup,/useState<"lead" \| "support" \| "none">\("support"\)/);
- assert.match(signup,/Músicos não precisam de convite/);
- assert.match(signup,/const needsMusicianPhone = \(Boolean\(inviteCode\) \|\| isArtist\) && whatsappConsent/);
- assert.doesNotMatch(signup,/Esta confirmação é obrigatória/);
- assert.match(signup,/required=\{whatsappConsent\}/);
+ assert.match(signup,/signup_flow: "wizard_v2"/);
+ assert.match(signup,/phonePattern\.test\(normalizePhone\(whatsappPhone\)\)/);
+ assert.match(signup,/required\/\>/);
+ assert.match(signup,/whatsapp_notifications_opt_in: whatsappNotifications/);
+ assert.match(signup,/whatsapp_contact_share_opt_in: isArtist && whatsappShare/);
  assert.match(premium,/Recursos Pro do perfil único de cantor/);
  assert.match(premium,/a publicação das opções pagas exige autorização da conta/);
  assert.match(premium,/a cobrança ainda não estão ativados/);
@@ -121,17 +121,15 @@ test("temporary auth errors in invitation inbox do not silently sign out musicia
  assert.doesNotMatch(invites,/auth\.signOut\(/);
 });
 
-test("new application routes are reserved for singer usernames in both frontend and SQL",()=>{
+test("username reservation remains server-enforced while choosing an @ is deferred",()=>{
  const signup=load("app/cadastro/page.tsx");
  const migration=load("supabase/artist_reserved_route_slugs_migration.sql");
- const routes=[
-  "assinatura","conversas","financeiro","homologacao","locais",
-  "meu-desempenho","meus-shows","minha-disponibilidade",
-  "notificacoes","parceiros","pro","shows-recorrentes"
- ];
- for(const route of routes){
-  assert.ok(signup.includes('"'+route+'"'),"signup lacks reserved slug "+route);
-  assert.ok(migration.includes("'"+route+"'"),"database lacks reserved slug "+route);
+ assert.match(signup,/username: null/);
+ assert.match(signup,/link.*perfil.*depois|@ fica para depois|@ ficam para depois/i);
+ for(const route of ["assinatura","conversas","financeiro","homologacao","locais",
+   "meu-desempenho","meus-shows","minha-disponibilidade","notificacoes","parceiros",
+   "pro","shows-recorrentes"]){
+  assert.ok(migration.includes("'"+route+"'"),"reserved slug "+route);
  }
  assert.match(migration,/stage_protect_reserved_artist_usernames/);
  assert.match(migration,/before insert or update of username on public\.profiles/);
