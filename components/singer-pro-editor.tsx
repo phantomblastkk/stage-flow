@@ -12,6 +12,7 @@ import {
   Sparkles, Youtube, Palette, Save, Eye, EyeOff, RotateCcw, ArrowUp, ArrowDown
 } from "lucide-react";
 import {Button,InlineNotice,LoadingState} from "@/src/components/ui";
+import {showSaveFeedback} from "@/src/components/ui/save-feedback";
 import {useArtistPreviewAgenda,PREVIEW_SHOW_LIMIT} from "@/src/domains/events/hooks/use-artist-preview-agenda";
 import { createClient } from "@/lib/supabase/client";
 import {publicInstagramProfile} from "@/lib/artist-social";
@@ -300,6 +301,7 @@ export default function SiteProfissionalPreview({ active = true, onEditData }: {
           visible_sections: [...draft.visible_sections]
         });
         setDraftReady(true);
+        showSaveFeedback("Personalização salva com sucesso! Para aparecer no site público, republique.");
         setDraftMessage("Rascunho salvo! Fotos e Vídeos têm visibilidade e posição independentes. Clique em Republicar para atualizar o site público.");
       }
     } catch {
