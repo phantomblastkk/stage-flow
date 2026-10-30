@@ -42,7 +42,8 @@ export function buildGuide(mode:GuideMode,data:ArtistGuideData|null,eventCount:n
   tasks=[
    task("account","Conta criada","/minha-conta",true),
    task("instruments","Informar instrumentos e estilos","/perfil-artistico?aba=instrumentista",
-     Array.isArray(data?.instruments)&&data.instruments.length>0),
+     Array.isArray(data?.instruments)&&data.instruments.length>0&&
+     Array.isArray(data.genres)&&data.genres.length>0),
    task("identity","Adicionar foto e cidade","/perfil-artistico?aba=instrumentista",
      Boolean(data?.avatar_url&&data.city?.trim())),
    task("publish","Publicar o portfólio de músico","/perfil-artistico?aba=instrumentista",
