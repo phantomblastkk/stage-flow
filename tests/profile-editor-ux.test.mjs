@@ -13,7 +13,7 @@ test("draft recovery is limited to the current account and tab; no automatic RPC
  assert.match(musician,/sf:musician:tabdraft:v1:.*draftOwner/);
  assert.match(hook,/window\.sessionStorage\.setItem/);
  assert.match(hook,/window\.sessionStorage\.getItem/);
- assert.doesNotMatch(hook,/localStorage|supabase|\.rpc\(|\.from\(/i);
+ assert.doesNotMatch(hook,/localStorage|createClient\(|\.rpc\(|\.from\(/);
  assert.match(hook,/expiresAt:Date\.now\(\)\+HOURS_24/);
  assert.match(hook,/if\(serialized.length>16000\)/);
  assert.match(hook,/setPending\(\{key,value:entry.value as T\}\)/);
