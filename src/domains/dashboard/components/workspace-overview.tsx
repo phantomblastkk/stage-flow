@@ -95,13 +95,23 @@ export default function WorkspaceOverview({isMusician,isSinger,isProducer}:{
    </nav>
    <div className="sf-operations-hero">
     <Card className="sf-operations-next-show"><span className="eyebrow">PRÓXIMO SHOW</span>
-     {nextShow?<><h2>{nextShow.title}</h2><p>{nextShow.venue||"Local a definir"}{nextShow.city?" · "+nextShow.city:""}</p><p>{date.format(new Date(nextShow.starts_at))}</p><Link className="sf-ui-button sf-ui-button-primary" href={"/eventos?evento="+encodeURIComponent(nextShow.id)}>Ver detalhes <ArrowUpRight size={16}/></Link></>:<><h2>Seu próximo palco está por vir</h2><p>Confira os convites ou organize um novo show.</p><Link className="sf-ui-button sf-ui-button-primary" href="/eventos?novo=1">Criar evento</Link></>}
+     {nextShow?<><h2>{nextShow.title}</h2><p>{nextShow.venue||"Local a definir"}{nextShow.city?" · "+nextShow.city:""}</p><p>{date.format(new Date(nextShow.starts_at))}</p><Link className="sf-ui-button sf-ui-button-primary" href={"/eventos?evento="+encodeURIComponent(nextShow.id)}>Ver detalhes <ArrowUpRight size={16}/></Link></>:
+      isProducer||isSinger?<><h2>Vamos organizar seu primeiro show?</h2><p>Cadastre uma apresentação para começar sua agenda.</p><Link className="sf-ui-button sf-ui-button-primary" href="/eventos?novo=1">Criar evento</Link></>:
+      <><h2>Prepare-se para o próximo convite</h2><p>Acompanhe propostas recebidas e mantenha sua disponibilidade atualizada.</p><Link className="sf-ui-button sf-ui-button-primary" href="/meus-convites">Ver convites</Link></>}
     </Card>
-    <Card className="sf-operations-market"><span className="eyebrow">MARKETPLACE</span><h2>Seu próximo encontro começa aqui.</h2><p>Descubra profissionais, consulte disponibilidade e conecte seu evento a novos talentos.</p><Link className="sf-ui-button sf-ui-button-primary" href="/marketplace"><Store size={18}/> Abrir marketplace <ArrowUpRight size={16}/></Link><small>Aberto para explorar. Novidades em desenvolvimento aparecem em destaque no catálogo.</small></Card>
+    <Card className="sf-operations-market"><span className="eyebrow">MARKETPLACE</span>
+     <h2>{isProducer?"Encontre quem vai tocar no seu evento":isSinger?"Encontre músicos para sua equipe":"Seu trabalho começa com boas conexões"}</h2>
+     <p>{isProducer||isSinger?"Pesquise por cidade, instrumento e estilo antes de iniciar uma conversa.":"Explore profissionais do StageFlow. Para receber propostas, publique seu portfólio."}</p>
+     <Link className="sf-ui-button sf-ui-button-primary" href="/marketplace"><Store size={18}/> Explorar marketplace <ArrowUpRight size={16}/></Link>
+     <small>O catálogo reúne perfis publicados; não representa uma lista de vagas garantidas.</small></Card>
    </div>
-   <div className="sf-operations-status"><Link href="/meus-convites"><strong>{safeCount(metrics.pending_invites)}</strong> convites pendentes · Responder →</Link><ProfileReadiness/></div>
+   <div className="sf-operations-status">
+    {(isSinger||isMusician)&&<Link href="/meus-convites"><strong>{safeCount(metrics.pending_invites)}</strong> convites pendentes · Responder →</Link>}
+    {(isSinger||isMusician)&&<ProfileReadiness/>}
+    {!isSinger&&!isMusician&&<Link href="/contratar">Buscar artistas e grupos <ArrowUpRight size={16}/></Link>}
+   </div>
    <OperationalFinance revision={latestRequest.current}/>
-   <Card className="sf-operations-opportunities"><div className="sf-workspace-pane-head"><div><h2>Oportunidades para você</h2><p>Explore músicos por estilo, região e disponibilidade diretamente no Marketplace.</p></div><Store size={20}/></div><div className="sf-workspace-quick-actions"><Link href="/marketplace?estilo=Pagode">Pagode</Link><Link href="/marketplace?estilo=Sertanejo">Sertanejo</Link><Link href="/marketplace?aba=favoritos">Favoritos</Link><Link href="/contratar">Artistas e grupos</Link></div><p className="sf-operations-muted">Ainda não há uma fonte de vagas de casas e eventos publicada. Estes acessos abrem buscas reais no catálogo; não representam ofertas de trabalho.</p></Card>
+   {(isProducer||isSinger)&&<Card className="sf-operations-opportunities"><div className="sf-workspace-pane-head"><div><h2>Encontre profissionais para seu próximo show</h2><p>Filtre por estilo e região antes de entrar em contato.</p></div><Store size={20}/></div><div className="sf-workspace-quick-actions"><Link href="/marketplace?estilo=Pagode">Pagode</Link><Link href="/marketplace?estilo=Sertanejo">Sertanejo</Link><Link href="/marketplace?aba=favoritos">Favoritos</Link><Link href="/contratar">Artistas e grupos</Link></div><p className="sf-operations-muted">Estes atalhos abrem buscas reais de profissionais, não ofertas de trabalho.</p></Card>}
   </>}
    {data&&<div className="sf-workspace-columns">
    <Card>
@@ -154,11 +164,10 @@ export default function WorkspaceOverview({isMusician,isSinger,isProducer}:{
     <div><h2>Ações rápidas</h2><p>Suas ações mais comuns, sem passar por vários menus.</p></div>
    </div>
    <div className="sf-workspace-quick-actions">
-    <Link href="/minha-disponibilidade"><CalendarDays size={16}/>Atualizar disponibilidade</Link>
-    <Link href="/perfil-artistico"><UserRound size={16}/>Editar perfil</Link>
-    <Link href="/marketplace"><Store size={16}/>Abrir marketplace</Link>
-    <Link href="/eventos"><CalendarDays size={16}/>Ver agenda</Link>
-    <Link href="/eventos?novo=1"><Plus size={16}/>Criar evento</Link>
+    {(isMusician||isSinger)&&<Link href="/perfil-artistico"><UserRound size={16}/>Editar Perfil Artístico</Link>}
+    {isMusician&&<Link href="/minha-disponibilidade"><CalendarDays size={16}/>Atualizar disponibilidade</Link>}
+    <Link href="/marketplace"><Store size={16}/>Explorar marketplace</Link>
+    {(isProducer||isSinger)&&<Link href="/eventos?novo=1"><Plus size={16}/>Criar evento</Link>}
    </div>
   </Card>}
   {data&&<p className="sf-workspace-asof">Resumo de dados reais, atualizado {timeAgo(data.updated_at)}.
