@@ -25,11 +25,12 @@ test("the initial guide uses verified role flags, never onboarding metadata",()=
 });
 
 test("musician progress is based on saved instruments, image, city and publication",()=>{
- const initial=buildGuide("musician",{instruments:[],avatar_url:null,city:"",is_published:false});
+ const initial=buildGuide("musician",{instruments:[],genres:[],avatar_url:null,city:"",is_published:false});
  assert.equal(initial.percent,25);
  assert.equal(initial.next.id,"instruments");
  assert.equal(initial.next.href,"/perfil-artistico?aba=instrumentista");
- const later=buildGuide("musician",{instruments:["Pandeiro"],avatar_url:"valid-upload",city:"São Paulo",is_published:true});
+ assert.equal(buildGuide("musician",{instruments:["Pandeiro"],genres:[],avatar_url:"valid-upload",city:"São Paulo",is_published:true}).percent,75);
+ const later=buildGuide("musician",{instruments:["Pandeiro"],genres:["Pagode"],avatar_url:"valid-upload",city:"São Paulo",is_published:true});
  assert.equal(later.percent,100);
  assert.equal(later.next,null);
  assert.equal(later.tasks.filter(x=>x.done).length,4);
