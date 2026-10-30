@@ -5,12 +5,16 @@ import Link from "next/link";
 import {ArrowRight,Check,ChevronRight,Compass,RefreshCw,X} from "lucide-react";
 import {createClient} from "@/lib/supabase/client";
 import {useAccount} from "../../account/account-context";
-import {buildGuide,guideMode,type ArtistGuideData,type GuidePlan} from "../model/first-session-guide";
+import {buildGuide,guideMode,type GuidePlan} from "../model/first-session-guide";
+import {useDashboardArtistData} from "./dashboard-artist-data";
 import "./first-session-guide.css";
 
 export default function FirstSessionGuide(){
  const {snapshot:{profile}}=useAccount();
  const mode=guideMode(profile);
+ const artistData=useDashboardArtistData();
+ const artist=mode==="singer"?artistData.singer:artistData.musician;
+ const refreshArtist=artistData.refresh;
  const key=profile&&mode?"stageflow:guide:v1:"+profile.id+":"+mode:null;
  const [loadedKey,setLoadedKey]=useState<string|null>(null);
  const [hiddenKey,setHiddenKey]=useState<string|null>(null);
@@ -30,6 +34,13 @@ export default function FirstSessionGuide(){
 
  useEffect(()=>{
   if(!profile||!mode)return;
+  if(mode!=="organizer"){
+   setLoading(artist.loading);setError(artist.error?"Não foi possível conferir seu progresso agora.":"");
+   if(artist.data)setPlan(buildGuide(mode,artist.data));
+   else setPlan(null);
+   if(!artist.loading)checkedAt.current=Date.now();
+   return;
+  }
   let active=true;
   const request=new AbortController();
   setLoading(true);setError("");setPlan(null);
@@ -41,11 +52,6 @@ export default function FirstSessionGuide(){
       .eq("producer_id",profile!.id).abortSignal(request.signal);
      if(dbError||count===null)throw new Error("Falha ao consultar seus eventos");
      if(active&&!request.signal.aborted)setPlan(buildGuide(mode!,null,count));
-    }else{
-     const rpc=mode==="singer"?"stage_my_artist_page":"stage_my_musician_portfolio";
-     const {data,error:dbError}=await db.rpc(rpc).abortSignal(request.signal);
-     if(dbError||!data)throw new Error("Falha ao consultar seu perfil");
-     if(active&&!request.signal.aborted)setPlan(buildGuide(mode!,data as ArtistGuideData));
     }
     checkedAt.current=Date.now();
    }catch{
@@ -56,7 +62,9 @@ export default function FirstSessionGuide(){
   }
   void load();
   return()=>{active=false;request.abort();};
- },[profile?.id,mode,refreshToken]);
+ },[profile?.id,mode,refreshToken,artist.data,artist.loading,artist.error]);
+
+ useEffect(()=>{if(refreshToken>0&&mode&&mode!=="organizer")void refreshArtist(mode);},[refreshToken,mode,refreshArtist]);
 
  useEffect(()=>{
   const refresh=()=>{

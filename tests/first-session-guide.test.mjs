@@ -55,8 +55,10 @@ test("dashboard mounts one guide, uses own account-scoped sources and leaves dis
  const guide=get("src/domains/dashboard/components/first-session-guide.tsx");
  assert.match(dashboard,/<FirstSessionGuide\/>/);
  assert.ok(dashboard.indexOf("<FirstSessionGuide/>")<dashboard.indexOf("<WorkspaceOverview"));
- assert.match(guide,/stage_my_artist_page/);
- assert.match(guide,/stage_my_musician_portfolio/);
+ const source=get("src/domains/dashboard/components/dashboard-artist-data.tsx");
+ assert.match(source,/stage_my_artist_page/);
+ assert.match(source,/stage_my_musician_portfolio/);
+ assert.match(guide,/useDashboardArtistData/);
  assert.match(guide,/\.eq\("producer_id",profile!\.id\)/);
  assert.match(guide,/\.abortSignal\(request.signal\)/);
  assert.match(guide,/window\.localStorage\.setItem\(key,"hidden"\)/);

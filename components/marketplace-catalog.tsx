@@ -232,6 +232,8 @@ export default function MarketplaceCatalog({preview=false}:Props) {
   const [favoriteBusy,setFavoriteBusy] = useState<string|null>(null);
   const [favoriteFeedback,setFavoriteFeedback] = useState<{kind:"success"|"error"|"info";message:string}|null>(null);
   const [refreshNonce,setRefreshNonce] = useState(0);
+  const [favoritesRevision,setFavoritesRevision]=useState(0);
+  const [identityRevision,setIdentityRevision]=useState(0);
   const [discoveryView,setDiscoveryView]=useState<"recommended"|"favorites"|"history">("recommended");
   const [history,setHistory]=useState<{id:string;other_name:string}[]>([]);
   const [historyError,setHistoryError]=useState("");
@@ -310,13 +312,14 @@ export default function MarketplaceCatalog({preview=false}:Props) {
               :"Não foi possível consultar os músicos. Tente novamente.");return;
         }
         setItems(response.items);setTotal(response.total);
+        if(response.items.length>0)setIdentityRevision(n=>n+1);
         if(response.items.length>0)void trackMarketplaceExposure(response.items.map(m=>m.musician_id),"search");
       } catch {
         if(active){setItems([]);setTotal(0);setCatalogRetryable(true);setCatalogError("Não foi possível consultar os músicos. Tente novamente.");}
       } finally {if(active){searchReading.current=false;setLoading(false);}}
     }
     void search();return()=>{active=false;};
-  },[gate,applied,page,refreshNonce,searchRetry]);
+  },[gate,applied,page,refreshNonce,searchRetry,favoritesRevision]);
 
   // Global highlights retry independently of search filters and pagination.
   useEffect(()=>{
@@ -332,6 +335,7 @@ export default function MarketplaceCatalog({preview=false}:Props) {
           setFeatured([]);setFeaturedError("Não foi possível carregar os músicos em destaque. Tente novamente.");return;
         }
         const shown=result.items.slice(0,6);setFeatured(shown);
+        if(shown.length>0)setIdentityRevision(n=>n+1);
         if(shown.length>0)void trackMarketplaceExposure(shown.map(m=>m.musician_id),"featured");
       } catch {if(active){setFeatured([]);setFeaturedError("Não foi possível carregar os músicos em destaque. Tente novamente.");}}
       finally {if(active){featuredReading.current=false;setFeaturedLoading(false);}}
@@ -393,9 +397,10 @@ export default function MarketplaceCatalog({preview=false}:Props) {
   },[mobileFilters]);
 
   const pages = Math.max(1,Math.ceil(total/limit));
+  const identityKey=[...new Set([...items,...featured].map(m=>m.musician_id))].sort().join(",");
   useEffect(()=>{
-    const ids=[...new Set([...items,...featured].map(m=>m.musician_id))];
-    if(!ids.length)return;
+    if(!identityKey)return;
+    const ids=identityKey.split(",");
     let active=true;
     void createClient().rpc("stage_public_marketplace_identity",{p_ids:ids.slice(0,48)})
       .then(({data,error})=>{
@@ -403,7 +408,7 @@ export default function MarketplaceCatalog({preview=false}:Props) {
         setIdentities(current=>({...current,...data as Record<string,MarketIdentity>}));
       },()=>{});
     return()=>{active=false;};
-  },[items,featured]);
+  },[identityKey,identityRevision]);
 
   const selectedReviewable = useMemo(()=>reviewable.filter(r=>!r.reviewed),[reviewable]);
   function apply(e?:FormEvent<HTMLFormElement>) {
@@ -450,7 +455,7 @@ export default function MarketplaceCatalog({preview=false}:Props) {
       setFavoriteFeedback({kind:"success",message:nextFavorite
         ?"Músico adicionado aos favoritos. Veja seus salvos na aba Favoritos."
         :"Músico removido dos favoritos."});
-      if(applied.favorites)setRefreshNonce(n=>n+1);
+      if(applied.favorites)setFavoritesRevision(n=>n+1);
     }catch{
       setFavoriteFeedback({kind:"error",message:"Não foi possível conectar aos favoritos. Verifique sua conexão."});
     }finally{

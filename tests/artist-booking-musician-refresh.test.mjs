@@ -95,7 +95,8 @@ test("free musician editor expanded limits are validated by the database, not ju
 
 test("dashboard avatar chooses uploaded singer or musician photo, falls back to initials",()=>{
  assert.match(panel,/artist_avatar_path/);
- assert.match(panel,/stage_my_musician_portfolio/);
+ assert.match(panel,/useDashboardArtistData/);
+ assert.match(src("src/domains/dashboard/components/dashboard-artist-data.tsx"),/stage_my_musician_portfolio/);
  assert.match(panel,/stage-artist-public/);
  assert.match(panel,/stage-musician-media/);
  assert.match(panel,/const accountPhoto=singerPhoto\|\|musicianPhoto/);

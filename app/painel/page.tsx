@@ -5,6 +5,7 @@ import {useRouter} from "next/navigation";
 import {Check,Guitar,LayoutDashboard,Mic2,Settings2} from "lucide-react";
 import WorkspaceSidebar from "@/src/domains/navigation/components/workspace-sidebar";
 import WorkspaceOverview from "@/src/domains/dashboard/components/workspace-overview";
+import {DashboardArtistDataProvider,useDashboardArtistData} from "@/src/domains/dashboard/components/dashboard-artist-data";
 import FirstSessionGuide from "@/src/domains/dashboard/components/first-session-guide";
 import { createClient } from "@/lib/supabase/client";
 import NotificationBell from "@/components/notification-bell";
@@ -14,10 +15,14 @@ import "./painel-account-actions.css";
 import {greeting} from "@/src/domains/dashboard/model/operational-summary";
 
 type ArtistKind = "lead" | "support";
-export default function Dashboard() {
+export default function Dashboard(){
+  return <DashboardArtistDataProvider><DashboardContent/></DashboardArtistDataProvider>;
+}
+function DashboardContent() {
   const router = useRouter();
   const {snapshot:account,refresh:refreshAccount}=useAccount();
   const profile=account.profile;
+  const {musician:musicianProfile}=useDashboardArtistData();
 
   const {isOwnerAdmin,partnerHouseCount}=account.permissions;
   const [singerPhoto,setSingerPhoto]=useState<string|null>(null);
@@ -30,16 +35,12 @@ export default function Dashboard() {
   useEffect(()=>{
     if(!profile||!account.user)return;
     const user=account.user,data=profile,supabase=createClient();
-    const request=new AbortController();
     setSingerPhoto(null);setMusicianPhoto(null);
     const singerPath=data.artist_avatar_path;
     if(data.is_singer&&singerPath&&new RegExp("^"+user.id+"/[0-9a-f-]{36}\\.(jpg|png|webp)$","i").test(singerPath))
       setSingerPhoto(supabase.storage.from("stage-artist-public").getPublicUrl(singerPath).data.publicUrl);
-    async function musicianAvatar(){
-      if(!data.is_musician)return;
-      const {data:portfolioData}=await supabase.rpc("stage_my_musician_portfolio").abortSignal(request.signal);
-      if(request.signal.aborted)return;
-      const url=(portfolioData as {avatar_url?:string|null}|null)?.avatar_url;
+    if(data.is_musician){
+      const url=musicianProfile.data?.avatar_url;
       const safePrefix=new URL(supabase.storage.from("stage-musician-media").getPublicUrl(user.id+"/placeholder.png").data.publicUrl);
       try{
         const candidate=url?new URL(url):null;
@@ -47,9 +48,7 @@ export default function Dashboard() {
           candidate.pathname.startsWith(safePrefix.pathname.replace("placeholder.png",""))?candidate.href:null);
       }catch{setMusicianPhoto(null);}
     }
-    void musicianAvatar().catch(()=>{});
-    return()=>request.abort();
-  },[profile?.id,profile?.is_singer,profile?.is_musician,profile?.artist_avatar_path,account.user?.id]);
+  },[profile?.id,profile?.is_singer,profile?.is_musician,profile?.artist_avatar_path,account.user?.id,musicianProfile.data?.avatar_url]);
 
   async function changeExperience(kind: ArtistKind) {
     if (!profile?.is_artist || changingKind || profile.artist_kind === kind) return;

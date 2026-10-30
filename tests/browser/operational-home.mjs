@@ -44,6 +44,7 @@ try{
   let catalogMode=false,catalogSearchMode="ok",catalogFeaturedReads=0,catalogSearchGate,catalogFeaturedGate,catalogFeaturedMode="ok";
   const catalogCalls=[],identityReads=[],rpcTraffic=[];
   const queryAudit={dashboard:{},marketplace:{}};
+  let dashboardProfileMode="ok";
   let catalogFavoriteMode=false;const favoriteRows=new Map();
   const catalogRows=Array.from({length:25},(_,index)=>({musician_id:"50505050-5050-4050-8050-"+String(index+1).padStart(12,"0"),name:"Músico sintético "+(index+1),slug:"musico-sintetico-"+(index+1),headline:"Apresentações ao vivo",city:"São Paulo",instruments:["Cavaquinho"],genres:["Pagode"],avatar_url:null,cover_url:null,price_mode:"from",reference_fee:800,experience_years:5,performance_types:[],availability_note:"Sob consulta",availability_mode:"accepting",date_blocked:false,rating_avg:0,rating_count:0,is_favorite:false}));
   let invitationFixture=false,invitationEventsMode="transport",invitationEventsReads=0,invitationEventsGate,invitationResult="sent",invitationGate;
@@ -133,6 +134,7 @@ try{
    else if(rpc==="stage_public_verified")data=false;
    else if(rpc==="stage_owner_admin_status")data=false;
    else if(rpc==="stage_venue_partner_access")data={status:"ok",items:[]};
+   else if(rpc==="stage_my_musician_portfolio"&&dashboardProfileMode==="transport"){status=503;data={message:"private_dashboard_detail.sql"};}
    else if(rpc==="stage_my_musician_portfolio")data={name:"Henrique",bio:"Músico de teste",city:"São Paulo",slug:"henrique",avatar_url:null,instagram_url:null,is_published:false};
    else if(rpc==="stage_save_musician_portfolio_v4"){portfolioWrites.push(body);data=portfolioResult;}
    else if(rpc==="stage_my_booking_contact"){
@@ -307,6 +309,19 @@ try{
   await settleQueries();
   queryAudit.dashboard.portfolioReads=rpcTraffic.filter(row=>row.rpc==="stage_my_musician_portfolio").length;
   queryAudit.dashboard.overviewReads=rpcTraffic.filter(row=>row.rpc==="stage_workspace_overview").length;
+  assert.equal(queryAudit.dashboard.portfolioReads,1,"Avatar, progress and guide must share one initial own-portfolio read");
+  const initialGuide=page.locator(".sf-first-guide");
+  await activate(initialGuide.getByRole("button",{name:"Ocultar guia inicial",exact:true}));
+  dashboardProfileMode="transport";
+  await activate(page.getByRole("button",{name:/Ver meu guia de primeiros passos/}));
+  await initialGuide.getByRole("alert").filter({hasText:"Não foi possível conferir seu progresso"}).waitFor();
+  assert.doesNotMatch(await initialGuide.innerText(),/private_dashboard_detail|\.sql/);
+  dashboardProfileMode="ok";
+  const beforeGuideRetry=rpcTraffic.filter(row=>row.rpc==="stage_my_musician_portfolio").length;
+  await activate(initialGuide.getByRole("button",{name:"Tentar novamente",exact:true}));
+  await initialGuide.getByRole("progressbar").waitFor();await settleQueries();
+  assert.equal(rpcTraffic.filter(row=>row.rpc==="stage_my_musician_portfolio").length-beforeGuideRetry,1);
+  queryAudit.dashboard.explicitRetryReads=1;
   const mobile=width<=850;
   const nav=page.getByRole("navigation",{name:mobile?"Navegação principal no celular":"Navegação do StageFlow",exact:true});
   await nav.getByRole("link",{name:mobile?"Explorar":"Marketplace",exact:true}).waitFor();
@@ -2013,6 +2028,7 @@ try{
   await favoriteCard.getByRole("button",{name:"Remover dos favoritos",exact:true}).waitFor();
   await settleQueries();
   queryAudit.marketplace.saveFavorite=delta(beforeFavorite,reads());
+  assert.deepEqual(queryAudit.marketplace.saveFavorite,{search:0,featured:0,identity:0},"Local favorite state must not re-read search/highlights/identity");
   const favoriteViewResponse=page.waitForResponse(r=>r.url().endsWith("/stage_marketplace_search")&&r.request().postDataJSON()?.p_only_favorites===true);
   await activate(page.getByRole("button",{name:"Favoritos",exact:true}));await favoriteViewResponse;
   await settleQueries();
@@ -2022,10 +2038,15 @@ try{
   await activate(favoriteCard.getByRole("button",{name:"Remover dos favoritos",exact:true}));await favoriteRemovalResponse;
   await page.getByRole("heading",{name:"Nenhum músico encontrado",exact:true}).waitFor();
   await settleQueries();
-  queryAudit.marketplace.remainingCards=await page.locator(".market-card-grid .market-artist-card").count();
+  assert.equal(await page.locator(".market-card-grid .market-artist-card").count(),0);
   queryAudit.marketplace.removeFavorite=delta(beforeRemoveFavorite,reads());
-  queryAudit.marketplace.lastSearch=catalogCalls.at(-1);
-  queryAudit.marketplace.favoriteState=[...favoriteRows.entries()];
+  assert.deepEqual(queryAudit.marketplace.removeFavorite,{search:1,featured:0,identity:0},"Removing a favorite needs only one result refresh when the same visible identities remain in highlights");
+  const beforeDashboardReturn=rpcTraffic.filter(row=>row.rpc==="stage_my_musician_portfolio").length;
+  await page.goto(origin+"/painel");
+  await page.getByRole("heading",{name:"Deixe seu talento pronto para ser encontrado",exact:true}).waitFor();
+  await settleQueries();
+  assert.equal(rpcTraffic.filter(row=>row.rpc==="stage_my_musician_portfolio").length-beforeDashboardReturn,1,"Returning to the dashboard must fetch a fresh page-local snapshot");
+  queryAudit.dashboard.returnReads=1;
   await writeFile(`test-results/operational-query-audit-${width}.json`,JSON.stringify(queryAudit,null,2));
   console.log(`MEASURE query audit ${width}px: `+JSON.stringify(queryAudit));
   assert.deepEqual(errors,[],"Browser exceptions at "+width);await context.close();
