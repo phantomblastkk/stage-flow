@@ -301,3 +301,12 @@
  .sf-admin-pro-actions button{min-height:44px}
 }
 @media(prefers-reduced-motion:reduce){.sf-admin-pro-actions button{transition:none}}
+
+/* Account deletion is a separate destructive action, never mixed with Pro grants. */
+.sf-admin-account-actions{display:grid;gap:8px;min-width:145px;max-width:190px}
+.sf-admin-account-delete{display:inline-flex;align-items:center;justify-content:center;gap:7px;
+ min-height:44px;padding:10px 12px;border:1px solid #a86b80;border-radius:10px;
+ background:#3c2632;color:#ffdae3;font:850 11px Manrope,sans-serif}
+.sf-admin-account-delete:hover:not(:disabled){border-color:#ec9db5;background:#5b2d42}
+.sf-admin-account-delete:focus-visible{outline:3px solid #edb8dc;outline-offset:3px}
+@media(max-width:600px){.sf-admin-account-actions{min-width:145px}.sf-admin-account-delete{min-height:48px}}
