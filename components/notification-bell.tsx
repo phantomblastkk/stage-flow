@@ -86,6 +86,7 @@ export default function NotificationBell() {
   const [error, setError] = useState("");
   const [openingId, setOpeningId] = useState<string | null>(null);
   const [refreshRequest,setRefreshRequest]=useState(0);
+  const [realtimeConnected,setRealtimeConnected]=useState(false);
 
   // Count without downloading the feed while the dropdown is closed.
   // Fetch five most recent notices only when the user opens it.
@@ -121,7 +122,7 @@ export default function NotificationBell() {
       }
     }
     void refresh();
-    const interval = setInterval(() => { void refresh(); }, 25000);
+    const interval = setInterval(() => { void refresh(); }, realtimeConnected?60000:25000);
     // Keep the count fresh when the owner returns from the administration
     // or a musician reopens the tab after receiving a new Pro courtesy.
     const onReturn=()=>{if(document.visibilityState==="visible")void refresh();};
@@ -134,7 +135,7 @@ export default function NotificationBell() {
       window.removeEventListener("focus",onReturn);
       window.removeEventListener("stageflow:notifications-updated",onReturn);
     };
-  }, [open,refreshRequest]);
+  }, [open,refreshRequest,realtimeConnected]);
 
   useEffect(() => {
     if (!open) return;
@@ -154,6 +155,14 @@ export default function NotificationBell() {
       document.removeEventListener("keydown", onKeyDown);
     };
   }, [open]);
+
+  useEffect(()=>{
+    const update=(event:Event)=>{
+      setRealtimeConnected(Boolean((event as CustomEvent<{connected:boolean}>).detail?.connected));
+    };
+    window.addEventListener("stageflow:realtime-status",update);
+    return()=>window.removeEventListener("stageflow:realtime-status",update);
+  },[]);
 
   async function openNotification(item: NotificationPreview) {
     if (openingId !== null) return;
