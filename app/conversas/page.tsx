@@ -30,7 +30,7 @@ export default function HiringConversations(){
  const [activeId,setActiveId]=useState<string|null>(null);
  const [visibleThreads,setVisibleThreads]=useState(THREAD_RENDER_STEP);
  const [messageWindow,setMessageWindow]=useState({id:"",count:MESSAGE_RENDER_STEP});
- const {messages,messagesLoading,messagesError,text,setText,loadMessages}=useConversationMessages(activeId);
+ const {messages,messagesLoading,messagesError,text,setText,loadMessages,realtimeConnected}=useConversationMessages(activeId);
  const selected=useRef(activeId);selected.current=activeId;
  const alive=useRef(false);
  const threadRequest=useRef<AbortController|null>(null);
@@ -51,7 +51,7 @@ export default function HiringConversations(){
  const messageViewport=useRef<HTMLDivElement|null>(null);
  const shouldStickToBottom=useRef(true);
  const [showJumpToLatest,setShowJumpToLatest]=useState(false);
- const [readingThread,setReadingThread]=useState<string|null>(null);
+ const lastAcknowledged=useRef("");
  function scrollToLatest(){
   const viewport=messageViewport.current;
   if(viewport)viewport.scrollTop=viewport.scrollHeight;
@@ -131,7 +131,9 @@ export default function HiringConversations(){
  useEffect(()=>{
   const refresh=()=>{if(document.visibilityState==="visible"&&!threadRequest.current)void refreshThreads();};
   const timer=setInterval(refresh,22000);document.addEventListener("visibilitychange",refresh);
-  return()=>{clearInterval(timer);document.removeEventListener("visibilitychange",refresh);};
+  window.addEventListener("stageflow:chat-updated",refresh);
+  return()=>{clearInterval(timer);document.removeEventListener("visibilitychange",refresh);
+    window.removeEventListener("stageflow:chat-updated",refresh);};
  },[refreshThreads]);
 
  const active=threads.find(t=>t.id===activeId);
@@ -155,9 +157,11 @@ export default function HiringConversations(){
  },[activeId,messagesLoading,lastMessageId]);
  // Only this account's unread notices for the selected conversation are acknowledged.
  useEffect(()=>{
-  if(!activeId||messagesLoading||readingThread===activeId)return;
+  if(!activeId||messagesLoading)return;
+  const readKey=activeId+":"+(lastMessageId||"empty");
+  if(lastAcknowledged.current===readKey)return;
   let live=true;
-  setReadingThread(activeId);
+  lastAcknowledged.current=readKey;
   async function acknowledge(){
    try{
     const client=createClient();
@@ -177,7 +181,7 @@ export default function HiringConversations(){
   }
   void acknowledge();
   return()=>{live=false;};
- },[activeId,messagesLoading,readingThread]);
+ },[activeId,messagesLoading,lastMessageId]);
  const messageView=historyWindow(messages,messageWindow.id===activeId?messageWindow.count:MESSAGE_RENDER_STEP,"end");
  async function send(e:FormEvent<HTMLFormElement>){
   e.preventDefault();if(!activeId||busy||!text.trim())return;
@@ -221,6 +225,9 @@ export default function HiringConversations(){
   <header className="hiring-heading">
     <span className="eyebrow"><ShieldCheck size={14}/> NEGOCIAÇÃO PRIVADA</span>
     <h1>Conversas de <span className="accent">contratação.</span></h1>
+    <div className="hiring-live-status"><span className={realtimeConnected?"is-connected":""} aria-hidden="true"/>
+     {realtimeConnected?"Atualização ao vivo":"Atualização automática"}
+     <Link href="/notificacoes"><Bell size={14}/> Notificações</Link></div>
     <p>Consulte datas, converse com músicos e formalize uma proposta de apresentação. Seu WhatsApp pessoal não é divulgado aqui.</p>
     <Link className="sf-ui-button sf-ui-button-ghost" href="/meus-convites">Ver convites de shows</Link>{" "}
     <Button variant="ghost" type="button" aria-expanded={showSettings}
