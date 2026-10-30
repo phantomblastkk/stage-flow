@@ -8,6 +8,7 @@ import {
 } from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
 import { Badge, Button, InlineNotice, LoadingState, Select, StatusChip, Textarea } from "@/src/components/ui";
+import {showSaveFeedback} from "@/src/components/ui/save-feedback";
 import "./moderation.css";
 
 type Reason = "spam" | "impersonation" | "inappropriate" | "misleading" | "other";
@@ -153,6 +154,7 @@ export default function MarketplaceModeration() {
           :"Não foi possível registrar esta decisão."
       ));
     }else{
+      showSaveFeedback("Decisão de moderação salva com sucesso!");
       setSuccess("Decisão salva com histórico de auditoria. Os rankings e as buscas já refletem a moderação.");
       setDrafts(prev=>{
         const copy={...prev};delete copy[report.id];return copy;
