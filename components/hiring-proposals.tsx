@@ -1,6 +1,7 @@
 "use client";
 
 import {Button,Input,Textarea,InlineNotice,StatusChip} from "@/src/components/ui";
+import {useEffect,useRef,useState} from "react";
 import "@/src/domains/booking/components/booking-ui.css";
 import {useHiringProposals} from "@/src/domains/booking/hooks/use-hiring-proposals";
 import Link from "next/link";
@@ -21,6 +22,9 @@ const statusNames:Record<ProposalStatus,string>={
 function HiringProposalsPanel({thread,onUpdate}:Props){
  const {items,loading,busy,error,notice,readError,showForm,setShowForm,title,setTitle,venue,setVenue,city,setCity,starts,setStarts,fee,setFee,details,setDetails,scheduleCheck,setScheduleCheck,load,checkSchedule,submit,decide,withdraw}=useHiringProposals(thread,onUpdate);
 
+ const [reviewing,setReviewing]=useState(false);
+ const reviewRef=useRef<HTMLHeadingElement|null>(null);
+ useEffect(()=>{if(reviewing)reviewRef.current?.focus();},[reviewing]);
  const pending=items.find(x=>x.status==="pending");
  const accepted=items.find(x=>x.status==="accepted");
  return <section className="hiring-proposals" aria-label="Propostas da conversa">
@@ -29,7 +33,7 @@ function HiringProposalsPanel({thread,onUpdate}:Props){
     <h3>Propostas de show</h3></div>
    {thread.acting_as==="requester"&&!readError&&!loading&&!pending&&!accepted&&
     <Button type="button" variant="ghost" disabled={busy}
-     onClick={()=>setShowForm(v=>!v)}><ClipboardList size={15}/>
+     onClick={()=>{setReviewing(false);setShowForm(v=>!v);}}><ClipboardList size={15}/>
       {showForm?"Fechar formulário":"Montar proposta"}
     </Button>}
   </div>
@@ -39,16 +43,29 @@ function HiringProposalsPanel({thread,onUpdate}:Props){
   {error&&<InlineNotice tone="danger">{error}</InlineNotice>}
   {notice&&<InlineNotice tone="success">{notice}</InlineNotice>}
   {showForm&&thread.acting_as==="requester"&&!readError&&!loading&&!pending&&!accepted&&
-   <form className="hiring-proposals-form" onSubmit={e=>void submit(e)}>
+   <form className="hiring-proposals-form" onSubmit={e=>void submit(e)} aria-label="Montar proposta de contratação">
+    <div className="hiring-proposals-mobile-form-head">
+     <strong>Nova proposta de show</strong>
+     <button type="button" onClick={()=>{setReviewing(false);setShowForm(false);}} disabled={busy}>Fechar</button>
+    </div>
     <fieldset disabled={busy} className="sf-booking-fieldset">
+    <div className="hiring-proposals-step" hidden={reviewing}>
+    <p className="hiring-proposal-step-label">1 de 2 · Informações principais</p>
     <Input label="Nome da apresentação *" required minLength={3} maxLength={140} value={title} onChange={e=>setTitle(e.target.value)}
        placeholder="Ex.: Pagode de sábado"/>
     <div className="hiring-proposals-fields">
      <Input label="Data e horário *" required type="datetime-local" value={starts} onChange={e=>{setStarts(e.target.value);setScheduleCheck("idle");}}/>
      <Input label="Cachê combinado (R$, opcional)" value={fee} inputMode="decimal" placeholder="Ex.: 250,00" onChange={e=>setFee(e.target.value)}/>
-     <Input label="Local" value={venue} maxLength={140} onChange={e=>setVenue(e.target.value)} placeholder="Nome da casa"/>
-     <Input label="Cidade" value={city} maxLength={80} onChange={e=>setCity(e.target.value)} placeholder="Cidade"/>
     </div>
+    <details className="hiring-proposals-optional">
+     <summary>Adicionar local e outros detalhes (opcional)</summary>
+     <div className="hiring-proposals-fields">
+      <Input label="Local" value={venue} maxLength={140} onChange={e=>setVenue(e.target.value)} placeholder="Nome da casa"/>
+      <Input label="Cidade" value={city} maxLength={80} onChange={e=>setCity(e.target.value)} placeholder="Cidade"/>
+     </div>
+     <Textarea label="Observações (opcional)" rows={2} maxLength={800} value={details}
+      onChange={e=>setDetails(e.target.value)} placeholder="Horário de chegada, formação, repertório, transporte..."/>
+    </details>
     <div className="hiring-schedule-availability">
      <Button type="button" variant="ghost" onClick={()=>void checkSchedule()}
       disabled={busy||scheduleCheck==="checking"||!starts}>
@@ -62,14 +79,32 @@ function HiringProposalsPanel({thread,onUpdate}:Props){
         "Não foi possível consultar a agenda"}
       </span>}
     </div>
-    <Textarea label="Observações (opcional)" rows={2} maxLength={800} value={details}
-      onChange={e=>setDetails(e.target.value)} placeholder="Horário de chegada, formação, repertório, transporte..."/>
     <div className="hiring-proposals-submit">
+     <Button type="button" disabled={busy} onClick={event=>{
+      const form=event.currentTarget.closest("form");
+      if(form?.reportValidity())setReviewing(true);
+     }}>Revisar proposta <ClipboardList size={16}/></Button>
      <p>Se existir um show vinculado à conversa, a proposta usará esse evento. Caso contrário, o sistema criará um rascunho privado somente após o aceite.</p>
-     <Button type="submit"  disabled={busy}>
-      {busy?<LoaderCircle size={15}/>:<Send size={15}/>} Enviar proposta
-     </Button>
     </div>
+    </div>
+    {reviewing&&<section className="hiring-proposals-review" aria-labelledby="hiring-proposal-review-heading">
+     <p className="hiring-proposal-step-label">2 de 2 · Conferir antes de enviar</p>
+     <h4 id="hiring-proposal-review-heading" tabIndex={-1} ref={reviewRef}>Confira os dados da proposta</h4>
+     <dl>
+      <div><dt>Apresentação</dt><dd>{title.trim()}</dd></div>
+      <div><dt>Data e hora</dt><dd>{starts?new Date(starts).toLocaleString("pt-BR",{dateStyle:"short",timeStyle:"short"}):"Não definida"}</dd></div>
+      <div><dt>Cachê</dt><dd>{fee.trim()?"R$ "+fee:"A combinar"}</dd></div>
+      {(venue||city)&&<div><dt>Local</dt><dd>{[venue,city].filter(Boolean).join(" · ")}</dd></div>}
+      {details.trim()&&<div><dt>Condições</dt><dd>{details.trim()}</dd></div>}
+     </dl>
+     <p>Enviar a proposta não confirma a contratação. O músico poderá aceitar ou recusar os termos.</p>
+     <div className="hiring-proposals-review-actions">
+      <Button type="button" variant="ghost" disabled={busy} onClick={()=>setReviewing(false)}>Voltar e editar</Button>
+      <Button type="submit" disabled={busy}>
+       {busy?<LoaderCircle size={15}/>:<Send size={15}/>} Confirmar e enviar proposta
+      </Button>
+     </div>
+    </section>}
     </fieldset>
    </form>}
   {loading?<p className="hiring-proposals-hint">Carregando propostas...</p>:
