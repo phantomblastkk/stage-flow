@@ -42,3 +42,9 @@
 }
 .wrapper>button:focus-visible{outline:3px solid #d8b3ff;outline-offset:3px}
 @media(max-width:560px){.counter{top:-8px;right:-5px}}
+
+.retry{margin-left:auto;display:inline-flex;align-items:center;justify-content:center;min-height:42px;
+ padding:9px 11px;border:1px solid #a886d5;border-radius:9px;background:#4b3466;color:#fff;
+ font-size:12px;font-weight:800;cursor:pointer;white-space:nowrap}
+.retry:hover{background:#60417e}
+@media(max-width:560px){.feedback{flex-wrap:wrap;font-size:12px}.retry{width:100%;margin-left:0}}
