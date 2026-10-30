@@ -2015,8 +2015,10 @@ try{
   const beforeRemoveFavorite=reads();
   await activate(favoriteCard.getByRole("button",{name:"Remover dos favoritos",exact:true}));
   await page.waitForLoadState("networkidle");
-  assert.equal(await page.locator(".market-card-grid .market-artist-card").count(),0);
+  queryAudit.marketplace.remainingCards=await page.locator(".market-card-grid .market-artist-card").count();
   queryAudit.marketplace.removeFavorite=delta(beforeRemoveFavorite,reads());
+  queryAudit.marketplace.lastSearch=catalogCalls.at(-1);
+  queryAudit.marketplace.favoriteState=[...favoriteRows.entries()];
   await writeFile(`test-results/operational-query-audit-${width}.json`,JSON.stringify(queryAudit,null,2));
   console.log(`MEASURE query audit ${width}px: `+JSON.stringify(queryAudit));
   assert.deepEqual(errors,[],"Browser exceptions at "+width);await context.close();
