@@ -102,6 +102,12 @@ begin
     values (new.id, chosen_phone, allow_contact_share)
     on conflict (profile_id) do nothing;
 
+    -- Operational WhatsApp messages are independently opt-in (not the contact share flag).
+    insert into public.stage_hiring_whatsapp_preferences
+      (profile_id, phone_e164, opted_in)
+    values (new.id, chosen_phone, allow_notifications)
+    on conflict (profile_id) do nothing;
+
     insert into public.stage_registration_consents
       (profile_id, terms_version, privacy_version,
        whatsapp_notifications_opt_in, whatsapp_contact_share_opt_in)
