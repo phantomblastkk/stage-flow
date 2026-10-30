@@ -4,13 +4,16 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { ArrowLeft, CalendarDays, Plus, MapPin, Clock3, Trash2, ImagePlus, ChevronLeft, ChevronRight, Mic, Users, Search, Check } from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
-import EventTeamInvites from "@/components/event-team-invites";
 import dynamic from "next/dynamic";
 import { Button, Dialog, EmptyState, InlineNotice, Input, LoadingState, StatusChip, Textarea } from "@/src/components/ui";
 import {showSaveFeedback} from "@/src/components/ui/save-feedback";
 import { AgendaSessionRequired, agendaWindow, catalogAvailable, loadAgenda, loadAgendaTarget, loadAgendaMarkers, loadMoreAgenda, removeEvent, saveEvent, searchCities, searchVenues } from "@/src/domains/events/services/agenda-service";
 import type { AgendaCursor, AgendaSource, CitySuggestion, EventRow, GuestShow, VenueSuggestion } from "@/src/domains/events/types";
 import "./agenda.css";
+
+const EventTeamInvites = dynamic(() => import("@/components/event-team-invites"), {
+ loading: () => <LoadingState label="Carregando equipe e financeiro…"/>,
+});
 
 const ShowFlyerManager = dynamic(() => import("./show-flyer-manager"), {
  loading: () => <LoadingState label="Carregando editor do flyer…"/>,

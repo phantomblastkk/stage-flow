@@ -10,8 +10,13 @@ import {
  Wallet, Wrench, X, RotateCcw
 } from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
-import EventBudgetPanel from "@/components/event-budget-panel";
+import dynamic from "next/dynamic";
+import { LoadingState } from "@/src/components/ui";
 import "./operacao.css";
+
+const EventBudgetPanel = dynamic(() => import("@/components/event-budget-panel"), {
+ loading: () => <LoadingState label="Carregando editor financeiro…"/>,
+});
 
 type Category = "preparation"|"logistics"|"soundcheck"|"show"|"closing";
 type Task={

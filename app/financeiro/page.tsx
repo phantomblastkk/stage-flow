@@ -4,7 +4,7 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { ArrowLeft, BarChart3, CalendarDays, CircleAlert, Download, LockKeyhole, PencilLine, RefreshCw, Save, Wallet } from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
-import EventBudgetPanel from "@/components/event-budget-panel";
+import dynamic from "next/dynamic";
 import ProFeatureLock from "@/components/pro-feature-lock";
 import { Button, EmptyState, InlineNotice, Input, LoadingState, Select, StatCard } from "@/src/components/ui";
 import {showSaveFeedback} from "@/src/components/ui/save-feedback";
@@ -15,6 +15,10 @@ import { buildFinanceCsv } from "@/src/domains/billing/model/finance-csv";
 import { formatCents as cash, formatAmount, formatAmountInput as inputValue, parseAmountInput as parseValue, financeMonthLabel as monthLabel } from "@/src/domains/billing/model/money";
 import { useAccount } from "@/src/domains/account/account-context";
 import "./financeiro.css";
+
+const EventBudgetPanel = dynamic(() => import("@/components/event-budget-panel"), {
+ loading: () => <LoadingState label="Carregando editor financeiro…"/>,
+});
 
 const EMPTY_REPORT=buildFinanceReport([],[],{mode:"all",year:"all",month:"all"});
 

@@ -1,7 +1,7 @@
 // Local browser regression. Every Supabase response is a synthetic fixture.
 // Does not authenticate real users, send notifications or access a remote database.
 import assert from "node:assert/strict";
-import { spawn } from "node:child_process";
+import { spawn, execFileSync } from "node:child_process";
 import { mkdir, readFile, writeFile } from "node:fs/promises";
 import { setTimeout as delay } from "node:timers/promises";
 import { chromium } from "playwright";
@@ -11,6 +11,19 @@ const api = "https://example.supabase.co";
 if (process.env.NEXT_PUBLIC_SUPABASE_URL && process.env.NEXT_PUBLIC_SUPABASE_URL !== api)
   throw Error("This regression runs only with example.supabase.co, never a real project.");
 await mkdir("test-results", { recursive: true });
+const bundleAudit=JSON.parse(execFileSync(process.execPath,["scripts/audit-bundles.mjs"],{encoding:"utf8"}));
+await writeFile("test-results/bundle-audit.json",JSON.stringify(bundleAudit,null,2));
+const deferredEntries=[
+ ["/eventos","app/eventos/page.tsx -> @/components/event-team-invites"],
+ ["/financeiro","app/financeiro/page.tsx -> @/components/event-budget-panel"],
+ ["/eventos/operacao","app/eventos/operacao/page.tsx -> @/components/event-budget-panel"]
+];
+for(const [route,key] of deferredEntries){
+ const deferred=bundleAudit.deferredModules[key]?.files.filter(file=>file.endsWith(".js"));
+ assert.ok(deferred?.length,"Expected a separate async module for "+route);
+ assert.ok(deferred.every(file=>!bundleAudit.routes[route].js.files.includes(file)),"Optional panel JS must not be in the initial route assets for "+route);
+}
+const teamAssets=bundleAudit.deferredModules[deferredEntries[0][1]].files.filter(file=>file.endsWith(".js"));
 let serverLog = "";
 const server = spawn(process.execPath, ["node_modules/next/dist/bin/next", "start", "--hostname", "127.0.0.1", "--port", "3100"], {
   env: { ...process.env, NEXT_PUBLIC_SUPABASE_URL: api, NEXT_PUBLIC_SUPABASE_ANON_KEY: "build-time-placeholder-not-a-real-secret" },
@@ -355,6 +368,11 @@ try {
   }
   for (const width of [360, 768, 1280]) {
     const { context, page, state, errors } = await setup(width);
+    const requestedAssets=new Set();
+    page.on("request",request=>{const url=new URL(request.url());if(url.origin===origin)requestedAssets.add(url.pathname);});
+    let releaseTeamChunk;
+    const teamChunkGate=new Promise(resolve=>releaseTeamChunk=resolve);
+    await context.route(origin+"/_next/"+teamAssets.at(-1),async route=>{await teamChunkGate;await route.continue();});
     try {
       await page.goto(origin + "/eventos");
       await page.locator(".sf-workspace-route-ready").waitFor();
@@ -426,9 +444,18 @@ try {
       await noHorizontalOverflow(page,"flyer editor "+width);
       await flyer.screenshot({path:`test-results/flyer-editor-${width}.png`});
       await ownCard.getByRole("button",{name:"Fechar flyer",exact:true}).click();
+      assert.ok(teamAssets.every(file=>!requestedAssets.has("/_next/"+file)),"Agenda must not request optional team/budget JS before opening the panel");
+      const teamReadsBefore=state.reads.get(userId+":stage_my_teams")??0;
+      const budgetReadsBefore=state.reads.get(userId+":stage_my_event_budget")??0;
       await ownCard.getByRole("button",{name:"Equipe, convites e financeiro",exact:true}).click();
+      await ownCard.getByRole("status").filter({hasText:"Carregando equipe e financeiro…"}).waitFor();
+      assert.equal(state.reads.get(userId+":stage_my_teams")??0,teamReadsBefore);
+      assert.equal(state.reads.get(userId+":stage_my_event_budget")??0,budgetReadsBefore);
+      releaseTeamChunk();
       const teamPanel=ownCard.getByRole("region",{name:/^Equipe de músicos/});
       await teamPanel.getByText("Músico da formação",{exact:true}).waitFor();
+      assert.ok(teamAssets.every(file=>requestedAssets.has("/_next/"+file)),"Team assets load after explicit opening");
+      console.log(`PASS deferred panels ${width}px: three route manifests exclude optional JS; Agenda requests chunks only on opening, shows loading while held, and starts no panel reads before loading`);
       assert.equal(await teamPanel.getByLabel("Equipe salva",{exact:true}).inputValue(),threadA);
       await teamPanel.getByLabel("Mensagem aos convidados (opcional)",{exact:true}).fill("Ensaio de teste");
       const inviteTeamButton=teamPanel.getByRole("button",{name:"Convidar esta equipe",exact:true});
@@ -627,7 +654,8 @@ try {
       await activate(enable);dialog=page.getByRole("dialog");await dialog.getByRole("checkbox").check();await dialog.locator("#account-confirm-role").fill("ATIVAR");
       const first=dialog.getByRole("button",{name:"Cancelar ativação",exact:true});await first.focus();await page.keyboard.press("Shift+Tab");assert.equal(await dialog.getByRole("button",{name:"Confirmar ativação",exact:true}).evaluate(n=>n===document.activeElement),true,"dialog must retain keyboard focus");
       await noHorizontalOverflow(page,"role confirmation "+width);await dialog.screenshot({path:`test-results/account-role-dialog-${width}.png`});
-      await activate(dialog.getByRole("button",{name:"Confirmar ativação",exact:true}));await page.getByRole("status").filter({hasText:"Função de músico ativada"}).waitFor();assert.equal(state.accountWrites.length,2);assert.equal(state.accountWrites[1].p_role,"musician");
+      await activate(dialog.getByRole("button",{name:"Confirmar ativação",exact:true}));await page.locator(".account-page").getByRole("status").filter({hasText:"Função de músico ativada"}).waitFor();
+      await page.getByLabel("Resultado do salvamento",{exact:true}).getByRole("status").filter({hasText:"Função de músico ativada com sucesso!"}).waitFor();assert.equal(state.accountWrites.length,2);assert.equal(state.accountWrites[1].p_role,"musician");
       assert.equal(await page.getByRole("link",{name:"Editar instrumentos e atuação",exact:true}).count(),1);
       state.proReadFail=true;await page.goto(origin+"/assinatura");const accessError=page.locator(".subscription-page").getByRole("alert");await accessError.waitFor();await readable(accessError,"Pro access read error");
       assert.equal(await page.getByText("Assinatura ainda indisponível.",{exact:false}).count(),0,"read failure must not be represented as unavailable entitlement");
