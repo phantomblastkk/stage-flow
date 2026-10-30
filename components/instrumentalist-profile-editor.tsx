@@ -16,6 +16,7 @@ import MusicianPortfolioView, {
 } from "@/components/musician-portfolio-view";
 import "@/src/domains/artists/styles/musician-portfolio-editor.css";
 import {Button,Input,Textarea,InlineNotice,LoadingState} from "@/src/components/ui";
+import {showSaveFeedback} from "@/src/components/ui/save-feedback";
 import MarketplaceMusicianSettings from "@/components/marketplace-musician-settings";
 import BookingContactSettings from "@/components/booking-contact-settings";
 import MobileEditorWizard from "@/components/mobile-editor-wizard";
@@ -349,6 +350,7 @@ export default function MeuPortfolioDeMusico({unifiedSinger=false,username=null}
       setSavedSlug(portfolio.slug);
       setSavedPublished(portfolio.is_published);
       draft.savedToAccount();
+      showSaveFeedback(portfolio.is_published?"Portfólio salvo e publicado com sucesso!":"Etapa salva com sucesso! Seu portfólio permanece privado.");
       setStatus(portfolio.is_published
         ? "Alterações publicadas! Sua página já está pronta para compartilhar."
         : "Rascunho salvo. A página continua oculta até você publicar.");
