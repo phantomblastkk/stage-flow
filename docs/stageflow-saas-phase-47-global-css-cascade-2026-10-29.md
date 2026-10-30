@@ -51,8 +51,8 @@ com tamanho de fonte, não tamanho transferido, minificado, comprimido ou CSS ef
 
 ## Validação e limites
 
-271 testes Node e TypeScript aprovados localmente. Build e CI final serão registrados
-após conclusão. Nenhuma regra funcional de cadastro/autorização foi alterada.
+271 testes Node, TypeScript e build aprovados no CI final; testes locais e build
+também passaram. Nenhuma regra funcional de cadastro/autorização foi alterada.
 
 Comparação local por AST com o PostCSS já instalado: as 86 regras ativas restantes da
 cauda global e as 20 regras restantes da fundação responsiva mantêm seletores,
@@ -78,3 +78,16 @@ componentes pesados e consultas repetidas com evidência antes/depois. Limpeza C
 continua incremental junto às telas que forem alteradas. Estimativa restante de 4–8
 entregas para o escopo original, sujeita às verificações de jornadas e segurança.
 Sem deploy, banco, credenciais ou mudanças em autorização; auto deploy desabilitado.
+
+## Evidências finais e checkpoint
+
+Implementação validada: `30cca27d4c6a23fb666cfd94d30c7d33fb37b9ae`.
+
+- [Diff aplicado](https://github.com/phantomblastkk/stage-flow/compare/5e55208770cc4422506e7d9c1bb12c58f6ac7575...30cca27d4c6a23fb666cfd94d30c7d33fb37b9ae).
+- [Integration and build aprovado](https://github.com/phantomblastkk/stage-flow/actions/runs/40988363659): cadastro, login, agenda e financeiro em navegador com APIs sintéticas. PASS global CSS cascade em 360/768/1280 px.
+- [Operational UX aprovado](https://github.com/phantomblastkk/stage-flow/actions/runs/40988363580): 271 testes, TypeScript, build, isolamento em PostgreSQL temporário e jornadas dos editores/perfis/marketplace/moderação.
+- Artefato agenda-finance-browser-evidence ID 12947569894: três novas capturas public-login-cascade. Revisadas login 360/1280 e cadastro 360. Foco, layout e dimensões finais de marca aprovados.
+- Artefato operational-ux-evidence ID 12947359696: evidências das jornadas existentes, todas aprovadas.
+- Primeira alteração retirou folhas/regras mortas; segundo commit corrigiu a prioridade do foco no formulário legado. A validação final cobre os dois. Não se afirma equivalência visual do foco: essa mudança é intencional para acessibilidade.
+- Estado de produto: StageFlow, Next App Router/TypeScript/Supabase/Vercel; main direta; auto deploy desabilitado; sem deploy manual, SQL, dados ou credenciais nesta parte.
+- Continuidade: Parte 48 deve medir os bundles e carregamento inicial antes de escolher otimizações. CSS segue com 62 folhas; não considerar limpeza integral concluída. Manter temas dinâmicos, contratos de RPC e alterações concorrentes; conferir a main atual antes de editar.
