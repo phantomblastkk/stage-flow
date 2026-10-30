@@ -19,6 +19,8 @@ import {Button,Input,Textarea,InlineNotice,LoadingState} from "@/src/components/
 import MarketplaceMusicianSettings from "@/components/marketplace-musician-settings";
 import BookingContactSettings from "@/components/booking-contact-settings";
 import MobileEditorWizard from "@/components/mobile-editor-wizard";
+import {useSessionProfileDraft} from "@/src/domains/artists/hooks/use-session-profile-draft";
+import ProfileDraftBanner from "@/src/domains/artists/components/profile-draft-banner";
 import {revealMobileEditorField,useMobileEditorKeyboardVisibility} from "@/components/mobile-editor-focus";
 
 type EditorPortfolio = MusicianPortfolio & { is_published: boolean };
@@ -71,12 +73,51 @@ export default function MeuPortfolioDeMusico({unifiedSinger=false,username=null}
   const [status, setStatus] = useState("");
   const [error, setError] = useState(false);
   const [loading, setLoading] = useState(true);
+  const [draftOwner,setDraftOwner]=useState<string|null>(null);
+  const [draftReady,setDraftReady]=useState(false);
   const [saving, setSaving] = useState(false);
   const [uploading, setUploading] = useState<"avatar" | "cover" | null>(null);
   const [previewTab, setPreviewTab] = useState(false);
   const closePreviewRef = useRef<HTMLButtonElement>(null);
   const openPreviewRef = useRef<HTMLButtonElement>(null);
   const [copied, setCopied] = useState(false);
+  const draft=useSessionProfileDraft(draftOwner?"sf:musician:tabdraft:v1:"+draftOwner:null,
+    draftReady,
+    {
+      slug:portfolio.slug,bio:portfolio.bio,city:portfolio.city,headline:portfolio.headline,
+      instrumentsText,genresText,performancesText,highlightsText,additionalMediaText,
+      referenceFeeText,mediaUrl:portfolio.media_url||"",availability:portfolio.availability_note,
+      instagram:portfolio.instagram_url||"",youtube:portfolio.youtube_url||"",
+      spotify:portfolio.spotify_url||"",experience:portfolio.experience_years,
+      priceMode:portfolio.price_mode,theme:portfolio.theme,accent:portfolio.accent,
+      layout:portfolio.layout_style
+    },
+    value=>{
+      setPortfolio(previous=>({...previous,
+        slug:typeof value.slug==="string"?value.slug.slice(0,30):previous.slug,
+        bio:typeof value.bio==="string"?value.bio.slice(0,700):previous.bio,
+        city:typeof value.city==="string"?value.city.slice(0,120):previous.city,
+        headline:typeof value.headline==="string"?value.headline.slice(0,110):previous.headline,
+        media_url:typeof value.mediaUrl==="string"?value.mediaUrl.slice(0,500)||null:previous.media_url,
+        availability_note:typeof value.availability==="string"?value.availability.slice(0,140):previous.availability_note,
+        instagram_url:typeof value.instagram==="string"?value.instagram.slice(0,500)||null:previous.instagram_url,
+        youtube_url:typeof value.youtube==="string"?value.youtube.slice(0,500)||null:previous.youtube_url,
+        spotify_url:typeof value.spotify==="string"?value.spotify.slice(0,500)||null:previous.spotify_url,
+        experience_years:value.experience===null||
+           (typeof value.experience==="number"&&Number.isInteger(value.experience)&&value.experience>=0&&value.experience<=60)
+           ?value.experience:previous.experience_years,
+        price_mode:value.priceMode==="consult"||value.priceMode==="from"?value.priceMode:previous.price_mode,
+        theme:value.theme==="midnight"||value.theme==="ivory"||value.theme==="stage"?value.theme:previous.theme,
+        accent:value.accent==="violet"||value.accent==="cyan"||value.accent==="pink"?value.accent:previous.accent,
+        layout_style:value.layout==="spotlight"||value.layout==="minimal"?value.layout:previous.layout_style
+      }));
+      if(typeof value.instrumentsText==="string")setInstrumentsText(value.instrumentsText.slice(0,600));
+      if(typeof value.genresText==="string")setGenresText(value.genresText.slice(0,600));
+      if(typeof value.performancesText==="string")setPerformancesText(value.performancesText.slice(0,600));
+      if(typeof value.highlightsText==="string")setHighlightsText(value.highlightsText.slice(0,760));
+      if(typeof value.additionalMediaText==="string")setAdditionalMediaText(value.additionalMediaText.slice(0,2100));
+      if(typeof value.referenceFeeText==="string")setReferenceFeeText(value.referenceFeeText.slice(0,20));
+    });
 
   useEffect(() => {
     if (!previewTab) return;
@@ -113,6 +154,7 @@ export default function MeuPortfolioDeMusico({unifiedSinger=false,username=null}
   useEffect(() => {
     let active = true;
     async function load() {
+      setDraftReady(false);
       const supabase = createClient();
       const { data: { user } } = await supabase.auth.getUser();
       if (!active) return;
@@ -159,6 +201,8 @@ export default function MeuPortfolioDeMusico({unifiedSinger=false,username=null}
         setReferenceFeeText(next.reference_fee == null ? "" : String(next.reference_fee));
         setSavedSlug(row.is_published ? (row.slug || "") : "");
         setSavedPublished(Boolean(row.is_published));
+        setDraftOwner(user.id);
+        setDraftReady(true);
       }
       setLoading(false);
     }
@@ -304,6 +348,7 @@ export default function MeuPortfolioDeMusico({unifiedSinger=false,username=null}
       }));
       setSavedSlug(portfolio.slug);
       setSavedPublished(portfolio.is_published);
+      draft.savedToAccount();
       setStatus(portfolio.is_published
         ? "Alterações publicadas! Sua página já está pronta para compartilhar."
         : "Rascunho salvo. A página continua oculta até você publicar.");
@@ -363,6 +408,8 @@ export default function MeuPortfolioDeMusico({unifiedSinger=false,username=null}
     </section>
 
     {status && <InlineNotice tone={error?"danger":"success"}>{status}</InlineNotice>}
+    <ProfileDraftBanner pending={draft.pending} saveState={draft.saveState} restore={draft.restore} discard={draft.discard} published={savedPublished}/>
+    {!unifiedSinger&&<button type="button" className="sf-ui-button sf-ui-button-secondary mp-editor-preview-shortcut" onClick={()=>setPreviewTab(true)}><Eye size={16}/> Pré-visualizar perfil antes de publicar</button>}
 
     <section className="mp-reach-link" data-editor-step="4" aria-label="Painel de desempenho do músico">
       <div>
@@ -397,6 +444,7 @@ export default function MeuPortfolioDeMusico({unifiedSinger=false,username=null}
             <h2><Palette size={18}/> Aparência da página</h2>
             <p>Escolha um visual que combine com sua música. Não precisa programar.</p>
 
+            <details className="sf-editor-extra"><summary>Aparência avançada (opcional)</summary>
             <fieldset className="mp-editor-choice-group">
               <legend>Estilo do perfil</legend>
               <div className="mp-preset-list">
@@ -438,6 +486,7 @@ export default function MeuPortfolioDeMusico({unifiedSinger=false,username=null}
                   </Button>)}
               </div>
             </fieldset>
+            </details>
           </section>
 
           <section id="mp-fotos" data-editor-step="0" className="mp-editor-panel">
@@ -467,9 +516,11 @@ export default function MeuPortfolioDeMusico({unifiedSinger=false,username=null}
             <Input label="Endereço da página *" id="portfolio-slug" value={portfolio.slug}
                 onChange={e => update("slug", e.target.value.toLowerCase().replace(/[^a-z0-9-]/g,""))}
                 minLength={3} maxLength={30} pattern="[a-z0-9-]{3,30}" placeholder="joao-cavaquinho" required={!unifiedSinger} hint={`Seu endereço público será /musico/${portfolio.slug || "seu-nome"} no domínio do StageFlow.`}/>
+            <details className="sf-editor-extra"><summary>Adicionar frase de destaque (opcional)</summary>
             <Input label="Frase de destaque" id="portfolio-headline" value={portfolio.headline}
                 onChange={e => update("headline", e.target.value)} maxLength={110}
                 placeholder="Ex.: Percussionista especializado em samba e pagode"/>
+            </details>
             <Textarea label="Sua apresentação" id="portfolio-bio" value={portfolio.bio}
                 onChange={e => update("bio", e.target.value)} rows={4} maxLength={700}
                 placeholder="Conte sua trajetória, experiências e o que você toca..." hint={`${portfolio.bio.length}/700 caracteres`}/>
@@ -482,9 +533,11 @@ export default function MeuPortfolioDeMusico({unifiedSinger=false,username=null}
             <Input label="Estilos musicais" id="portfolio-genres" value={genresText}
                 onChange={e => setGenresText(e.target.value)}
                 placeholder="Samba, Pagode, MPB"/>
+            <details className="sf-editor-extra"><summary>Adicionar vídeo principal (opcional)</summary>
             <Input label="Link da apresentação principal" id="portfolio-media" type="url" value={portfolio.media_url || ""}
                 onChange={e => update("media_url", e.target.value || null)}
                 placeholder="https://www.youtube.com/watch?v=..." hint="Seu vídeo principal aparece em destaque na seção de trabalhos."/>
+            </details>
           </section>
 
           <section id="mp-trajetoria" data-editor-step="2" className="mp-editor-panel">
@@ -561,6 +614,7 @@ export default function MeuPortfolioDeMusico({unifiedSinger=false,username=null}
                 </span>
               </span>
             </label>
+            <p className="sf-editor-publication-explain">{portfolio.is_published?"Ao salvar, estas informações ficarão visíveis para visitantes.":savedPublished?"Desmarque publicar e salve para deixar a página privada.":"O rascunho da conta não aparece para visitantes até você publicar e salvar."}</p>
             <div className="mp-editor-stickybar">
               <span className="mp-editor-save-hint">
                 {portfolio.is_published ? <Eye size={15}/> : <EyeOff size={15}/>}
