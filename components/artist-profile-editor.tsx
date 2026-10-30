@@ -13,6 +13,8 @@ import {prepareProfilePortrait} from "@/lib/profile-photo";
 import SingerProEditor from "@/components/singer-pro-editor";
 import BookingContactSettings from "@/components/booking-contact-settings";
 import MobileEditorWizard from "@/components/mobile-editor-wizard";
+import {useSessionProfileDraft} from "@/src/domains/artists/hooks/use-session-profile-draft";
+import ProfileDraftBanner from "@/src/domains/artists/components/profile-draft-banner";
 import {revealMobileEditorField,useMobileEditorKeyboardVisibility} from "@/components/mobile-editor-focus";
 import "@/app/meu-perfil-artistico/singer-unified-editor.css";
 import {Button,Input,Textarea,InlineNotice,LoadingState} from "@/src/components/ui";
@@ -80,6 +82,8 @@ export default function MeuPerfilArtistico() {
   const [requestedUsername, setRequestedUsername] = useState("");
   const [claimingUsername, setClaimingUsername] = useState(false);
   const [loading, setLoading] = useState(true);
+  const [draftOwner,setDraftOwner]=useState<string|null>(null);
+  const [draftReady,setDraftReady]=useState(false);
   const [loadAttempt, setLoadAttempt] = useState(0);
   const [loadIssue, setLoadIssue] = useState<"failed" | "role" | null>(null);
   const [bookingAttempt, setBookingAttempt] = useState(0);
@@ -88,11 +92,24 @@ export default function MeuPerfilArtistico() {
   const [saving, setSaving] = useState(false);
   const [message, setMessage] = useState("");
   const [error, setError] = useState(false);
+  const draft=useSessionProfileDraft(draftOwner?"sf:artist:tabdraft:v1:"+draftOwner:null,
+    draftReady&&Boolean(config),
+    {bio,headline,accent,city,instagram,youtube,spotify},
+    value=>{
+      if(typeof value.bio==="string")setBio(value.bio.slice(0,1000));
+      if(typeof value.headline==="string")setHeadline(value.headline.slice(0,100));
+      if(value.accent==="violet"||value.accent==="lime"||value.accent==="cyan")setAccent(value.accent);
+      if(typeof value.city==="string")setCity(value.city.slice(0,120));
+      if(typeof value.instagram==="string")setInstagram(value.instagram.slice(0,500));
+      if(typeof value.youtube==="string")setYoutube(value.youtube.slice(0,500));
+      if(typeof value.spotify==="string")setSpotify(value.spotify.slice(0,500));
+    });
 
   useEffect(() => {
     let active = true;
     async function load() {
       setLoading(true);
+      setDraftReady(false);
       setLoadIssue(null);
       try {
         const supabase = createClient();
@@ -118,6 +135,8 @@ export default function MeuPerfilArtistico() {
         setSpotify(p.spotify_url || "");
         setPublished(Boolean(p.is_public));
         setSavedPublished(Boolean(p.is_public));
+        setDraftOwner(user.id);
+        setDraftReady(true);
       } catch {
         if (active) setLoadIssue("failed");
       } finally {
@@ -279,6 +298,7 @@ export default function MeuPerfilArtistico() {
     } else {
       setConfig(previous=>previous?{...previous,instagram_url:instagram||null}:previous);
       setSavedPublished(published);
+      draft.savedToAccount();
       setMessage(published
         ? "Sua página gratuita foi publicada. Agora é só compartilhar o seu endereço!"
         : "Perfil salvo em modo privado. A página não aparece publicamente.");
@@ -342,6 +362,7 @@ export default function MeuPerfilArtistico() {
 
       <div className="singer-editor-data-panel" hidden={activeTab !== "dados"}>
       {message && <div className="artist-editor-feedback"><InlineNotice tone={error?"danger":"success"}>{message}</InlineNotice></div>}
+      <ProfileDraftBanner pending={draft.pending} saveState={draft.saveState} restore={draft.restore} discard={draft.discard} published={savedPublished}/>
 
       {config && <div className="artist-free-editor artist-wizard-mode" data-editor-active={mobileStep}>
         <section className="feature">
@@ -374,6 +395,7 @@ export default function MeuPerfilArtistico() {
           />
           <form id="artist-main-form" onSubmit={save} className="artist-editor-main-form">
             <div data-editor-step="0" className="artist-wizard-group">
+            <details className="sf-editor-extra"><summary>Personalização opcional: frase e cores</summary>
             <Input label="Frase de assinatura" id="artist-headline" maxLength={100} value={headline}
                 onChange={e => setHeadline(e.target.value)}
                 placeholder="Ex.: Pagode, samba e muita energia em cada show" hint={"Aparece apenas uma vez, em fonte de assinatura logo abaixo do seu nome. Até 100 caracteres. A biografia é independente."}/>
@@ -395,6 +417,7 @@ export default function MeuPerfilArtistico() {
               </div>
               <p className="artist-editor-hint">Temas e layouts adicionais farão parte do Perfil Artístico premium.</p>
             </fieldset>
+            </details>
             <div id="artist-edit-photo" className="artist-free-photo-fields">
               <div className="artist-editor-photo-control">
                 <Input label="Foto de perfil" id="artist-avatar-upload" type="file"
@@ -439,6 +462,7 @@ export default function MeuPerfilArtistico() {
                 </span>
               </span>
             </label>
+            <p className="sf-editor-publication-explain">{published?"Ao salvar, suas alterações ficarão públicas.":savedPublished?"Para deixar sua página privada, desmarque a publicação e salve.":"Para manter tudo privado, deixe a publicação desmarcada e toque em Salvar."}</p>
             <Button type="submit" loading={saving} disabled={Boolean(uploading) || (published && !config.username)}>
               {!saving&&<Save size={16}/>}
               {saving ? "Salvando..." : published ? "Salvar e publicar" : "Salvar rascunho"}
