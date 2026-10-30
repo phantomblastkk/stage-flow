@@ -8,6 +8,7 @@ import {
 import { createClient } from "@/lib/supabase/client";
 import "./marketplace-musician-settings.css";
 import {Button,Input,Select,LoadingState,EmptyState,InlineNotice,Badge} from "@/src/components/ui";
+import {showSaveFeedback} from "@/src/components/ui/save-feedback";
 
 type Mode = "ask"|"accepting"|"unavailable";
 type Preference = {
@@ -97,9 +98,9 @@ export default function MarketplaceMusicianSettings({portfolioPublished}:{portfo
         artist_required:"Esta configuração requer uma conta de músico."
       };
       if(saveError||data!=="saved")setError(reasons[String(data)]||"Não foi possível salvar a configuração do marketplace.");
-      else setNotice(value.listed
+      else {showSaveFeedback("Preferências do Marketplace salvas com sucesso!");setNotice(value.listed
         ? "Preferências salvas. A exibição na busca segue a publicação do seu perfil e as condições do catálogo."
-        : "Participação desativada. Seu perfil continua independente do marketplace.");
+        : "Participação desativada. Seu perfil continua independente do marketplace.");}
     }catch{setError("Não foi possível salvar a configuração do marketplace. Tente novamente.");}
     finally{setBusy(false);}
   }
