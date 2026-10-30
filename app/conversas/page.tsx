@@ -45,10 +45,23 @@ export default function HiringConversations(){
  const [consent,setConsent]=useState(false);
  const [savingSettings,setSavingSettings]=useState(false);
  const [showSettings,setShowSettings]=useState(false);
+ const [threadQuery,setThreadQuery]=useState("");
+ const [unreadOnly,setUnreadOnly]=useState(false);
+ const messageViewport=useRef<HTMLDivElement|null>(null);
+ const shouldStickToBottom=useRef(true);
+ const [showJumpToLatest,setShowJumpToLatest]=useState(false);
+ const [readingThread,setReadingThread]=useState<string|null>(null);
+ function scrollToLatest(){
+  const viewport=messageViewport.current;
+  if(viewport)viewport.scrollTop=viewport.scrollHeight;
+  shouldStickToBottom.current=true;
+  setShowJumpToLatest(false);
+ }
 
  useEffect(()=>{alive.current=true;return()=>{alive.current=false;threadRequest.current?.abort();prefsRequest.current?.abort();};},[]);
  const selectThread=useCallback((id:string|null)=>{
   selected.current=id;setActiveId(id);setError("");setNotice("");
+   shouldStickToBottom.current=true;setShowJumpToLatest(false);
   window.history.replaceState(null,"",id?conversationHref(id):"/conversas");
  },[]);
 
@@ -124,6 +137,46 @@ export default function HiringConversations(){
  const threadView=historyWindow(threads,visibleThreads,"start");
  const threadRows=active&&!threadView.items.some(thread=>thread.id===active.id)?[active,...threadView.items]:threadView.items;
  const hiddenThreads=threads.length-threadRows.length;
+ const filteredThreads=threadRows.filter(thread=>
+  (!unreadOnly||thread.unread>0||thread.id===activeId)&&
+  (thread.other_name+" "+(thread.last_message||"")).toLocaleLowerCase("pt-BR")
+   .includes(threadQuery.trim().toLocaleLowerCase("pt-BR")));
+ const lastMessageId=messages.length?messages[messages.length-1].id:"";
+ useEffect(()=>{
+  if(!activeId||messagesLoading)return;
+  const viewport=messageViewport.current;
+  if(!viewport)return;
+  if(shouldStickToBottom.current){
+   const frame=requestAnimationFrame(()=>scrollToLatest());
+   return()=>cancelAnimationFrame(frame);
+  }
+  if(lastMessageId)setShowJumpToLatest(true);
+ },[activeId,messagesLoading,lastMessageId]);
+ // Only this account's unread notices for the selected conversation are acknowledged.
+ useEffect(()=>{
+  if(!activeId||messagesLoading||readingThread===activeId)return;
+  let live=true;
+  setReadingThread(activeId);
+  async function acknowledge(){
+   try{
+    const client=createClient();
+    const {data,error:readError}=await client.rpc("stage_notifications_list",{
+     p_filter:"unread",p_limit:100
+    });
+    if(!live||readError||data?.status!=="ok"||!Array.isArray(data.items))return;
+    const ids=(data.items as {id:string;thread_id:string|null;source_type:string}[])
+     .filter(n=>n.source_type==="conversation"&&n.thread_id===activeId).map(n=>n.id);
+    if(!ids.length)return;
+    const {data:updated,error:markError}=await client.rpc("stage_notifications_mark",{
+     p_ids:ids,p_all:false
+    });
+    if(live&&!markError&&updated?.status==="ok")
+     window.dispatchEvent(new Event("stageflow:notifications-updated"));
+   }catch{/* Chat remains usable if the notification feed is unavailable. */}
+  }
+  void acknowledge();
+  return()=>{live=false;};
+ },[activeId,messagesLoading,readingThread]);
  const messageView=historyWindow(messages,messageWindow.id===activeId?messageWindow.count:MESSAGE_RENDER_STEP,"end");
  async function send(e:FormEvent<HTMLFormElement>){
   e.preventDefault();if(!activeId||busy||!text.trim())return;
@@ -192,7 +245,16 @@ export default function HiringConversations(){
        <Button variant="ghost" title="Atualizar conversas" onClick={()=>void refreshThreads()} aria-label="Atualizar conversas"><RefreshCw size={15}/></Button></div>
       <p className="hiring-empty" role="status">{threadRows.length} de {threads.length} conversas recebidas nesta consulta</p>
       {snapshotMayBeLimited(threads.length,THREAD_SNAPSHOT_LIMIT)&&<InlineNotice tone="warning">A consulta atingiu o limite de conversas recentes. Conversas mais antigas podem não aparecer nesta lista.</InlineNotice>}
-      {threadRows.map(thread=><button key={thread.id} type="button"
+      <div className="hiring-thread-filters">
+        <label htmlFor="hiring-thread-search">Buscar conversa
+         <input id="hiring-thread-search" type="search" value={threadQuery}
+          onChange={e=>setThreadQuery(e.target.value)}
+          placeholder="Nome ou última mensagem"/>
+        </label>
+        <label className="hiring-unread-toggle"><input type="checkbox" checked={unreadOnly}
+          onChange={e=>setUnreadOnly(e.target.checked)}/> Só não lidas</label>
+       </div>
+       {filteredThreads.map(thread=><button key={thread.id} type="button"
        className={"hiring-thread"+(thread.id===activeId?" is-selected":"")}
        aria-label={"Abrir conversa com "+thread.other_name}
        aria-pressed={thread.id===activeId} onClick={()=>selectThread(thread.id)}>
@@ -203,7 +265,9 @@ export default function HiringConversations(){
        </span>{thread.unread>0&&<Badge tone="warning">{thread.unread}</Badge>}
       </button>)}
       {hiddenThreads>0&&<Button variant="ghost" onClick={()=>setVisibleThreads(n=>n+THREAD_RENDER_STEP)}>Mostrar mais conversas recebidas ({hiddenThreads})</Button>}
-      {!threads.length&&!error&&<p className="hiring-empty">Nenhuma conversa por enquanto. Explore o Marketplace e abra um músico para iniciar uma conversa privada.</p>}
+      {threads.length>0&&filteredThreads.length===0&&
+        <p className="hiring-empty">Nenhuma conversa corresponde à busca. Remova o filtro para ver as outras.</p>}
+       {!threads.length&&!error&&<p className="hiring-empty">Nenhuma conversa por enquanto. Explore o Marketplace e abra um músico para iniciar uma conversa privada.</p>}
      </aside>
      <section className="hiring-main" aria-label="Mensagens da conversa">
       {active?<><div className="hiring-chat-header">
@@ -224,7 +288,13 @@ export default function HiringConversations(){
       <HiringProposals key={active.id} thread={active} onUpdate={()=>{
         void refreshThreads();void loadMessages(active.id);
        }}/>
-      <div className="hiring-messages" aria-busy={messagesLoading}>
+      <div className="hiring-messages" ref={messageViewport} aria-busy={messagesLoading}
+       onScroll={e=>{
+        const el=e.currentTarget;
+        const nearBottom=el.scrollHeight-el.scrollTop-el.clientHeight<96;
+        shouldStickToBottom.current=nearBottom;
+        if(nearBottom)setShowJumpToLatest(false);
+       }}>
        {messages.length>0&&<p className="hiring-empty" role="status">{messageView.items.length} de {messages.length} mensagens recebidas nesta consulta</p>}
        {snapshotMayBeLimited(messages.length,MESSAGE_SNAPSHOT_LIMIT)&&<InlineNotice tone="warning">A consulta atingiu o limite de mensagens recentes. Mensagens anteriores podem não estar disponíveis nesta tela.</InlineNotice>}
        {messageView.hidden>0&&<Button variant="ghost" onClick={()=>setMessageWindow({id:active.id,count:(messageWindow.id===active.id?messageWindow.count:MESSAGE_RENDER_STEP)+MESSAGE_RENDER_STEP})}>Mostrar mensagens anteriores recebidas ({messageView.hidden})</Button>}
@@ -236,13 +306,20 @@ export default function HiringConversations(){
          <p>{message.body}</p><small>{timeBR(message.created_at)}</small>
        </article>)}
       </div>
+      {showJumpToLatest&&<button type="button" className="hiring-jump-latest"
+        onClick={scrollToLatest}>Ir para mensagens recentes ↓</button>}
       <form className="hiring-composer" onSubmit={e=>void send(e)}>
        <div><Textarea label="Sua mensagem" id="hiring-message" placeholder="Ex.: Você está disponível para tocar neste sábado? Qual seria seu cachê?"
         value={text} onChange={e=>setText(e.target.value)} maxLength={1500} rows={3}
+        onKeyDown={e=>{
+         if(e.key==="Enter"&&(e.ctrlKey||e.metaKey)&&!e.shiftKey&&!e.nativeEvent.isComposing){
+          e.preventDefault();if(!busy&&text.trim())e.currentTarget.form?.requestSubmit();
+         }
+        }
         disabled={busy||messagesLoading} required/>
         <Button type="submit"  disabled={busy||messagesLoading||!text.trim()}>
          <Send size={16}/> Enviar</Button></div>
-       <small>O chat não compartilha seu telefone. Use uma proposta formal para confirmar o show; o financeiro continua privado.</small>
+       <small>Ctrl/⌘ + Enter envia no computador. Enter sozinho quebra a linha. O chat não divulga seu WhatsApp; confirme a contratação por proposta.</small>
       </form></>:<div className="hiring-start-prompt">
        <MessageCircle size={30}/>
        <h2>Selecione uma conversa</h2><p>Escolha uma conversa à esquerda para ver as mensagens e responder.</p>
