@@ -1,8 +1,8 @@
 # Inventário CSS — StageFlow
 
-Base Git: `013afbe4133d8ed86db2107a110d77ca635107e9`. Conteúdo lido da árvore de trabalho; execute após as edições para comparar.
+Base Git: `ab05d256fbb4e5742f8454570c4ae5e5163025e5`. Conteúdo lido da árvore de trabalho; execute após as edições para comparar.
 
-62 arquivos rastreados; 480220 bytes de fonte CSS (sem minificação/compressão).
+64 arquivos rastreados; 488733 bytes de fonte CSS (sem minificação/compressão).
 
 Gerar novamente: `node scripts/audit-css.mjs`. Contagem de blocos é heurística; não mede CSS efetivamente usado, especificidade ou bundle.
 
@@ -12,6 +12,7 @@ Gerar novamente: `node scripts/audit-css.mjs`. Contagem de blocos é heurística
 | `app/admin/casas/venues-admin.css` | Rota | 142 | 12797 | 142 |
 | `app/admin/central/central.css` | Rota | 303 | 17923 | 185 |
 | `app/cadastro/hybrid-confirm.css` | Rota | 12 | 632 | 6 |
+| `app/cadastro/signup-wizard.css` | Rota | 75 | 7273 | 88 |
 | `app/casa/[slug]/venue-public.css` | Rota | 138 | 14003 | 140 |
 | `app/conversas/conversas.css` | Rota | 80 | 8527 | 99 |
 | `app/convites/convites.css` | Rota | 48 | 3346 | 53 |
@@ -43,6 +44,7 @@ Gerar novamente: `node scripts/audit-css.mjs`. Contagem de blocos é heurística
 | `app/styles/legacy-after-free-singer.css` | Legado — migração gradual | 148 | 9752 | 98 |
 | `app/styles/legacy-base-responsive.css` | Legado — migração gradual | 3 | 662 | 21 |
 | `app/styles/legacy-global-tail.css` | Legado — migração gradual | 121 | 10253 | 109 |
+| `app/termos/legal.css` | Rota | 13 | 1240 | 13 |
 | `components/artist-booking-form.css` | Componente | 36 | 2347 | 26 |
 | `components/booking-contact-settings.css` | Componente | 23 | 2807 | 27 |
 | `components/dashboard-account-menu.css` | Componente | 37 | 3876 | 32 |
@@ -83,6 +85,13 @@ Gerar novamente: `node scripts/audit-css.mjs`. Contagem de blocos é heurística
   - `app/financeiro/financeiro.css` — `.finance-page .nav`
   - `app/shows-recorrentes/shows-recorrentes.css` — `.recurring-page .nav`
   - `src/domains/billing/components/subscription-ui.css` — `.subscription-page .nav,.plans-page .nav`
+- `display:inline-flex;align-items:center;gap:7px`
+  - `app/admin/casas/[id]/programacao/programacao.css` — `.venue-program-launch-guide .eyebrow`
+  - `app/admin/casas/venues-admin.css` — `.venue-admin-preview-top .eyebrow`
+  - `app/cadastro/signup-wizard.css` — `.signup-v2 .auth-aside .fine`
+  - `app/meus-shows/meus-shows.css` — `.show-history-upcoming-head .eyebrow`
+  - `app/styles/legacy-after-free-singer.css` — `.home-partners-heading .home-kicker`
+  - `app/styles/legacy-global-tail.css` — `.home-hero-points span`
 - `display:flex;gap:7px;flex-wrap:wrap`
   - `app/admin/casas/[id]/programacao/programacao.css` — `.venue-program-published-share>div`
   - `app/casa/[slug]/venue-public.css` — `.venue-public-suggest-actions`
@@ -97,12 +106,6 @@ Gerar novamente: `node scripts/audit-css.mjs`. Contagem de blocos é heurística
   - `components/marketplace-catalog.css` — `.market-modal-avatar img`
   - `src/domains/artists/styles/legacy-free-singer.css` — `.artist-free-editor-avatar img`
   - `src/domains/artists/styles/musician-portfolio.css` — `.mp-polished .mp-work-preview-trigger img`
-- `display:inline-flex;align-items:center;gap:7px`
-  - `app/admin/casas/[id]/programacao/programacao.css` — `.venue-program-launch-guide .eyebrow`
-  - `app/admin/casas/venues-admin.css` — `.venue-admin-preview-top .eyebrow`
-  - `app/meus-shows/meus-shows.css` — `.show-history-upcoming-head .eyebrow`
-  - `app/styles/legacy-after-free-singer.css` — `.home-partners-heading .home-kicker`
-  - `app/styles/legacy-global-tail.css` — `.home-hero-points span`
 - `display:block;width:100%;height:100%;object-fit:cover`
   - `app/casa/[slug]/venue-public.css` — `.venue-public-cover>img`
   - `components/marketplace-catalog.css` — `.market-featured-avatar>img`
@@ -120,6 +123,11 @@ Gerar novamente: `node scripts/audit-css.mjs`. Contagem de blocos é heurística
   - `app/meus-shows/meus-shows.css` — `.show-history-upcoming-list`
   - `app/shows-recorrentes/shows-recorrentes.css` — `.recurring-pair`
   - `src/domains/artists/styles/legacy-free-singer.css` — `.artist-free-photo-fields`
+- `display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:9px`
+  - `app/cadastro/signup-wizard.css` — `.signup-activity-grid`
+  - `app/meu-perfil-artistico/site-profissional/premium-preview.css` — `.premium-design-themes`
+  - `components/event-budget-panel.css` — `.event-budget-summary-grid`
+  - `src/domains/auth/styles/legacy-signup-roles.css` — `.signup-role-grid`
 - `display:flex;flex-direction:column;gap:5px`
   - `app/admin/casas/venues-admin.css` — `.venue-admin-checks label span`
   - `app/meu-desempenho/performance.css` — `.reach-range-header>div:first-child`
@@ -136,10 +144,6 @@ Gerar novamente: `node scripts/audit-css.mjs`. Contagem de blocos é heurística
   - `app/admin/casas/venues-admin.css` — `.venue-admin-image-actions`
   - `app/pro/[username]/pro-public.css` — `.pro-public-media-empty>div`
   - `components/marketplace-musician-settings.css` — `.mp-market-date-chips`
-- `font-size:var(--sf-ui-text-xs);color:var(--sf-ui-muted);line-height:1.7`
-  - `app/equipes/equipes.css` — `.teams-footnote`
-  - `app/financeiro/financeiro.css` — `.finance-team>p`
-  - `components/event-team-invites.css` — `.event-team-member-list span,.event-team-no-members`
 
 ## Prioridades de migração
 
