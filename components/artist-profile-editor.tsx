@@ -18,6 +18,7 @@ import ProfileDraftBanner from "@/src/domains/artists/components/profile-draft-b
 import {revealMobileEditorField,useMobileEditorKeyboardVisibility} from "@/components/mobile-editor-focus";
 import "@/app/meu-perfil-artistico/singer-unified-editor.css";
 import {Button,Input,Textarea,InlineNotice,LoadingState} from "@/src/components/ui";
+import {showSaveFeedback} from "@/src/components/ui/save-feedback";
 
 type ArtistConfig = {
   name: string;
@@ -183,6 +184,7 @@ export default function MeuPerfilArtistico() {
         setBookingNotice("Não foi possível alterar esta preferência. Tente novamente; sua escolha anterior foi mantida.");
       } else {
         setBookingEnabled(nextValue);
+        showSaveFeedback(nextValue?"Preferência salva: pedidos habilitados.":"Preferência salva: pedidos desativados.");
         setBookingNotice(nextValue
           ? "Pedidos habilitados. O formulário aparece assim que seu perfil gratuito estiver publicado."
           : "Pedidos desativados. O formulário não aparece mais na página pública.");
@@ -215,6 +217,7 @@ export default function MeuPerfilArtistico() {
       setMessage((!claimError && reasons[String(data)]) || "Não foi possível definir seu @. Tente novamente.");
     } else {
       setConfig(prev => prev ? { ...prev, username: clean } : prev);
+      showSaveFeedback("Endereço @ salvo com sucesso! Agora você pode publicar.");
       setMessage("Seu @ gratuito foi registrado! Agora você já pode publicar seu perfil.");
     }
     setClaimingUsername(false);
@@ -299,6 +302,7 @@ export default function MeuPerfilArtistico() {
       setConfig(previous=>previous?{...previous,instagram_url:instagram||null}:previous);
       setSavedPublished(published);
       draft.savedToAccount();
+      showSaveFeedback(published?"Perfil Artístico salvo e publicado com sucesso!":"Etapa salva com sucesso! Seu perfil continua privado.");
       setMessage(published
         ? "Sua página gratuita foi publicada. Agora é só compartilhar o seu endereço!"
         : "Perfil salvo em modo privado. A página não aparece publicamente.");
