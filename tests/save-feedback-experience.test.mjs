@@ -18,7 +18,7 @@ const wizard=load("components/mobile-editor-wizard.tsx");
 
 test("one global aria-appropriate confirmation host covers private and public routes",()=>{
  assert.match(bridge,/<SaveFeedbackHost\/>/);
- assert.match(host,/role/); // uses the existing Toast status/alert component
+ assert.match(load("src/components/ui/index.tsx"),/role=\{tone==="danger"\?"alert":"status"\}/);
  assert.match(host,/<Toast message=\{current\.message\} tone=\{current\.tone\}/);
  assert.match(helper,/new CustomEvent<SaveFeedbackDetail>/);
  assert.match(host,/window\.addEventListener\(SAVE_FEEDBACK_EVENT,listener\)/);
