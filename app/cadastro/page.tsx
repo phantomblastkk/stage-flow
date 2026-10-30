@@ -1,223 +1,330 @@
 "use client";
 
 import Link from "next/link";
-import { useEffect, useState } from "react";
-import { ArrowLeft, Building2, Mic2, Guitar, CheckCircle2 } from "lucide-react";
+import { useEffect, useState, type FormEvent } from "react";
+import {
+  ArrowLeft, ArrowRight, Building2, Check, ChevronLeft, Guitar,
+  LockKeyhole, Mic2, ShieldCheck, UserRound, UsersRound
+} from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
-import "./hybrid-confirm.css";
+import "./signup-wizard.css";
 
-const reservedArtistUsernames = new Set([
-  "admin", "api", "auth", "artista", "artistas", "cadastro", "configuracoes",
-  "convite", "convites", "dashboard", "entrar", "equipes", "eventos",
-  "login", "logout", "marketplace", "meu-perfil", "meu-perfil-artistico",
-  "meu-portfolio", "meus-convites", "minha-conta", "musico", "musicos", "painel", "planos",
-  "assinatura", "conversas", "financeiro", "homologacao", "locais",
-  "meu-desempenho", "meus-shows", "minha-disponibilidade",
-  "notificacoes", "parceiros", "pro", "shows-recorrentes",
-  "privacidade", "publico", "sobre", "suporte", "termos", "www"
-]);
+type Purpose = "artist" | "organizer" | null;
+type Activity = "singer" | "musician" | "both" | null;
+type WizardStep = 1 | 2 | 3;
+
+const termsVersion = "2026-10-29-v1";
+const labels = ["O que você faz", "Seus dados", "Confirmar"];
+const phonePattern = /^55[1-9][0-9]{9,10}$/;
+const digits = (value: string) => value.replace(/\D/g, "");
+function normalizePhone(value: string) {
+  const numbers = digits(value);
+  return numbers.length === 10 || numbers.length === 11 ? "55" + numbers : numbers;
+}
+function formatPhone(value: string) {
+  const raw = digits(value);
+  const national = raw.startsWith("55") && raw.length > 11 ? raw.slice(2, 13) : raw.slice(0, 11);
+  if (national.length < 3) return national;
+  return "(" + national.slice(0, 2) + ") " + national.slice(2, 7) +
+    (national.length > 7 ? "-" + national.slice(7, 11) : "");
+}
 
 export default function CadastroPage() {
-  const [artistKind, setArtistKind] = useState<"lead" | "support" | "none">("support");
+  const [step, setStep] = useState<WizardStep>(1);
+  const [purpose, setPurpose] = useState<Purpose>(null);
+  const [activity, setActivity] = useState<Activity>(null);
   const [inviteCode, setInviteCode] = useState("");
+  const [partnerOnboarding, setPartnerOnboarding] = useState(false);
+  const [checkingSession, setCheckingSession] = useState(true);
+  const [displayName, setDisplayName] = useState("");
+  const [whatsappPhone, setWhatsappPhone] = useState("");
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
+  const [termsAccepted, setTermsAccepted] = useState(false);
+  const [whatsappNotifications, setWhatsappNotifications] = useState(false);
+  const [whatsappShare, setWhatsappShare] = useState(false);
+  const [busy, setBusy] = useState(false);
+  const [message, setMessage] = useState("");
+  const [error, setError] = useState(false);
+
   useEffect(() => {
-    const code = new URLSearchParams(window.location.search).get("convite");
-    if (code) {
-      setInviteCode(code);
-      setArtistKind("support");
-      setIsProducer(false);
-    } else if (new URLSearchParams(window.location.search).get("parceiro") === "1") {
-      // Facilitador visual apenas: jamais concede papel de gerente ou administrador.
-      setArtistKind("none");
-      setIsProducer(true);
+    const query = new URLSearchParams(window.location.search);
+    const invite = query.get("convite");
+    if (invite) {
+      setInviteCode(invite);
+      setPurpose("artist");
+      setActivity("musician");
+    } else if (query.get("parceiro") === "1") {
+      // This only selects a use case. Venue roles still need administrator approval.
+      setPurpose("organizer");
       setPartnerOnboarding(true);
     }
   }, []);
-  const [checkingSession, setCheckingSession] = useState(true);
+
   useEffect(() => {
-    // An existing musician account can open a singer's invitation directly.
-    // The invitation is a shortcut, never a prerequisite for free signup.
     let active = true;
     async function checkSession() {
       try {
-        const { data, error } = await createClient().auth.getUser();
-        if (active && !error && data.user) {
+        const { data, error: authError } = await createClient().auth.getUser();
+        if (active && !authError && data.user) {
           const code = new URLSearchParams(window.location.search).get("convite");
           window.location.replace(code
             ? "/convite?codigo=" + encodeURIComponent(code)
             : "/painel");
           return;
         }
-      } catch {
-        // Keep the signup form available when verification is temporarily offline.
-      }
+      } catch { /* Keep the form available while auth is temporarily offline. */ }
       if (active) setCheckingSession(false);
     }
     void checkSession();
     return () => { active = false; };
   }, []);
-  const [isProducer, setIsProducer] = useState(false);
-  const [alsoMusician,setAlsoMusician] = useState(false);
-  const [hybridConfirmed,setHybridConfirmed] = useState(false);
-  const [partnerOnboarding, setPartnerOnboarding] = useState(false);
-  const isArtist = artistKind !== "none";
-  const [displayName, setDisplayName] = useState("");
-  const [username, setUsername] = useState("");
-  const [email, setEmail] = useState("");
-  const [password, setPassword] = useState("");
-  const [whatsappPhone, setWhatsappPhone] = useState("");
-  const [whatsappConsent, setWhatsappConsent] = useState(false);
-  const [busy, setBusy] = useState(false);
-  const [message, setMessage] = useState("");
-  const [error, setError] = useState(false);
 
-  async function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
-    e.preventDefault(); setBusy(true); setMessage(""); setError(false);
+  const isArtist = purpose === "artist";
+  const artistKind = !isArtist ? "none" : activity === "musician" ? "support" : "lead";
+  const alsoMusician = activity === "both";
+  const isProducer = purpose === "organizer";
+  const roleText = isProducer ? "Organizar e contratar shows" :
+    activity === "both" ? "Cantar e tocar instrumentos" :
+    activity === "singer" ? "Cantar e divulgar shows" : "Tocar instrumentos";
+
+  function fail(text: string) {
+    setError(true);
+    setMessage(text);
+  }
+  function validateRole() {
+    if (!purpose || (isArtist && !activity)) {
+      fail("Escolha o que você deseja fazer no StageFlow para continuar.");
+      return false;
+    }
+    return true;
+  }
+  function validateIdentity() {
+    if (displayName.trim().length < 2) {
+      fail("Informe seu nome ou nome profissional (pelo menos 2 caracteres).");
+      return false;
+    }
+    if (!phonePattern.test(normalizePhone(whatsappPhone))) {
+      fail("Informe um WhatsApp brasileiro válido com DDD, como (11) 99999-9999.");
+      return false;
+    }
+    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email.trim())) {
+      fail("Informe um e-mail válido para acessar sua conta.");
+      return false;
+    }
+    if (password.length < 8) {
+      fail("Crie uma senha com pelo menos 8 caracteres.");
+      return false;
+    }
+    return true;
+  }
+  function next() {
+    setError(false);
+    setMessage("");
+    if (step === 1 && validateRole()) setStep(2);
+    else if (step === 2 && validateIdentity()) setStep(3);
+  }
+  function back() {
+    if (busy) return;
+    setError(false);
+    setMessage("");
+    setStep(current => current === 3 ? 2 : 1);
+  }
+  async function handleSubmit(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    setMessage("");
+    setError(false);
+    if (!validateRole() || !validateIdentity()) return;
+    if (!termsAccepted) {
+      fail("Para criar a conta, leia e aceite os Termos de Uso e a Política de Privacidade.");
+      return;
+    }
+    setBusy(true);
     try {
-      if (!inviteCode && !isArtist && !isProducer) throw new Error("Selecione sua atividade principal.");
-      if (!inviteCode && artistKind==="lead" && alsoMusician && !hybridConfirmed)
-        throw new Error("Confirme que deseja ativar os dois perfis artísticos antes de criar a conta.");
-      const supabase = createClient();
-      const cleanUsername = username.trim().toLowerCase();
-      if (artistKind === "lead" && !inviteCode && reservedArtistUsernames.has(cleanUsername)) {
-        throw new Error("Este @ é reservado para o Stage Flow. Escolha outro nome artístico.");
-      }
-      const needsMusicianPhone = (Boolean(inviteCode) || isArtist) && whatsappConsent;
-      const rawPhone = whatsappPhone.replace(/\D/g, "");
-      const internationalPhone = rawPhone.length === 10 || rawPhone.length === 11 ? "55" + rawPhone : rawPhone;
-      if (needsMusicianPhone && !/^55[1-9][0-9]{9,10}$/.test(internationalPhone)) {
-        throw new Error("Informe um WhatsApp brasileiro válido, com DDD. Exemplo: (11) 99999-9999.");
-      }
-      const { data: signupData, error: signUpError } = await supabase.auth.signUp({
-        email, password,
+      const client = createClient();
+      const { data, error: signUpError } = await client.auth.signUp({
+        email: email.trim().toLowerCase(),
+        password,
         options: {
-          emailRedirectTo: inviteCode ? window.location.origin + "/convite?codigo=" + encodeURIComponent(inviteCode) : undefined,
+          emailRedirectTo: inviteCode
+            ? window.location.origin + "/convite?codigo=" + encodeURIComponent(inviteCode)
+            : undefined,
           data: {
-            role: inviteCode ? "musician" : isProducer && !isArtist ? "producer" : "musician",
-            is_artist: inviteCode ? true : isArtist,
-            is_producer: inviteCode ? false : isProducer,
-            artist_kind: inviteCode ? "support" : isArtist ? artistKind : null,
-            is_musician: Boolean(inviteCode) || (artistKind==="support") || (artistKind==="lead"&&alsoMusician),
+            signup_flow: "wizard_v2",
+            terms_version: termsVersion,
+            terms_accepted: true,
+            privacy_acknowledged: true,
+            whatsapp_notifications_opt_in: whatsappNotifications,
+            whatsapp_contact_share_opt_in: isArtist && whatsappShare,
+            whatsapp_opt_in: isArtist && whatsappShare,
+            whatsapp_phone: normalizePhone(whatsappPhone),
+            role: isProducer ? "producer" : "musician",
+            is_artist: isArtist,
+            is_producer: isProducer,
+            artist_kind: isArtist ? artistKind : null,
+            is_musician: isArtist && (artistKind === "support" || alsoMusician),
             display_name: displayName.trim(),
-            whatsapp_phone: needsMusicianPhone ? internationalPhone : null,
-            whatsapp_opt_in: needsMusicianPhone && whatsappConsent,
-            username: inviteCode ? null : artistKind === "lead" ? cleanUsername : null
+            // The public @ is chosen later inside the artistic profile, not at registration.
+            username: null
           }
         }
       });
       if (signUpError) {
-        const duplicateAccount =
-          signUpError.code === "user_already_exists" ||
+        const duplicate = signUpError.code === "user_already_exists" ||
           /user already (?:registered|exists)/i.test(signUpError.message);
-        if (duplicateAccount) {
-          throw new Error("Este usuário já existe. Use Entrar para acessar sua conta ou recuperar a senha.");
-        }
-        // O Auth não expõe a violação UNIQUE do @: ela chega como erro 500 genérico.
-        // Não alteramos a unicidade no banco nem afirmamos que todo erro 500 é colisão.
-        const databaseSignupFailure =
-          signUpError.status === 500 &&
-          (signUpError.code === "unexpected_failure" ||
-            /database error saving new user/i.test(signUpError.message));
-        if (databaseSignupFailure && artistKind === "lead" && !inviteCode && cleanUsername) {
-          throw new Error(
-            "Este usuário já existe ou o @ artístico informado está em uso. Se a conta é sua, use Entrar. Caso contrário, escolha outro @. Se continuar com outro @, contate o suporte."
-          );
-        }
-        if (databaseSignupFailure) {
-          throw new Error(
-            "O cadastro não pôde ser salvo no momento. Tente novamente. Se o problema continuar, entre em contato com o suporte."
-          );
-        }
+        if (duplicate) throw new Error("Este usuário já existe. Use Entrar para acessar sua conta ou recuperar a senha.");
+        const databaseSignupFailure = signUpError.status === 500 &&
+          (signUpError.code === "unexpected_failure" || /database error saving new user/i.test(signUpError.message));
+        if (databaseSignupFailure) throw new Error(
+          "O cadastro não pôde ser salvo no momento. Confira os dados e tente novamente. Se continuar, contate o suporte."
+        );
         throw signUpError;
       }
-      if (signupData.session) {
+      if (data.session) {
         window.location.href = inviteCode
-          ? "/convite?codigo=" + encodeURIComponent(inviteCode)
-          : "/painel";
+          ? "/convite?codigo=" + encodeURIComponent(inviteCode) : "/painel";
         return;
       }
-      setMessage(inviteCode
-        ? "Cadastro enviado! Confira seu e-mail para confirmar sua conta. Depois da confirmação, abra novamente o link do convite para vinculá-lo. Caso a confirmação já esteja desativada, entre com sua conta pelo link recebido."
-        : partnerOnboarding
-          ? "Cadastro enviado! Confirme seu e-mail e avise a administração da casa para conceder seu acesso. O cadastro por si só não libera a programação."
-          : "Cadastro gratuito enviado! Se a confirmação por e-mail estiver ativada, confirme sua conta pelo e-mail recebido. Gestão, convites, portfólio e marketplace são gratuitos; apenas recursos profissionais opcionais de cantores pertencem aos futuros planos pagos.");
+      setMessage(partnerOnboarding
+        ? "Conta criada! Confirme o e-mail recebido. O acesso à gestão de uma casa parceira depende de aprovação da administração."
+        : inviteCode
+          ? "Conta criada! Confirme seu e-mail e volte ao link do convite para aceitar a participação."
+          : "Conta criada! Confira seu e-mail para confirmar o acesso. Você poderá completar seu Perfil Artístico depois, sem precisar preencher tudo agora.");
     } catch (err) {
-      setError(true);
-      setMessage(err instanceof Error ? err.message : "Não foi possível criar a conta. Confira os dados e tente novamente.");
-    } finally { setBusy(false); }
+      fail(err instanceof Error ? err.message : "Não foi possível criar a conta. Tente novamente.");
+    } finally {
+      setBusy(false);
+    }
   }
 
   if (checkingSession) return <main className="auth-wrap">
-    <div className="container" style={{ minHeight: "60vh", display: "grid", placeItems: "center", textAlign: "center" }}>
-      <p style={{ color: "var(--muted)" }}>Verificando sua sessão do Stage Flow...</p>
+    <div className="container" style={{minHeight:"60vh",display:"grid",placeItems:"center"}}>
+      <p>Verificando sua sessão do Stage Flow...</p>
     </div>
   </main>;
 
-  return <main className="auth-wrap">
-    <aside className="auth-aside"><Link className="brand" href="/"><span className="brand-mark">S</span> stage flow</Link><div><div className="eyebrow">SEU PRÓXIMO CAPÍTULO</div><h1>Mais organização. <span className="accent">Mais palco.</span></h1><p className="tagline">Uma conta para organizar shows, receber convites e aproximar músicos e produtores.</p></div><Link href="/" className="fine"><ArrowLeft size={14} style={{display:"inline",verticalAlign:"middle"}}/> Voltar ao início</Link></aside>
-    <section className="auth-main"><div className="auth-card"><Link href="/" className="fine">← Voltar para o site</Link><h2 style={{marginTop:24}}>Crie sua conta</h2>{inviteCode && <p className="coming">Você chegou por um convite para tocar. Vamos criar uma conta gratuita de músico de apoio para receber e negociar suas participações. Não precisa de @ nem de assinatura.</p>}
-      {partnerOnboarding && <p className="coming"><strong>Cadastro de responsável por uma casa parceira.</strong> A opção Produtor/contratante já foi selecionada para facilitar. Depois de confirmar o e-mail, avise a administração da casa: somente ela pode liberar sua programação. Este link não dá acesso automático.</p>}<p>{inviteCode ? "Informe seus dados para acessar o convite. Você também pode se cadastrar gratuitamente sem convite." : "Crie sua conta gratuitamente. Músicos não precisam de convite; cantores e produtores também usam gratuitamente as ferramentas de shows e contratação."}</p>
-      {!inviteCode && <div className="signup-role-picker">
-        <div className="signup-role-grid" role="group" aria-label="Sua atividade principal">
-          <button type="button" className="signup-role-card" aria-pressed={artistKind === "lead"}
-            onClick={() => setArtistKind("lead")}>
-            <Mic2 size={21}/><strong>Cantor / artista principal</strong>
-            <span>Divulgo meus shows, gerencio minha equipe e quero uma página com meu @.</span>
-            <small>{artistKind === "lead" ? "✓ Selecionado" : "Selecionar"}</small>
-          </button>
-          <button type="button" className="signup-role-card" aria-pressed={artistKind === "support"}
-            onClick={() => setArtistKind("support")}>
-            <Guitar size={21}/><strong>Músico de apoio</strong>
-            <span>Crio minha conta grátis sem convite, publico portfólio, apareço no marketplace e recebo propostas.</span>
-            <small>{artistKind === "support" ? "✓ Selecionado" : "Selecionar"}</small>
-          </button>
-          <button type="button" className="signup-role-card" aria-pressed={artistKind === "none"}
-            onClick={() => { setArtistKind("none"); setIsProducer(true); }}>
-            <Building2 size={21}/><strong>Produtor / contratante</strong>
-            <span>Organizo apresentações, convido músicos e monto equipes.</span>
-            <small>{artistKind === "none" ? "✓ Selecionado" : "Selecionar"}</small>
-          </button>
+  return <main className="auth-wrap signup-v2">
+    <aside className="auth-aside">
+      <Link className="brand" href="/"><span className="brand-mark">S</span> stage flow</Link>
+      <div>
+        <div className="eyebrow">COMECE PELO ESSENCIAL</div>
+        <h1>Seu espaço na <span className="accent">música.</span></h1>
+        <p className="tagline">Uma conta gratuita para divulgar seu talento ou organizar oportunidades. Você completa os detalhes depois.</p>
+      </div>
+      <Link href="/" className="fine"><ArrowLeft size={15} aria-hidden="true"/> Voltar ao início</Link>
+    </aside>
+    <section className="auth-main">
+      <div className="auth-card signup-wizard">
+        <Link href="/" className="signup-back-home"><ChevronLeft size={16}/> Voltar ao site</Link>
+        <div className="signup-heading">
+          <span className="signup-kicker">CADASTRO GRATUITO</span>
+          <h2>Crie sua conta</h2>
+          <p>São só três etapas. Nenhum portfólio ou assinatura é obrigatório agora.</p>
         </div>
-        {artistKind==="lead"&&<label className="signup-producer-add">
-          <input type="checkbox" checked={alsoMusician} onChange={e=>{
-             setAlsoMusician(e.target.checked);setHybridConfirmed(false);
-           }}/>
-          <span><strong>Também sou músico</strong><small>Adiciona instrumentos, repertório e oportunidades para tocar ao seu único Perfil Artístico. Nada de página duplicada.</small></span>
-          <CheckCircle2 size={18} color={alsoMusician ? "#C0A7FF" : "#657083"}/>
-        </label>}
-        {artistKind==="lead"&&alsoMusician&&<label className="signup-hybrid-confirm">
-          <input type="checkbox" checked={hybridConfirmed} required
-            onChange={e=>setHybridConfirmed(e.target.checked)}/>
-          <span><strong>Quero ativar as duas funções na mesma conta</strong>
-            <small>Entendo que terei um único perfil público, com recursos extras de músico. A ativação dessa função só poderá ser revertida pela administração.</small>
-          </span>
-        </label>}
-        {isArtist && <label className="signup-producer-add">
-          <input type="checkbox" checked={isProducer} onChange={e => setIsProducer(e.target.checked)}/>
-          <span><strong>Também organizo ou contrato shows</strong><small>Ativa as ferramentas de produtor nesta mesma conta.</small></span>
-          <CheckCircle2 size={18} color={isProducer ? "#C0A7FF" : "#657083"}/>
-        </label>}
-      </div>}
-      <form onSubmit={handleSubmit}>
-        <div className="field"><label htmlFor="name">Nome {inviteCode ? "profissional" : artistKind === "none" ? "do produtor ou empresa" : artistKind === "lead" ? "artístico" : "completo ou profissional"}</label><input id="name" autoComplete="name" value={displayName} onChange={e=>setDisplayName(e.target.value)} placeholder={artistKind === "none" ? "Ex.: Produções Vitória" : artistKind === "support" || inviteCode ? "Ex.: João Oliveira" : "Ex.: Cantor Sousa"} required /></div>
-        {artistKind === "lead"&&!inviteCode&&<div className="field"><label htmlFor="slug">Seu @ artístico (grátis)</label><input id="slug" value={username} onChange={e=>setUsername(e.target.value.toLowerCase().replace(/[^a-z0-9-]/g,""))} placeholder="cantorsousa" pattern="[a-z0-9-]{3,30}" minLength={3} maxLength={30} required /><span className="field-help">Você poderá publicar sua página /{username || "seuusuario"}. Nome e @ podem ser alterados uma vez a cada 60 dias. O site completo com subdomínio é um adicional pago, separado do perfil gratuito.</span></div>}
-        {(isArtist || Boolean(inviteCode)) && <>
-          <div className="field">
-            <label htmlFor="whatsapp">Seu WhatsApp com DDD (opcional)</label>
-            <input id="whatsapp" type="tel" autoComplete="tel" inputMode="tel" value={whatsappPhone} onChange={e=>setWhatsappPhone(e.target.value)} placeholder="(11) 99999-9999" required={whatsappConsent} maxLength={24}/>
-            <span className="field-help">Opcional. Você pode receber e negociar convites dentro do Stage Flow sem informar WhatsApp.</span>
+        <ol className="signup-steps" aria-label="Etapas do cadastro">
+          {labels.map((label,index) => <li key={label}
+            className={step === index+1 ? "is-current" : step > index+1 ? "is-complete" : ""}
+            aria-current={step === index+1 ? "step" : undefined}>
+            <span>{step > index+1 ? <Check size={15}/> : index+1}</span>
+            <small>{label}</small>
+          </li>)}
+        </ol>
+        {inviteCode && <p className="signup-note">Você chegou por um convite. A opção de músico já foi selecionada. Depois do cadastro, você poderá aceitar o convite.</p>}
+        {partnerOnboarding && <p className="signup-note">Você está se cadastrando para organizar shows de uma casa. O acesso à administração da casa precisa ser aprovado.</p>}
+        <form onSubmit={handleSubmit} noValidate>
+          {step === 1 && <section className="signup-stage" aria-labelledby="signup-stage-title">
+            <h3 id="signup-stage-title">O que você quer fazer?</h3>
+            <p>Escolha a opção que combina com você. Dá para ampliar suas funções na conta depois.</p>
+            <div className="signup-purpose" role="group" aria-label="Objetivo principal">
+              <button type="button" aria-pressed={purpose === "artist"}
+                className="signup-choice" onClick={() => {
+                  setPurpose("artist"); setActivity(current => current || "musician"); setWhatsappShare(false);
+                }}>
+                <span className="signup-choice-icon"><Mic2 size={23}/></span>
+                <span><strong>Divulgar meu trabalho</strong><small>Sou cantor, músico ou faço os dois. Quero apresentar meu trabalho e receber oportunidades.</small></span>
+                <span className="signup-choice-check">{purpose === "artist" ? <Check size={18}/> : null}</span>
+              </button>
+              {!inviteCode && <button type="button" aria-pressed={purpose === "organizer"}
+                className="signup-choice" onClick={() => {setPurpose("organizer");setWhatsappShare(false);}}>
+                <span className="signup-choice-icon"><Building2 size={23}/></span>
+                <span><strong>Contratar ou organizar shows</strong><small>Sou produtor, responsável por um evento ou casa de shows. Quero montar agendas e equipes.</small></span>
+                <span className="signup-choice-check">{purpose === "organizer" ? <Check size={18}/> : null}</span>
+              </button>}
+            </div>
+            {isArtist && <fieldset className="signup-activity">
+              <legend>E na música, você…</legend>
+              <p>É só para personalizar sua área de trabalho.</p>
+              <div className="signup-activity-grid">
+                {([
+                  ["singer","Canta",Mic2],
+                  ["musician","Toca instrumentos",Guitar],
+                  ["both","Canta e toca",UsersRound]
+                ] as const).map(([value,label,Icon]) => <label key={value}
+                  className={"signup-activity-option"+(activity===value?" is-selected":"")}>
+                  <input type="radio" name="activity" checked={activity===value}
+                    disabled={Boolean(inviteCode) && value !== "musician"}
+                    onChange={() => setActivity(value)}/>
+                  <Icon size={18}/><span>{label}</span>
+                </label>)}
+              </div>
+              {activity === "both" && <p className="signup-tip">
+                Você terá um único perfil público com as funções de cantor e instrumentista.
+              </p>}
+            </fieldset>}
+          </section>}
+          {step === 2 && <section className="signup-stage" aria-labelledby="signup-stage-title">
+            <h3 id="signup-stage-title">Só os dados essenciais</h3>
+            <p>Seu objetivo: <strong>{roleText}</strong>. Instrumentos, portfólio, fotos e @ ficam para depois.</p>
+            <div className="field"><label htmlFor="name">Seu nome ou nome profissional</label>
+              <input id="name" autoComplete="name" value={displayName} onChange={e=>setDisplayName(e.target.value)}
+                placeholder="Como você quer ser chamado" maxLength={90} required/></div>
+            <div className="field"><label htmlFor="whatsapp">Seu WhatsApp com DDD <span className="signup-required">Obrigatório</span></label>
+              <input id="whatsapp" type="tel" inputMode="tel" autoComplete="tel" value={whatsappPhone}
+                onChange={e=>setWhatsappPhone(formatPhone(e.target.value))}
+                placeholder="(11) 99999-9999" maxLength={16} required/>
+              <span className="field-help">Usaremos este número como seu contato de cadastro. Ele não será publicado no perfil sem sua autorização. Ainda não há verificação por código de WhatsApp.</span></div>
+            <div className="field"><label htmlFor="email">E-mail para entrar</label>
+              <input id="email" type="email" autoComplete="email" value={email}
+                onChange={e=>setEmail(e.target.value)} placeholder="voce@exemplo.com" maxLength={254} required/></div>
+            <div className="field"><label htmlFor="password">Crie uma senha</label>
+              <input id="password" type="password" autoComplete="new-password" value={password}
+                onChange={e=>setPassword(e.target.value)} minLength={8} placeholder="No mínimo 8 caracteres" required/>
+              <span className="field-help"><LockKeyhole size={13} aria-hidden="true"/> Sua senha é privada. Não compartilhamos com outros usuários.</span></div>
+          </section>}
+          {step === 3 && <section className="signup-stage" aria-labelledby="signup-stage-title">
+            <h3 id="signup-stage-title">Tudo certo! Falta confirmar.</h3>
+            <div className="signup-review">
+              <UserRound size={19}/><span><strong>{displayName.trim()}</strong><small>{roleText} · {whatsappPhone}</small></span>
+            </div>
+            <div className="signup-consents">
+              <label className="signup-consent required">
+                <input type="checkbox" checked={termsAccepted} onChange={e=>setTermsAccepted(e.target.checked)} required/>
+                <span>Li e aceito os <Link href="/termos" target="_blank" rel="noopener noreferrer">Termos de Uso</Link> e a <Link href="/privacidade" target="_blank" rel="noopener noreferrer">Política de Privacidade</Link> do StageFlow. <strong>(Obrigatório)</strong></span>
+              </label>
+              <label className="signup-consent">
+                <input type="checkbox" checked={whatsappNotifications} onChange={e=>setWhatsappNotifications(e.target.checked)}/>
+                <span><strong>Quero receber notificações do StageFlow pelo WhatsApp.</strong><small>Convites, propostas e atualizações importantes, quando o serviço estiver disponível. Posso desativar depois. Não inclui publicidade.</small></span>
+              </label>
+              {isArtist && <label className="signup-consent">
+                <input type="checkbox" checked={whatsappShare} onChange={e=>setWhatsappShare(e.target.checked)}/>
+                <span><strong>Permito compartilhar meu WhatsApp com organizadores de convites.</strong><small>Somente no contexto de convites e contratações, para contato direto. Posso revogar em Privacidade. Não publica o número no meu perfil automaticamente.</small></span>
+              </label>}
+            </div>
+            <p className="signup-tip"><ShieldCheck size={16}/> Seu telefone é obrigatório no cadastro, mas receber mensagens e compartilhá-lo são escolhas separadas.</p>
+          </section>}
+          {message && <p className={"signup-feedback"+(error?" is-error":"")} role={error?"alert":"status"}>{message}</p>}
+          <div className="signup-actions">
+            {step > 1 && <button type="button" className="signup-back" onClick={back} disabled={busy}>
+              <ChevronLeft size={18}/> Voltar</button>}
+            {step < 3 ? <button key={step} type="button" className="btn btn-primary signup-next"
+              onClick={next}>Continuar <ArrowRight size={18}/></button> :
+              <button type="submit" className="btn btn-primary signup-next"
+                disabled={busy || !termsAccepted}>{busy?"Criando conta…":"Criar minha conta grátis"} <Check size={17}/></button>}
           </div>
-          <label style={{ display: "flex", alignItems: "flex-start", gap: 10, fontSize: 12, lineHeight: 1.6, color: "var(--muted)", marginBottom: 20 }}>
-            <input type="checkbox" checked={whatsappConsent} onChange={e=>setWhatsappConsent(e.target.checked)} style={{ marginTop: 4, flexShrink: 0, accentColor: "var(--lime)" }}/>
-            <span>Opcional: autorizo que organizadores dos meus convites pendentes ou aceitos visualizem meu número e entrem em contato manualmente pelo WhatsApp. Posso revogar essa autorização em Meus convites.</span>
-          </label>
-        </>}
-        <div className="field"><label htmlFor="email">E-mail</label><input id="email" type="email" autoComplete="email" value={email} onChange={e=>setEmail(e.target.value)} placeholder="voce@exemplo.com" required /></div>
-        <div className="field"><label htmlFor="password">Criar senha</label><input id="password" type="password" autoComplete="new-password" value={password} onChange={e=>setPassword(e.target.value)} minLength={8} placeholder="Pelo menos 8 caracteres" required /></div>
-        <button className="btn btn-primary full" type="submit" disabled={busy}>{busy ? "Criando conta..." : inviteCode ? "Criar conta e abrir convite" : "Criar minha conta gratuita"}</button>
-      </form>
-      {message && <div role="status" className="coming" style={error?{borderColor:"#754343",background:"#281919",color:"#ffb5b5"}:{}}>{message}</div>}
-      <div className="auth-bottom">Já tem uma conta? <Link href={inviteCode ? "/login?convite=" + encodeURIComponent(inviteCode) : "/login"}>Entrar</Link></div>
-    </div></section>
+        </form>
+        <p className="auth-bottom">Já tem uma conta? <Link href={inviteCode ?
+          "/login?convite="+encodeURIComponent(inviteCode) : "/login"}>Entrar</Link></p>
+      </div>
+    </section>
   </main>;
 }
