@@ -1,67 +1,99 @@
 "use client";
 
 import {useEffect} from "react";
+import type {RealtimeChannel,Session} from "@supabase/supabase-js";
 import {createClient} from "@/lib/supabase/client";
-import {useAccount} from "@/src/domains/account/account-context";
 
 /**
- * One private WebSocket channel per signed-in workspace, not one per thread.
- * Broadcast payloads are invalidation hints. Message content stays behind RPCs.
- * Existing polling and visibility refresh remain a fallback on offline/auth failure.
+ * One Realtime subscription per authenticated browser session across all
+ * routes (including Marketplace and public artist pages).
+ *
+ * Only invalidation hints travel over the socket, never private messages.
+ * RPCs remain authoritative; polling continues if the socket is unavailable.
  */
 export default function StageRealtimeBridge(){
- const {snapshot}=useAccount();
- const accountId=snapshot.status==="ready"?snapshot.user?.id:null;
-
  useEffect(()=>{
-  if(!accountId)return;
-  let live=true;
   const client=createClient();
-  const channel=client.channel("stageflow:account:"+accountId,{config:{private:true}});
-  const signal=(connected:boolean)=>{
-   if(live)window.dispatchEvent(new CustomEvent("stageflow:realtime-status",{
-    detail:{connected,accountId}
-   }));
-  };
-  channel
-   .on("broadcast",{event:"chat_changed"},({payload})=>{
-    if(!live)return;
-    const threadId=payload?.thread_id;
-    if(typeof threadId!=="string"||!/^[0-9a-f-]{36}$/i.test(threadId))return;
-    window.dispatchEvent(new CustomEvent("stageflow:chat-updated",{
-     detail:{threadId}
-    }));
-   })
-   .on("broadcast",{event:"notifications_changed"},()=>{
-    if(live)window.dispatchEvent(new Event("stageflow:notifications-updated"));
-   });
+  let live=true;
+  let generation=0;
+  let userId:string|null=null;
+  let channel:RealtimeChannel|null=null;
 
-  async function connect(){
+  function signal(connected:boolean){
+   document.documentElement.dataset.stageflowRealtime=connected?"connected":"offline";
+   window.dispatchEvent(new CustomEvent("stageflow:realtime-status",{
+    detail:{connected}
+   }));
+  }
+  function close(){
+   const current=channel;
+   channel=null;
+   userId=null;
+   signal(false);
+   if(current)void client.removeChannel(current);
+  }
+  async function connect(session:Session){
+   const epoch=++generation;
+   if(userId===session.user.id&&channel){
+    try{await client.realtime.setAuth(session.access_token);}catch{signal(false);}
+    return;
+   }
+   close();
+   userId=session.user.id;
    try{
-    const {data:{session}}=await client.auth.getSession();
-    if(!live||!session||session.user.id!==accountId)return;
     await client.realtime.setAuth(session.access_token);
-    if(!live)return;
-    channel.subscribe(status=>{
-     if(!live)return;
+    if(!live||epoch!==generation)return;
+    const activeId=session.user.id;
+    const room=client.channel("stageflow:account:"+activeId,{config:{private:true}})
+     .on("broadcast",{event:"chat_changed"},({payload})=>{
+      if(!live||userId!==activeId)return;
+      const threadId=payload?.thread_id;
+      if(typeof threadId!=="string"||!/^[0-9a-f-]{36}$/i.test(threadId))return;
+      window.dispatchEvent(new CustomEvent("stageflow:chat-updated",{
+       detail:{threadId}
+      }));
+     })
+     .on("broadcast",{event:"notifications_changed"},()=>{
+      if(live&&userId===activeId)
+       window.dispatchEvent(new Event("stageflow:notifications-updated"));
+     });
+    channel=room;
+    room.subscribe(status=>{
+     if(!live||userId!==activeId)return;
      signal(status==="SUBSCRIBED");
      if(status==="SUBSCRIBED"){
-      // Close the subscribe gap: catch events delivered while connecting.
+      // Fetch once after joining to close any missed-event gap.
       window.dispatchEvent(new Event("stageflow:notifications-updated"));
       window.dispatchEvent(new CustomEvent("stageflow:chat-updated",{detail:{threadId:null}}));
      }
     });
-   }catch{signal(false);}
+   }catch{if(live&&epoch===generation){close();}}
   }
-  void connect();
+
+  const {data:{subscription}}=client.auth.onAuthStateChange((_event,session)=>{
+   // Auth callbacks must not invoke another Supabase method synchronously.
+   window.setTimeout(()=>{
+    if(!live)return;
+    if(!session){generation++;close();return;}
+    void connect(session);
+   },0);
+  });
+  async function boot(){
+   try{
+    const {data:{session}}=await client.auth.getSession();
+    if(live){
+     if(session)void connect(session);
+     else if(!channel)signal(false);
+    }
+   }catch{if(live)signal(false);}
+  }
+  void boot();
   return()=>{
    live=false;
-   // Auth/session changes remount this boundary and close the old account channel.
-   void client.removeChannel(channel);
-   window.dispatchEvent(new CustomEvent("stageflow:realtime-status",{
-    detail:{connected:false,accountId}
-   }));
+   generation++;
+   subscription.unsubscribe();
+   close();
   };
- },[accountId]);
+ },[]);
  return null;
 }
