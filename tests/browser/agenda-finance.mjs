@@ -293,34 +293,45 @@ try {
       await start.focus();
       await start.press("Enter");
       await page.getByRole("heading", { name: "Crie sua conta", exact: true }).waitFor();
-      const roles = page.getByRole("group", { name: "Sua atividade principal" });
-      for (const name of [/^Músico de apoio/, /^Produtor \/ contratante/, /^Cantor \/ artista principal/]) {
-        const choice = roles.getByRole("button", { name });
+      const purposes = page.getByRole("group", { name: "Objetivo principal" });
+      for (const name of ["Contratar ou organizar shows", "Divulgar meu trabalho"]) {
+        const choice = purposes.getByRole("button", { name: new RegExp("^" + name) });
         await choice.focus();
         await choice.press("Enter");
         assert.equal(await choice.getAttribute("aria-pressed"), "true");
-        assert.equal(await roles.locator('[aria-pressed="true"]').count(), 1);
-        await noHorizontalOverflow(page, "signup role " + name + " " + width);
+        assert.equal(await purposes.locator('[aria-pressed="true"]').count(), 1);
+        await noHorizontalOverflow(page, "signup purpose " + name + " " + width);
       }
-      await page.screenshot({ path: `test-results/public-signup-${width}.png`, fullPage: true });
-      // Synthetic Auth signup rejects duplicates and trigger collisions without exposing raw errors.
+      for (const name of ["Canta", "Toca instrumentos", "Canta e toca"]) {
+        const radio = page.getByRole("radio", { name, exact: true });
+        await radio.focus();
+        await radio.press("Space");
+        assert.equal(await radio.isChecked(), true);
+      }
+      await page.screenshot({ path: "test-results/public-signup-" + width + ".png", fullPage: true });
+      // Synthetic Auth signup tests the progressive form and separate WhatsApp consents.
+      await page.getByRole("button", { name: /Continuar/ }).click();
       await page.locator("#name").fill("Artista de Teste");
-      await page.locator("#slug").fill("artista-de-teste");
+      await page.locator("#whatsapp").fill("(11) 99999-9999");
       await page.locator("#email").fill("artista@example.test");
       await page.locator("#password").fill("senha-ficticia-123");
-      const submitSignup = page.getByRole("button", { name: "Criar minha conta gratuita", exact: true });
+      await page.getByRole("button", { name: /Continuar/ }).click();
+      await page.getByRole("checkbox", { name: /Li e aceito os Termos de Uso/ }).check();
+      assert.equal(await page.getByRole("checkbox", { name: /Quero receber notificações/ }).isChecked(), false);
+      assert.equal(await page.getByRole("checkbox", { name: /Permito compartilhar meu WhatsApp/ }).isChecked(), false);
+      const submitSignup = page.getByRole("button", { name: "Criar minha conta grátis" });
       const duplicateResponse = page.waitForResponse(r => new URL(r.url()).pathname === "/auth/v1/signup");
       await submitSignup.click();
       await duplicateResponse;
-      await page.getByRole("status").filter({ hasText: "Este usuário já existe. Use Entrar" }).waitFor();
+      await page.getByRole("alert").filter({ hasText: "Este usuário já existe. Use Entrar" }).waitFor();
       assert.equal(signupAttempts, 1, "Duplicate signup must send just one synthetic request");
       signupErrorMode = "database";
-      const collisionResponse = page.waitForResponse(r => new URL(r.url()).pathname === "/auth/v1/signup");
+      const databaseResponse = page.waitForResponse(r => new URL(r.url()).pathname === "/auth/v1/signup");
       await submitSignup.click();
-      await collisionResponse;
-      await page.getByRole("status").filter({ hasText: "Este usuário já existe ou o @ artístico informado está em uso" }).waitFor();
+      await databaseResponse;
+      await page.getByRole("alert").filter({ hasText: "O cadastro não pôde ser salvo no momento" }).waitFor();
       assert.equal(signupAttempts, 2, "A retry should send only one synthetic request");
-      assert.ok(!(await page.getByRole("status").innerText()).includes("Database error saving new user"));
+      assert.ok(!(await page.getByRole("alert").innerText()).includes("Database error saving new user"));
       await noHorizontalOverflow(page, "signup duplicate error " + width);
       await page.screenshot({ path: "test-results/public-signup-duplicate-" + width + ".png", fullPage: true });
       assert.deepEqual(errors, []);
