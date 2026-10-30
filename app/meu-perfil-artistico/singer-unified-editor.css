@@ -165,3 +165,8 @@
 .singer-unified-editor .artist-editor-recovery-actions{display:flex;flex-wrap:wrap;gap:var(--sf-ui-space-3);margin-top:var(--sf-ui-space-4)}
 .singer-unified-editor .artist-editor-recovery{padding-block:var(--sf-ui-space-4)}
 @media(max-width:850px){.singer-unified-editor .artist-editor-recovery{padding-top:64px}}
+
+/* An early route to the existing live preview for narrow screens. */
+.sf-artist-preview-shortcut{display:none!important}
+@media(max-width:850px){.sf-artist-preview-shortcut{display:inline-flex!important;align-items:center;justify-content:center;
+ gap:8px;width:100%;min-height:46px;margin:0 0 14px}}
