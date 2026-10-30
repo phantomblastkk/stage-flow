@@ -628,9 +628,15 @@ try{
    await page.getByRole("heading",{name:"Casa do Henrique",exact:true}).waitFor();
   }
   await page.screenshot({path:`test-results/operational-profiles-${width}.png`,fullPage:true});
-  await page.goto(origin+"/contratar?evento="+eventId);await page.getByRole("button",{name:"Buscar perfis",exact:true}).click();
-  await page.getByRole("button",{name:"Ver disponibilidade",exact:true}).click();await page.getByLabel("Cachê total proposto (R$)",{exact:true}).fill("1500");
-  await page.getByRole("button",{name:"Enviar convite",exact:true}).click();await page.getByText(/Convite enviado\. Negocie/).waitFor();assert.equal(writes.at(-1).p_fee,1500);
+  const beforeHiringWrites=writes.length;
+  await page.goto(origin+"/contratar?evento="+eventId);
+  await page.getByRole("heading",{name:"Encontre profissionais para seu show"}).waitFor();
+  const marketShortcut=page.getByRole("link",{name:/Buscar músicos para este evento|Explorar artistas no Marketplace/});
+  await marketShortcut.waitFor();
+  const link=await marketShortcut.getAttribute("href");
+  assert.ok(link==="/marketplace?evento="+eventId||link==="/marketplace",
+   "Hiring should lead to the working Marketplace route: "+link);
+  assert.equal(writes.length,beforeHiringWrites,"Opening the hiring guide must not send an invitation");
   await page.screenshot({path:`test-results/operational-hiring-${width}.png`,fullPage:true});
   failFinance=true;await page.goto(origin+"/painel");await page.getByRole("alert").filter({hasText:"Não foi possível atualizar os recebimentos"}).waitFor();
   // Reload the real route with a singer-only account; no component is mounted artificially.
