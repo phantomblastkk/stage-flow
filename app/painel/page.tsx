@@ -5,6 +5,7 @@ import {useRouter} from "next/navigation";
 import {Check,Guitar,LayoutDashboard,Mic2,Settings2} from "lucide-react";
 import WorkspaceSidebar from "@/src/domains/navigation/components/workspace-sidebar";
 import WorkspaceOverview from "@/src/domains/dashboard/components/workspace-overview";
+import FirstSessionGuide from "@/src/domains/dashboard/components/first-session-guide";
 import { createClient } from "@/lib/supabase/client";
 import NotificationBell from "@/components/notification-bell";
 import DashboardAccountMenu from "@/components/dashboard-account-menu";
@@ -93,7 +94,7 @@ export default function Dashboard() {
   // Priorizar a foto artistica principal evita resgatar a miniatura antiga.
   const accountPhoto=singerPhoto||musicianPhoto;
   const roleLabel = !profile ? "Conta"
-    : isSupport ? "Músico de apoio" + (profile.is_producer ? " + Produtor" : "")
+    : isSupport ? "Músico / instrumentista" + (profile.is_producer ? " + Produtor" : "")
     : isLead ? "Cantor / artista" + (profile.is_producer ? " + Produtor" : "")
     : "Produtor / contratante";
 
@@ -144,6 +145,7 @@ export default function Dashboard() {
           </button>
         </section>}
 
+      <FirstSessionGuide/>
       <WorkspaceOverview isSinger={Boolean(profile?.is_singer)}
         isMusician={Boolean(profile?.is_musician)}
         isProducer={Boolean(profile?.is_producer)}/>
