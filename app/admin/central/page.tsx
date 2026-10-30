@@ -7,14 +7,16 @@ import {
   Activity,ArrowDownToLine,ArrowLeft,ArrowRight,ArrowUpRight,
   BadgeCheck,Building2,CheckCircle2,ChevronLeft,ChevronRight,Clock3,
   ExternalLink,FileClock,Filter,LoaderCircle,LockKeyhole,Mic2,Crown,Gift,
-  Music2,RefreshCw,Search,ShieldCheck,ShieldX,Sparkles,Users2
+  Music2,RefreshCw,Search,ShieldCheck,ShieldX,Sparkles,Trash2,Users2
 } from "lucide-react";
 import {createClient} from "@/lib/supabase/client";
 import StageVerifiedBadge from "@/components/stage-verified-badge";
+import DeleteAccountDialog from "./delete-account-dialog";
 import "./central.css";
 
 type Tab="overview"|"users"|"venues"|"history";
 type Kind="singer"|"musician"|"venue";
+type AuditKind=Kind|"account";
 type ProAccess={id:string;manual_granted:boolean;paid_entitled:boolean;effective_entitled:boolean};
 type Response<T>={status:string;items?:T[];total?:number;page?:number;page_size?:number};
 type Metrics={
@@ -34,8 +36,8 @@ type Venue={
  submitted_by_name:string|null;submitted_by_email:string|null;verified:boolean;
 };
 type ActivityRow={
- id:number;action:"verification_granted"|"verification_revoked"|"venue_approved"|"venue_rejected"|"pro_access_granted"|"pro_access_revoked";
- kind:Kind;target_id:string;happened_at:string;actor_name:string|null;
+ id:number;action:"verification_granted"|"verification_revoked"|"venue_approved"|"venue_rejected"|"pro_access_granted"|"pro_access_revoked"|"account_deletion_requested"|"account_deleted"|"account_deletion_failed";
+ kind:AuditKind;target_id:string;happened_at:string;actor_name:string|null;
 };
 
 const displayDate=(value:string)=>new Intl.DateTimeFormat("pt-BR",{
@@ -44,11 +46,13 @@ const displayDate=(value:string)=>new Intl.DateTimeFormat("pt-BR",{
 const statusText:Record<string,string>={
  pending:"Aguardando",approved:"Aprovada",rejected:"Rejeitada"
 };
-const kindText:Record<Kind,string>={singer:"Cantor",musician:"Músico",venue:"Casa"};
+const kindText:Record<AuditKind,string>={singer:"Cantor",musician:"Músico",venue:"Casa",account:"Conta"};
 const actionText:Record<ActivityRow["action"],string>={
  verification_granted:"Concedeu verificação",verification_revoked:"Retirou verificação",
  venue_approved:"Aprovou casa",venue_rejected:"Rejeitou casa",
-  pro_access_granted:"Concedeu cortesia Pro",pro_access_revoked:"Retirou cortesia Pro"
+  pro_access_granted:"Concedeu cortesia Pro",pro_access_revoked:"Retirou cortesia Pro",
+  account_deletion_requested:"Solicitou exclusão de conta",account_deleted:"Excluiu conta",
+  account_deletion_failed:"Exclusão bloqueada ou não concluída"
 };
 
 function escapeCsv(value:unknown){
@@ -61,6 +65,8 @@ export default function CentralAdministrativa(){
  const router=useRouter();
  const [checking,setChecking]=useState(true);
  const [authorized,setAuthorized]=useState(false);
+ const [ownerId,setOwnerId]=useState("");
+ const [selectedDelete,setSelectedDelete]=useState<Account|null>(null);
  const [fatal,setFatal]=useState("");
  const [tab,setTab]=useState<Tab>("overview");
  const [metrics,setMetrics]=useState<Metrics|null>(null);
@@ -102,7 +108,7 @@ export default function CentralAdministrativa(){
     const {data,error}=await db.rpc("stage_owner_admin_status");
     if(!active)return;
     if(error)throw error;
-    if(data===true)setAuthorized(true);
+    if(data===true){setAuthorized(true);setOwnerId(user.id);}
     else setFatal("Acesso indisponível para esta conta.");
    }catch{if(active)setFatal("Não foi possível verificar a autorização desta sessão.");}
    finally{if(active)setChecking(false);}
@@ -322,7 +328,7 @@ export default function CentralAdministrativa(){
     <header className="sf-admin-top">
      <div><span className="sf-admin-kicker"><Sparkles size={15}/> CENTRO DE CONTROLE</span>
       <h1>{tab==="overview"?"Visão geral":tab==="users"?"Usuários e acessos Pro":tab==="venues"?"Casas e aprovações":"Histórico administrativo"}</h1>
-      <p>{tab==="overview"?"Seus indicadores e ações do StageFlow, em um só lugar.":tab==="users"?"Pesquise contas, conceda ou retire cortesia Pro e gerencie os selos.":tab==="venues"?"Aprove casas, acompanhe solicitações e gerencie perfis oficiais.":"Registro de decisões, selos, cortesias Pro e aprovações."}</p>
+      <p>{tab==="overview"?"Seus indicadores e ações do StageFlow, em um só lugar.":tab==="users"?"Pesquise contas, gerencie selos, cortesias Pro e exclusões com confirmação.":tab==="venues"?"Aprove casas, acompanhe solicitações e gerencie perfis oficiais.":"Registro de decisões, selos, cortesias Pro e aprovações."}</p>
      </div>
      <button type="button" className="sf-admin-refresh" onClick={reload}>
       <RefreshCw size={17}/> Atualizar
@@ -402,7 +408,7 @@ export default function CentralAdministrativa(){
       <span>{verifiedUsers} com algum selo nesta página</span></div>
      <p className="sf-admin-pro-guidance"><Crown size={17}/> Cortesia Pro é um benefício manual e gratuito para cantores. Não modifica pagamentos ou plano contratado. Retirar a cortesia não cancela uma assinatura Pro ativa; a publicação Pro depende da decisão do cantor.</p>
      <div className="sf-admin-table-scroll">
-      <table><thead><tr><th>Conta</th><th>Cadastro</th><th>Funções</th><th>Plano</th><th>Acesso Pro</th><th>Verificação StageFlow</th></tr></thead>
+      <table><thead><tr><th>Conta</th><th>Cadastro</th><th>Funções</th><th>Plano</th><th>Acesso Pro</th><th>Verificação StageFlow</th><th>Gerenciar</th></tr></thead>
        <tbody>{users.map(user=><tr key={user.id}>
         <td><strong>{user.name}</strong><small>{user.email||"Sem e-mail"}{user.username?" · @"+user.username:""}</small>
          {user.username&&user.is_public&&<Link href={"/"+encodeURIComponent(user.username)} target="_blank">Abrir perfil <ExternalLink size={12}/></Link>}
@@ -439,6 +445,15 @@ export default function CentralAdministrativa(){
           <BadgeCheck size={15}/>{user.musician_verified?"Retirar selo músico":"Verificar músico"}
          </button>}
          {!user.is_singer&&!user.is_musician&&<span className="sf-admin-muted">Sem perfil artístico</span>}
+        </div></td>
+        <td><div className="sf-admin-account-actions">
+         {user.id===ownerId?<span className="sf-admin-muted">Conta proprietária protegida</span>:
+          ["artist_plus","studio"].includes(user.plan_code)||proByUser[user.id]?.paid_entitled?
+           <span className="sf-admin-muted">Revisar assinatura antes de excluir</span>:
+           <button type="button" className="sf-admin-account-delete"
+            disabled={Boolean(busy)||loadingData} onClick={()=>setSelectedDelete(user)}>
+            <Trash2 size={15}/> Excluir conta
+           </button>}
         </div></td>
        </tr>)}</tbody>
       </table>
@@ -512,7 +527,7 @@ export default function CentralAdministrativa(){
      </div>
      <div className="sf-admin-history">
       {history.map(item=><article key={item.id}>
-       <span className="sf-admin-history-symbol">{item.action.includes("verification")?<BadgeCheck size={19}/>:item.action.startsWith("pro_access_")?<Crown size={19}/>:<Building2 size={19}/>}</span>
+       <span className="sf-admin-history-symbol">{item.action.startsWith("account_")?<Trash2 size={19}/>:item.action.includes("verification")?<BadgeCheck size={19}/>:item.action.startsWith("pro_access_")?<Crown size={19}/>:<Building2 size={19}/>}</span>
        <div><strong>{actionText[item.action]}</strong><p>{kindText[item.kind]} · {item.target_id}</p>
         <small>Por {item.actor_name||"Administração"} · {displayDate(item.happened_at)}</small>
        </div>
@@ -525,6 +540,13 @@ export default function CentralAdministrativa(){
      </div></div>
     </section>}
 
+    {selectedDelete&&<DeleteAccountDialog key={selectedDelete.id} user={selectedDelete}
+     onClose={()=>setSelectedDelete(null)} onDeleted={()=>{
+      setSelectedDelete(null);
+      setFeedbackError(false);
+      setFeedback("Conta excluída. A lista de usuários e o histórico foram atualizados.");
+      reload();
+     }}/>}
     <footer className="sf-admin-footer">
      <span><ShieldCheck size={15}/> Administração StageFlow · apenas proprietário autorizado</span>
      <Link href="/painel">Voltar ao painel <ArrowUpRight size={15}/></Link>
