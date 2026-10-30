@@ -372,8 +372,8 @@ export default function MeuPortfolioDeMusico({unifiedSinger=false,username=null}
     Boolean(portfolio.bio.trim()),
     Boolean(instrumentsText.trim()),
     Boolean(portfolio.city.trim()),
-    Boolean(portfolio.headline.trim()),
-    Boolean(portfolio.media_url || additionalMediaText.trim())
+    Boolean(genresText.trim()),
+    Boolean(savedPublished)
   ].filter(Boolean).length;
 
   async function sharePortfolio() {
@@ -403,7 +403,7 @@ export default function MeuPortfolioDeMusico({unifiedSinger=false,username=null}
       <div className="mp-editor-progress" aria-label={"Perfil com " + completed + " de 6 informações essenciais"}>
         <div><ListChecks size={16}/><strong>{completed}/6</strong> informações essenciais preenchidas</div>
         <div className="mp-editor-progress-bar" aria-hidden="true"><span style={{ width: Math.round(completed / 6 * 100) + "%" }}/></div>
-        <small>Foto, apresentação, instrumentos, cidade, frase de destaque e vídeo.</small>
+        <small>Foto, apresentação, instrumentos, cidade, estilos musicais e publicação. Frase e vídeo são opcionais.</small>
       </div>
     </section>
 
