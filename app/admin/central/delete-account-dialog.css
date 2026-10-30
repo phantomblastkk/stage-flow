@@ -1,0 +1,43 @@
+.sf-admin-delete-dialog{position:fixed;inset:0;margin:auto;width:min(94vw,540px);
+ max-height:min(92dvh,750px);overflow-y:auto;overscroll-behavior:contain;padding:0;
+ border:1px solid #925367;border-radius:20px;background:#171b2b;color:#f4effb;
+ box-shadow:0 28px 100px #040207bf}
+.sf-admin-delete-dialog::backdrop{background:#080711d6;backdrop-filter:blur(6px)}
+.sf-admin-delete-dialog form{display:grid;gap:13px;padding:clamp(19px,4vw,28px)}
+.sf-delete-head{display:flex;align-items:center;justify-content:space-between}
+.sf-delete-warning-icon{display:grid;place-items:center;width:50px;height:50px;
+ border:1px solid #a4687d;border-radius:14px;background:#512b3d;color:#ffd9e1}
+.sf-delete-head button{border:1px solid #56516d;background:#2b2a42;border-radius:11px;
+ width:44px;height:44px;display:grid;place-items:center;color:#efdeff;cursor:pointer}
+.sf-admin-delete-dialog h2{font:900 clamp(20px,4.5vw,25px)/1.25 Manrope,sans-serif;margin:0}
+.sf-admin-delete-dialog p{font-size:13px;line-height:1.7;color:#d0c5d8;margin:0}
+.sf-admin-delete-dialog p strong{color:#fff}
+.sf-delete-summary{border:1px solid #50455f;background:#242238;border-radius:12px;padding:14px;margin:0;display:grid;gap:10px}
+.sf-delete-summary div{display:grid;gap:3px;min-width:0}
+.sf-delete-summary dt{font-size:11px;color:#b6a8c9}
+.sf-delete-summary dd{font-size:13px;font-weight:800;margin:0;overflow-wrap:anywhere}
+.sf-delete-summary code{font-size:11px}
+.sf-admin-delete-dialog .sf-delete-billing{display:flex;gap:9px;padding:12px;
+ border:1px solid #81526c;background:#382331;border-radius:11px;color:#ffe3e9}
+.sf-delete-billing svg{flex:none;margin-top:3px}
+.sf-delete-checkbox{display:flex;align-items:flex-start;gap:10px;font-size:13px;line-height:1.6;color:#eddfef;cursor:pointer}
+.sf-delete-checkbox input{width:21px;height:21px;flex:none;margin-top:0;accent-color:#a46de8}
+.sf-admin-delete-dialog label[for=sf-delete-confirm]{color:#f6e6ff;font-size:12px;font-weight:800;margin:0}
+.sf-delete-expected{border:1px dashed #8d6a9b;border-radius:9px;background:#231d34;padding:11px 13px;overflow-wrap:anywhere;font-size:13px}
+.sf-delete-expected code{user-select:all}
+.sf-admin-delete-dialog input#sf-delete-confirm{width:100%;font-size:16px;min-height:49px;border-radius:11px;border:1px solid #856999;
+ background:#25213a;color:#fff;padding:12px}
+.sf-admin-delete-dialog input:focus-visible,.sf-admin-delete-dialog button:focus-visible{outline:3px solid #d5b8f5;outline-offset:3px}
+.sf-admin-delete-dialog .sf-delete-error{color:#ffe2e9;border:1px solid #9f667c;background:#3e2435;padding:12px;border-radius:10px}
+.sf-admin-delete-dialog .sf-delete-success{color:#e0ffea;border:1px solid #6a9b7e;background:#203a2f;padding:12px;border-radius:10px}
+.sf-delete-actions{display:flex;gap:10px;justify-content:flex-end;margin-top:5px}
+.sf-delete-actions button{min-height:49px;border-radius:11px;padding:11px 15px;
+ display:inline-flex;align-items:center;justify-content:center;gap:9px;cursor:pointer;font:850 12px Manrope,sans-serif}
+.sf-delete-actions button:disabled{opacity:.45;cursor:not-allowed}
+.sf-delete-cancel{background:#302b42;border:1px solid #6e5c81;color:#fff}
+.sf-delete-submit{background:#b44262;border:1px solid #d17b8f;color:white}
+.sf-delete-submit:not(:disabled):hover{background:#cb4a6d}
+@media(max-width:560px){.sf-admin-delete-dialog{max-height:90dvh;width:calc(100vw - 22px);border-radius:16px}
+ .sf-delete-actions{display:grid;grid-template-columns:1fr}
+ .sf-delete-actions button{width:100%;min-height:50px}
+}
