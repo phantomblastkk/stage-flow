@@ -113,8 +113,8 @@ test("administrator can guide manager registration and safely share access",()=>
   assert.match(globalAdmin,/result!=="granted" && result!=="revoked"/);
   assert.match(globalAdmin,/\/cadastro\?parceiro=1/);
   assert.match(signup,/setPartnerOnboarding\(true\)/);
-  assert.match(signup,/setArtistKind\("none"\)/);
-  assert.match(signup,/somente ela pode liberar sua programação/);
+  assert.match(signup,/setPurpose\("organizer"\)/);
+  assert.match(signup,/acesso à administração da casa precisa ser aprovado/);
   assert.doesNotMatch(globalAdmin,/supabase\.auth\.admin\./);
 });
 
