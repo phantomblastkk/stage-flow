@@ -1,0 +1,73 @@
+import {test} from "node:test";
+import assert from "node:assert/strict";
+import {readFileSync} from "node:fs";
+import {resolve} from "node:path";
+const src=(path)=>readFileSync(resolve(process.cwd(),path),"utf8");
+const migration=src("supabase/stage_private_realtime_account_signals.sql");
+const bridge=src("src/domains/navigation/components/stage-realtime-bridge.tsx");
+const root=src("src/domains/navigation/components/workspace-root.tsx");
+const messages=src("src/domains/booking/hooks/use-conversation-messages.ts");
+const chat=src("app/conversas/page.tsx");
+const bell=src("components/notification-bell.tsx");
+const inbox=src("app/notificacoes/page.tsx");
+const nav=src("src/domains/navigation/components/workspace-mobile-nav.tsx");
+const css=src("app/conversas/conversas.css");
+test("broadcast authorization listens only on the authenticated owner's private topic",()=>{
+ assert.match(migration,/on realtime\.messages for select to authenticated/);
+ assert.match(migration,/realtime\.messages\.extension = 'broadcast'/);
+ assert.match(migration,/realtime\.topic\(\).*stageflow:account:/);
+ assert.match(migration,/auth\.uid\(\)/);
+ assert.doesNotMatch(migration,/for insert to authenticated|using \(true\)|private\s*=>\s*false/i);
+ assert.match(bridge,/config:\{private:true\}/);
+ assert.match(bridge,/realtime\.setAuth\(session\.access_token\)/);
+ assert.match(bridge,/session\.user\.id!==accountId/);
+ assert.match(bridge,/removeChannel\(channel\)/);
+});
+test("database broadcasts are only change hints; chat body and phone data never leave RPCs",()=>{
+ assert.match(migration,/stage_hiring_messages/);
+ assert.match(migration,/stage_internal_notifications/);
+ assert.match(migration,/realtime\.send\(/);
+ assert.match(migration,/'chat_changed'/);
+ assert.match(migration,/'notifications_changed'/);
+ assert.doesNotMatch(migration,/new\.body|phone_e164|new\.summary|new\.title/);
+ assert.match(migration,/exception when others then/);
+ assert.match(migration,/revoke all on function public\.stageflow_signal_chat_message/);
+ assert.match(migration,/revoke all on function public\.stageflow_signal_notification/);
+});
+test("one realtime subscriber is mounted within the authenticated account boundary",()=>{
+ assert.match(root,/<StageRealtimeBridge\/>/);
+ assert.ok(root.indexOf('<StageRealtimeBridge/>')>root.indexOf('key={snapshot.user.id'));
+ assert.match(bridge,/stageflow:account:"\+accountId/);
+ assert.match(bridge,/stageflow:notifications-updated/);
+ assert.match(bridge,/stageflow:chat-updated/);
+ assert.match(bridge,/status==="SUBSCRIBED"/);
+});
+test("chat updates immediately while using a backup watchdog offline",()=>{
+ assert.match(messages,/stageflow:chat-updated/);
+ assert.match(messages,/threadId===activeId\|\|threadId===null/);
+ assert.match(messages,/realtimeConnected\?45000:8000/);
+ assert.match(messages,/visibilitychange/);
+ assert.match(chat,/stageflow:chat-updated/);
+ assert.match(chat,/lastAcknowledged/);
+ assert.match(chat,/Atualização ao vivo/);
+ assert.match(chat,/href="\/notificacoes"/);
+});
+test("notifications update on signals but keep fallback and recovery",()=>{
+ assert.match(bell,/stageflow:notifications-updated/);
+ assert.match(bell,/realtimeConnected\?60000:25000/);
+ assert.match(inbox,/realtimeConnected\?60000:20000/);
+ assert.match(inbox,/stageflow:realtime-status/);
+ assert.match(inbox,/Tentar novamente/);
+});
+test("mobile 5-tab navigation exposes unread chat count without leaking other users' state",()=>{
+ assert.match(nav,/stage_hiring_list/);
+ assert.match(nav,/chatUnread>99\?"99\+":chatUnread/);
+ assert.match(nav,/onAuthStateChange/);
+ assert.match(nav,/setChatUnread\(null\)/);
+ assert.match(nav,/stageflow:chat-updated/);
+ assert.match(nav,/aria-label=\{href==="\/conversas"/);
+ assert.match(src("src/domains/navigation/components/workspace-shell.css"),/\.sf-mobile-nav-count/);
+ assert.match(css,/hiring-live-status/);
+ assert.match(css,/\.hiring-layout\.has-active/);
+ assert.match(css,/100dvh/);
+});
