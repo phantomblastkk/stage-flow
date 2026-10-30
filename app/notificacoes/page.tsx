@@ -103,7 +103,13 @@ export default function NotificationsPage(){
   const ticker=setInterval(()=>{
    if(alive&&document.visibilityState==="visible")void refresh(filter).catch(()=>{});
   },20000);
-  return()=>{alive=false;clearInterval(ticker)};
+  const onNoticesChanged=()=>{
+   if(alive&&document.visibilityState==="visible")
+    void refresh(filter).catch(()=>setError("Não foi possível atualizar os avisos."));
+  };
+  window.addEventListener("stageflow:notifications-updated",onNoticesChanged);
+  return()=>{alive=false;clearInterval(ticker);
+   window.removeEventListener("stageflow:notifications-updated",onNoticesChanged);};
  },[filter,refresh,router]);
  const grouped=useMemo(()=>{
   const result=new Map<string,Notice[]>();
@@ -122,7 +128,7 @@ export default function NotificationsPage(){
  async function markAll(){
   if(busy||unread===0)return;
   setBusy(true);setError("");setNotice("");
-  try{await mark(null,true);await refresh(filter);setNotice("Todas as notificações foram marcadas como lidas.");}
+  try{await mark(null,true);await refresh(filter);window.dispatchEvent(new Event("stageflow:notifications-updated"));setNotice("Todas as notificações foram marcadas como lidas.");}
   catch(e){setError(e instanceof Error?e.message:"Falha ao atualizar.");}
   finally{setBusy(false);}
  }
@@ -136,6 +142,7 @@ export default function NotificationsPage(){
        ?items.filter(n=>n.id!==item.id)
        :items.map(n=>n.id===item.id?{...n,read_at:new Date().toISOString()}:n));
      setUnread(count=>Math.max(0,count-1));
+     window.dispatchEvent(new Event("stageflow:notifications-updated"));
     }catch{
      // Mark-as-read failures must not block the musician from the event briefing.
     }
@@ -146,7 +153,7 @@ export default function NotificationsPage(){
  async function markOne(item:Notice){
   if(busy||item.read_at)return;
   setBusy(true);setError("");setNotice("");
-  try{await mark([item.id]);await refresh(filter);}
+  try{await mark([item.id]);await refresh(filter);window.dispatchEvent(new Event("stageflow:notifications-updated"));}
   catch(e){setError(e instanceof Error?e.message:"Erro ao atualizar.");}
   finally{setBusy(false);}
  }
@@ -165,7 +172,10 @@ export default function NotificationsPage(){
     <span><Inbox size={16}/>{notifications.length} aviso{notifications.length===1?"":"s"} neste filtro</span>
    </div>
   </header>
-  {error&&<p className="notifications-feedback is-error" role="alert">{error}</p>}
+  {error&&<div className="notifications-feedback is-error" role="alert">{error}
+   <button type="button" className="btn btn-quiet" disabled={loading||busy}
+    onClick={()=>{setError("");void refresh(filter).catch(e=>setError(e instanceof Error?e.message:"Falha ao carregar."));}}>
+    <RefreshCw size={15}/> Tentar novamente</button></div>}
   {notice&&<p className="notifications-feedback" role="status">{notice}</p>}
   <section className="notifications-body" aria-label="Caixa de entrada de notificações">
    <div className="notifications-toolbar">
