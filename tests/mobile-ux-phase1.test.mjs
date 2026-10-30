@@ -16,8 +16,8 @@ test("mobile Marketplace prioritizes searching and avoids three narrow recommend
 test("unified artistic identity and current Marketplace status are explained correctly",()=>{
  const signup=src("app/cadastro/page.tsx");
  const home=src("app/page.tsx");
- assert.ok(signup.includes("Quero ativar as duas funções na mesma conta"));
- assert.ok(signup.includes("terei um único perfil público"));
+ assert.ok(signup.includes("Canta e toca"));
+ assert.ok(signup.includes("um único perfil público"));
  assert.ok(!signup.includes("Meu perfil de cantor continua separado"));
  assert.ok(!home.includes("MARKETPLACE · EM BREVE"));
  assert.ok(home.includes("MARKETPLACE ABERTO"));
