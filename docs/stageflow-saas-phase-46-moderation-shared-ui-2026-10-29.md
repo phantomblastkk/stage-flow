@@ -30,8 +30,8 @@ não substitui auditoria de isolamento no banco real.
 
 ## Validação e limites
 
-270 testes Node locais, TypeScript e build aprovados. CI e capturas desta parte
-serão registrados após conclusão. Cenários de navegador em 360/768/1280 px.
+270 testes Node, TypeScript e build aprovados localmente e no CI final.
+Cenários de navegador em 360/768/1280 px, com capturas revisadas.
 CSS da fila: 6860 → 5125 bytes de fonte, sem medição de bundle ou latência.
 
 Esta é uma migração de apresentação. Tratamento legado de transporte/respostas
@@ -46,3 +46,16 @@ regras comprovadamente redundantes, com regressão das telas consumidoras.
 Limpeza CSS segue parcial. Estimativa restante de 5–9 entregas para o escopo original,
 sujeita aos achados das jornadas e auditoria de segurança/performance.
 Auto deploy continua desabilitado para todas as branches.
+
+## Evidências finais
+
+Commit validado: `575b9e75095815376b85f66cdf0c3a92405b9dcd`.
+
+- [Diff aplicado](https://github.com/phantomblastkk/stage-flow/compare/c5a395fe8075453be4a24731eb5f584d3b729725...575b9e75095815376b85f66cdf0c3a92405b9dcd).
+- [Integration and build aprovado](https://github.com/phantomblastkk/stage-flow/actions/runs/40985215457), incluindo cadastro, agenda e financeiro no navegador.
+- [Operational UX aprovado](https://github.com/phantomblastkk/stage-flow/actions/runs/40985215458), incluindo 270 testes, build, isolamento em PostgreSQL temporário e jornadas completas.
+- PASS moderation shared UI em 360/768/1280 px: permissão negada sem leitura da fila, filtros/offset, labels e contador, medidas/foco, confirmação cancelada, rascunho preservado na rejeição, bloqueio visual durante envio, sucesso e refresh.
+- Artefato operational-ux-evidence ID 12947245990. Três novas capturas da fila. Revisão visual inicial em 360/1280 px; captura final de 360 px revisada após centralizar o card.
+- A primeira captura móvel sobrepunha a barra inferior ao rodapé do card por causa do posicionamento automático da captura. O teste final usa scroll instantâneo para centralizar o card e verifica geometricamente que a ação está acima da navegação visível; nenhuma mudança adicional de aplicação foi necessária.
+- Revisão React: sem novos effects/listeners, estado de formulário e dependências existentes preservados, IDs únicos por ocorrência, loading compartilhado sem spinner duplicado.
+- Nenhuma decisão real, migration, credencial ou deploy. Arquivos e regras de deploy automático preservados.
