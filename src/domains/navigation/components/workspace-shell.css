@@ -276,3 +276,13 @@
  .sf-workspace-welcome p{font-size:14px}
 }
 
+
+/* Mobile navigation: readable unread chat badge without adding a sixth tab. */
+.sf-mobile-nav-icon{position:relative;display:inline-flex;align-items:center;justify-content:center}
+.sf-mobile-nav-count{position:absolute;top:-11px;right:-17px;min-width:20px;height:20px;
+ padding:0 4px;border-radius:20px;background:#d7aeff;color:#1e122a;border:2px solid #171426;
+ font:900 10px/16px Manrope,sans-serif;text-align:center;font-variant-numeric:tabular-nums}
+@media(max-width:850px){
+ .sf-workspace-bottom-nav .sf-workspace-link{min-height:52px;min-width:0;touch-action:manipulation}
+ .sf-workspace-bottom-nav{padding-bottom:max(9px,env(safe-area-inset-bottom))}
+}
