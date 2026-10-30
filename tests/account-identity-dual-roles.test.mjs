@@ -19,11 +19,11 @@ function fn(text,name){
  return text.slice(p,end);
 }
 
-test("singer signup keeps independent role grants while public artistic identity is unified",()=>{
- assert.match(signup,/const \[alsoMusician,setAlsoMusician\] = useState\(false\)/);
- assert.match(signup,/artistKind==="lead"&&<label className="signup-producer-add"/);
- assert.match(signup,/Também sou músico/);
- assert.match(signup,/is_musician: Boolean\(inviteCode\) \|\| \(artistKind==="support"\) \|\| \(artistKind==="lead"&&alsoMusician\)/);
+test("signup maps singer, musician and dual activity onto the same public artistic identity",()=>{
+ assert.match(signup,/type Activity = "singer" \| "musician" \| "both" \| null/);
+ assert.match(signup,/Canta e toca/);
+ assert.match(signup,/artist_kind: isArtist \? artistKind : null/);
+ assert.match(signup,/is_musician: isArtist && \(artistKind === "support" \|\| alsoMusician\)/);
  assert.match(schema,/chosen_musician := chosen_artist and/);
  assert.match(schema,/chosen_singer := chosen_artist and chosen_kind = 'lead'/);
  assert.match(schema,/is_singer, is_musician, plan_code/);
@@ -108,11 +108,10 @@ test("new signup resolves the artist kind before assigning singer and musician r
 });
 
 
-test("both roles require an additional explicit, accessible confirmation at signup and in account settings",()=>{
- assert.match(signup,/const \[hybridConfirmed,setHybridConfirmed\] = useState\(false\)/);
- assert.match(signup,/artistKind==="lead" && alsoMusician && !hybridConfirmed/);
- assert.match(signup,/checked=\{hybridConfirmed\} required/);
- assert.match(signup,/só poderá ser revertida pela administração/);
+test("dual activity is one deliberate choice at signup and adding roles later retains confirmation",()=>{
+ assert.match(signup,/\["both","Canta e toca",UsersRound\]/);
+ assert.match(signup,/activity === "both"/);
+ assert.match(signup,/um único perfil público/);
  assert.match(hub,/role="dialog" aria-modal="true"/);
  assert.match(hub,/confirmationText\.trim\(\)\.toLocaleUpperCase\("pt-BR"\)!=="ATIVAR"/);
  assert.match(hub,/confirmationChecked/);
