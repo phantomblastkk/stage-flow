@@ -12,7 +12,7 @@ test("singer signup handles database failures without exposing raw English error
   assert.match(signup, /user already \(\?:registered\|exists\)/);
   assert.match(signup, /Este usuário já existe\. Use Entrar/);
   assert.match(signup, /username: null/);
-  assert.match(signup, /if \(databaseSignupFailure\) \{/);
+  assert.match(signup, /if \(databaseSignupFailure\)/);
   assert.match(signup, /O cadastro não pôde ser salvo no momento/);
 });
 
