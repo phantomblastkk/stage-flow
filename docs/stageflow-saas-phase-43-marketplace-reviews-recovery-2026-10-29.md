@@ -29,7 +29,7 @@ nova publicação sem antes conferir o que foi registrado.
 ## Contrato e limites
 
 Mesmos RPCs: stage_marketplace_reviews_for_musician, stage_marketplace_my_reviewable
- e stage_marketplace_submit_review. Mantidos limite público de 30 no SQL existente,
+e stage_marketplace_submit_review. Mantidos limite público de 30 no SQL existente,
 show concluído, convite aceito, autorização no servidor, nota 1–5 e comentário até
 450 caracteres. O SQL existente retorna already_reviewed também em unique_violation.
 Nenhuma migration, alteração de política ou consulta de produção foi executada.
@@ -40,12 +40,24 @@ prova de que a avaliação publicada contém exatamente aquele texto.
 
 ## Validação
 
-266 testes Node, TypeScript e build aprovados localmente. TypeScript também passou
-após ajuste do escopo de conta; CI em validação do código completo.
+266 testes Node, TypeScript e build aprovados no CI final
+f583a6fb65afe0f86e5e8ad35e927897c438f0d0. Verificações locais também passaram.
 Browser em 360/768/1280 px cobre leituras independentes, null/registros inválidos,
 campos preservados, tentativa duplicada enquanto publica, erro de negócio, resposta
 incerta com/sem commit, verificação sem escrita, already_reviewed, saved seguido de
 refresh falho, formatação mobile e resposta antiga de outro músico. Fixtures sintéticas.
+
+## Evidências finais
+
+- [Diff da etapa](https://github.com/phantomblastkk/stage-flow/compare/10f21909eab92fa587f1147e296277ae5ed5829c...f583a6fb65afe0f86e5e8ad35e927897c438f0d0).
+- [Integration and build aprovado](https://github.com/phantomblastkk/stage-flow/actions/runs/40979673149).
+- [Operational UX aprovado](https://github.com/phantomblastkk/stage-flow/actions/runs/40979673152): 266 testes, TypeScript, build, PostgreSQL temporário e jornadas sintéticas de navegador.
+- PASS marketplace reviews em 360/768/1280 px. Seis chamadas simuladas cobrem rejeição, commit com resposta perdida, saved, already_reviewed, transporte sem commit e nova publicação explícita após leitura de verificação.
+- Artefato operational-ux-evidence ID 12943478981: 150 PNGs e seis JPGs; nove capturas novas de falha das leituras, avaliação incerta e avaliação confirmada.
+- Revisão visual: falhas de leitura em 360 px, modal incerto em 360 px e modal confirmado em 1280 px. Retorno em foco e botão de fechar visíveis. Capturas de envio usam a janela visível para evitar capturar conteúdo da seção fora da área recortada do modal.
+- marketplace-catalog.css: 710 → 707 linhas. Estilos próprios de campos substituídos pelos controles compartilhados; sem medição de bundle ou latência.
+- Revisão React: callbacks estáveis por músico/conta, versões de leitura, limpeza na troca/desmontagem, lock de publicação, atualização após confirmação e feedback isolado do convite. Sem listener global ou dependência nova.
+- A instalação e os efeitos das migrations em produção não foram validados nesta parte. Todos os envios de teste são fixtures; nenhuma avaliação real foi publicada.
 
 ## Continuidade
 
