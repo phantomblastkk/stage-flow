@@ -46,6 +46,11 @@ try{
   const catalogRows=Array.from({length:25},(_,index)=>({musician_id:"50505050-5050-4050-8050-"+String(index+1).padStart(12,"0"),name:"Músico sintético "+(index+1),slug:"musico-sintetico-"+(index+1),headline:"Apresentações ao vivo",city:"São Paulo",instruments:["Cavaquinho"],genres:["Pagode"],avatar_url:null,cover_url:null,price_mode:"from",reference_fee:800,experience_years:5,performance_types:[],availability_note:"Sob consulta",availability_mode:"accepting",date_blocked:false,rating_avg:0,rating_count:0,is_favorite:false}));
   let invitationFixture=false,invitationEventsMode="transport",invitationEventsReads=0,invitationEventsGate,invitationResult="sent",invitationGate;
   const invitationWrites=[],createdMarketplaceInvitations=new Map();
+  let reviewFixture=false,publicReviewsMode="transport",eligibilityMode="transport",publicReviewsGate,eligibilityGate,reviewResult="not_eligible",reviewGate;
+  const publicReviewReads=[],eligibilityReads=[],marketplaceReviewWrites=[];
+  let fixtureReviews=[];
+  const completedReviewIds=["73737373-7373-4373-8373-737373737373","74747474-7474-4474-8474-747474747474","75757575-7575-4575-8575-757575757575","76767676-7676-4676-8676-767676767676"];
+  let fixtureReviewable=completedReviewIds.map((id,index)=>({event_id:id,event_title:"Apresentação concluída "+(index+1),starts_at:new Date(Date.now()-(index+1)*86400000).toISOString(),reviewed:false}));
   const videoEmbeds=[];
   await context.route("https://www.youtube-nocookie.com/embed/**",async route=>{
    videoEmbeds.push(route.request().url());
@@ -214,7 +219,30 @@ try{
      else data=mode==="empty"?[]:[{id:eventId,title:event.title,starts_at:event.starts_at,city:event.city},{id:secondShowId,title:"Segundo show para convite",starts_at:nextShowStart,city:"São Paulo"}];
     }
    }
-   else if(["stage_marketplace_reviews_for_musician","stage_marketplace_my_reviewable"].includes(rpc))data=[];
+   else if(["stage_marketplace_reviews_for_musician","stage_marketplace_my_reviewable"].includes(rpc)){
+    if(!reviewFixture)data=[];
+    else{
+     const isPublic=rpc==="stage_marketplace_reviews_for_musician",mode=isPublic?publicReviewsMode:eligibilityMode;
+     (isPublic?publicReviewReads:eligibilityReads).push(body);
+     const rows=body.p_musician_id===catalogRows[0].musician_id?(isPublic?fixtureReviews:fixtureReviewable).map(row=>({...row})):[];
+     const gate=isPublic?publicReviewsGate:eligibilityGate;if(gate)await gate;
+     if(mode==="transport"){status=503;data={message:"private_review_detail.sql"};}
+     else if(mode==="missing")data=null;
+     else if(mode==="malformed")data=isPublic?[{id:"bad",organizer_name:"Fixture",rating:99,comment:null,created_at:"invalid"}]:[{event_id:eventId,event_title:"Inválido",starts_at:"invalid",reviewed:false}];
+     else data=rows;
+    }
+   }
+   else if(rpc==="stage_marketplace_submit_review"){
+    marketplaceReviewWrites.push(body);const mode=reviewResult;if(reviewGate)await reviewGate;
+    if(["saved","commit_then_fail","already_reviewed"].includes(mode)){
+     const index=completedReviewIds.indexOf(body.p_event_id),exists=fixtureReviewable[index]?.reviewed;
+     if(index>=0){fixtureReviewable=fixtureReviewable.map(row=>row.event_id===body.p_event_id?{...row,reviewed:true}:row);}
+     if(!exists)fixtureReviews.push({id:"78787878-7878-4878-8878-"+String(index+1).padStart(12,"0"),organizer_name:"Organizador sintético",rating:body.p_rating,comment:body.p_comment,created_at:new Date().toISOString()});
+     data=exists||mode==="already_reviewed"?"already_reviewed":"saved";
+     if(mode==="commit_then_fail"){status=503;data={message:"private_review_detail.sql"};}
+    }else if(mode==="transport"){status=503;data={message:"private_review_detail.sql"};}
+    else data=mode;
+   }
    else if(rpc==="stage_marketplace_invite_musician"){
     invitationWrites.push(body);const mode=invitationResult;if(invitationGate)await invitationGate;
     if(mode==="transport"){status=503;data={message:"private_backend_detail.sql"};}
@@ -1602,8 +1630,9 @@ try{
   await invitePanel.getByRole("alert").filter({hasText:"Não foi possível carregar seus shows."}).waitFor();
   assert.equal(await invitePanel.getByText("Você precisa ter um show futuro cadastrado na agenda.",{exact:true}).count(),0);
   const retryInviteEvents=invitePanel.getByRole("button",{name:"Tentar novamente os shows",exact:true});
-  await closeInvite.press("Shift+Tab");assert.equal(await retryInviteEvents.evaluate(el=>el===document.activeElement),true);
-  await retryInviteEvents.press("Tab");assert.equal(await closeInvite.evaluate(el=>el===document.activeElement),true);
+  const lastInviteTabControl=invitePanel.getByRole("button",{name:"Atualizar apresentações",exact:true});await lastInviteTabControl.waitFor();
+  await closeInvite.press("Shift+Tab");assert.equal(await lastInviteTabControl.evaluate(el=>el===document.activeElement),true);
+  await lastInviteTabControl.press("Tab");assert.equal(await closeInvite.evaluate(el=>el===document.activeElement),true);
   await page.keyboard.press("Escape");await invitePanel.waitFor({state:"detached"});
   assert.equal(await inviteOrigin.evaluate(el=>el===document.activeElement),true);
   assert.equal(await page.evaluate(()=>document.body.style.overflow),invitationOverflow);
@@ -1685,6 +1714,108 @@ try{
   await activate(page.getByRole("button",{name:"Fechar denúncia",exact:true}));
   assert.equal(await page.evaluate(()=>document.body.style.overflow),invitationOverflow);
   console.log(`PASS marketplace invitation ${width}px: native modal/focus loop/return, events read recovery, explicit/cancelled confirmation, pending close and duplicate guard, retained fields, uncertain same-payload reconciliation, existing invite guard and report handoff`);
+  // Part 43: independently verified review reads and explicitly protected publication.
+  reviewFixture=true;invitationEventsMode="ok";
+  await activate(inviteOrigin);await invitePanel.waitFor();
+  const reviewSection=invitePanel.getByRole("region",{name:"Avaliações verificadas",exact:true});
+  const retryPublicReviews=reviewSection.getByRole("button",{name:"Tentar novamente as avaliações",exact:true});
+  const retryEligibility=reviewSection.getByRole("button",{name:"Tentar novamente as apresentações",exact:true});
+  await retryPublicReviews.waitFor();await retryEligibility.waitFor();
+  assert.equal(await reviewSection.getByText("Este profissional ainda não possui avaliações de shows concluídos.",{exact:true}).count(),0);
+  assert.equal(await reviewSection.getByText("Nenhuma apresentação disponível para uma nova avaliação.",{exact:true}).count(),0);
+  assert.doesNotMatch(await reviewSection.innerText(),/private_review_detail|Supabase|\.sql/);
+  await reviewSection.screenshot({path:`test-results/operational-marketplace-reviews-read-failure-${width}.png`});
+  const awaitReviewRpc=async(rpc,action)=>{const response=page.waitForResponse(r=>r.url().endsWith("/"+rpc));await action();await response;};
+  for(const mode of ["missing","malformed"]){
+   publicReviewsMode=mode;await awaitReviewRpc("stage_marketplace_reviews_for_musician",()=>activate(retryPublicReviews));await retryPublicReviews.waitFor();
+   eligibilityMode=mode;await awaitReviewRpc("stage_marketplace_my_reviewable",()=>activate(retryEligibility));await retryEligibility.waitFor();
+  }
+  const publicBeforeEligibility=publicReviewReads.length;eligibilityMode="ok";
+  await awaitReviewRpc("stage_marketplace_my_reviewable",()=>activate(retryEligibility));
+  const marketReviewEvent=reviewSection.getByLabel("Apresentação concluída",{exact:true});
+  const marketReviewRating=reviewSection.getByLabel("Nota",{exact:true});
+  const marketReviewComment=reviewSection.getByLabel("Comentário (opcional)",{exact:true});
+  const publishReview=reviewSection.getByRole("button",{name:"Publicar avaliação verificada",exact:true});
+  await marketReviewEvent.waitFor();assert.equal(publicReviewReads.length,publicBeforeEligibility);
+  assert.equal(await publishReview.isDisabled(),true);
+  await marketReviewEvent.selectOption(completedReviewIds[0]);await marketReviewRating.selectOption("4");await marketReviewComment.fill("Comentário preservado após falha");
+  const eligibilityBeforePublic=eligibilityReads.length;publicReviewsMode="ok";
+  let releasePublicReviews;publicReviewsGate=new Promise(resolve=>releasePublicReviews=resolve);
+  const pendingPublicReviews=page.waitForResponse(r=>r.url().endsWith("/stage_marketplace_reviews_for_musician"));
+  await activate(retryPublicReviews);await reviewSection.getByRole("status").filter({hasText:"Carregando avaliações..."}).waitFor();
+  assert.equal(await retryPublicReviews.count(),0);assert.equal(eligibilityReads.length,eligibilityBeforePublic);
+  releasePublicReviews();publicReviewsGate=undefined;await pendingPublicReviews;
+  await reviewSection.getByText("Este profissional ainda não possui avaliações de shows concluídos.",{exact:true}).waitFor();
+  assert.equal(await marketReviewRating.inputValue(),"4");assert.equal(await marketReviewComment.inputValue(),"Comentário preservado após falha");
+  assert.equal(marketplaceReviewWrites.length,0);
+  reviewResult="not_eligible";let releaseReview;reviewGate=new Promise(resolve=>releaseReview=resolve);
+  await activate(publishReview);await reviewSection.getByRole("button",{name:"Salvando...",exact:true}).waitFor();
+  await reviewSection.locator("form").evaluate(form=>{form.requestSubmit();form.requestSubmit();});
+  assert.equal(marketplaceReviewWrites.length,1);assert.equal(await marketReviewEvent.isDisabled(),true);assert.equal(await marketReviewComment.isDisabled(),true);assert.equal(await closeInvite.isDisabled(),true);
+  await page.keyboard.press("Escape");assert.equal(await invitePanel.count(),1);
+  releaseReview();reviewGate=undefined;
+  await reviewSection.getByRole("alert").filter({hasText:"Não foi possível registrar a avaliação."}).waitFor();
+  assert.equal(await marketReviewComment.inputValue(),"Comentário preservado após falha");assert.equal(await marketReviewRating.inputValue(),"4");
+  reviewResult="commit_then_fail";await activate(publishReview);
+  await reviewSection.getByRole("alert").filter({hasText:"Ela pode ter sido registrada."}).waitFor();
+  const verifyMarketReview=reviewSection.getByRole("button",{name:"Verificar avaliação",exact:true});
+  assert.equal(marketplaceReviewWrites.length,2);assert.equal(await marketReviewComment.isDisabled(),true);assert.equal(await publishReview.isDisabled(),true);
+  assert.equal(await reviewSection.getByRole("status").filter({hasText:"Avaliação registrada com base"}).count(),0);
+  assert.deepEqual(marketplaceReviewWrites[0],marketplaceReviewWrites[1]);
+  eligibilityMode="transport";await awaitReviewRpc("stage_marketplace_my_reviewable",()=>activate(verifyMarketReview));
+  await reviewSection.getByRole("alert").filter({hasText:"Não foi possível confirmar a situação"}).waitFor();
+  assert.equal(marketplaceReviewWrites.length,2);
+  eligibilityMode="ok";await awaitReviewRpc("stage_marketplace_my_reviewable",()=>activate(verifyMarketReview));
+  await reviewSection.getByRole("status").filter({hasText:"Já existe uma avaliação para esta apresentação."}).waitFor();
+  await marketReviewComment.waitFor();assert.equal(await marketReviewComment.inputValue(),"Comentário preservado após falha");assert.equal(await marketReviewRating.inputValue(),"4");
+  await reviewSection.locator(".market-review-list").getByText("Comentário preservado após falha",{exact:true}).waitFor();
+  assert.equal(marketplaceReviewWrites.length,2,"Reconciliation must only read");assert.equal(await publishReview.isDisabled(),true);
+  await reviewSection.locator("form").evaluate(form=>form.requestSubmit());assert.equal(marketplaceReviewWrites.length,2);
+  await marketReviewEvent.selectOption(completedReviewIds[1]);await marketReviewRating.selectOption("5");await marketReviewComment.fill("Comentário confirmado");
+  publicReviewsMode="transport";eligibilityMode="transport";reviewResult="saved";await activate(publishReview);
+  await reviewSection.getByRole("status").filter({hasText:"Avaliação registrada com base no trabalho concluído."}).waitFor();
+  await retryPublicReviews.waitFor();await retryEligibility.waitFor();assert.equal(marketplaceReviewWrites.length,3);
+  assert.equal(await reviewSection.getByText("Este profissional ainda não possui avaliações de shows concluídos.",{exact:true}).count(),0);
+  publicReviewsMode="ok";eligibilityMode="ok";
+  await awaitReviewRpc("stage_marketplace_reviews_for_musician",()=>activate(retryPublicReviews));
+  await awaitReviewRpc("stage_marketplace_my_reviewable",()=>activate(retryEligibility));await marketReviewComment.waitFor();
+  assert.equal(await marketReviewComment.inputValue(),"");assert.equal(await publishReview.isDisabled(),true);assert.equal(marketplaceReviewWrites.length,3);
+  await marketReviewEvent.selectOption(completedReviewIds[2]);await marketReviewRating.selectOption("3");await marketReviewComment.fill("Texto preservado de avaliação existente");
+  reviewResult="already_reviewed";await activate(publishReview);
+  await reviewSection.getByRole("status").filter({hasText:"Já existe uma avaliação para esta apresentação."}).waitFor();
+  await marketReviewComment.waitFor();assert.equal(await marketReviewComment.inputValue(),"Texto preservado de avaliação existente");assert.equal(await publishReview.isDisabled(),true);assert.equal(marketplaceReviewWrites.length,4);
+  await marketReviewEvent.selectOption(completedReviewIds[3]);await marketReviewRating.selectOption("2");await marketReviewComment.fill("Texto ainda não confirmado");
+  reviewResult="transport";await activate(publishReview);
+  await reviewSection.getByRole("alert").filter({hasText:"Ela pode ter sido registrada."}).waitFor();
+  await reviewSection.screenshot({path:`test-results/operational-marketplace-review-uncertain-${width}.png`});
+  await awaitReviewRpc("stage_marketplace_my_reviewable",()=>activate(verifyMarketReview));
+  await reviewSection.getByRole("status").filter({hasText:"A apresentação continua disponível para avaliação."}).waitFor();
+  assert.equal(marketplaceReviewWrites.length,5,"Verification must not publish an unconfirmed review");
+  assert.equal(await marketReviewComment.inputValue(),"Texto ainda não confirmado");assert.equal(await marketReviewRating.inputValue(),"2");assert.equal(await publishReview.isEnabled(),true);
+  reviewResult="saved";await activate(publishReview);
+  await reviewSection.getByRole("status").filter({hasText:"Avaliação registrada com base no trabalho concluído."}).waitFor();
+  await marketReviewComment.waitFor();assert.equal(await marketReviewComment.inputValue(),"");assert.equal(marketplaceReviewWrites.length,6);
+  assert.ok(await reviewSection.locator(".market-review-form .sf-ui-input").evaluateAll(nodes=>nodes.every(el=>getComputedStyle(el).fontSize==="16px")));
+  const reviewButtonSize=await publishReview.boundingBox();assert.ok(reviewButtonSize.width>=44&&reviewButtonSize.height>=44);
+  assert.ok(await invitePanel.evaluate(el=>el.scrollWidth<=el.clientWidth+2),"Review form overflows the dialog");
+  await reviewSection.screenshot({path:`test-results/operational-marketplace-review-confirmed-${width}.png`});
+  // A result for a closed musician must never populate the next musician's dialog.
+  publicReviewsGate=new Promise(resolve=>releasePublicReviews=resolve);
+  const heldReviewRequestPromise=page.waitForRequest(r=>r.url().endsWith("/stage_marketplace_reviews_for_musician"));
+  await activate(reviewSection.getByRole("button",{name:"Atualizar avaliações",exact:true}));const heldReviewRequest=await heldReviewRequestPromise;
+  const oldReviewResponse=page.waitForResponse(r=>r.request()===heldReviewRequest);
+  await activate(closeInvite);await invitePanel.waitFor({state:"detached"});publicReviewsGate=undefined;
+  const secondInviteOrigin=page.locator(".market-card-grid .market-artist-card").nth(1).getByRole("button",{name:"Convidar",exact:true});
+  await activate(secondInviteOrigin);const otherReviewPanel=page.getByRole("dialog",{name:"Convidar e avaliar Músico sintético 2",exact:true});await otherReviewPanel.waitFor();
+  const otherReviews=otherReviewPanel.getByRole("region",{name:"Avaliações verificadas",exact:true});
+  await otherReviews.getByText("Este profissional ainda não possui avaliações de shows concluídos.",{exact:true}).waitFor();
+  releasePublicReviews();await oldReviewResponse;await delay(50);
+  assert.equal(await otherReviews.locator(".market-review-list article").count(),0);
+  assert.equal(await otherReviews.getByText("Nenhuma apresentação disponível para uma nova avaliação.",{exact:true}).count(),1);
+  assert.equal(await otherReviews.locator("form").count(),0);
+  await activate(otherReviewPanel.getByRole("button",{name:"Fechar painel",exact:true}));
+  assert.equal(invitationWrites.length,4,"Review flows must not send invitations");
+  console.log(`PASS marketplace reviews ${width}px: independent validated reads/retries, retained rating/comment, synchronous publish guard, uncertain read reconciliation, no automatic republish, confirmed save with refresh failure, existing review protection and stale-musician isolation`);
   assert.deepEqual(errors,[],"Browser exceptions at "+width);await context.close();
  }
  console.log("PASS: dashboard at 360/768/1280, navigation, receipt failure, legacy profile, group creation, availability and invitation.");

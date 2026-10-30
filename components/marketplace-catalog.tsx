@@ -12,6 +12,7 @@ import {
 } from "lucide-react";
 import { Button, InlineNotice, Input, LoadingState, Select, Textarea } from "@/src/components/ui";
 import { createClient } from "@/lib/supabase/client";
+import { useMarketplaceReviews } from "@/src/domains/marketplace/hooks/use-marketplace-reviews";
 import { trackMarketplaceExposure } from "@/lib/musician-metrics";
 import "./marketplace-catalog.css";
 import MarketplaceReportDialog, { type ReportTarget } from "./marketplace-report-dialog";
@@ -46,10 +47,6 @@ type MarketResponse = {
   offset: number;
 };
 type EventOption = { id: string; title: string; starts_at: string; city: string | null };
-type Review = { id: string; organizer_name: string; rating: number; comment: string; created_at: string };
-type ReviewableEvent = {
-  event_id: string; event_title: string; starts_at: string; reviewed: boolean;
-};
 type Sort = "recent" | "name" | "experience" | "rating";
 type FilterState = {
   query: string; city: string; instrument: string; genre: string;
@@ -226,8 +223,18 @@ export default function MarketplaceCatalog({preview=false}:Props) {
   const [inviting,setInviting] = useState(false);
   const [selectedEvent,setSelectedEvent] = useState("");
   const [inviteMessage,setInviteMessage] = useState("");
-  const [reviews,setReviews] = useState<Review[]>([]);
-  const [reviewable,setReviewable] = useState<ReviewableEvent[]>([]);
+  const reviewData=useMarketplaceReviews(gate==="allowed"?selected?.musician_id||null:null,authUserId);
+  const reviews=reviewData.reviews.items;
+  const reviewable=reviewData.eligibility.items;
+  const [reviewError,setReviewError]=useState("");
+  const [reviewNotice,setReviewNotice]=useState("");
+  const [reviewUncertain,setReviewUncertain]=useState(false);
+  const [checkingReview,setCheckingReview]=useState(false);
+  const reviewWriting=useRef(false),reviewChecking=useRef(false);
+  const reviewFeedbackRef=useRef<HTMLDivElement|null>(null);
+  const reviewedKeys=useRef(new Set<string>());
+  const [confirmedReviews,setConfirmedReviews]=useState<string[]>([]);
+  const lastReviewAttempt=useRef<{p_event_id:string;p_musician_id:string;p_rating:number;p_comment:string}|null>(null);
   const [reviewEvent,setReviewEvent] = useState("");
   const [reviewRating,setReviewRating] = useState(5);
   const [reviewComment,setReviewComment] = useState("");
@@ -381,11 +388,11 @@ export default function MarketplaceCatalog({preview=false}:Props) {
     eventsReading.current=true;setLoadingEvents(true);setEventsRetry(v=>v+1);
   }
   function closeMusician(){
-    if(inviteWriting.current||savingReview)return;
+    if(inviteWriting.current||reviewWriting.current||savingReview)return;
     panelVersion.current++;setSelected(null);setError("");setNotice("");setInviteError("");setInviteNotice("");
   }
   function reportFromPanel(target:ReportTarget){
-    if(inviteWriting.current||savingReview)return;
+    if(inviteWriting.current||reviewWriting.current||savingReview)return;
     closeMusician();setReportTarget(target);
   }
   useEffect(()=>{
@@ -398,23 +405,15 @@ export default function MarketplaceCatalog({preview=false}:Props) {
   },[selected?.musician_id]);
 
   useEffect(()=>{
-    if(!selected || gate!=="allowed")return;
-    let active=true;
-    async function loadDetails(){
-      const client=createClient();
-      const requests=[client.rpc("stage_marketplace_reviews_for_musician",
-        {p_musician_id:selected!.musician_id})];
-      if(authUser) requests.push(client.rpc("stage_marketplace_my_reviewable",
-        {p_musician_id:selected!.musician_id}));
-      const replies=await Promise.all(requests);
-      if(!active)return;
-      setReviews(Array.isArray(replies[0]?.data)?replies[0].data as Review[]:[]);
-      setReviewable(Array.isArray(replies[1]?.data)?replies[1].data as ReviewableEvent[]:[]);
-    }
-    setReviews([]);setReviewable([]);setReviewEvent("");setReviewComment("");
-    void loadDetails();
-    return()=>{active=false;};
-  },[selected?.musician_id,gate,authUser]);
+    setReviewEvent("");setReviewRating(5);setReviewComment("");setReviewError("");setReviewNotice("");
+    setReviewUncertain(false);setCheckingReview(false);reviewChecking.current=false;lastReviewAttempt.current=null;
+    reviewedKeys.current.clear();setConfirmedReviews([]);
+  },[selected?.musician_id]);
+  useEffect(()=>{
+    if(savingReview||checkingReview||(!reviewError&&!reviewNotice))return;
+    reviewFeedbackRef.current?.focus({preventScroll:true});
+    reviewFeedbackRef.current?.scrollIntoView({block:"center",behavior:"instant"});
+  },[savingReview,checkingReview,reviewError,reviewNotice]);
 
   useEffect(()=>{
     if(!mobileFilters)return;
@@ -496,14 +495,14 @@ export default function MarketplaceCatalog({preview=false}:Props) {
     rail.scrollBy({left:direction*offset,behavior:"smooth"});
   }
   function openMusician(m:MarketMusician){
-    if(inviteWriting.current)return;
+    if(inviteWriting.current||reviewWriting.current)return;
     invitationOpenerRef.current=document.activeElement instanceof HTMLElement?document.activeElement:null;
     panelVersion.current++;lastInviteAttempt.current=null;setInviteUncertain(false);confirmedInviteKeys.current.clear();setConfirmedInvites([]);
     setSelected(m);setSelectedEvent("");setInviteMessage("");setError("");setNotice("");setInviteError("");setInviteNotice("");
   }
   async function sendInvite(e:FormEvent<HTMLFormElement>) {
     e.preventDefault();
-    if(!selected||!authUser||inviteWriting.current||savingReview)return;
+    if(!selected||!authUser||inviteWriting.current||reviewWriting.current||savingReview)return;
     const payload=inviteUncertain?lastInviteAttempt.current:{p_event_id:selectedEvent,p_musician_id:selected.musician_id,p_message:inviteMessage.trim()||null};
     if(!payload||!payload.p_event_id||!eventsReady||loadingEvents||!events.some(ev=>ev.id===payload.p_event_id)||selected.availability_mode==="unavailable")return;
     const key=payload.p_event_id+":"+payload.p_musician_id;
@@ -538,35 +537,54 @@ export default function MarketplaceCatalog({preview=false}:Props) {
     }catch{if(current())uncertain();}
     finally{inviteWriting.current=false;if(current())setInviting(false);}
   }
+  function markReviewed(key:string){
+    reviewedKeys.current.add(key);setConfirmedReviews(old=>old.includes(key)?old:[...old,key]);
+  }
+  async function verifyReview(){
+    const payload=lastReviewAttempt.current;
+    if(!payload||reviewWriting.current||reviewChecking.current)return;
+    reviewChecking.current=true;setCheckingReview(true);setReviewError("");
+    const version=panelVersion.current,current=()=>mounted.current&&version===panelVersion.current;
+    try{
+      const rows=await reviewData.eligibility.reload();
+      if(!current())return;
+      const event=rows?.find(row=>row.event_id===payload.p_event_id);
+      if(!event){setReviewError("Não foi possível confirmar a situação da apresentação. Atualize a verificação antes de publicar.");return;}
+      setReviewUncertain(false);
+      if(event.reviewed){
+        markReviewed(payload.p_event_id+":"+payload.p_musician_id);
+        setReviewNotice("Já existe uma avaliação para esta apresentação. Seu texto foi preservado para conferência.");
+        void reviewData.reviews.reload(true);
+      }else setReviewNotice("A apresentação continua disponível para avaliação. Confira seu texto antes de publicar novamente.");
+    }finally{if(current()){reviewChecking.current=false;setCheckingReview(false);}}
+  }
   async function submitReview(e:FormEvent<HTMLFormElement>){
     e.preventDefault();
-    if(!selected || !reviewEvent || savingReview||inviteWriting.current)return;
-    setSavingReview(true);setError("");setNotice("");
-    let reviewSaved=false;
-    try {
-    const {data,error:rpcError}=await createClient().rpc("stage_marketplace_submit_review",{
-      p_event_id:reviewEvent,p_musician_id:selected.musician_id,
-      p_rating:reviewRating,p_comment:reviewComment.trim()
-    });
-    if(rpcError||data!=="saved"){
-      setError((!rpcError&&data==="already_reviewed"
-        ? "Você já avaliou esse músico nesse show."
-        : "Não foi possível registrar a avaliação. É necessário ter um show concluído com convite aceito."));
-    }else{
-      reviewSaved=true;
-      setNotice("Avaliação registrada com base no trabalho concluído.");
-      setReviewEvent("");setReviewComment("");
-      const client=createClient();
-      const [{data:reviewData},{data:reviewableData}]=await Promise.all([
-        client.rpc("stage_marketplace_reviews_for_musician",{p_musician_id:selected.musician_id}),
-        client.rpc("stage_marketplace_my_reviewable",{p_musician_id:selected.musician_id})
-      ]);
-      setReviews(Array.isArray(reviewData)?reviewData as Review[]:[]);
-      setReviewable(Array.isArray(reviewableData)?reviewableData as ReviewableEvent[]:[]);
-      setRefreshNonce(n=>n+1);
-    }
-    }catch{if(mounted.current)setError(reviewSaved?"Sua avaliação foi registrada, mas não foi possível atualizar a lista.":"Não foi possível confirmar a avaliação. Confira suas avaliações antes de tentar novamente.");}
-    finally{if(mounted.current)setSavingReview(false);}
+    if(!selected||!authUser||reviewWriting.current||inviteWriting.current||reviewUncertain||!reviewData.eligibility.ready)return;
+    const eligible=reviewData.eligibility.items.find(row=>row.event_id===reviewEvent&&!row.reviewed);
+    const key=reviewEvent+":"+selected.musician_id;
+    if(!eligible||reviewedKeys.current.has(key))return;
+    if(!Number.isInteger(reviewRating)||reviewRating<1||reviewRating>5||reviewComment.trim().length>450){setReviewError("Escolha uma nota de 1 a 5 e um comentário de até 450 caracteres.");return;}
+    reviewWriting.current=true;setSavingReview(true);setReviewError("");setReviewNotice("");
+    const version=panelVersion.current,current=()=>mounted.current&&version===panelVersion.current;
+    const payload={p_event_id:reviewEvent,p_musician_id:selected.musician_id,p_rating:reviewRating,p_comment:reviewComment.trim()};
+    lastReviewAttempt.current=payload;
+    const uncertain=()=>{setReviewUncertain(true);setReviewError("Não foi possível confirmar a avaliação. Ela pode ter sido registrada. Verifique a situação antes de publicar novamente.");};
+    try{
+      const {data,error:rpcError}=await createClient().rpc("stage_marketplace_submit_review",payload);
+      if(!current())return;
+      if(rpcError){uncertain();return;}
+      if(data==="saved"){
+        markReviewed(key);setReviewComment("");setReviewNotice("Avaliação registrada com base no trabalho concluído.");
+        void reviewData.reviews.reload(true);void reviewData.eligibility.reload();setRefreshNonce(n=>n+1);
+      }else if(data==="already_reviewed"){
+        markReviewed(key);setReviewNotice("Já existe uma avaliação para esta apresentação. Seu texto foi preservado para conferência.");
+        void reviewData.reviews.reload(true);void reviewData.eligibility.reload();
+      }else if(["login_required","not_released","invalid","not_eligible"].includes(String(data))){
+        setReviewError(data==="login_required"?"Entre novamente na sua conta para avaliar.":"Não foi possível registrar a avaliação. É necessário ter um show concluído com convite aceito e uma nota válida.");
+      }else uncertain();
+    }catch{if(current())uncertain();}
+    finally{reviewWriting.current=false;if(current())setSavingReview(false);}
   }
 
   if(gate==="loading")return <div className="market-gate">
@@ -888,11 +906,19 @@ export default function MarketplaceCatalog({preview=false}:Props) {
                 <small>Nenhum WhatsApp, e-mail ou pagamento é enviado automaticamente.</small>
               </form>}
           </div>
-          <div className="market-modal-block">
-            <h3><Star size={18}/> Avaliações verificadas</h3>
-            {reviews.length===0?<p>Este profissional ainda não possui avaliações de shows concluídos.</p>:
+          <section className="market-modal-block" aria-label="Avaliações verificadas">
+            <h3><Star aria-hidden="true" size={18}/> Avaliações verificadas</h3>
+            {(reviewError||reviewNotice||reviewUncertain)&&<div className="market-review-feedback" ref={reviewFeedbackRef} tabIndex={-1}>
+              {reviewError&&<InlineNotice tone="danger">{reviewError}</InlineNotice>}
+              {reviewNotice&&<InlineNotice tone="success">{reviewNotice}</InlineNotice>}
+              {reviewUncertain&&<Button variant="secondary" loading={checkingReview} disabled={savingReview||inviting} onClick={()=>void verifyReview()}>{checkingReview?"Verificando avaliação...":"Verificar avaliação"}</Button>}
+            </div>}
+            {reviewData.reviews.loading?<LoadingState label="Carregando avaliações..."/>:reviewData.reviews.error?<div className="market-read-feedback">
+              <InlineNotice tone="danger">{reviewData.reviews.error}</InlineNotice>
+              <Button variant="secondary" disabled={savingReview||inviting||checkingReview} onClick={()=>void reviewData.reviews.reload()}>Tentar novamente as avaliações</Button>
+            </div>:reviewData.reviews.ready&&reviews.length===0?<p>Este profissional ainda não possui avaliações de shows concluídos.</p>:
               <div className="market-review-list">{reviews.map(r=><article key={r.id}>
-                <div><strong>{r.organizer_name}</strong>
+                <div><strong>{r.organizer_name||"Organizador"}</strong>
                   <span>{Array.from({length:r.rating},(_,i)=><Star key={i} size={12} fill="currentColor"/>)}</span></div>
                 {r.comment&&<p>{r.comment}</p>}
                 <small>{dateBR(r.created_at)} · Show concluído no Stage Flow</small>
@@ -903,31 +929,34 @@ export default function MarketplaceCatalog({preview=false}:Props) {
                     })}><Flag size={12}/> Denunciar avaliação</button>
                 </div>
               </article>)}</div>}
-            {selectedReviewable.length>0&&<form className="market-review-form"
-              onSubmit={e=>void submitReview(e)}>
+            {reviewData.reviews.ready&&<Button variant="secondary" disabled={savingReview||inviting||checkingReview} onClick={()=>void reviewData.reviews.reload()}>Atualizar avaliações</Button>}
+            {authUser&&reviewData.eligibility.loading?<LoadingState label="Verificando apresentações para avaliar..."/>:authUser&&reviewData.eligibility.error?<div className="market-read-feedback">
+              <InlineNotice tone="danger">{reviewData.eligibility.error}</InlineNotice>
+              <Button variant="secondary" disabled={savingReview||inviting||checkingReview} onClick={()=>void reviewData.eligibility.reload()}>Tentar novamente as apresentações</Button>
+            </div>:authUser&&reviewData.eligibility.ready&&(selectedReviewable.length>0||reviewEvent)?<form className="market-review-form" onSubmit={e=>void submitReview(e)}>
               <h4>Avaliar um trabalho realizado</h4>
-              <label htmlFor="market-review-event">Apresentação concluída</label>
-              <select id="market-review-event" required value={reviewEvent}
-                onChange={e=>setReviewEvent(e.target.value)}>
+              <Select label="Apresentação concluída" id="market-review-event" required value={reviewEvent}
+                disabled={savingReview||inviting||reviewUncertain||checkingReview}
+                onChange={e=>{setReviewEvent(e.target.value);setReviewError("");setReviewNotice("");}}>
                 <option value="">Selecione a apresentação</option>
-                {selectedReviewable.map(r=><option key={r.event_id} value={r.event_id}>
-                  {r.event_title} · {dateBR(r.starts_at)}</option>)}
-              </select>
-              <label htmlFor="market-rating-value">Nota</label>
-              <select id="market-rating-value" value={reviewRating}
+                {reviewEvent&&!reviewable.some(r=>r.event_id===reviewEvent)&&<option value={reviewEvent} disabled>Apresentação indisponível para avaliação</option>}
+                {reviewable.map(r=><option key={r.event_id} value={r.event_id} disabled={r.reviewed}>
+                  {r.event_title} · {dateBR(r.starts_at)}{r.reviewed?" · Já avaliada":""}</option>)}
+              </Select>
+              <Select label="Nota" id="market-rating-value" required value={reviewRating}
+                disabled={savingReview||inviting||reviewUncertain||checkingReview||confirmedReviews.includes(reviewEvent+":"+selected.musician_id)}
                 onChange={e=>setReviewRating(Number(e.target.value))}>
                 {[5,4,3,2,1].map(n=><option key={n} value={n}>{n} de 5 estrelas</option>)}
-              </select>
-              <label htmlFor="market-review-comment">Comentário (opcional)</label>
-              <textarea id="market-review-comment" maxLength={450} rows={3}
-                value={reviewComment} onChange={e=>setReviewComment(e.target.value)}
-                placeholder="Como foi trabalhar com este músico?"/>
-              <button type="submit" disabled={savingReview||inviting||!reviewEvent}
-                className="market-apply">{savingReview?"Salvando...":"Publicar avaliação verificada"}</button>
-            </form>}
+              </Select>
+              <Textarea label="Comentário (opcional)" id="market-review-comment" maxLength={450} rows={3}
+                disabled={savingReview||inviting||reviewUncertain||checkingReview||confirmedReviews.includes(reviewEvent+":"+selected.musician_id)}
+                value={reviewComment} onChange={e=>setReviewComment(e.target.value)} placeholder="Como foi trabalhar com este músico?"/>
+              <Button type="submit" loading={savingReview} disabled={inviting||reviewUncertain||checkingReview||!reviewEvent||!reviewData.eligibility.ready||!selectedReviewable.some(r=>r.event_id===reviewEvent)||confirmedReviews.includes(reviewEvent+":"+selected.musician_id)}>{savingReview?"Salvando...":"Publicar avaliação verificada"}</Button>
+            </form>:authUser&&reviewData.eligibility.ready?<p>Nenhuma apresentação disponível para uma nova avaliação.</p>:null}
+            {authUser&&reviewData.eligibility.ready&&<Button variant="secondary" disabled={savingReview||inviting||checkingReview||reviewUncertain} onClick={()=>void reviewData.eligibility.reload()}>Atualizar apresentações</Button>}
             <p className="market-review-note"><ShieldCheck size={14}/>
               Não aceitamos avaliações sem participação confirmada em um show concluído.</p>
-          </div>
+          </section>
           {error&&<InlineNotice tone="danger">{error}</InlineNotice>}
           {notice&&<InlineNotice tone="success">{notice}</InlineNotice>}
         </div>
