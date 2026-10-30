@@ -42,7 +42,9 @@ try{
   let mediaRows=[{id:photoId,media_kind:"photo",title:"Foto privada inicial",storage_path:actor+"/"+photoId+".jpg",youtube_id:null,featured:false,display_order:0},
    {id:videoId,media_kind:"youtube",title:"Vídeo inicial",storage_path:null,youtube_id:"dQw4w9WgXcQ",featured:false,display_order:1}];
   let catalogMode=false,catalogSearchMode="ok",catalogFeaturedReads=0,catalogSearchGate,catalogFeaturedGate,catalogFeaturedMode="ok";
-  const catalogCalls=[];
+  const catalogCalls=[],identityReads=[],rpcTraffic=[];
+  const queryAudit={dashboard:{},marketplace:{}};
+  let catalogFavoriteMode=false;const favoriteRows=new Map();
   const catalogRows=Array.from({length:25},(_,index)=>({musician_id:"50505050-5050-4050-8050-"+String(index+1).padStart(12,"0"),name:"Músico sintético "+(index+1),slug:"musico-sintetico-"+(index+1),headline:"Apresentações ao vivo",city:"São Paulo",instruments:["Cavaquinho"],genres:["Pagode"],avatar_url:null,cover_url:null,price_mode:"from",reference_fee:800,experience_years:5,performance_types:[],availability_note:"Sob consulta",availability_mode:"accepting",date_blocked:false,rating_avg:0,rating_count:0,is_favorite:false}));
   let invitationFixture=false,invitationEventsMode="transport",invitationEventsReads=0,invitationEventsGate,invitationResult="sent",invitationGate;
   const invitationWrites=[],createdMarketplaceInvitations=new Map();
@@ -108,6 +110,7 @@ try{
     await route.fulfill({status:200,contentType:"image/png",body:storageImage});return;
    }
    const body=req.postDataJSON();
+   if(url.pathname.startsWith("/rest/v1/rpc/"))rpcTraffic.push({rpc,params:body});
    if(url.pathname.endsWith("/user"))data=user;
    else if(rpc==="profiles"){assert.equal(url.searchParams.get("id"),"eq."+actor);data={...profile,is_producer:producer,...(singerMode?{display_name:"Artista de teste",is_singer:true,is_musician:false,artist_kind:"lead",username:singerUsername}:{})};}
    else if(rpc==="stage_public_pro_artist_site")data={artist:{name:"Artista de teste",username:"cantor-teste",bio:"Biografia pública",city:"São Paulo",headline:"No palco",instagram_url:null,youtube_url:null,spotify_url:null,avatar_path:null,cover_path:null,bookings_enabled:true},design:{theme:"midnight",accent:"violet",section_order:["about","photos","videos","agenda","contact"],visible_sections:["about","photos","videos","contact"]},media:publicGalleryRows,events:[]};
@@ -221,13 +224,16 @@ try{
    else if(rpc==="stage_musician_whatsapp_preferences")data=null;
    else if(rpc==="stage_marketplace_search"){
     if(catalogMode)catalogCalls.push(body);
-    const mode=catalogSearchMode,rows=catalogRows.slice(body.p_offset,body.p_offset+body.p_limit);
+    const mode=catalogSearchMode;
+    const source=catalogRows.map(row=>catalogFavoriteMode?{...row,is_favorite:favoriteRows.get(row.musician_id)??false}:row);
+    const matching=catalogFavoriteMode&&body.p_only_favorites?source.filter(row=>row.is_favorite):source;
+    const rows=matching.slice(body.p_offset,body.p_offset+body.p_limit);
     if(catalogSearchGate)await catalogSearchGate;
     if(mode==="transport"){status=503;data={message:"private_backend_detail.sql",code:"PGRST202"};}
     else if(mode==="missing")data=null;
     else if(mode==="malformed")data={status:"ok",items:null,total:0};
     else if(mode==="invalid_total")data={status:"ok",items:[],total:-1};
-    else data=catalogMode&&mode==="failed"?{status:"not_released"}:{status:"ok",items:!catalogMode||mode==="empty"?[]:rows,total:!catalogMode||mode==="empty"?0:25,limit:body.p_limit,offset:body.p_offset};
+    else data=catalogMode&&mode==="failed"?{status:"not_released"}:{status:"ok",items:!catalogMode||mode==="empty"?[]:rows,total:!catalogMode||mode==="empty"?0:matching.length,limit:body.p_limit,offset:body.p_offset};
    }
    else if(rpc==="stage_marketplace_featured"){
     if(catalogMode)catalogFeaturedReads++;const mode=catalogFeaturedMode;
@@ -280,7 +286,8 @@ try{
      if(mode==="commit_then_fail"){status=503;data={message:"private_backend_detail.sql"};}
     }else data={status:mode};
    }
-   else if(rpc==="stage_public_marketplace_identity")data={};
+   else if(rpc==="stage_public_marketplace_identity"){identityReads.push(body);data={};}
+   else if(rpc==="stage_marketplace_toggle_favorite"){favoriteRows.set(body.p_musician_id,body.p_favorite);data="saved";}
    else if(rpc==="stage_track_marketplace_metrics")data={status:"recorded"};
    else if(rpc==="stage_marketplace_preview_status")data={allowed:false};
    else {unhandled.push(rpc);data=[];}
@@ -291,6 +298,11 @@ try{
   await page.getByRole("heading",{name:event.title,exact:true}).waitFor();await page.getByText("Seu dinheiro, à vista",{exact:true}).waitFor();
   assert.match(await page.locator(".sf-operations-summary").innerText(),/3 convites/);
   assert.match(await page.locator(".sf-operations-finance").innerText(),/3\.350,00/);
+  await page.getByRole("heading",{name:"Deixe seu talento pronto para ser encontrado",exact:true}).waitFor();
+  await page.getByTitle("Nome, biografia, cidade, foto, rede social e publicação",{exact:true}).waitFor();
+  await page.waitForLoadState("networkidle");
+  queryAudit.dashboard.portfolioReads=rpcTraffic.filter(row=>row.rpc==="stage_my_musician_portfolio").length;
+  queryAudit.dashboard.overviewReads=rpcTraffic.filter(row=>row.rpc==="stage_workspace_overview").length;
   const mobile=width<=850;
   const nav=page.getByRole("navigation",{name:mobile?"Navegação principal no celular":"Navegação do StageFlow",exact:true});
   await nav.getByRole("link",{name:mobile?"Explorar":"Marketplace",exact:true}).waitFor();
@@ -1985,6 +1997,28 @@ try{
   assert.equal(await moderationNote.inputValue(),"");
   assert.ok(moderationReads.length>moderationBeforeDenied+4);
   console.log(`PASS moderation shared UI ${width}px: permission gate, filters/reset/pagination, scoped labels, 44px actions, 16px fields, explicit/cancelled decision, retained rejected draft, pending disabled controls, success and refresh; synthetic decisions only`);
+  // Part 49: observe exactly the same cold route and explicit favorite journey before/after.
+  catalogFavoriteMode=true;catalogSearchMode="ok";catalogFeaturedMode="populated";
+  await page.goto(origin+"/marketplace");
+  const favoriteCard=page.locator(".market-card-grid .market-artist-card").first();await favoriteCard.waitFor();
+  await page.waitForLoadState("networkidle");
+  const reads=()=>({search:catalogCalls.length,featured:catalogFeaturedReads,identity:identityReads.length});
+  const delta=(before,after)=>Object.fromEntries(Object.keys(before).map(key=>[key,after[key]-before[key]]));
+  const beforeFavorite=reads();
+  await activate(favoriteCard.getByRole("button",{name:"Adicionar aos favoritos",exact:true}));
+  await favoriteCard.getByRole("button",{name:"Remover dos favoritos",exact:true}).waitFor();
+  await page.waitForLoadState("networkidle");
+  queryAudit.marketplace.saveFavorite=delta(beforeFavorite,reads());
+  await activate(page.getByRole("button",{name:"Favoritos",exact:true}));
+  await page.waitForLoadState("networkidle");
+  await favoriteCard.getByRole("button",{name:"Remover dos favoritos",exact:true}).waitFor();
+  const beforeRemoveFavorite=reads();
+  await activate(favoriteCard.getByRole("button",{name:"Remover dos favoritos",exact:true}));
+  await page.waitForLoadState("networkidle");
+  assert.equal(await page.locator(".market-card-grid .market-artist-card").count(),0);
+  queryAudit.marketplace.removeFavorite=delta(beforeRemoveFavorite,reads());
+  await writeFile(`test-results/operational-query-audit-${width}.json`,JSON.stringify(queryAudit,null,2));
+  console.log(`MEASURE query audit ${width}px: `+JSON.stringify(queryAudit));
   assert.deepEqual(errors,[],"Browser exceptions at "+width);await context.close();
  }
  console.log("PASS: dashboard at 360/768/1280, navigation, receipt failure, legacy profile, group creation, availability and invitation.");
