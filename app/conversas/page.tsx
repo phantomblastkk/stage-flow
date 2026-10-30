@@ -44,6 +44,7 @@ export default function HiringConversations(){
  const [phone,setPhone]=useState("");
  const [consent,setConsent]=useState(false);
  const [savingSettings,setSavingSettings]=useState(false);
+ const [editingPhone,setEditingPhone]=useState(false);
  const [showSettings,setShowSettings]=useState(false);
  const [threadQuery,setThreadQuery]=useState("");
  const [unreadOnly,setUnreadOnly]=useState(false);
@@ -81,7 +82,7 @@ export default function HiringConversations(){
   const next=data as PhoneSettings;
   if(rpcError||next?.status!=="ok"){setPrefsError("Não foi possível carregar as preferências de WhatsApp. Suas conversas continuam disponíveis.");return;}
   setPrefsError("");
-  setSettings(next);setConsent(Boolean(next.opted_in));setPhone(next.phone||"");
+  setSettings(next);setConsent(Boolean(next.opted_in));setPhone(next.phone||"");setEditingPhone(false);
  },[]);
  useEffect(()=>{
   if(account.status==="loading")return;
@@ -234,7 +235,13 @@ export default function HiringConversations(){
    <p>Quando a API oficial estiver conectada, podemos avisar sobre novas mensagens com um modelo aprovado, direcionando você de volta ao Stage Flow. Sem compartilhar o telefone com outros usuários.</p>
    <label className="hiring-accept"><input type="checkbox" checked={consent} disabled={!settings||savingSettings}
      onChange={e=>setConsent(e.target.checked)}/> Autorizo receber notificações transacionais deste chat pelo WhatsApp. Posso cancelar a qualquer momento.</label>
-   {consent&&<Input label="WhatsApp com DDD" value={phone} onChange={e=>setPhone(e.target.value)} placeholder="11 99999-9999" required/>}
+   {consent&&settings?.phone&&!editingPhone&&<div className="hiring-current-phone">
+     <span>Número utilizado: <strong>•••• {settings.phone.replace(/\D/g,"").slice(-4)}</strong></span>
+     <Button variant="ghost" type="button" onClick={()=>setEditingPhone(true)}>Alterar número</Button>
+    </div>}
+    {consent&&(!settings?.phone||editingPhone)&&<Input label="WhatsApp com DDD" value={phone}
+     onChange={e=>setPhone(e.target.value)} placeholder="11 99999-9999" required
+     hint="Não precisa digitar novamente se o número cadastrado já estiver correto."/>}
    <Button  disabled={savingSettings||!settings} type="submit">Salvar preferência</Button>
    {settings?.opted_in&&<small>Consentimento ativo. O envio automático ainda não foi habilitado.</small>}
   </form>}
