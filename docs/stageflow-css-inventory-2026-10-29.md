@@ -1,8 +1,8 @@
 # Inventário CSS — StageFlow
 
-Base Git: `c5a395fe8075453be4a24731eb5f584d3b729725`. Conteúdo lido da árvore de trabalho; execute após as edições para comparar.
+Base Git: `5e55208770cc4422506e7d9c1bb12c58f6ac7575`. Conteúdo lido da árvore de trabalho; execute após as edições para comparar.
 
-64 arquivos rastreados; 486998 bytes de fonte CSS (sem minificação/compressão).
+62 arquivos rastreados; 483575 bytes de fonte CSS (sem minificação/compressão).
 
 Gerar novamente: `node scripts/audit-css.mjs`. Contagem de blocos é heurística; não mede CSS efetivamente usado, especificidade ou bundle.
 
@@ -11,7 +11,6 @@ Gerar novamente: `node scripts/audit-css.mjs`. Contagem de blocos é heurística
 | `app/admin/casas/[id]/programacao/programacao.css` | Rota | 150 | 14975 | 143 |
 | `app/admin/casas/venues-admin.css` | Rota | 142 | 12797 | 142 |
 | `app/admin/central/central.css` | Rota | 303 | 17923 | 185 |
-| `app/cadastro/hybrid-confirm.css` | Rota | 12 | 632 | 6 |
 | `app/cadastro/signup-wizard.css` | Rota | 75 | 7273 | 88 |
 | `app/casa/[slug]/venue-public.css` | Rota | 138 | 14003 | 140 |
 | `app/conversas/conversas.css` | Rota | 80 | 8527 | 99 |
@@ -41,8 +40,8 @@ Gerar novamente: `node scripts/audit-css.mjs`. Contagem de blocos é heurística
 | `app/perfis/perfis.css` | Rota | 1 | 1405 | 16 |
 | `app/pro/[username]/pro-public.css` | Rota | 102 | 2948 | 30 |
 | `app/shows-recorrentes/shows-recorrentes.css` | Rota | 53 | 4802 | 60 |
-| `app/styles/legacy-after-free-singer.css` | Legado — migração gradual | 148 | 9752 | 98 |
-| `app/styles/legacy-base-responsive.css` | Legado — migração gradual | 3 | 662 | 21 |
+| `app/styles/legacy-after-free-singer.css` | Legado — migração gradual | 134 | 8634 | 86 |
+| `app/styles/legacy-base-responsive.css` | Legado — migração gradual | 3 | 627 | 20 |
 | `app/styles/legacy-global-tail.css` | Legado — migração gradual | 121 | 10253 | 109 |
 | `app/termos/legal.css` | Rota | 13 | 1240 | 13 |
 | `components/artist-booking-form.css` | Componente | 36 | 2347 | 26 |
@@ -68,7 +67,6 @@ Gerar novamente: `node scripts/audit-css.mjs`. Contagem de blocos é heurística
 | `src/domains/artists/styles/musician-portfolio-editor.css` | Domínio | 264 | 12947 | 123 |
 | `src/domains/artists/styles/musician-portfolio.css` | Domínio | 649 | 29648 | 293 |
 | `src/domains/auth/styles/legacy-auth-forms.css` | Legado — migração gradual | 1 | 1317 | 17 |
-| `src/domains/auth/styles/legacy-signup-roles.css` | Legado — migração gradual | 34 | 1638 | 17 |
 | `src/domains/billing/components/subscription-ui.css` | Domínio | 35 | 2406 | 38 |
 | `src/domains/booking/components/booking-ui.css` | Domínio | 43 | 3929 | 44 |
 | `src/domains/navigation/components/workspace-shell.css` | Domínio | 278 | 20446 | 208 |
@@ -123,11 +121,6 @@ Gerar novamente: `node scripts/audit-css.mjs`. Contagem de blocos é heurística
   - `app/meus-shows/meus-shows.css` — `.show-history-upcoming-list`
   - `app/shows-recorrentes/shows-recorrentes.css` — `.recurring-pair`
   - `src/domains/artists/styles/legacy-free-singer.css` — `.artist-free-photo-fields`
-- `display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:9px`
-  - `app/cadastro/signup-wizard.css` — `.signup-activity-grid`
-  - `app/meu-perfil-artistico/site-profissional/premium-preview.css` — `.premium-design-themes`
-  - `components/event-budget-panel.css` — `.event-budget-summary-grid`
-  - `src/domains/auth/styles/legacy-signup-roles.css` — `.signup-role-grid`
 - `display:flex;flex-direction:column;gap:5px`
   - `app/admin/casas/venues-admin.css` — `.venue-admin-checks label span`
   - `app/meu-desempenho/performance.css` — `.reach-range-header>div:first-child`
@@ -144,6 +137,10 @@ Gerar novamente: `node scripts/audit-css.mjs`. Contagem de blocos é heurística
   - `app/admin/casas/venues-admin.css` — `.venue-admin-image-actions`
   - `app/pro/[username]/pro-public.css` — `.pro-public-media-empty>div`
   - `components/marketplace-musician-settings.css` — `.mp-market-date-chips`
+- `display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:9px`
+  - `app/cadastro/signup-wizard.css` — `.signup-activity-grid`
+  - `app/meu-perfil-artistico/site-profissional/premium-preview.css` — `.premium-design-themes`
+  - `components/event-budget-panel.css` — `.event-budget-summary-grid`
 
 ## Prioridades de migração
 

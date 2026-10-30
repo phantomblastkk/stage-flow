@@ -113,24 +113,11 @@ input[type="checkbox"],input[type="radio"]{accent-color:var(--accent-solid)}
 @media(max-width:600px){
   .field label{font-size:14px}
   .field-help{font-size:13px}
-  .signup-role-card>span,.signup-producer-add small{font-size:13px}
-  .signup-role-card>small{font-size:12px}
-  .signup-role-card{min-height:132px}
   .auth-main input,.auth-main select,.auth-main textarea{font-size:16px}
-  .signup-role-grid{gap:9px}
-}
-@media(max-width:375px){
-  .signup-role-grid{grid-template-columns:1fr}
-  .signup-role-card{min-height:0}
 }
 
-/* Perfil artistico unificado: atalhos apenas no celular e acesso ao salvar. */
-.artist-mobile-edit-steps{display:none}
+/* Perfil artístico unificado: legibilidade dos controles e destinos de âncora. */
 @media(max-width:850px){
- .artist-mobile-edit-steps{display:flex;gap:7px;align-items:center;min-width:0;overflow-x:auto;scrollbar-width:none;overscroll-behavior-x:contain;padding:8px;border:1px solid #514265;border-radius:13px;background:#20192fee}
- .artist-mobile-edit-steps::-webkit-scrollbar{display:none}
- .artist-mobile-edit-steps>a{display:inline-flex;align-items:center;min-height:44px;padding:8px 12px;flex:none;border:1px solid #64557a;border-radius:11px;color:#ebddff;text-decoration:none;font-size:13px;white-space:nowrap}
- .artist-mobile-edit-steps>button{margin-left:auto;flex:none;min-height:44px;padding:8px 14px;border:1px solid #8960d8;border-radius:11px;background:#7541ca;color:#fff;font-size:13px;font-weight:850}
  .singer-unified-editor [id^="artist-edit-"]{scroll-margin-top:82px}
  .singer-unified-editor input,.singer-unified-editor select,.singer-unified-editor textarea{font-size:16px}
  .singer-unified-editor .field-help{font-size:13px}
@@ -140,7 +127,6 @@ input[type="checkbox"],input[type="radio"]{accent-color:var(--accent-solid)}
 @media(max-width:600px){
  .auth-card p,.auth-bottom,.auth-card .field-help{font-size:14px}
  .auth-card .btn{min-height:44px}
- .signup-producer-add input,.signup-hybrid-confirm input{min-width:20px;min-height:20px}
  :where(.sf-profile-hub,.account-page,.hiring-page,.notifications-page) a:focus-visible,
  :where(.sf-profile-hub,.account-page,.hiring-page,.notifications-page) button:focus-visible{
   outline:3px solid #d7b3ff;outline-offset:3px

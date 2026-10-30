@@ -1,7 +1,8 @@
 // Read-only inventory. Repeated blocks are candidates, not proof that selectors can be merged.
 import {execFileSync} from "node:child_process";
 import {readFileSync} from "node:fs";
-const files=execFileSync("git",["ls-files","--","*.css"],{encoding:"utf8"}).trim().split("\n").filter(Boolean).sort();
+const deleted=new Set(execFileSync("git",["ls-files","--deleted","--","*.css"],{encoding:"utf8"}).trim().split("\n").filter(Boolean));
+const files=execFileSync("git",["ls-files","--","*.css"],{encoding:"utf8"}).trim().split("\n").filter(path=>path&&!deleted.has(path)).sort();
 const base=execFileSync("git",["rev-parse","HEAD"],{encoding:"utf8"}).trim();
 const groups=new Map();
 function category(path){

@@ -289,6 +289,11 @@ try {
       const start = page.getByRole("link", { name: "Começar gratuitamente", exact: true });
       await start.waitFor();
       await noHorizontalOverflow(page, "public home " + width);
+      const globalBrand=await page.locator(".home-nav .brand-mark").evaluate(el=>{
+        const style=getComputedStyle(el);return {width:style.width,height:style.height,image:style.backgroundImage};
+      });
+      assert.deepEqual({width:globalBrand.width,height:globalBrand.height},width<=480?{width:"37px",height:"30px"}:{width:"44px",height:"35px"});
+      assert.ok(globalBrand.image.includes("stageflow-symbol.svg"),"Final brand override must survive removal of the overridden responsive size");
       await page.screenshot({ path: `test-results/public-home-${width}.png`, fullPage: true });
       await start.focus();
       await start.press("Enter");
@@ -336,6 +341,16 @@ try {
       await page.screenshot({ path: "test-results/public-signup-duplicate-" + width + ".png", fullPage: true });
       assert.deepEqual(errors, []);
       console.log(`PASS public home/signup ${width}px: anonymous navigation, keyboard roles, duplicate messages and overflow`);
+      await page.goto(origin+"/login");
+      const loginEmail=page.getByLabel("E-mail",{exact:true});await loginEmail.waitFor();
+      assert.equal(await page.locator(".auth-aside").evaluate(el=>getComputedStyle(el).display),width<=800?"none":"flex");
+      const loginMetrics=await loginEmail.evaluate(el=>({font:parseFloat(getComputedStyle(el).fontSize),height:el.getBoundingClientRect().height}));
+      assert.ok(loginMetrics.height>=44);
+      if(width<=600)assert.equal(loginMetrics.font,16);
+      await loginEmail.focus();assert.ok(await loginEmail.evaluate(el=>el.matches(":focus-visible")&&parseFloat(getComputedStyle(el).outlineWidth)>=2));
+      await noHorizontalOverflow(page,"login after global CSS cleanup "+width);
+      await page.screenshot({path:`test-results/public-login-cascade-${width}.png`,fullPage:true});
+      console.log(`PASS global CSS cascade ${width}px: final SVG brand dimensions, responsive auth layout, login field height/mobile font and visible keyboard focus`);
     } finally { await context.close(); }
   }
   for (const width of [360, 768, 1280]) {
