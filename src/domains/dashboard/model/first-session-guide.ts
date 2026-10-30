@@ -3,7 +3,7 @@ import type {AccountProfile} from "../../account/account-types";
 export type GuideMode="singer"|"musician"|"organizer";
 export type ArtistGuideData={
  name?:string|null;username?:string|null;bio?:string|null;city?:string|null;
- avatar_path?:string|null;avatar_url?:string|null;instruments?:string[]|null;
+ avatar_path?:string|null;avatar_url?:string|null;instruments?:string[]|null;genres?:string[]|null;
  is_public?:boolean|null;is_published?:boolean|null;
 };
 export type GuideTask={id:string;label:string;href:string;done:boolean};
