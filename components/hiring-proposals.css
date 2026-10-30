@@ -76,3 +76,14 @@
  .hiring-proposals-review-actions{display:grid;grid-template-columns:1fr}
  .hiring-proposals-review dl>div{grid-template-columns:1fr;gap:3px}
 }
+
+/* In the mobile proposal sheet, failures must be visible without closing review. */
+.hiring-proposal-inline-error{padding:11px 12px;border:1px solid var(--sf-ui-danger,#c66b86);
+ border-radius:11px;background:rgba(168,58,86,.12);color:var(--sf-ui-danger,#ffe0e8);
+ font-size:12px;line-height:1.6;overflow-wrap:anywhere}
+.hiring-proposal-inline-error .sf-ui-notice{margin:0}
+.hiring-proposals-mobile-form-head button:focus-visible,
+.hiring-proposals-review-actions button:focus-visible,
+.hiring-proposals-submit button:focus-visible{outline:3px solid #d1aafb;outline-offset:3px}
+@media(max-width:750px){.hiring-proposal-inline-error{margin-bottom:2px}
+ .hiring-proposals-form{scrollbar-gutter:stable}}
