@@ -1787,7 +1787,8 @@ try{
   await marketReviewEvent.selectOption(completedReviewIds[3]);await marketReviewRating.selectOption("2");await marketReviewComment.fill("Texto ainda não confirmado");
   reviewResult="transport";await activate(publishReview);
   await reviewSection.getByRole("alert").filter({hasText:"Ela pode ter sido registrada."}).waitFor();
-  await reviewSection.screenshot({path:`test-results/operational-marketplace-review-uncertain-${width}.png`});
+  await page.waitForFunction(()=>document.activeElement?.classList.contains("market-review-feedback"));
+  await invitePanel.screenshot({path:`test-results/operational-marketplace-review-uncertain-${width}.png`});
   await awaitReviewRpc("stage_marketplace_my_reviewable",()=>activate(verifyMarketReview));
   await reviewSection.getByRole("status").filter({hasText:"A apresentação continua disponível para avaliação."}).waitFor();
   assert.equal(marketplaceReviewWrites.length,5,"Verification must not publish an unconfirmed review");
@@ -1798,7 +1799,8 @@ try{
   assert.ok(await reviewSection.locator(".market-review-form .sf-ui-input").evaluateAll(nodes=>nodes.every(el=>getComputedStyle(el).fontSize==="16px")));
   const reviewButtonSize=await publishReview.boundingBox();assert.ok(reviewButtonSize.width>=44&&reviewButtonSize.height>=44);
   assert.ok(await invitePanel.evaluate(el=>el.scrollWidth<=el.clientWidth+2),"Review form overflows the dialog");
-  await reviewSection.screenshot({path:`test-results/operational-marketplace-review-confirmed-${width}.png`});
+  await page.waitForFunction(()=>document.activeElement?.classList.contains("market-review-feedback"));
+  await invitePanel.screenshot({path:`test-results/operational-marketplace-review-confirmed-${width}.png`});
   // A result for a closed musician must never populate the next musician's dialog.
   publicReviewsGate=new Promise(resolve=>releasePublicReviews=resolve);
   const heldReviewRequestPromise=page.waitForRequest(r=>r.url().endsWith("/stage_marketplace_reviews_for_musician"));
